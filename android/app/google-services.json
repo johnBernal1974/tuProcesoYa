@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "438491594577",
+    "project_id": "tu-proceso-ya-fe845",
+    "storage_bucket": "tu-proceso-ya-fe845.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:438491594577:android:9634a409460efb5e375d70",
+        "android_client_info": {
+          "package_name": "com.tuprocesoya"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB83Rrkj4XEZtLXIn49jtfJBs2KthNtrb8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,261 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:tuprocesoya/src/colors/colors.dart'; // Asegúrate de que el color primary esté definido aquí
+
+import '../../providers/auth_provider.dart';
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({Key? key}) : super(key: key);
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final MyAuthProvider _authProvider = MyAuthProvider();
+
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: primary,
+        iconTheme: const IconThemeData(color: negro, size: 30),
+        title: const Text(
+          "Inicio de sesión",
+          style: TextStyle(color: Colors.white),
+        ),
+      ),
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        child: Center( // Centra el contenido en el eje horizontal
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 600), // Limita el ancho máximo
+            padding: const EdgeInsets.all(16.0), // Agrega espacio alrededor del contenido
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // LOGO - en la parte superior derecha
+                Align(
+                  alignment: Alignment.topRight, // Esto coloca el logo en la parte superior derecha
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    child: Image.asset(
+                      'assets/images/logo_tu_proceso_ya.png',
+                      width: 100,
+                      height: 100,
+                    ),
+                  ),
+                ),
+
+                // TEXTO DESCRIPTIVO
+                const Text(
+                  'Si tu cuenta ya ha sido activada con anticipación, ingresa tus credenciales para ingresar',
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                ),
+                const SizedBox(height: 10),
+
+                // TÍTULO
+                Text(
+                  "Iniciar Sesión",
+                  style: TextStyle(
+                    fontSize: screenWidth > 600 ? 32 : 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // FORMULARIO
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      // CAMPO DE CORREO
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: InputDecoration(
+                          labelText: "Correo Electrónico",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: primary, width: 2),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: primary, width: 2),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: primary, width: 2),
+                          ),
+                          prefixIcon: const Icon(Icons.email),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "El correo es obligatorio";
+                          }
+                          if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                            return "Introduce un correo válido";
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+
+                      // CAMPO DE CONTRASEÑA
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: "Contraseña",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: primary, width: 2),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: primary, width: 2),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: primary, width: 2),
+                          ),
+                          prefixIcon: const Icon(Icons.lock),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "La contraseña es obligatoria";
+                          }
+                          if (value.length < 6) {
+                            return "La contraseña debe tener al menos 6 caracteres";
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 20),
+
+                      // BOTÓN DE LOGIN
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            backgroundColor: primary,
+                          ),
+                          onPressed: _isLoading ? null : _login,
+                          child: _isLoading
+                              ? const CircularProgressIndicator(color: Colors.white)
+                              : const Text(
+                            "Ingresar",
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // LINK PARA REGISTRARSE
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('¿No tienes cuenta?'),
+                    const SizedBox(width: 15),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        Navigator.pushNamed(context, "register").then((_) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        });
+                      },
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                      )
+                          : Text(
+                        "Regístrate aquí",
+                        style: TextStyle(
+                          color: primary,
+                          fontSize: screenWidth > 600 ? 18 : 14,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // LINK "Olvidé mi contraseña"
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, "forgot_password");
+                  },
+                  child: Text(
+                    "¿Olvidaste tu contraseña?",
+                    style: TextStyle(
+                      color: primary,
+                      fontSize: screenWidth > 600 ? 18 : 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+
+
+  void _login() async {
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
+
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      final success = await _authProvider.login(email, password, context);
+      if (success) {
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        final adminsCollection = FirebaseFirestore.instance.collection('admin');
+        final adminDoc = await adminsCollection.doc(userId).get();
+
+        if (adminDoc.exists) {
+          // El usuario es un administrador
+          if(context.mounted){
+            Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
+          }
+        } else {
+          // El usuario no es un administrador
+          print("El usuario no es un administrador********");
+          if(context.mounted){
+            Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+          }
+        }
+      }
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+}
