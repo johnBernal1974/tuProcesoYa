@@ -29,6 +29,7 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController apellidoPplController = TextEditingController();
   final TextEditingController tipoDocumentoPplController = TextEditingController();
   final TextEditingController numeroDocumentoPplController = TextEditingController();
+  final TextEditingController regionalController = TextEditingController();
   final TextEditingController centroReclusionController = TextEditingController();
   final TextEditingController juzgadoEjecucionPenasController = TextEditingController();
   final TextEditingController juzgadoQueCondenoController = TextEditingController();
@@ -49,6 +50,7 @@ class _RegistroPageState extends State<RegistroPage> {
   // Variables para los Dropdowns
   String? parentesco;
   String? tipoDocumento;
+  String? regional;
   String? centroReclusion;
   String? juzgadoEjecucionPenas;
   String? juzgadoQueCondeno;
@@ -66,9 +68,8 @@ class _RegistroPageState extends State<RegistroPage> {
   // Listas de opciones para los Dropdowns
   List<Map<String, dynamic>> regionales = [];
   List<Map<String, dynamic>> centrosReclusion = [];
-  final List<String> parentescoOptions = ['Padre', 'Madre', 'Hermano/a', 'Abogado/a', 'Tutor/a', 'Otro'];
+  final List<String> parentescoOptions = ['Padre', 'Madre', 'Hermano/a', "Hijo/a", "Esposo/a", "Amigo/a", "Tio/a", "Sobrino/a", "Nieto/a", "Abuelo/a",'Abogado/a', 'Tutor/a', 'Otro'];
   final List<String> tipoDocumentoOptions = ['Cédula de Ciudadanía', 'Pasaporte', 'Tarjeta de Identidad'];
-  final List<String> delitoOptions = ['Homicidio', 'Robo', 'Secuestro', 'Estafa', 'Tráfico de drogas', 'Violación', 'Hurto calificado', 'Corrupción', 'Agresión', 'Falsificación de documentos'];
   final List<String> laborDescuentoOptions = ['Limpieza de celdas', 'Cocina', 'Trabajo en el taller de carpintería', 'Trabajo en el taller de costura', 'Servicio en biblioteca', 'Trabajo agrícola', 'Reparación de vehículos', 'Enseñanza en oficios', 'Asistencia en la zona de salud', 'Trabajo en el área de jardinería'];
 
   @override
@@ -95,9 +96,6 @@ class _RegistroPageState extends State<RegistroPage> {
 
 
   Future<void> signUp() async {
-    String email = emailController.text.trim();
-    String password = passwordController.text.trim();
-
     try {
       if (_formKey.currentState!.validate()) {
         print('Formulario válido, mostrando el indicador de carga...');
@@ -106,6 +104,30 @@ class _RegistroPageState extends State<RegistroPage> {
           barrierDismissible: false,
           builder: (context) => const Center(child: CircularProgressIndicator()),
         );
+
+        String email = emailController.text.trim();
+        String password = passwordController.text.trim();
+        String confirmPassword = passwordConfirmarController.text.trim();
+        String confirmEmail = emailConfirmarController.text.trim();
+
+        // Validaciones adicionales
+        if (email != confirmEmail) {
+          Navigator.of(context).pop();
+          _mostrarMensaje('Los correos electrónicos no coinciden.');
+          return;
+        }
+
+        if (password != confirmPassword) {
+          Navigator.of(context).pop();
+          _mostrarMensaje('Las contraseñas no coinciden.');
+          return;
+        }
+
+        if (password.length < 6) {
+          Navigator.of(context).pop();
+          _mostrarMensaje('La contraseña debe tener al menos 6 caracteres.');
+          return;
+        }
 
         print('Intentando registrar el usuario...');
         bool isSignUp = await _authProvider.signUp(email, password);
@@ -126,8 +148,8 @@ class _RegistroPageState extends State<RegistroPage> {
           apellidoPpl: apellidoPplController.text.trim(),
           tipoDocumentoPpl: tipoDocumento ?? "",
           numeroDocumentoPpl: numeroDocumentoPplController.text.trim(),
-          regional: "",
-          centroReclusion: "",
+          regional: selectedRegional ?? regionalController.text.trim(),
+          centroReclusion: selectedCentro ?? centroReclusionController.text.trim(),
           juzgadoEjecucionPenas: "",
           juzgadoQueCondeno: "",
           delito: "",
@@ -425,7 +447,7 @@ class _RegistroPageState extends State<RegistroPage> {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: _buildDropdown(
                         value: parentesco,
-                        label: 'Parentesco Representante',
+                        label: 'Parentesco del acudiente',
                         items: parentescoOptions,
                         onChanged: (value) {
                           setState(() {
@@ -435,6 +457,16 @@ class _RegistroPageState extends State<RegistroPage> {
                       ),
                     ),
 
+                    const Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.amber, size: 30), // Icono amarillo de atención
+                        SizedBox(width: 10), // Espacio entre el icono y el texto
+                        Expanded( // Asegura que el texto se adapte al ancho disponible
+                          child: Text("Por favor ingresa un número de celular activo y que tenga cuenta de WhatsApp, ya que por "
+                              "este medio también podemos enviarte información relevante.", style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
                     _buildTextFormField(controller: celularController, label: 'Celular', keyboardType: TextInputType.phone),
                     const SizedBox(height: 30),
                     const Text("Datos de la persona privada de la libertad.", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
@@ -547,10 +579,30 @@ class _RegistroPageState extends State<RegistroPage> {
                     const Divider(height: 2, color: primary),
                     const SizedBox(height: 15),
                     const Text("Creacion de cuenta", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                    const Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.amber, size: 30), // Icono amarillo de atención
+                        SizedBox(width: 10), // Espacio entre el icono y el texto
+                        Expanded( // Asegura que el texto se adapte al ancho disponible
+                          child: Text("Por favor ingresa un correo electrónico válido, que esté activo y al cual tengas acceso, ya que allí "
+                              "se te estará enviando toda la información relacionada con el PPL", style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
                     _buildTextFormField(controller: emailController, label: 'Tu Email', keyboardType: TextInputType.emailAddress),
                     _buildTextFormField(controller: emailConfirmarController, label: 'Confirmar Email', keyboardType: TextInputType.emailAddress),
+                    const Row(
+                      children: [
+                        Icon(Icons.info, color: Colors.amber, size: 30), // Icono amarillo de atención
+                        SizedBox(width: 10), // Espacio entre el icono y el texto
+                        Expanded( // Asegura que el texto se adapte al ancho disponible
+                          child: Text("Ten en cuenta que la contraseña que vas a crear debe tener mínimo 6 carácteres. Por la seguridad de tus datos no la compartas con nadie", style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
                     _buildTextFormField(controller: passwordController, label: 'Crea una contraseña', keyboardType: TextInputType.visiblePassword, obscureText: true ),
                     _buildTextFormField(controller: passwordConfirmarController, label: 'Confirmar Contraseña', keyboardType: TextInputType.visiblePassword, obscureText: true),
+                    const SizedBox(height: 50),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
@@ -562,7 +614,7 @@ class _RegistroPageState extends State<RegistroPage> {
                         child: const Text('Enviar Formulario'),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 50),
                   ],
                 ),
               ),

@@ -18,6 +18,8 @@ class EditarRegistroPage extends StatefulWidget {
 
 class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _formKey = GlobalKey<FormState>();
+
+  ///Controllers info PPL
   final _nombreController = TextEditingController();
   final _apellidoController = TextEditingController();
   final _numeroDocumentoController = TextEditingController();
@@ -28,12 +30,22 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _nuiController = TextEditingController();
   final _patioController = TextEditingController();
 
+  /// controllers para el acudiente
+  final _nombreAcudienteController = TextEditingController();
+  final _apellidosAcudienteController = TextEditingController();
+  final _parentescoAcudienteController = TextEditingController();
+  final _celularAcudienteController = TextEditingController();
+  final _emailAcudienteController = TextEditingController();
+
+
+  ///Mapas de opciones traidas de firestore
   List<Map<String, dynamic>> regionales = [];
   List<Map<String, dynamic>> centrosReclusion = [];
   List<Map<String, dynamic>> juzgadosEjecucionPenas = [];
   List<Map<String, dynamic>> juzgadoQueCondeno = [];
   List<Map<String, dynamic>> delito = [];
 
+  /// variables para guardar opciones seleccionadas
   String? selectedRegional; // Regional seleccionada
   String? selectedCentro; // Centro de reclusión seleccionado
   String? selectedJuzgadoEjecucionPenas;
@@ -45,54 +57,69 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   String _juzgadoEjecucionPenas= "";
   String _juzgadoQueCondeno= "";
   String _delito= "";
+
+  /// variables para saber si se muestra los drops o no
   bool _mostrarDropdowns = true;
   bool _mostrarDropdownJuzgadoEjecucion = false;
   bool _mostrarDropdownJuzgadoCondeno = false;
   bool _mostrarDropdownDelito = false;
+
+  /// variables para calcular el tiempo de condena
   final CalculoCondenaController _calculoCondenaController = CalculoCondenaController(PplProvider());
   int diasEjecutado = 0;
   int mesesEjecutado = 0;
   int diasEjecutadoExactos = 0;
-
   int diasRestante = 0;
   int mesesRestante = 0;
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
 
-
   late String _tipoDocumento;
 
-  final List<String> _opciones = [
-    'Cédula de Ciudadanía',
-    'Pasaporte',
-  ];
+  /// opciones de documento de identidad
+  final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte'];
 
   @override
   void initState() {
     super.initState();
-    _calculoCondenaController.calcularTiempo(widget.doc.id).then((_) {
-      mesesRestante = _calculoCondenaController.mesesRestante!;
-      diasRestanteExactos= _calculoCondenaController.diasRestanteExactos!;
-      mesesEjecutado= _calculoCondenaController.mesesEjecutado!;
-      diasEjecutadoExactos= _calculoCondenaController.diasEjecutadoExactos!;
-      porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado!;
-    });
+    _initCalculoCondena();
+    _initFormFields();
     _fetchRegionales();
     _obtenerDatos();
     _fetchDelitos();
+  }
+
+  void _initCalculoCondena() async {
+    try {
+      await _calculoCondenaController.calcularTiempo(widget.doc.id);
+      mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
+      diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
+      mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
+      diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
+      porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0;
+    } catch (e) {
+      // Maneja la excepción
+    }
+  }
+
+  void _initFormFields() {
     if (widget.doc != null) {
-      _nombreController.text = widget.doc.get('nombre_ppl');
-      _apellidoController.text = widget.doc.get('apellido_ppl');
-      _numeroDocumentoController.text =
-          widget.doc.get('numero_documento_ppl').toString();
-      _tipoDocumento = widget.doc.get('tipo_documento_ppl');
-      _radicadoController.text = widget.doc.get('radicado');
-      _tiempoCondenaController.text = widget.doc.get('tiempo_condena').toString();
-      _fechaDeCapturaController.text = widget.doc.get('fecha_captura');
-      _tdController.text = widget.doc.get('td');
-      _nuiController.text = widget.doc.get('nui');
-      _patioController.text = widget.doc.get('patio');
+      _nombreController.text = widget.doc.get('nombre_ppl') ?? "";
+      _apellidoController.text = widget.doc.get('apellido_ppl') ?? "";
+      _numeroDocumentoController.text = widget.doc.get('numero_documento_ppl').toString() ?? "";
+      _tipoDocumento = widget.doc.get('tipo_documento_ppl') ?? "";
+      _radicadoController.text = widget.doc.get('radicado') ?? "";
+      _tiempoCondenaController.text = widget.doc.get('tiempo_condena').toString() ?? "";
+      _fechaDeCapturaController.text = widget.doc.get('fecha_captura') ?? "";
+      _tdController.text = widget.doc.get('td') ?? "";
+      _nuiController.text = widget.doc.get('nui') ?? "";
+      _patioController.text = widget.doc.get('patio') ?? "";
+      _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
+      _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
+      _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
+      _celularAcudienteController.text = widget.doc.get('celular') ?? "";
+      _emailAcudienteController.text = widget.doc.get('email') ?? "";
     }
   }
 
@@ -122,119 +149,18 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 fontWeight: FontWeight.w900,
                 fontSize: 18
             ),),
-            // Puedes mostrar el id en pantalla si lo deseas
-            // Text('ID del documento: ${widget.doc.id}'),
+            //Puedes mostrar el id en pantalla si lo deseas
+            Text('ID: ${widget.doc.id}', style: TextStyle(fontSize: 11)),
             const SizedBox(height: 20),
             datosEjecucionCondena(),
             const SizedBox(height: 20),
-
-            TextFormField(
-              controller: _nombreController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'Nombre',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese su nombre';
-                }
-                return null;
-              },
-            ),
+            nombrePpl(),
             const SizedBox(height: 15),
-            TextFormField(
-              controller: _apellidoController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'Apellido',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese su apellido';
-                }
-                return null;
-              },
-            ),
+            apellidoPpl(),
             const SizedBox(height: 15),
-            DropdownButtonFormField(
-              value: _tipoDocumento,
-              onChanged: (String? newValue) {
-                setState(() {
-                  _tipoDocumento = newValue!;
-                });
-              },
-              items: _opciones.map((String option) {
-                return DropdownMenuItem(
-                  value: option,
-                  child: Text(option),
-                );
-              }).toList(),
-              decoration: InputDecoration(
-                labelText: 'Tipo de Documento',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-            ),
+            tipoDocumentoPpl(),
             const SizedBox(height: 15),
-            TextFormField(
-              controller: _numeroDocumentoController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'Número de Documento',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese su número de documento';
-                }
-                return null;
-              },
-            ),
+            numeroDocumentoPpl(),
             const SizedBox(height: 15),
             seleccionarCentroReclusion(),
             const SizedBox(height: 15),
@@ -244,196 +170,33 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             const SizedBox(height: 15),
             seleccionarDelito(),
             const SizedBox(height: 15),
-            TextFormField(
-              controller: _fechaDeCapturaController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'Fecha de captura YYYY-MM-DD',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese la fecha de captura';
-                }
-                return null;
-              },
-            ),
+            fechaCapturaPpl(),
             const SizedBox(height: 15),
-            TextFormField(
-              controller: _radicadoController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'Radicado No',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese el número de radicado';
-                }
-                return null;
-              },
-            ),
+            radicadoPpl(),
             const SizedBox(height: 15),
-            TextFormField(
-              controller: _tiempoCondenaController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'Tiempo de condena en meses',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese el tiempo de condena en meses';
-                }
-                return null;
-              },
-            ),
+            condenaPpl(),
             const SizedBox(height: 15),
-            TextFormField(
-              controller: _tdController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'TD',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese el TD';
-                }
-                return null;
-              },
-            ),
+            tdPpl(),
             const SizedBox(height: 15),
-            TextFormField(
-              controller: _nuiController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'NUI',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese el NUI';
-                }
-                return null;
-              },
-            ),
+            nuiPpl(),
             const SizedBox(height: 15),
-            TextFormField(
-              controller: _patioController,
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              decoration: InputDecoration(
-                labelText: 'Número de patio',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: Colors.grey, width: 1),
-                ),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Por favor ingrese el patio';
-                }
-                return null;
-              },
-            ),
+            patioPpl(),
+            const SizedBox(height: 30),
+            const Text('Información del Acudiente', style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: 18)),
+            const SizedBox(height: 15),
+            nombreAcudiente(),
+            const SizedBox(height: 15),
+            apellidosAcudiente(),
+            const SizedBox(height: 15),
+            parentescoAcudiente(),
+            const SizedBox(height: 15),
+            celularAcudiente(),
+            const SizedBox(height: 15),
+            emailAcudiente(),
             const SizedBox(height: 50),
-            ElevatedButton(
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  int tiempoCondena = int.parse(_tiempoCondenaController.text);
-                  // Oculta el teclado
-                  SystemChannels.textInput.invokeMethod('TextInput.hide');
-                  // Actualiza el documento en Firestore
-                  widget.doc.reference.update({
-                    'nombre_ppl': _nombreController.text,
-                    'apellido_ppl': _apellidoController.text,
-                    'numero_documento_ppl': _numeroDocumentoController.text,
-                    'tipo_documento_ppl': _tipoDocumento,
-                    'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
-                    'regional': selectedRegional ?? widget.doc['regional'],
-                    'delito': selectedDelito ?? widget.doc['delito'],
-                    'radicado': _radicadoController.text,
-                    'tiempo_condena': tiempoCondena,
-                    'fecha_captura': _fechaDeCapturaController.text,
-                    'td': _tdController.text,
-                    'nui': _nuiController.text,
-                    'patio': _patioController.text,
-                  }).then((_) {
-                    // Muestra un snackbar
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Datos guardados con éxito'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  });
-                }
-              },
-              child: const Text('Guardar Cambios'),
-            ),
+            botonGuardar(),
             const SizedBox(height: 150),
           ],
         ),
@@ -545,30 +308,38 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_regional != "" && _centroReclusion != "")
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdowns = true;
-                    _regional = "";
-                    _centroReclusion = "";
-                  });
-                },
-                child: const Row(
-                  children: [
-                    Text("Regional", style: TextStyle(fontSize: 11)),
-                    Icon(Icons.edit, size: 15),
-                  ],
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey), // Borde gris
+              borderRadius: BorderRadius.circular(4), // Borde redondeado
+              color: Colors.white, // Fondo blanco
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdowns = true;
+                      _regional = "";
+                      _centroReclusion = "";
+                    });
+                  },
+                  child: const Row(
+                    children: [
+                      Text("Regional", style: TextStyle(fontSize: 11)),
+                      Icon(Icons.edit, size: 15),
+                    ],
+                  ),
                 ),
-              ),
-              Text(widget.doc['regional'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-              const SizedBox(height: 15),
-              const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
-              Text(widget.doc['centro_reclusion'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1),),
-              const SizedBox(height: 15),
-            ],
+                Text(widget.doc['regional'], style: TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                const SizedBox(height: 15),
+                const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
+                Text(widget.doc['centro_reclusion'], style: TextStyle(fontWeight: FontWeight.bold, height: 1),),
+                const SizedBox(height: 15),
+              ],
+            ),
           )
         else if (_mostrarDropdowns)
 
@@ -677,33 +448,41 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_juzgadoEjecucionPenas.isNotEmpty)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownJuzgadoEjecucion = true;
-                    _juzgadoEjecucionPenas = "";
-                  });
-                },
-                child: const Row(
-                  children: [
-                    Text("Juzgado de Ejecución de Penas", style: TextStyle(fontSize: 11)),
-                    Icon(Icons.edit, size: 15),
-                  ],
+        if (_juzgadoEjecucionPenas == "")
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdownJuzgadoEjecucion = true;
+                      _juzgadoEjecucionPenas = "";
+                    });
+                  },
+                  child: const Row(
+                    children: [
+                      Text("Juzgado de Ejecución de Penas", style: TextStyle(fontSize: 11)),
+                      Icon(Icons.edit, size: 15),
+                    ],
+                  ),
                 ),
-              ),
-              Text(widget.doc['juzgado_ejecucion_penas'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-              const SizedBox(height: 10),
-            ],
+                Text(widget.doc['juzgado_ejecucion_penas'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                const SizedBox(height: 10),
+              ],
+            ),
           )
         else if (_mostrarDropdownJuzgadoEjecucion)
           Column(
             children: [
               Container(
-                padding: EdgeInsets.all(8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey),
                   borderRadius: BorderRadius.circular(4),
@@ -759,27 +538,35 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_juzgadoQueCondeno.isNotEmpty)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownJuzgadoCondeno = true;
-                    _juzgadoQueCondeno = "";
-                  });
-                },
-                child: const Row(
-                  children: [
-                    Text("Juzgado que condenó", style: TextStyle(fontSize: 11)),
-                    Icon(Icons.edit, size: 15),
-                  ],
+        if (_juzgadoQueCondeno == "")
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdownJuzgadoCondeno = true;
+                      _juzgadoQueCondeno = "";
+                    });
+                  },
+                  child: const Row(
+                    children: [
+                      Text("Juzgado que condenó", style: TextStyle(fontSize: 11)),
+                      Icon(Icons.edit, size: 15),
+                    ],
+                  ),
                 ),
-              ),
-              Text(widget.doc['juzgado_que_condeno'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-              const SizedBox(height: 10),
-            ],
+                Text(widget.doc['juzgado_que_condeno'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                const SizedBox(height: 10),
+              ],
+            ),
           )
         else if (_mostrarDropdownJuzgadoCondeno)
           Column(
@@ -842,25 +629,33 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (_delito.isNotEmpty)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownDelito = true;
-                    _delito = "";
-                  });
-                },
-                child: const Row(
-                  children: [
-                    Text("Delito", style: TextStyle(fontSize: 11)),
-                    Icon(Icons.edit, size: 15),
-                  ],
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdownDelito = true;
+                      _delito = "";
+                    });
+                  },
+                  child: const Row(
+                    children: [
+                      Text("Delito", style: TextStyle(fontSize: 11)),
+                      Icon(Icons.edit, size: 15),
+                    ],
+                  ),
                 ),
-              ),
-              Text(widget.doc['delito'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-            ],
+                Text(widget.doc['delito'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+              ],
+            ),
           )
         else
           Column(
@@ -916,7 +711,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final DocumentSnapshot document = await firestore.collection('Ppl').doc(widget.doc.id).get();
@@ -948,7 +742,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return Column(
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Condena transcurrida',
@@ -956,7 +749,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   color: negroLetras),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(width: 10),
             Text(
               mesesEjecutado == 1
                   ? diasEjecutadoExactos == 1
@@ -970,7 +763,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ],
         ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Condena restante',
@@ -978,7 +770,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   color: negroLetras),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
+            const SizedBox(width: 10),
             Text(
               mesesRestante == 1
                   ? diasRestanteExactos == 1
@@ -996,12 +788,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ],
         ),
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
               'Porcentaje ejecutado',
               style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, color: negroLetras),
             ),
+            const SizedBox(width: 10),
             Text(
               '${porcentajeEjecutado.toStringAsFixed(1)}%',
               style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, fontWeight: FontWeight.bold),
@@ -1009,6 +801,330 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ],
         ),
       ],
+    );
+  }
+
+  Widget nombrePpl() {
+    return textFormField(
+      controller: _nombreController,
+      labelText: 'Nombre',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el nombre del ppl';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget apellidoPpl(){
+    return textFormField(
+      controller: _apellidoController,
+      labelText: 'Apellidos',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese los apellidos del ppl';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget numeroDocumentoPpl(){
+    return textFormField(
+      controller: _numeroDocumentoController,
+      labelText: 'Número de documento',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el número de documento del ppl';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget fechaCapturaPpl(){
+    return textFormField(
+      controller: _fechaDeCapturaController,
+      labelText: 'Fecha de captura (YYYY-MM-DD)',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese la fecha de captura';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget radicadoPpl(){
+    return textFormField(
+      controller: _radicadoController,
+      labelText: 'Radicado No.',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el número de radicado';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget condenaPpl(){
+    return textFormField(
+      controller: _tiempoCondenaController,
+      labelText: 'Condena en meses',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese la condena en meses';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget tdPpl(){
+    return textFormField(
+      controller: _tdController,
+      labelText: 'TD',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el TD';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget nuiPpl(){
+    return textFormField(
+      controller: _nuiController,
+      labelText: 'NUI',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el NUI';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget patioPpl(){
+    return textFormField(
+      controller: _patioController,
+      labelText: 'Patio No.',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el patio';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget nombreAcudiente(){
+    return textFormField(
+      controller: _nombreAcudienteController,
+      labelText: 'Nombre acudiente',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el nombre de acudiente';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget apellidosAcudiente(){
+    return textFormField(
+      controller: _apellidosAcudienteController,
+      labelText: 'Apellidos acudiente',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese los apellidos de acudiente';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget parentescoAcudiente(){
+    return textFormField(
+      controller: _parentescoAcudienteController,
+      labelText: 'Parentesco',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el parentesco';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget celularAcudiente(){
+    return textFormField(
+      controller: _celularAcudienteController,
+      labelText: 'Celular',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el celular';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget emailAcudiente(){
+    return textFormField(
+      controller: _emailAcudienteController,
+      labelText: 'Email',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el email';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget textFormField({
+    required TextEditingController controller,
+    required String labelText,
+    String? initialValue,
+    FormFieldValidator<String>? validator,
+    TextInputType? keyboardType,
+  }) {
+    return TextFormField(
+      controller: controller,
+      initialValue: initialValue,
+      style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+      decoration: InputDecoration(
+        labelText: labelText,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+      ),
+      validator: validator,
+      keyboardType: keyboardType,
+    );
+  }
+
+  Widget botonGuardar(){
+    return Container(
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.white, backgroundColor: primary,
+        ),
+        onPressed: () {
+          if (_formKey.currentState!.validate()) {
+            if (
+            _nombreController.text.isEmpty ||
+                _apellidoController.text.isEmpty ||
+                _numeroDocumentoController.text.isEmpty ||
+                _tipoDocumento == null ||
+                selectedCentro == null ||
+                selectedRegional == null ||
+                selectedDelito == null ||
+                _radicadoController.text.isEmpty ||
+                _tiempoCondenaController.text.isEmpty ||
+                _fechaDeCapturaController.text.isEmpty ||
+                _tdController.text.isEmpty ||
+                _nuiController.text.isEmpty ||
+                _patioController.text.isEmpty ||
+                _nombreAcudienteController.text.isEmpty ||
+                _apellidosAcudienteController.text.isEmpty ||
+                _parentescoAcudienteController.text.isEmpty ||
+                _celularAcudienteController.text.isEmpty ||
+                _emailAcudienteController.text.isEmpty
+            ) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Colors.red,
+                  content: Text(
+                    'Hay información que aún no se ha llenado',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            } else {
+              int tiempoCondena = int.parse(_tiempoCondenaController.text);
+              // Oculta el teclado
+              SystemChannels.textInput.invokeMethod('TextInput.hide');
+              // Actualiza el documento en Firestore
+              widget.doc.reference.update({
+                'nombre_ppl': _nombreController.text,
+                'apellido_ppl': _apellidoController.text,
+                'numero_documento_ppl': _numeroDocumentoController.text,
+                'tipo_documento_ppl': _tipoDocumento,
+                'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
+                'regional': selectedRegional ?? widget.doc['regional'],
+                'delito': selectedDelito ?? widget.doc['delito'],
+                'radicado': _radicadoController.text,
+                'tiempo_condena': tiempoCondena,
+                'fecha_captura': _fechaDeCapturaController.text,
+                'td': _tdController.text,
+                'nui': _nuiController.text,
+                'patio': _patioController.text,
+                'nombre_acudiente': _nombreAcudienteController.text,
+                'apellido_acudiente': _apellidosAcudienteController.text,
+                'parentesco_representante': _parentescoAcudienteController.text,
+                'celular': _celularAcudienteController.text,
+                'email': _emailAcudienteController.text,
+              }).then((_) {
+                // Muestra un snackbar
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Datos guardados con éxito'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              });
+            }
+          }
+        },
+        child: const Text('Guardar Cambios'),
+      ),
+    );
+  }
+
+  Widget tipoDocumentoPpl(){
+    return DropdownButtonFormField(
+      value: _tipoDocumento,
+      onChanged: (String? newValue) {
+        setState(() {
+          _tipoDocumento = newValue!;
+        });
+      },
+      items: _opciones.map((String option) {
+        return DropdownMenuItem(
+          value: option,
+          child: Text(option, style: const TextStyle(fontWeight: FontWeight.bold),),
+        );
+      }).toList(),
+      decoration: InputDecoration(
+        labelText: 'Tipo de Documento',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+      ),
     );
   }
 }
