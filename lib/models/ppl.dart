@@ -17,6 +17,7 @@ class Ppl {
   final String apellidoPpl;
   final String tipoDocumentoPpl;
   final String numeroDocumentoPpl;
+  final String regional;
   final String centroReclusion;
   final String juzgadoEjecucionPenas;
   final String juzgadoQueCondeno;
@@ -42,6 +43,7 @@ class Ppl {
     required this.apellidoPpl,
     required this.tipoDocumentoPpl,
     required this.numeroDocumentoPpl,
+    required this.regional,
     required this.centroReclusion,
     required this.juzgadoEjecucionPenas,
     required this.juzgadoQueCondeno,
@@ -68,6 +70,7 @@ class Ppl {
     apellidoPpl: json["apellido_ppl"] ?? '',
     tipoDocumentoPpl: json["tipo_documento_ppl"] ?? '',
     numeroDocumentoPpl: json["numero_documento_ppl"] ?? '',
+    regional: json["regional"] ?? '',
     centroReclusion: json["centro_reclusion"] ?? '',
     juzgadoEjecucionPenas: json["juzgado_ejecucion_penas"] ?? '',
     juzgadoQueCondeno: json["juzgado_que_condeno"] ?? '',
@@ -94,6 +97,7 @@ class Ppl {
     "apellido_ppl": apellidoPpl,
     "tipo_documento_ppl": tipoDocumentoPpl,
     "numero_documento_ppl": numeroDocumentoPpl,
+    "regional": regional,
     "centro_reclusion": centroReclusion,
     "juzgado_ejecucion_penas": juzgadoEjecucionPenas,
     "juzgado_que_condeno": juzgadoQueCondeno,

@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 // Importa tu servicio de autenticación
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../administrador/home_admin/home_admin.dart';
 import '../home/home.dart';
 import '../login/login.dart';
 
@@ -33,11 +35,27 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      // Usuario autenticado, navega a HomePage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => HomePage()),
-      );
+      // Usuario autenticado, verifica si es administrador
+      final userId = user.uid;
+      final adminsCollection = FirebaseFirestore.instance.collection('admin');
+      final adminDoc = await adminsCollection.doc(userId).get();
+
+      if (adminDoc.exists) {
+        if(context.mounted){
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
+          );
+        } else {
+          if(context.mounted){
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => HomePage()),
+            );
+          }
+         }
+        }
+
     } else {
       // Usuario no autenticado, navega a LoginPage
       Navigator.pushReplacement(

@@ -12,6 +12,7 @@ class HomeAdministradorPage extends StatefulWidget {
 class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   final FirebaseFirestore _firebaseFirestore = FirebaseFirestore.instance;
 
+
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -21,6 +22,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
           padding: const EdgeInsets.all(10),
           child: Column(
             children: [
+
               const Text('Personal PPL registrado'),
               const SizedBox(height: 20),
               StreamBuilder<QuerySnapshot>(
@@ -35,7 +37,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           showCheckboxColumn: false,
                           horizontalMargin: 0, // Reduce el margen horizontal
                           columnSpacing: 25, // Aumenta el espacio entre columnas
-                          dataRowHeight: 30, // Ajusta la altura de cada fila
+                          dataRowMinHeight : 30, // Ajusta la altura de cada fila
                           headingRowHeight: 30, // Ajusta la altura de la fila de títulos
                           columns: const [
                             DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold),)),
@@ -64,13 +66,10 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               ],
                               onSelectChanged: (bool? selected) {
                                 if (selected != null && selected) {
-                                  Navigator.push(
+                                  Navigator.pushNamed(
                                     context,
-                                      Navigator.pushNamed(
-                                        context,
-                                        'editar_registro_admin',
-                                        arguments: doc, // Aquí pasas el documento seleccionado
-                                      ) as Route<Object?>
+                                    'editar_registro_admin',
+                                    arguments: doc, // Aquí pasas el documento seleccionado
                                   );
                                 }
                               },

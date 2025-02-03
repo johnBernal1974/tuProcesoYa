@@ -126,6 +126,7 @@ class _RegistroPageState extends State<RegistroPage> {
           apellidoPpl: apellidoPplController.text.trim(),
           tipoDocumentoPpl: tipoDocumento ?? "",
           numeroDocumentoPpl: numeroDocumentoPplController.text.trim(),
+          regional: "",
           centroReclusion: "",
           juzgadoEjecucionPenas: "",
           juzgadoQueCondeno: "",
