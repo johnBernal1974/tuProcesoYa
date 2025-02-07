@@ -20,6 +20,7 @@ class Ppl {
   final String regional;
   final String centroReclusion;
   final String juzgadoEjecucionPenas;
+  final String ciudad;
   final String juzgadoQueCondeno;
   final String delito;
   final String radicado;
@@ -46,6 +47,7 @@ class Ppl {
     required this.regional,
     required this.centroReclusion,
     required this.juzgadoEjecucionPenas,
+    required this.ciudad,
     required this.juzgadoQueCondeno,
     required this.delito,
     required this.radicado,
@@ -73,6 +75,7 @@ class Ppl {
     regional: json["regional"] ?? '',
     centroReclusion: json["centro_reclusion"] ?? '',
     juzgadoEjecucionPenas: json["juzgado_ejecucion_penas"] ?? '',
+    ciudad: json["ciudad"] ?? '',
     juzgadoQueCondeno: json["juzgado_que_condeno"] ?? '',
     delito: json["delito"] ?? '',
     radicado: json["radicado"] ?? '',
@@ -100,6 +103,7 @@ class Ppl {
     "regional": regional,
     "centro_reclusion": centroReclusion,
     "juzgado_ejecucion_penas": juzgadoEjecucionPenas,
+    "ciudad": ciudad,
     "juzgado_que_condeno": juzgadoQueCondeno,
     "delito": delito,
     "radicado": radicado,

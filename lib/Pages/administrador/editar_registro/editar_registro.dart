@@ -43,23 +43,35 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   List<Map<String, dynamic>> centrosReclusion = [];
   List<Map<String, dynamic>> juzgadosEjecucionPenas = [];
   List<Map<String, dynamic>> juzgadoQueCondeno = [];
+  List<Map<String, dynamic>> juzgadosConocimiento = [];
   List<Map<String, dynamic>> delito = [];
 
   /// variables para guardar opciones seleccionadas
   String? selectedRegional; // Regional seleccionada
   String? selectedCentro; // Centro de reclusión seleccionado
   String? selectedJuzgadoEjecucionPenas;
-  String? selectedJuzgadoCondeno;
+  String? selectedCiudad;
+  String? selectedJuzgadoNombre;
   String? selectedDelito;
 
   String _regional = "";
   String _centroReclusion = "";
+
+
   String _juzgadoEjecucionPenas= "";
+  String _ciudad= "";
+
+
   String _juzgadoQueCondeno= "";
+  String _juzgado= "";
+
+
   String _delito= "";
 
+  bool isLoading = true;
+
   /// variables para saber si se muestra los drops o no
-  bool _mostrarDropdowns = true;
+  bool _mostrarDropdowns = false;
   bool _mostrarDropdownJuzgadoEjecucion = false;
   bool _mostrarDropdownJuzgadoCondeno = false;
   bool _mostrarDropdownDelito = false;
@@ -85,7 +97,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     super.initState();
     _initCalculoCondena();
     _initFormFields();
-    _fetchRegionales();
+    _regional = widget.doc['regional'] ?? "";
+    _centroReclusion = widget.doc['centro_reclusion'] ?? "";
+    Future.delayed(Duration.zero, () {
+      setState(() {
+        isLoading = false; // Cambia el estado después de que se verifiquen los valores
+      });
+    });
+    _fetchJuzgado_condeno();
     _obtenerDatos();
     _fetchDelitos();
   }
@@ -249,6 +268,50 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
+  Future<void> _fetchJuzgado_condeno() async {
+    try {
+      // Obtener la colección 'juzgado_condeno'
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('juzgado_condeno')
+          .get();
+
+      // Crear una lista para almacenar las ciudades y sus juzgados
+      List<Map<String, dynamic>> fetchedJuzgadoCondeno = [];
+
+      // Iterar sobre los documentos de la colección 'juzgado_condeno'
+      for (var doc in querySnapshot.docs) {
+        // Obtener el nombre de la ciudad desde el campo 'name'
+        String JuzgadoCondenoName = doc['name'] ?? 'Nombre no disponible'; // Asegurarse de que no sea nulo
+
+        // Acceder a la subcolección 'centros_reclusion' para obtener los centros
+        QuerySnapshot juzgadosSnapshot = await doc.reference
+            .collection('juzgados')
+            .get();
+
+        // Crear una lista con los centros de reclusión
+        List<String> juzgados = juzgadosSnapshot.docs
+            .map((centerDoc) => centerDoc.id)  // Usar el id del centro como nombre o identificador
+            .toList();
+
+        // Agregar los datos de la regional y sus centros a la lista
+        fetchedJuzgadoCondeno.add({
+          'id': doc.id,  // El id del documento de la regional
+          'nombre': JuzgadoCondenoName,  // El nombre de la regional
+          'juzgados': juzgados,  // Lista de centros de reclusión
+        });
+      }
+
+      // Actualizar el estado con las regionales y centros de reclusión
+      setState(() {
+        juzgadoQueCondeno = fetchedJuzgadoCondeno;
+      });
+
+      print('Ciudades cargadas correctamente');
+    } catch (e) {
+      print('Error al cargar las ciudades: $e');
+    }
+  }
+
   /// Método para obtener los centros de reclusión según la regional seleccionada
   Future<void> _fetchCentrosReclusion(String regionalId) async {
     try {
@@ -278,6 +341,33 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
+  /// Método para obtener los juzgados de conocimiento según la ciudad seleccionada
+  Future<void> _fetchJuzgadosConocimiento(String juzgadoCondenoId) async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('juzgado_condeno')
+          .doc(juzgadoCondenoId)
+          .collection('juzgados')
+          .get();
+
+      List<Map<String, String>> fetchedJuzgadoConocimiento = querySnapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'nombre': doc.get('nombre').toString(),  // Castear a String
+        };
+      }).toList();
+
+      setState(() {
+        juzgadosConocimiento = fetchedJuzgadoConocimiento;
+      });
+      print("Juzgandos de conocimiento*********************$juzgadosConocimiento");
+
+
+    } catch (e) {
+      print("Error al obtener los juzgado de conocimiento: $e");
+    }
+  }
+
   /// Método para obtener los delitos
   Future<void> _fetchDelitos() async {
     try {
@@ -303,11 +393,171 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  Widget seleccionarCentroReclusion(){
+
+
+  Widget seleccionarCentroReclusion() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_regional != "" && _centroReclusion != "")
+        if (!isLoading)
+          if (_regional.isEmpty && _centroReclusion.isEmpty && !_mostrarDropdowns)
+            Align(
+              alignment: Alignment.centerLeft, // Alinea el botón a la izquierda
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                  backgroundColor: Colors.white, // Fondo blanco
+                  foregroundColor: Colors.black, // Letra en negro
+                ),
+                onPressed: () {
+                  setState(() {
+                    _mostrarDropdowns = true;
+                    _fetchRegionales(); // Cargar regionales al presionar el botón
+                  });
+                },
+                child: const Text("Seleccionar Centro de Reclusión"),
+              ),
+            )
+          else if (_regional.isNotEmpty && _centroReclusion.isNotEmpty && !_mostrarDropdowns)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(4),
+                color: Colors.white,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _mostrarDropdowns = true;
+                        _regional = "";
+                        _centroReclusion = "";
+                        _fetchRegionales();
+                      });
+                    },
+                    child: const Row(
+                      children: [
+                        Text("Regional", style: TextStyle(fontSize: 11)),
+                        Icon(Icons.edit, size: 15),
+                      ],
+                    ),
+                  ),
+                  Text(_regional, style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                  const SizedBox(height: 15),
+                  const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
+                  Text(_centroReclusion, style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                  const SizedBox(height: 15),
+                ],
+              ),
+            )
+          else
+            Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white,
+                  ),
+                  child: DropdownButton<String>(
+                    value: selectedRegional,
+                    hint: const Text('Selecciona una regional'),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedRegional = value;
+                        selectedCentro = null;
+                      });
+                      _fetchCentrosReclusion(value!);
+                    },
+                    isExpanded: true,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Colors.black),
+                    items: regionales.map((regional) {
+                      return DropdownMenuItem<String>(
+                        value: regional['id'],
+                        child: Text(
+                          regional['nombre']!,
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdowns = false;
+                      _regional = widget.doc['regional'] ?? "";
+                      _centroReclusion = widget.doc['centro_reclusion'] ?? "";
+                    });
+                  },
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.cancel, size: 15),
+                      Text("Cancelar", style: TextStyle(fontSize: 11)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                if (selectedRegional != null)
+                  Container(
+                    alignment: Alignment.topLeft,
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.white,
+                    ),
+                    child: DropdownButton<String>(
+                      value: selectedCentro,
+                      hint: const Text('Selecciona un centro de reclusión'),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedCentro = value;
+                        });
+                      },
+                      isExpanded: true,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(color: Colors.black),
+                      items: centrosReclusion.map((centro) {
+                        return DropdownMenuItem<String>(
+                          value: centro['id'],
+                          child: Text(
+                            centro['nombre']!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
+      ],
+    );
+  }
+
+
+
+
+  Widget seleccionarJuzgadoQueCondeno(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (_juzgadoQueCondeno != "" && _juzgado != "")
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -321,31 +571,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 GestureDetector(
                   onTap: () {
                     setState(() {
-                      _mostrarDropdowns = true;
-                      _regional = "";
-                      _centroReclusion = "";
+                      _mostrarDropdownJuzgadoCondeno = true;
+                      _juzgadoQueCondeno = "";
+                      _juzgado = "";
                     });
                   },
                   child: const Row(
                     children: [
-                      Text("Regional", style: TextStyle(fontSize: 11)),
+                      Text("Ciudad juzgado de conocimiento", style: TextStyle(fontSize: 11)),
                       Icon(Icons.edit, size: 15),
                     ],
                   ),
                 ),
-                Text(widget.doc['regional'], style: TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                Text(widget.doc['ciudad'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
                 const SizedBox(height: 15),
-                const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
-                Text(widget.doc['centro_reclusion'], style: TextStyle(fontWeight: FontWeight.bold, height: 1),),
+                const Text("Juzgado de conocimiento", style: TextStyle(fontSize: 11)),
+                Text(widget.doc['juzgado_que_condeno'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1),),
                 const SizedBox(height: 15),
               ],
             ),
           )
-        else if (_mostrarDropdowns)
+        else if (_mostrarDropdownJuzgadoCondeno)
 
           Column(
             children: [
-              // Primer DropdownButton para seleccionar la regional
+              // Primer DropdownButton para seleccionar la ciudad
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -354,23 +604,23 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   color: Colors.white, // Fondo blanco
                 ),
                 child: DropdownButton<String>(
-                  value: selectedRegional,
-                  hint: const Text('Selecciona una regional'),
+                  value: selectedCiudad,
+                  hint: const Text('Selecciona una ciudad'),
                   onChanged: (value) {
                     setState(() {
-                      selectedRegional = value;
-                      selectedCentro = null;  // Limpiar la selección de centro cuando cambie la regional
+                      selectedCiudad = value;
+                      selectedJuzgadoNombre = null;  // Limpiar la selección de juzgado de conocimiento al cambiar la ciudad
                     });
-                    _fetchCentrosReclusion(value!);  // Cargar los centros de reclusión
+                    _fetchJuzgadosConocimiento(value!);  // Cargar los juzgados de conocimiento
                   },
                   isExpanded: true,  // Hacer que el DropdownButton ocupe el ancho disponible
                   dropdownColor: Colors.white, // Color de fondo del desplegable
                   style: const TextStyle(color: Colors.black), // Color de texto negro
-                  items: regionales.map((regional) {
+                  items: juzgadoQueCondeno.map((ciudad) {
                     return DropdownMenuItem<String>(
-                      value: regional['id'],
+                      value: ciudad['id'],
                       child: Text(
-                        regional['nombre']!,
+                        ciudad['nombre']!,
                         style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),  // Texto en negro
                       ),
                     );
@@ -381,9 +631,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               GestureDetector(
                 onTap: () {
                   setState(() {
-                    _mostrarDropdowns = false;
-                    _regional = widget.doc['regional'];
-                    _centroReclusion = widget.doc['centro_reclusion'];
+                    _mostrarDropdownJuzgadoCondeno = false;
+                    _ciudad = widget.doc['ciudad'];
+                    _juzgado = widget.doc['juzgado_que_condeno'];
                   });
                 },
                 child: const Row(
@@ -399,7 +649,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               const SizedBox(height: 20),
 
               // Segundo DropdownButton para seleccionar el centro de reclusión
-              if (selectedRegional != null)
+              if (selectedCiudad != null)
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -408,29 +658,28 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     color: Colors.white, // Fondo blanco
                   ),
                   child: DropdownButton<String>(
-                    value: selectedCentro,
-                    hint: const Text('Selecciona un centro de reclusión'),
+                    value: selectedJuzgadoNombre, // Cambiar a selectedJuzgadoNombre
+                    hint: const Text('Selecciona un juzgado de conocimiento'),
                     onChanged: (value) {
                       setState(() {
-                        selectedCentro = value;
+                        selectedJuzgadoNombre = value; // Cambiar a selectedJuzgadoNombre
                       });
                     },
-                    isExpanded: true,  // Hacer que el DropdownButton ocupe el ancho disponible
-                    dropdownColor: Colors.white, // Color de fondo del desplegable
-                    style: const TextStyle(color: Colors.black), // Color de texto negro
-                    items: centrosReclusion.map((centro) {
+                    isExpanded: true,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Colors.black),
+                    items: juzgadosConocimiento.map((juzgados) {
                       return DropdownMenuItem<String>(
-                        value: centro['id'],
+                        value: juzgados['nombre'], // Mantener el nombre como valor
                         child: Text(
-                          centro['nombre']!,
+                          juzgados['nombre']!,
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,  // Texto en negro
+                            color: Colors.black,
                           ),
-                          maxLines: 3,  // Permitir hasta 3 líneas de texto
+                          maxLines: 3,
                           overflow: TextOverflow.ellipsis,
-                          // Asegurarse de que el texto no se desborde
                         ),
                       );
                     }).toList(),
@@ -444,11 +693,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Widget seleccionarJuzgadoEjecucionPenas(){
+  Widget seleccionarJuzgadoEjecucionPenas() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (_juzgadoEjecucionPenas == "")
+        if (widget.doc['juzgado_ejecucion_penas'] != null )
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
@@ -463,7 +712,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   onTap: () {
                     setState(() {
                       _mostrarDropdownJuzgadoEjecucion = true;
-                      _juzgadoEjecucionPenas = "";
+                      selectedJuzgadoEjecucionPenas = null;
                     });
                   },
                   child: const Row(
@@ -473,12 +722,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     ],
                   ),
                 ),
-                Text(widget.doc['juzgado_ejecucion_penas'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                Text(widget.doc['juzgado_ejecucion_penas']!, style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
                 const SizedBox(height: 10),
               ],
             ),
           )
-        else if (_mostrarDropdownJuzgadoEjecucion)
+        else
           Column(
             children: [
               Container(
@@ -515,7 +764,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 onTap: () {
                   setState(() {
                     _mostrarDropdownJuzgadoEjecucion = false;
-                    _juzgadoEjecucionPenas = widget.doc['juzgado_ejecucion_penas'];
+                    selectedJuzgadoEjecucionPenas = widget.doc['juzgado_ejecucion_penas'];
                   });
                 },
                 child: const Row(
@@ -527,102 +776,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
               ),
             ],
-          )
-        else
-          Container(),
+          ),
       ],
     );
   }
 
-  Widget seleccionarJuzgadoQueCondeno(){
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_juzgadoQueCondeno == "")
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(4),
-              color: Colors.white,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _mostrarDropdownJuzgadoCondeno = true;
-                      _juzgadoQueCondeno = "";
-                    });
-                  },
-                  child: const Row(
-                    children: [
-                      Text("Juzgado que condenó", style: TextStyle(fontSize: 11)),
-                      Icon(Icons.edit, size: 15),
-                    ],
-                  ),
-                ),
-                Text(widget.doc['juzgado_que_condeno'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-                const SizedBox(height: 10),
-              ],
-            ),
-          )
-        else if (_mostrarDropdownJuzgadoCondeno)
-          Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                child: DropdownButton<String>(
-                  value: selectedJuzgadoCondeno,
-                  hint: const Text('Selecciona el juzgado que condenó'),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedJuzgadoCondeno = value;
-                    });
-                  },
-                  isExpanded: true,
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(color: Colors.black),
-                  items: juzgadoQueCondeno.map((juzgado) {
-                    return DropdownMenuItem<String>(
-                      value: juzgado['id'],
-                      child: Text(
-                        juzgado['nombre']!,
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownJuzgadoCondeno = false;
-                    _juzgadoQueCondeno = widget.doc['juzgado_que_condeno'];
-                  });
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel, size: 15),
-                    Text("Cancelar", style: TextStyle(fontSize: 11)),
-                  ],
-                ),
-              ),
-            ],
-          )
-        else
-          Container(),
-      ],
-    );
-  }
+
 
   Widget seleccionarDelito() {
     return Column(
@@ -720,18 +879,26 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       final String regional = data['regional'];
       final String centroReclusion = data['centro_reclusion'];
       final String juzgadoEjecucionPenas = data['juzgado_ejecucion_penas'];
-      final String juzgadoQueCondeno = data['juzgado_que_condeno'];
+      final String juzgado = data['juzgado_que_condeno'];
+      final String juzgadoQueCondeno = data['ciudad'];
       final String delito = data['delito'];
 
       setState(() {
         _regional = regional;
         _centroReclusion = centroReclusion;
         _juzgadoEjecucionPenas = juzgadoEjecucionPenas;
+        _juzgado = juzgado;
         _juzgadoQueCondeno = juzgadoQueCondeno;
         _delito = delito;
       });
-      print("*****Regional: $_regional y centro reclusión: $_centroReclusion, el Juzgado de ejecucion de penas es: "
-          "$_juzgadoEjecucionPenas y el juzgado que condeno fue: $_juzgadoQueCondeno y el delito es: $delito");
+      print("*****Regional: $_regional");
+      print("*****centro reclusión: $_centroReclusion");
+      print("*****Juzgado de ejecucion de penas es: $_juzgadoEjecucionPenas");
+      print("*****La ciudad donde pertenece el juzgado de conocimiento es: $juzgadoQueCondeno");
+      print("*****juzgado que condeno fue: $juzgado");
+      print("*****el delito es: $delito");
+
+
     } else {
       print('El documento no existe');
     }
@@ -1025,70 +1192,51 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ),
         onPressed: () {
           if (_formKey.currentState!.validate()) {
-            if (
-            _nombreController.text.isEmpty ||
-                _apellidoController.text.isEmpty ||
-                _numeroDocumentoController.text.isEmpty ||
-                _tipoDocumento == null ||
-                selectedCentro == null ||
-                selectedRegional == null ||
-                selectedDelito == null ||
-                _radicadoController.text.isEmpty ||
-                _tiempoCondenaController.text.isEmpty ||
-                _fechaDeCapturaController.text.isEmpty ||
-                _tdController.text.isEmpty ||
-                _nuiController.text.isEmpty ||
-                _patioController.text.isEmpty ||
-                _nombreAcudienteController.text.isEmpty ||
-                _apellidosAcudienteController.text.isEmpty ||
-                _parentescoAcudienteController.text.isEmpty ||
-                _celularAcudienteController.text.isEmpty ||
-                _emailAcudienteController.text.isEmpty
-            ) {
+            int tiempoCondena = int.parse(_tiempoCondenaController.text);
+            // Oculta el teclado
+            SystemChannels.textInput.invokeMethod('TextInput.hide');
+            // Actualiza el documento en Firestore
+            widget.doc.reference.update({
+              'nombre_ppl': _nombreController.text,
+              'apellido_ppl': _apellidoController.text,
+              'numero_documento_ppl': _numeroDocumentoController.text,
+              'tipo_documento_ppl': _tipoDocumento,
+              'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
+              'regional': selectedRegional ?? widget.doc['regional'],
+              'ciudad': selectedCiudad ?? widget.doc['ciudad'],
+              'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'].toString(),
+              'delito': selectedDelito ?? widget.doc['delito'],
+              'radicado': _radicadoController.text,
+              'tiempo_condena': tiempoCondena,
+              'fecha_captura': _fechaDeCapturaController.text,
+              'td': _tdController.text,
+              'nui': _nuiController.text,
+              'patio': _patioController.text,
+              'nombre_acudiente': _nombreAcudienteController.text,
+              'apellido_acudiente': _apellidosAcudienteController.text,
+              'parentesco_representante': _parentescoAcudienteController.text,
+              'celular': _celularAcudienteController.text,
+              'email': _emailAcudienteController.text,
+            }).then((_) {
+              // Muestra un snackbar
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  backgroundColor: Colors.red,
-                  content: Text(
-                    'Hay información que aún no se ha llenado',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  content: Text('Datos guardados con éxito'),
                   duration: Duration(seconds: 2),
                 ),
               );
-            } else {
-              int tiempoCondena = int.parse(_tiempoCondenaController.text);
-              // Oculta el teclado
-              SystemChannels.textInput.invokeMethod('TextInput.hide');
-              // Actualiza el documento en Firestore
-              widget.doc.reference.update({
-                'nombre_ppl': _nombreController.text,
-                'apellido_ppl': _apellidoController.text,
-                'numero_documento_ppl': _numeroDocumentoController.text,
-                'tipo_documento_ppl': _tipoDocumento,
-                'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
-                'regional': selectedRegional ?? widget.doc['regional'],
-                'delito': selectedDelito ?? widget.doc['delito'],
-                'radicado': _radicadoController.text,
-                'tiempo_condena': tiempoCondena,
-                'fecha_captura': _fechaDeCapturaController.text,
-                'td': _tdController.text,
-                'nui': _nuiController.text,
-                'patio': _patioController.text,
-                'nombre_acudiente': _nombreAcudienteController.text,
-                'apellido_acudiente': _apellidosAcudienteController.text,
-                'parentesco_representante': _parentescoAcudienteController.text,
-                'celular': _celularAcudienteController.text,
-                'email': _emailAcudienteController.text,
-              }).then((_) {
-                // Muestra un snackbar
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Datos guardados con éxito'),
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-              });
-            }
+            });
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                backgroundColor: Colors.red,
+                content: Text(
+                  'Hay información que aún no se ha llenado',
+                  style: TextStyle(color: Colors.white),
+                ),
+                duration: Duration(seconds: 2),
+              ),
+            );
           }
         },
         child: const Text('Guardar Cambios'),

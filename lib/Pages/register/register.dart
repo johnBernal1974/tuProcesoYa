@@ -151,6 +151,7 @@ class _RegistroPageState extends State<RegistroPage> {
           regional: selectedRegional ?? regionalController.text.trim(),
           centroReclusion: selectedCentro ?? centroReclusionController.text.trim(),
           juzgadoEjecucionPenas: "",
+          ciudad: "",
           juzgadoQueCondeno: "",
           delito: "",
           radicado: "",
