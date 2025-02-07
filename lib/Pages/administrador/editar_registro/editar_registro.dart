@@ -393,7 +393,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-
+  ///para verificar si se hizo el merge al master
 
   Widget seleccionarCentroReclusion() {
     return Column(
