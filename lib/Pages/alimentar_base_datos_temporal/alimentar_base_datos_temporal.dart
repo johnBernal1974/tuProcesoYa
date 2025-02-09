@@ -1,138 +1,78 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class AddCentroReclusionPage extends StatefulWidget {
+class AddDelitoPage extends StatefulWidget {
   @override
-  _AddCentroReclusionPageState createState() => _AddCentroReclusionPageState();
+  _AddDelitoPageState createState() => _AddDelitoPageState();
 }
 
-class _AddCentroReclusionPageState extends State<AddCentroReclusionPage> {
+class _AddDelitoPageState extends State<AddDelitoPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nombreController = TextEditingController();
-  final _direccionController = TextEditingController();
-  final _telefonoController = TextEditingController();
-  final _directorController = TextEditingController();
-  final _subdirectorController = TextEditingController();
-  final _correoPrincipalController = TextEditingController();
-  final _correoDireccionController = TextEditingController();
-  final _correoJuridicaController = TextEditingController();
-  final _correoSanidadController = TextEditingController();
-  String? _selectedRegional;
+  final TextEditingController _delitoController = TextEditingController();
 
-  final List<String> _regionalList = [
-    'Regional Central',
-    'Regional Noroeste',
-    'Regional Norte',
-    'Regional Oriente',
-    'Regional Occidental',
-    'Regional Viejo Caldas'
-  ];
+  /// Método para agregar un delito a la colección "delitos"
+  Future<void> _addDelito() async {
+    if (_formKey.currentState!.validate()) {
+      String delitoText = _delitoController.text;
 
-  Future<void> _addCentroReclusion() async {
-    if (_formKey.currentState!.validate() && _selectedRegional != null) {
-      // Datos capturados
-      String nombreCentro = _nombreController.text;
-      String direccion = _direccionController.text;
-      String telefono = _telefonoController.text;
-      String director = _directorController.text;
-      String subdirector = _subdirectorController.text;
-      String correoPrincipal = _correoPrincipalController.text;
-      String correoDireccion = _correoDireccionController.text;
-      String correoJuridica = _correoJuridicaController.text;
-      String correoSanidad = _correoSanidadController.text;
-
-      // Guardar datos en Firestore bajo la regional seleccionada
-      await FirebaseFirestore.instance
-          .collection('regional')
-          .doc(_selectedRegional) // Documento de la regional
-          .collection('centros_reclusion') // Subcolección de centros de reclusión
-          .doc(nombreCentro) // Documento del centro de reclusión
-          .set({
-        'nombre': nombreCentro,
-        'direccion': direccion,
-        'telefono': telefono,
-        'director': director,
-        'subdirector': subdirector,
-        'correo_principal': correoPrincipal,
-        'correo_direccion': correoDireccion,
-        'correo_juridica': correoJuridica,
-        'correo_sanidad': correoSanidad,
-        'created_at': FieldValue.serverTimestamp(),
+      // Se agrega un documento en la colección "delitos"
+      // Usamos .add() para que Firestore genere automáticamente el ID del documento.
+      await FirebaseFirestore.instance.collection('delitos').add({
+        'delito': delitoText, // Nodo llamado "delito" con el valor ingresado
+        'created_at': FieldValue.serverTimestamp(), // Fecha de creación (opcional)
       });
 
-      // Confirmación y limpieza del formulario
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Centro de reclusión agregado')));
-      _nombreController.clear();
-      _direccionController.clear();
-      _telefonoController.clear();
-      _directorController.clear();
-      _subdirectorController.clear();
-      _correoPrincipalController.clear();
-      _correoDireccionController.clear();
-      _correoJuridicaController.clear();
-      _correoSanidadController.clear();
-      setState(() {
-        _selectedRegional = null; // Resetear selección
-      });
+      // Mostrar confirmación
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Delito agregado correctamente')),
+      );
+
+      // Limpiar el campo de texto
+      _delitoController.clear();
     }
+  }
+
+  @override
+  void dispose() {
+    _delitoController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Agregar Centro de Reclusión"),
+        title: Text("Agregar Delito"),
       ),
       body: Container(
-        color: Colors.white, // Fondo blanco
+        color: Colors.white,
         padding: const EdgeInsets.all(16.0),
         child: Center(
           child: Container(
-            width: 600, // Limitar el ancho del formulario a la mitad de la pantalla
+            width: 600, // Puedes ajustar este ancho según tu diseño
             child: Form(
               key: _formKey,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Dropdown para seleccionar la regional
-                  DropdownButtonFormField<String>(
-                    value: _selectedRegional,
+                  // Campo de texto para ingresar el delito
+                  TextFormField(
+                    controller: _delitoController,
                     decoration: const InputDecoration(
-                      labelText: 'Seleccionar Regional',
+                      labelText: 'Delito',
                       border: OutlineInputBorder(),
                     ),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedRegional = newValue;
-                      });
-                    },
                     validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor selecciona una regional';
+                      if (value == null || value.trim().isEmpty) {
+                        return 'Por favor ingresa un delito';
                       }
                       return null;
                     },
-                    items: _regionalList.map((regional) {
-                      return DropdownMenuItem<String>(
-                        value: regional,
-                        child: Text(regional),
-                      );
-                    }).toList(),
                   ),
-                  SizedBox(height: 16),
-                  // Campos de texto con bordes grises y borde enfocado en primary
-                  _buildTextFormField(_nombreController, 'Nombre del Centro'),
-                  _buildTextFormField(_direccionController, 'Dirección'),
-                  _buildTextFormField(_telefonoController, 'Teléfono'),
-                  _buildTextFormField(_directorController, 'Director'),
-                  _buildTextFormField(_subdirectorController, 'Subdirector'),
-                  _buildTextFormField(_correoPrincipalController, 'Correo Principal'),
-                  _buildTextFormField(_correoDireccionController, 'Correo Dirección'),
-                  _buildTextFormField(_correoJuridicaController, 'Correo Jurídica'),
-                  _buildTextFormField(_correoSanidadController, 'Correo Sanidad'),
                   const SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: _addCentroReclusion,
-                    child: const Text('Agregar Centro'),
+                    onPressed: _addDelito,
+                    child: const Text('Agregar Delito'),
                   ),
                 ],
               ),
@@ -140,27 +80,6 @@ class _AddCentroReclusionPageState extends State<AddCentroReclusionPage> {
           ),
         ),
       ),
-    );
-  }
-
-  // Método para crear un TextFormField reutilizable con bordes grises
-  TextFormField _buildTextFormField(TextEditingController controller, String labelText) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: labelText,
-        border: OutlineInputBorder(),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Theme.of(context).primaryColor), // Borde enfocado en color primary
-        ),
-        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16), // Añadir espacio interno
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingresa $labelText';
-        }
-        return null;
-      },
     );
   }
 }

@@ -237,25 +237,44 @@ class _LoginPageState extends State<LoginPage> {
       final success = await _authProvider.login(email, password, context);
       if (success) {
         final userId = FirebaseAuth.instance.currentUser?.uid;
-        final adminsCollection = FirebaseFirestore.instance.collection('admin');
-        final adminDoc = await adminsCollection.doc(userId).get();
+        // Verifica si el usuario es administrador
+        final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
         if (adminDoc.exists) {
-          // El usuario es un administrador
-          if(context.mounted){
+          // El usuario es administrador
+          if (context.mounted) {
             Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
           }
         } else {
-          // El usuario no es un administrador
-          print("El usuario no es un administrador********");
-          if(context.mounted){
-            Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+          // El usuario no es administrador, se consulta el documento del usuario
+          final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+          if (userDoc.exists) {
+            final data = userDoc.data() as Map<String, dynamic>;
+            final status = data['status'] ?? '';
+            if (status == 'registrado') {
+              // Si el status es "registrado", ir a EstamosValidandoPage
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (route) => false);
+              }
+            } else {
+              // De lo contrario, ir a HomePage
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+              }
+            }
+          } else {
+            // Si no se encuentra el documento del usuario, por defecto ir a HomePage
+            if (context.mounted) {
+              Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+            }
           }
         }
       }
+
       setState(() {
         _isLoading = false;
       });
     }
   }
+
 }

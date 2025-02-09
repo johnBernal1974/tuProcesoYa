@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tuprocesoya/Pages/estamos_validando/estamos_validando.dart';
 import 'package:tuprocesoya/models/ppl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
@@ -151,8 +152,10 @@ class _RegistroPageState extends State<RegistroPage> {
           regional: selectedRegional ?? regionalController.text.trim(),
           centroReclusion: selectedCentro ?? centroReclusionController.text.trim(),
           juzgadoEjecucionPenas: "",
+          juzgadoEjecucionPenasEmail: "",
           ciudad: "",
           juzgadoQueCondeno: "",
+          juzgadoQueCondenoEmail: "",
           delito: "",
           radicado: "",
           tiempoCondena: 0,
@@ -162,6 +165,7 @@ class _RegistroPageState extends State<RegistroPage> {
           laborDescuento: "",
           fechaCaptura: null,
           fechaInicioDescuento: null,
+          status: "registrado"
         );
 
         print('Guardando usuario en Firestore...');
@@ -173,7 +177,7 @@ class _RegistroPageState extends State<RegistroPage> {
 
         _formKey.currentState!.reset();
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
         );
       }
     } catch (e) {

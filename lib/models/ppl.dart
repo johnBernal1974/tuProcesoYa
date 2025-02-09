@@ -20,8 +20,10 @@ class Ppl {
   final String regional;
   final String centroReclusion;
   final String juzgadoEjecucionPenas;
+  final String juzgadoEjecucionPenasEmail;
   final String ciudad;
   final String juzgadoQueCondeno;
+  final String juzgadoQueCondenoEmail;
   final String delito;
   final String radicado;
   final int tiempoCondena;
@@ -31,6 +33,7 @@ class Ppl {
   final DateTime? fechaCaptura;
   final DateTime? fechaInicioDescuento;
   final String laborDescuento;
+  final String status;
 
   // Constructor
   Ppl({
@@ -47,8 +50,10 @@ class Ppl {
     required this.regional,
     required this.centroReclusion,
     required this.juzgadoEjecucionPenas,
+    required this.juzgadoEjecucionPenasEmail,
     required this.ciudad,
     required this.juzgadoQueCondeno,
+    required this.juzgadoQueCondenoEmail,
     required this.delito,
     required this.radicado,
     required this.tiempoCondena,
@@ -58,6 +63,7 @@ class Ppl {
     required this.fechaCaptura,
     required this.fechaInicioDescuento,
     required this.laborDescuento,
+    required this.status,
   });
 
   // Factory para crear una instancia de Ppl desde JSON
@@ -75,8 +81,10 @@ class Ppl {
     regional: json["regional"] ?? '',
     centroReclusion: json["centro_reclusion"] ?? '',
     juzgadoEjecucionPenas: json["juzgado_ejecucion_penas"] ?? '',
+    juzgadoEjecucionPenasEmail: json["juzgado_ejecucion_penas_email"] ?? '',
     ciudad: json["ciudad"] ?? '',
     juzgadoQueCondeno: json["juzgado_que_condeno"] ?? '',
+    juzgadoQueCondenoEmail: json["juzgado_que_condeno_email"] ?? '',
     delito: json["delito"] ?? '',
     radicado: json["radicado"] ?? '',
     tiempoCondena: json["tiempo_condena"] ?? 0,
@@ -86,6 +94,7 @@ class Ppl {
     fechaCaptura: json["fecha_captura"] != null ? DateTime.parse(json["fecha_captura"]) : null,
     fechaInicioDescuento: json["fecha_inicio_descuento"] != null ? DateTime.parse(json["fecha_inicio_descuento"]) : null,
     laborDescuento: json["labor_descuento"] ?? '',
+    status: json["status"] ?? '',
   );
 
   // Método para convertir una instancia de Ppl a JSON
@@ -103,8 +112,10 @@ class Ppl {
     "regional": regional,
     "centro_reclusion": centroReclusion,
     "juzgado_ejecucion_penas": juzgadoEjecucionPenas,
+    "juzgado_ejecucion_penas_email": juzgadoEjecucionPenasEmail,
     "ciudad": ciudad,
     "juzgado_que_condeno": juzgadoQueCondeno,
+    "juzgado_que_condeno_email": juzgadoQueCondenoEmail,
     "delito": delito,
     "radicado": radicado,
     "tiempo_condena": tiempoCondena,
@@ -114,5 +125,6 @@ class Ppl {
     "fecha_captura": fechaCaptura?.toIso8601String(),
     "fecha_inicio_descuento": fechaInicioDescuento?.toIso8601String(),
     "labor_descuento": laborDescuento,
+    "status": status,
   };
 }

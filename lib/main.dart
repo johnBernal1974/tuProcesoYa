@@ -10,6 +10,7 @@ import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
 import 'Pages/derecho_de_peticion/derecho_de_peticion.dart';
+import 'Pages/estamos_validando/estamos_validando.dart';
 import 'Pages/home/home.dart';
 import 'Pages/login/login.dart';
 import 'Pages/register/register.dart';
@@ -60,7 +61,7 @@ class MyApp extends StatelessWidget {
         'login': (context) => const LoginPage(),
         'register': (context) => const RegistroPage(),
         'splash': (context) => SplashPage(),
-        'cargar_info': (context) => AddCentroReclusionPage(),
+        'cargar_info': (context) => AddDelitoPage(),
         'mis_datos': (context) => const MisDatosPage(),
         'nosotros': (context) => const NosotrosPage(),
         'solicitudes_page': (context) => const SolicitudesdeServicioPage(),
@@ -70,6 +71,7 @@ class MyApp extends StatelessWidget {
           final doc = ModalRoute.of(context)!.settings.arguments as DocumentSnapshot;
           return EditarRegistroPage(doc: doc);
         },
+        'estamos_validando': (context) => EstamosValidandoPage(),
 
       },
       localizationsDelegates: const [

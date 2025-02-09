@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../administrador/home_admin/home_admin.dart';
+import '../estamos_validando/estamos_validando.dart';
 import '../home/home.dart';
 import '../login/login.dart';
 
@@ -35,35 +36,63 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
-      // Usuario autenticado, verifica si es administrador
       final userId = user.uid;
-      final adminsCollection = FirebaseFirestore.instance.collection('admin');
-      final adminDoc = await adminsCollection.doc(userId).get();
+      // Verifica si el usuario es administrador consultando la colección "admin"
+      final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
       if (adminDoc.exists) {
-        if(context.mounted){
+        // Usuario es administrador, redirige a la página de administrador
+        if (context.mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
           );
+        }
+      } else {
+        // Usuario no es administrador, consultamos su documento en la colección "users"
+        final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+
+        if (userDoc.exists) {
+          final data = userDoc.data() as Map<String, dynamic>;
+          final status = data['status'] ?? '';
+
+          // Si el status es "registrado", redirige a EstamosValidandoPage, de lo contrario a HomePage
+          if (status == 'registrado') {
+            if (context.mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
+              );
+            }
+          } else {
+            if (context.mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomePage()),
+              );
+            }
+          }
         } else {
-          if(context.mounted){
+          // Si no se encuentra el documento del usuario, redirige a HomePage (o maneja el error de otra forma)
+          if (context.mounted) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => HomePage()),
+              MaterialPageRoute(builder: (context) => LoginPage()),
             );
           }
-         }
         }
-
+      }
     } else {
-      // Usuario no autenticado, navega a LoginPage
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => LoginPage()),
-      );
+      // Usuario no autenticado, redirige a LoginPage
+      if (context.mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginPage()),
+        );
+      }
     }
   }
+
 
   @override
   void dispose() {

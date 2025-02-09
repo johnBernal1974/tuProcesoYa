@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:tuprocesoya/models/ppl.dart';
 import 'package:tuprocesoya/providers/auth_provider.dart';
 import '../../commons/main_layaout.dart';
@@ -194,13 +195,20 @@ class _MisDatosPageState extends State<MisDatosPage> {
               Row(
                 children: [
                   const Text('Fecha Captura:  ', style: TextStyle(fontSize: 12, color: negroLetras)),
-                  Text(_ppl!.fechaCaptura.toString(), style: const TextStyle(fontSize: 12, fontWeight:FontWeight.w600)),
+                  Text(
+                    DateFormat('yyyy-MM-dd').format(_ppl!.fechaCaptura!),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  )
+                  ,
                 ],
               ),
               Row(
                 children: [
                   const Text('Fecha Inicio Descuento:  ', style: TextStyle(fontSize: 12, color: negroLetras)),
-                  Text(_ppl!.fechaInicioDescuento.toString(), style: const TextStyle(fontSize: 12, fontWeight:FontWeight.w600)),
+                  Text(
+                    DateFormat('yyyy-MM-dd').format(_ppl!.fechaInicioDescuento!),
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                  )
                 ],
               ),
               Row(

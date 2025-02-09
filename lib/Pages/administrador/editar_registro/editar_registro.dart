@@ -29,6 +29,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _tdController = TextEditingController();
   final _nuiController = TextEditingController();
   final _patioController = TextEditingController();
+  final _laborDescuentoController = TextEditingController();
+  final _fechaInicioDescuentoController = TextEditingController();
 
   /// controllers para el acudiente
   final _nombreAcudienteController = TextEditingController();
@@ -45,6 +47,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   List<Map<String, dynamic>> juzgadoQueCondeno = [];
   List<Map<String, dynamic>> juzgadosConocimiento = [];
   List<Map<String, dynamic>> delito = [];
+  List<Map<String, String>> centrosReclusionTodos = [];
 
   /// variables para guardar opciones seleccionadas
   String? selectedRegional; // Regional seleccionada
@@ -56,20 +59,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   String _regional = "";
   String _centroReclusion = "";
-
-
   String _juzgadoEjecucionPenas= "";
   String _ciudad= "";
-
-
   String _juzgadoQueCondeno= "";
   String _juzgado= "";
-
-
   String _delito= "";
 
-  bool isLoading = true;
+  String? selectedJuzgadoEjecucionEmail;
+  String? selectedJuzgadoConocimientoEmail;
 
+  bool isLoading = true;
   /// variables para saber si se muestra los drops o no
   bool _mostrarDropdowns = false;
   bool _mostrarDropdownJuzgadoEjecucion = false;
@@ -89,6 +88,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   late String _tipoDocumento;
 
+
   /// opciones de documento de identidad
   final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte'];
 
@@ -104,9 +104,35 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         isLoading = false; // Cambia el estado después de que se verifiquen los valores
       });
     });
-    _fetchJuzgado_condeno();
     _obtenerDatos();
-    _fetchDelitos();
+
+  }
+
+  Future<void> _fetchTodosCentrosReclusion() async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collectionGroup('centros_reclusion')
+          .get();
+
+      List<Map<String, String>> fetchedTodosCentros = querySnapshot.docs.map((doc) {
+        final regionalId = doc.reference.parent.parent?.id ?? "";
+        return {
+          'id': doc.id,
+          // Supongamos que cada documento tiene un campo 'nombre'
+          'nombre': doc.get('nombre').toString(),
+          'regional': regionalId, // Aquí guardamos el ID de la regional
+        };
+      }).toList();
+
+      setState(() {
+        centrosReclusionTodos = fetchedTodosCentros;
+      });
+
+      print("Centros de reclusión globales: $centrosReclusionTodos");
+      print("Número de centros: ${fetchedTodosCentros.length}");
+    } catch (e) {
+      print("Error al obtener centros de reclusión: $e");
+    }
   }
 
   void _initCalculoCondena() async {
@@ -134,6 +160,19 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       _tdController.text = widget.doc.get('td') ?? "";
       _nuiController.text = widget.doc.get('nui') ?? "";
       _patioController.text = widget.doc.get('patio') ?? "";
+      String laborDescuento = widget.doc.get('labor_descuento') as String;
+      if(laborDescuento.trim().isEmpty) {
+        _laborDescuentoController.text = "Ningúna informada";
+      } else {
+        _laborDescuentoController.text = laborDescuento;
+      }
+
+      String fechaInicioDescuento = widget.doc.get('fecha_inicio_descuento') ?? "";
+      if(fechaInicioDescuento.trim().isEmpty) {
+        _fechaInicioDescuentoController.text = widget.doc.get('fecha_captura') ?? "";
+      } else {
+        _fechaInicioDescuentoController.text = fechaInicioDescuento;
+      }
       _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
       _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
       _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
@@ -153,6 +192,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _tdController.dispose();
     _nuiController.dispose();
     _patioController.dispose();
+    _laborDescuentoController.dispose();
+    _fechaInicioDescuentoController.dispose();
     super.dispose();
   }
 
@@ -162,66 +203,80 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       pageTitle: 'Datos generales',
       content: Form(
         key: _formKey,
-        child: ListView(
-          children: [
-            const Text('Información del PPL', style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 18
-            ),),
-            //Puedes mostrar el id en pantalla si lo deseas
-            Text('ID: ${widget.doc.id}', style: TextStyle(fontSize: 11)),
-            const SizedBox(height: 20),
-            datosEjecucionCondena(),
-            const SizedBox(height: 20),
-            nombrePpl(),
-            const SizedBox(height: 15),
-            apellidoPpl(),
-            const SizedBox(height: 15),
-            tipoDocumentoPpl(),
-            const SizedBox(height: 15),
-            numeroDocumentoPpl(),
-            const SizedBox(height: 15),
-            seleccionarCentroReclusion(),
-            const SizedBox(height: 15),
-            seleccionarJuzgadoEjecucionPenas(),
-            const SizedBox(height: 15),
-            seleccionarJuzgadoQueCondeno(),
-            const SizedBox(height: 15),
-            seleccionarDelito(),
-            const SizedBox(height: 15),
-            fechaCapturaPpl(),
-            const SizedBox(height: 15),
-            radicadoPpl(),
-            const SizedBox(height: 15),
-            condenaPpl(),
-            const SizedBox(height: 15),
-            tdPpl(),
-            const SizedBox(height: 15),
-            nuiPpl(),
-            const SizedBox(height: 15),
-            patioPpl(),
-            const SizedBox(height: 30),
-            const Text('Información del Acudiente', style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: 18)),
-            const SizedBox(height: 15),
-            nombreAcudiente(),
-            const SizedBox(height: 15),
-            apellidosAcudiente(),
-            const SizedBox(height: 15),
-            parentescoAcudiente(),
-            const SizedBox(height: 15),
-            celularAcudiente(),
-            const SizedBox(height: 15),
-            emailAcudiente(),
-            const SizedBox(height: 50),
-            botonGuardar(),
-            const SizedBox(height: 150),
-          ],
+        child: Center(
+          child: Container(
+            // Si el ancho de la pantalla es mayor o igual a 800, usa 800, de lo contrario ocupa todo el ancho disponible
+            width: MediaQuery.of(context).size.width >= 800 ? 800 : double.infinity,
+            child: ListView(
+              children: [
+                const Text(
+                  'Información del PPL',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                ),
+                // Puedes mostrar el id en pantalla si lo deseas
+                Text('ID: ${widget.doc.id}', style: TextStyle(fontSize: 11)),
+                const SizedBox(height: 20),
+                datosEjecucionCondena(),
+                const SizedBox(height: 20),
+                nombrePpl(),
+                const SizedBox(height: 15),
+                apellidoPpl(),
+                const SizedBox(height: 15),
+                tipoDocumentoPpl(),
+                const SizedBox(height: 15),
+                numeroDocumentoPpl(),
+                const SizedBox(height: 15),
+                seleccionarCentroReclusion(),
+                const SizedBox(height: 15),
+                seleccionarJuzgadoEjecucionPenas(),
+                const SizedBox(height: 15),
+                seleccionarJuzgadoQueCondeno(),
+                const SizedBox(height: 15),
+                seleccionarDelito(),
+                const SizedBox(height: 15),
+                fechaCapturaPpl(),
+                const SizedBox(height: 15),
+                radicadoPpl(),
+                const SizedBox(height: 15),
+                condenaPpl(),
+                const SizedBox(height: 15),
+                tdPpl(),
+                const SizedBox(height: 15),
+                nuiPpl(),
+                const SizedBox(height: 15),
+                patioPpl(),
+                const SizedBox(height: 15),
+                laborDescuentoPpl(),
+                const SizedBox(height: 15),
+                fechaInicioDescuentoPpl(),
+                const SizedBox(height: 30),
+                const Text(
+                  'Información del Acudiente',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                ),
+                const SizedBox(height: 15),
+                nombreAcudiente(),
+                const SizedBox(height: 15),
+                apellidosAcudiente(),
+                const SizedBox(height: 15),
+                parentescoAcudiente(),
+                const SizedBox(height: 15),
+                celularAcudiente(),
+                const SizedBox(height: 15),
+                emailAcudiente(),
+                const SizedBox(height: 50),
+                botonGuardar(),
+                const SizedBox(height: 150),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+
+
+  //** codigo completo para seleccionar centro de reclusion
 
   /// Método para obtener las regionales desde Firestore
   Future<void> _fetchRegionales() async {
@@ -263,61 +318,19 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       });
 
       print('Regiones cargadas correctamente');
+      print('Regiones: $regionales');
     } catch (e) {
       print('Error al cargar las regionales: $e');
     }
   }
-
-  Future<void> _fetchJuzgado_condeno() async {
-    try {
-      // Obtener la colección 'juzgado_condeno'
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('juzgado_condeno')
-          .get();
-
-      // Crear una lista para almacenar las ciudades y sus juzgados
-      List<Map<String, dynamic>> fetchedJuzgadoCondeno = [];
-
-      // Iterar sobre los documentos de la colección 'juzgado_condeno'
-      for (var doc in querySnapshot.docs) {
-        // Obtener el nombre de la ciudad desde el campo 'name'
-        String JuzgadoCondenoName = doc['name'] ?? 'Nombre no disponible'; // Asegurarse de que no sea nulo
-
-        // Acceder a la subcolección 'centros_reclusion' para obtener los centros
-        QuerySnapshot juzgadosSnapshot = await doc.reference
-            .collection('juzgados')
-            .get();
-
-        // Crear una lista con los centros de reclusión
-        List<String> juzgados = juzgadosSnapshot.docs
-            .map((centerDoc) => centerDoc.id)  // Usar el id del centro como nombre o identificador
-            .toList();
-
-        // Agregar los datos de la regional y sus centros a la lista
-        fetchedJuzgadoCondeno.add({
-          'id': doc.id,  // El id del documento de la regional
-          'nombre': JuzgadoCondenoName,  // El nombre de la regional
-          'juzgados': juzgados,  // Lista de centros de reclusión
-        });
-      }
-
-      // Actualizar el estado con las regionales y centros de reclusión
-      setState(() {
-        juzgadoQueCondeno = fetchedJuzgadoCondeno;
-      });
-
-      print('Ciudades cargadas correctamente');
-    } catch (e) {
-      print('Error al cargar las ciudades: $e');
-    }
-  }
-
   /// Método para obtener los centros de reclusión según la regional seleccionada
   Future<void> _fetchCentrosReclusion(String regionalId) async {
     try {
+      print("Cargando centros de la regional: $regionalId"); // 📌 Agregar esta línea
+
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collection('regional')
-          .doc(regionalId)
+          .doc(regionalId)  // 🔥 Solo carga los centros de esta regional
           .collection('centros_reclusion')
           .get();
 
@@ -331,13 +344,397 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       setState(() {
         centrosReclusion = fetchedCentros;
       });
-      print("Centro reclusion*********************$centrosReclusion");
 
-      // if (centrosReclusion.isNotEmpty) {
-      //   selectedCentro = centrosReclusion.first['id'];  // Seleccionamos el primer centro por defecto
-      // }
+      print("Centros de reclusión cargados para $regionalId: $centrosReclusion"); // 📌 Imprimir resultado
+
     } catch (e) {
       print("Error al obtener los centros de reclusión: $e");
+    }
+  }
+
+  Widget seleccionarCentroReclusion() {
+    // Si ya existe información guardada en el documento y no estamos en modo edición,
+    // se muestra el contenedor con la info.
+    if (!_mostrarDropdowns &&
+        widget.doc['centro_reclusion'] != null &&
+        widget.doc['centro_reclusion'].toString().trim().isNotEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(4),
+          color: Colors.white,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _mostrarDropdowns = true;
+                  // Opcional: puedes limpiar selectedCentro si deseas forzar una nueva selección.
+                  selectedCentro = null;
+                });
+                _fetchTodosCentrosReclusion();
+              },
+              child: const Row(
+                children: [
+                  Text("Regional", style: TextStyle(fontSize: 11)),
+                  Icon(Icons.edit, size: 15),
+                ],
+              ),
+            ),
+            Text(
+              widget.doc['regional'],
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+            ),
+            const SizedBox(height: 10),
+            const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
+            Text(
+              widget.doc['centro_reclusion'],
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+            ),
+
+          ],
+        ),
+      );
+    } else {
+      // Si la lista de centros está vacía, disparamos la carga.
+      if (centrosReclusionTodos.isEmpty) {
+        Future.microtask(() => _fetchTodosCentrosReclusion());
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Buscar centro de reclusión",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          Autocomplete<Map<String, String>>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return const Iterable<Map<String, String>>.empty();
+              }
+              return centrosReclusionTodos.where((Map<String, String> option) =>
+                  option['nombre']!
+                      .toLowerCase()
+                      .contains(textEditingValue.text.toLowerCase()));
+            },
+            displayStringForOption: (Map<String, String> option) =>
+            option['nombre']!,
+            fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+              return TextField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: const InputDecoration(
+                  hintText: "Busca ingresando la ciudad",
+                  labelText: "Centro de reclusión",
+                  border: OutlineInputBorder(),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                ),
+              );
+            },
+            optionsViewBuilder: (context, onSelected, options) {
+              if (options.isEmpty) {
+                return Material(
+                  elevation: 4.0,
+                  child: Container(
+                    padding: const EdgeInsets.all(8.0),
+                    child: const Text("No se encontraron centros"),
+                  ),
+                );
+              }
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  elevation: 4.0,
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    shrinkWrap: true,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final Map<String, String> option = options.elementAt(index);
+                      return ListTile(
+                        title: Text(option['nombre']!),
+                        onTap: () {
+                          onSelected(option);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+            onSelected: (Map<String, String> selection) {
+              setState(() {
+                selectedCentro = selection['id'];
+                // Actualizamos _centroReclusion para que muestre el nombre del centro seleccionado.
+                _centroReclusion = selection['nombre'] ?? "";
+                // Guardamos también el ID de la regional asociada
+                selectedRegional = selection['regional'];
+              });
+              print("Valor a actualizar en ***** 'regional': ${selectedRegional ?? widget.doc['regional']}");
+            },
+
+          ),
+          const SizedBox(height: 10),
+          if (selectedCentro != null)
+            Text(
+              "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
+                    (centro) => centro['id'] == selectedCentro,
+                orElse: () => <String, String>{},
+              )['nombre']!}",
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+            ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.center,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _mostrarDropdowns = false;
+                  // Restaura el valor original del documento, si es que existe.
+                  _centroReclusion = widget.doc['centro_reclusion'] ?? "";
+                  selectedCentro = null;
+                });
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cancel, size: 15),
+                  Text("Cancelar", style: TextStyle(fontSize: 11)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+  }
+
+
+
+
+  //** final codigo para seleccionar centro de reclusion
+
+
+  //** codigo completo para seleccionar juzgados de ejecucion de penas
+
+  /// Método para obtener los juzgados de ejecucion
+  Future<void> _fetchJuzgadosEjecucion() async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('ejecucion_penas').get();
+
+      List<Map<String, String>> fetchedEjecucionPenas = querySnapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'juzgadoEP': doc.get('juzgadoEP').toString(),
+          'email': doc.get('email').toString(),
+        };
+
+      }).toList();
+
+      setState(() {
+        juzgadosEjecucionPenas = fetchedEjecucionPenas;
+      });
+      print("Juzgados de ejecucion penas*********************$juzgadosEjecucionPenas");
+
+
+      // if (delitos.isNotEmpty) {
+      //   selectedDelito = delitos.first['delito'];  // Seleccionamos el primer delito por defecto
+      // }
+    } catch (e) {
+      print("Error al obtener los juzgados de ejecucion: $e");
+    }
+  }
+
+  Widget seleccionarJuzgadoEjecucionPenas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!_mostrarDropdownJuzgadoEjecucion)
+          if (widget.doc['juzgado_ejecucion_penas'] != null && widget.doc['juzgado_ejecucion_penas'].isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(4),
+                color: Colors.white,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _mostrarDropdownJuzgadoEjecucion = true;
+                        selectedJuzgadoEjecucionPenas = null;
+                      });
+                      _fetchJuzgadosEjecucion(); // 🔥 Llamar al método aquí también
+                    },
+                    child: const Row(
+                      children: [
+                        Text("Juzgado de Ejecución de Penas", style: TextStyle(fontSize: 11)),
+                        Icon(Icons.edit, size: 15),
+                      ],
+                    ),
+                  ),
+                  Text(widget.doc['juzgado_ejecucion_penas']!, style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                  const SizedBox(height: 10),
+                  Text(
+                    "correo: ${widget.doc['juzgado_ejecucion_penas_email']!}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12,
+                      height: 1,
+                    ),
+                  )
+
+                ],
+              ),
+            )
+          else
+            Align(
+              alignment: Alignment.centerLeft, // Botón alineado a la izquierda
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                  backgroundColor: Colors.white, // Fondo blanco
+                  foregroundColor: Colors.black, // Letra en negro
+                ),
+                onPressed: () {
+                  setState(() {
+                    _mostrarDropdownJuzgadoEjecucion = true;
+                  });
+                  _fetchJuzgadosEjecucion(); // 🔥 Cargar los juzgados aquí también
+                },
+                child: const Text("Seleccionar Juzgado de Ejecución de Penas"),
+              ),
+
+            )
+        else
+          Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.white,
+                ),
+                child: DropdownButton<String>(
+                  value: selectedJuzgadoEjecucionPenas,
+                  hint: const Text('Selecciona un Juzgado de Ejecución de Penas'),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedJuzgadoEjecucionPenas = value;
+                      // Buscar el email correspondiente en la lista de juzgados
+                      final selected = juzgadosEjecucionPenas.firstWhere(
+                            (element) => element['juzgadoEP'] == value,
+                        orElse: () => <String, String>{},  // Especifica explícitamente el tipo
+                      );
+                      selectedJuzgadoEjecucionEmail = selected['email'];
+
+                      print(" Este es el correo de ejecucion de penas************ $selectedJuzgadoEjecucionEmail");
+                    });
+                  },
+                  isExpanded: true,
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: Colors.black),
+                  items: juzgadosEjecucionPenas.map((juzgado) {
+                    return DropdownMenuItem<String>(
+                      value: juzgado['juzgadoEP'],
+                      child: Text(
+                        juzgado['juzgadoEP']!,
+                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  }).toList(),
+                )
+              ),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _mostrarDropdownJuzgadoEjecucion = false;
+                    selectedJuzgadoEjecucionPenas = widget.doc['juzgado_ejecucion_penas'];
+                  });
+                },
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.cancel, size: 15),
+                    Text("Cancelar", style: TextStyle(fontSize: 11)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  //** final codigo para seleccionar juzgados de ejecucion de penas
+
+
+  //** codigo completo para seleccionar juzgados que condeno
+  Future<void> _fetchJuzgado_condeno() async {
+    try {
+      // Obtener la colección 'juzgado_condeno'
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('juzgado_condeno')
+          .get();
+
+      // Crear una lista para almacenar las "regionales" y sus "juzgados"
+      List<Map<String, dynamic>> fetchedJuzgadoCondeno = [];
+
+      // Iterar sobre los documentos de la colección 'juzgado_condeno'
+      for (var doc in querySnapshot.docs) {
+        // Imprimir la información completa del documento
+        print("Documento obtenido: ${doc.id} => ${doc.data()}");
+
+        // Obtener el nombre de la "regional" desde el campo 'name'
+        String juzgadoCondenoName = doc['name'] ?? 'Nombre no disponible';
+
+        // Acceder a la subcolección 'juzgados'
+        QuerySnapshot juzgadosSnapshot = await doc.reference
+            .collection('juzgados')
+            .get();
+
+        // Imprimir la cantidad de documentos en la subcolección
+        print("Subcolección 'juzgados' para ${doc.id} tiene ${juzgadosSnapshot.docs.length} documentos.");
+
+        // Crear una lista con los juzgados usando el campo 'nombre' de cada documento
+        List<String> juzgados = juzgadosSnapshot.docs.map<String>((centerDoc) {
+          print("  - Documento en 'juzgados': ${centerDoc.id} => ${centerDoc.data()}");
+          // Devuelve el campo 'nombre' convertido a String o, si es null, el id convertido a String
+          return (centerDoc['nombre'] ?? centerDoc.id).toString();
+        }).toList();
+
+
+        // Armar el mapa con la información de la "regional" y sus "juzgados"
+        Map<String, dynamic> regionalData = {
+          'id': doc.id,                 // ID del documento de la "regional"
+          'nombre': juzgadoCondenoName,   // Nombre obtenido
+          'juzgados': juzgados,           // Lista de nombres de los juzgados
+        };
+
+        // Imprimir la información final de esta "regional"
+        print("Datos cargados para ${doc.id}: $regionalData");
+
+        // Agregar la información a la lista final
+        fetchedJuzgadoCondeno.add(regionalData);
+      }
+
+      // Actualizar el estado con las regionales y sus juzgados
+      setState(() {
+        juzgadoQueCondeno = fetchedJuzgadoCondeno;
+      });
+
+      print('Ciudades (regionales) cargadas correctamente.');
+    } catch (e) {
+      print('Error al cargar las ciudades: $e');
     }
   }
 
@@ -354,6 +751,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         return {
           'id': doc.id,
           'nombre': doc.get('nombre').toString(),  // Castear a String
+          'correo': doc.get('correo').toString(),  // Castear a String
         };
       }).toList();
 
@@ -368,6 +766,193 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
+  Widget seleccionarJuzgadoQueCondeno() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Si ya hay información guardada, mostrarla con opción a editar
+        if (!_mostrarDropdownJuzgadoCondeno &&
+            _juzgadoQueCondeno != "" &&
+            _juzgado != "")
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdownJuzgadoCondeno = true;
+                      // Limpiar los valores para forzar la nueva selección
+                      _juzgadoQueCondeno = "";
+                      _juzgado = "";
+                    });
+                    _fetchJuzgado_condeno();
+                    // No es necesario llamar a  aquí;
+                    // se llamará cuando se seleccione la ciudad en el dropdown.
+                  },
+                  child: const Row(
+                    children: [
+                      Text("Ciudad juzgado de conocimiento", style: TextStyle(fontSize: 11)),
+                      Icon(Icons.edit, size: 15),
+                    ],
+                  ),
+                ),
+                Text(widget.doc['ciudad'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                const SizedBox(height: 5),
+                const Text("Juzgado de conocimiento", style: TextStyle(fontSize: 11)),
+                Text(widget.doc['juzgado_que_condeno'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+                const SizedBox(height: 10),
+                Text(
+                  "correo: ${widget.doc['juzgado_que_condeno_email']!}",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 12,
+                    height: 1,
+                  ),
+                ),
+                const SizedBox(height: 15),
+              ],
+            ),
+          )
+        // Si no hay información (o se pulsa editar) se muestra el botón de selección o los dropdowns
+        else if (!_mostrarDropdownJuzgadoCondeno)
+          Align(
+            alignment: Alignment.centerLeft,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                backgroundColor: Colors.white, // Fondo blanco
+                foregroundColor: Colors.black, // Letra en negro
+              ),
+              onPressed: () {
+                setState(() {
+                  _mostrarDropdownJuzgadoCondeno = true;
+                });
+                _fetchJuzgado_condeno();
+              },
+              child: const Text("Seleccionar Juzgado de Conocimiento"),
+            ),
+          )
+        // Modo edición: se muestran los dropdowns para seleccionar ciudad y luego el juzgado
+        else
+          Column(
+            children: [
+              // Dropdown para seleccionar la ciudad (documentos de la colección juzgado_condeno)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.white,
+                ),
+                child: DropdownButton<String>(
+                  value: selectedCiudad,
+                  hint: const Text('Selecciona una ciudad'),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedCiudad = value;
+                      // Limpiar la selección previa del juzgado
+                      selectedJuzgadoNombre = null;
+                    });
+                    // Cargar los juzgados de conocimiento correspondientes a la ciudad seleccionada
+                    _fetchJuzgadosConocimiento(value!);
+                  },
+                  isExpanded: true,
+                  dropdownColor: Colors.white,
+                  style: const TextStyle(color: Colors.black),
+                  items: juzgadoQueCondeno.map((ciudad) {
+                    return DropdownMenuItem<String>(
+                      value: ciudad['id'],
+                      child: Text(
+                        ciudad['nombre']!,
+                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Botón para cancelar y restaurar los valores originales
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _mostrarDropdownJuzgadoCondeno = false;
+                    _ciudad = widget.doc['ciudad'];
+                    _juzgado = widget.doc['juzgado_que_condeno'];
+                  });
+                },
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.cancel, size: 15),
+                    Text("Cancelar", style: TextStyle(fontSize: 11)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Dropdown para seleccionar el juzgado de conocimiento (solo si se ha seleccionado la ciudad)
+              if (selectedCiudad != null)
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(4),
+                    color: Colors.white,
+                  ),
+                  child: DropdownButton<String>(
+                    value: selectedJuzgadoNombre,
+                    hint: const Text('Selecciona un juzgado de conocimiento'),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedJuzgadoNombre = value;
+                      });
+                      setState(() {
+                        selectedJuzgadoNombre = value;
+                        // Buscar el email correspondiente en la lista de juzgados
+                        final selected = juzgadosConocimiento.firstWhere(
+                              (element) => element['nombre'] == value,
+                          orElse: () => <String, String>{},  // Especifica explícitamente el tipo
+                        );
+                        selectedJuzgadoConocimientoEmail = selected['correo'];
+
+                        print(" Este es el correo de juzgado de conocimeinto************ $selectedJuzgadoConocimientoEmail");
+                      });
+                    },
+                    isExpanded: true,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Colors.black),
+                    items: juzgadosConocimiento.map((juzgado) {
+                      return DropdownMenuItem<String>(
+                        value: juzgado['nombre'], // Usamos el nombre como valor
+                        child: Text(
+                          juzgado['nombre']!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
+  //** final codigo para seleccionar juzgados que condeno
+
+  //** codigo completo para seleccionar delito
   /// Método para obtener los delitos
   Future<void> _fetchDelitos() async {
     try {
@@ -393,32 +978,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  ///para verificar si se hizo el merge al master
-
-  Widget seleccionarCentroReclusion() {
+  Widget seleccionarDelito() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!isLoading)
-          if (_regional.isEmpty && _centroReclusion.isEmpty && !_mostrarDropdowns)
-            Align(
-              alignment: Alignment.centerLeft, // Alinea el botón a la izquierda
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                  backgroundColor: Colors.white, // Fondo blanco
-                  foregroundColor: Colors.black, // Letra en negro
-                ),
-                onPressed: () {
-                  setState(() {
-                    _mostrarDropdowns = true;
-                    _fetchRegionales(); // Cargar regionales al presionar el botón
-                  });
-                },
-                child: const Text("Seleccionar Centro de Reclusión"),
-              ),
-            )
-          else if (_regional.isNotEmpty && _centroReclusion.isNotEmpty && !_mostrarDropdowns)
+        // Si NO estamos en modo edición
+        if (!_mostrarDropdownDelito)
+        // Si ya existe un delito guardado en el documento
+          if (widget.doc['delito'] != null &&
+              widget.doc['delito'].toString().trim().isNotEmpty)
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -432,391 +1000,47 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   GestureDetector(
                     onTap: () {
                       setState(() {
-                        _mostrarDropdowns = true;
-                        _regional = "";
-                        _centroReclusion = "";
-                        _fetchRegionales();
+                        _mostrarDropdownDelito = true;
+                        selectedDelito = null;
                       });
+                      _fetchDelitos();
                     },
                     child: const Row(
                       children: [
-                        Text("Regional", style: TextStyle(fontSize: 11)),
+                        Text("Delito", style: TextStyle(fontSize: 11)),
                         Icon(Icons.edit, size: 15),
                       ],
                     ),
                   ),
-                  Text(_regional, style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-                  const SizedBox(height: 15),
-                  const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
-                  Text(_centroReclusion, style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-                  const SizedBox(height: 15),
+                  Text(
+                    widget.doc['delito'],
+                    style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+                  ),
                 ],
               ),
             )
           else
-            Column(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(4),
-                    color: Colors.white,
-                  ),
-                  child: DropdownButton<String>(
-                    value: selectedRegional,
-                    hint: const Text('Selecciona una regional'),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedRegional = value;
-                        selectedCentro = null;
-                      });
-                      _fetchCentrosReclusion(value!);
-                    },
-                    isExpanded: true,
-                    dropdownColor: Colors.white,
-                    style: const TextStyle(color: Colors.black),
-                    items: regionales.map((regional) {
-                      return DropdownMenuItem<String>(
-                        value: regional['id'],
-                        child: Text(
-                          regional['nombre']!,
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+          // Si no existe información, se muestra un botón para seleccionar
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  side: BorderSide(
+                      width: 1, color: Theme.of(context).primaryColor),
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
                 ),
-                const SizedBox(height: 10),
-
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _mostrarDropdowns = false;
-                      _regional = widget.doc['regional'] ?? "";
-                      _centroReclusion = widget.doc['centro_reclusion'] ?? "";
-                    });
-                  },
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.cancel, size: 15),
-                      Text("Cancelar", style: TextStyle(fontSize: 11)),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                if (selectedRegional != null)
-                  Container(
-                    alignment: Alignment.topLeft,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(4),
-                      color: Colors.white,
-                    ),
-                    child: DropdownButton<String>(
-                      value: selectedCentro,
-                      hint: const Text('Selecciona un centro de reclusión'),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedCentro = value;
-                        });
-                      },
-                      isExpanded: true,
-                      dropdownColor: Colors.white,
-                      style: const TextStyle(color: Colors.black),
-                      items: centrosReclusion.map((centro) {
-                        return DropdownMenuItem<String>(
-                          value: centro['id'],
-                          child: Text(
-                            centro['nombre']!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-              ],
-            ),
-      ],
-    );
-  }
-
-
-
-
-  Widget seleccionarJuzgadoQueCondeno(){
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_juzgadoQueCondeno != "" && _juzgado != "")
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey), // Borde gris
-              borderRadius: BorderRadius.circular(4), // Borde redondeado
-              color: Colors.white, // Fondo blanco
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _mostrarDropdownJuzgadoCondeno = true;
-                      _juzgadoQueCondeno = "";
-                      _juzgado = "";
-                    });
-                  },
-                  child: const Row(
-                    children: [
-                      Text("Ciudad juzgado de conocimiento", style: TextStyle(fontSize: 11)),
-                      Icon(Icons.edit, size: 15),
-                    ],
-                  ),
-                ),
-                Text(widget.doc['ciudad'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-                const SizedBox(height: 15),
-                const Text("Juzgado de conocimiento", style: TextStyle(fontSize: 11)),
-                Text(widget.doc['juzgado_que_condeno'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1),),
-                const SizedBox(height: 15),
-              ],
-            ),
-          )
-        else if (_mostrarDropdownJuzgadoCondeno)
-
-          Column(
-            children: [
-              // Primer DropdownButton para seleccionar la ciudad
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey), // Borde gris
-                  borderRadius: BorderRadius.circular(4), // Borde redondeado
-                  color: Colors.white, // Fondo blanco
-                ),
-                child: DropdownButton<String>(
-                  value: selectedCiudad,
-                  hint: const Text('Selecciona una ciudad'),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCiudad = value;
-                      selectedJuzgadoNombre = null;  // Limpiar la selección de juzgado de conocimiento al cambiar la ciudad
-                    });
-                    _fetchJuzgadosConocimiento(value!);  // Cargar los juzgados de conocimiento
-                  },
-                  isExpanded: true,  // Hacer que el DropdownButton ocupe el ancho disponible
-                  dropdownColor: Colors.white, // Color de fondo del desplegable
-                  style: const TextStyle(color: Colors.black), // Color de texto negro
-                  items: juzgadoQueCondeno.map((ciudad) {
-                    return DropdownMenuItem<String>(
-                      value: ciudad['id'],
-                      child: Text(
-                        ciudad['nombre']!,
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),  // Texto en negro
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () {
+                onPressed: () {
                   setState(() {
-                    _mostrarDropdownJuzgadoCondeno = false;
-                    _ciudad = widget.doc['ciudad'];
-                    _juzgado = widget.doc['juzgado_que_condeno'];
+                    _mostrarDropdownDelito = true;
                   });
+                  _fetchDelitos();
                 },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel, size: 15),
-                    Text("Cancelar", style: TextStyle(fontSize: 11)),
-                  ],
-                ),
+                child: const Text("Seleccionar Delito"),
               ),
-
-              // Agregar espacio entre los dos DropdownButtons
-              const SizedBox(height: 20),
-
-              // Segundo DropdownButton para seleccionar el centro de reclusión
-              if (selectedCiudad != null)
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey), // Borde gris
-                    borderRadius: BorderRadius.circular(4), // Borde redondeado
-                    color: Colors.white, // Fondo blanco
-                  ),
-                  child: DropdownButton<String>(
-                    value: selectedJuzgadoNombre, // Cambiar a selectedJuzgadoNombre
-                    hint: const Text('Selecciona un juzgado de conocimiento'),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedJuzgadoNombre = value; // Cambiar a selectedJuzgadoNombre
-                      });
-                    },
-                    isExpanded: true,
-                    dropdownColor: Colors.white,
-                    style: const TextStyle(color: Colors.black),
-                    items: juzgadosConocimiento.map((juzgados) {
-                      return DropdownMenuItem<String>(
-                        value: juzgados['nombre'], // Mantener el nombre como valor
-                        child: Text(
-                          juzgados['nombre']!,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-            ],
-          )
+            )
         else
-          Container(), // Mostrar un contenedor vacío si no se cumplen las condiciones anteriores
-      ],
-    );
-  }
-
-  Widget seleccionarJuzgadoEjecucionPenas() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (widget.doc['juzgado_ejecucion_penas'] != null )
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(4),
-              color: Colors.white,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _mostrarDropdownJuzgadoEjecucion = true;
-                      selectedJuzgadoEjecucionPenas = null;
-                    });
-                  },
-                  child: const Row(
-                    children: [
-                      Text("Juzgado de Ejecución de Penas", style: TextStyle(fontSize: 11)),
-                      Icon(Icons.edit, size: 15),
-                    ],
-                  ),
-                ),
-                Text(widget.doc['juzgado_ejecucion_penas']!, style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-                const SizedBox(height: 10),
-              ],
-            ),
-          )
-        else
-          Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                child: DropdownButton<String>(
-                  value: selectedJuzgadoEjecucionPenas,
-                  hint: const Text('Selecciona un Juzgado de Ejecución de Penas'),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedJuzgadoEjecucionPenas = value;
-                    });
-                  },
-                  isExpanded: true,
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(color: Colors.black),
-                  items: juzgadosEjecucionPenas.map((juzgado) {
-                    return DropdownMenuItem<String>(
-                      value: juzgado['id'],
-                      child: Text(
-                        juzgado['nombre']!,
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownJuzgadoEjecucion = false;
-                    selectedJuzgadoEjecucionPenas = widget.doc['juzgado_ejecucion_penas'];
-                  });
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel, size: 15),
-                    Text("Cancelar", style: TextStyle(fontSize: 11)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
-
-
-
-  Widget seleccionarDelito() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_delito.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(4),
-              color: Colors.white,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _mostrarDropdownDelito = true;
-                      _delito = "";
-                    });
-                  },
-                  child: const Row(
-                    children: [
-                      Text("Delito", style: TextStyle(fontSize: 11)),
-                      Icon(Icons.edit, size: 15),
-                    ],
-                  ),
-                ),
-                Text(widget.doc['delito'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-              ],
-            ),
-          )
-        else
+        // Modo edición: se muestran los dropdowns para seleccionar el delito
           Column(
             children: [
               Container(
@@ -837,12 +1061,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   isExpanded: true,
                   dropdownColor: Colors.white,
                   style: const TextStyle(color: Colors.black),
-                  items: delito.map((delito) {
+                  items: delito.map((delitoDoc) {
                     return DropdownMenuItem<String>(
-                      value: delito['delito'],
+                      value: delitoDoc['delito'],
                       child: Text(
-                        delito['delito']!,
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                        delitoDoc['delito']!,
+                        style: const TextStyle(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     );
                   }).toList(),
@@ -853,7 +1080,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 onTap: () {
                   setState(() {
                     _mostrarDropdownDelito = false;
-                    _delito = widget.doc['delito'];
+                    // Se restaura el valor original del documento
+                    // (podrías asignarlo a una variable _delito si la usas)
                   });
                 },
                 child: const Row(
@@ -869,6 +1097,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ],
     );
   }
+
+  //** final codigo para seleccionar delito
+
 
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -904,72 +1135,131 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  Widget datosEjecucionCondena(){
+  Widget datosEjecucionCondena() {
     double screenWidth = MediaQuery.of(context).size.width;
-    return Column(
+    // Cajón para "Condena transcurrida"
+    Widget boxCondenaTranscurrida = Container(
+      width: 200,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary,width: 3),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            'Condena transcurrida',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 16 : 12,
+              color: negroLetras,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            mesesEjecutado == 1
+                ? diasEjecutadoExactos == 1
+                ? '$mesesEjecutado mes : $diasEjecutadoExactos día'
+                : '$mesesEjecutado mes : $diasEjecutadoExactos días'
+                : diasEjecutadoExactos == 1
+                ? '$mesesEjecutado meses : $diasEjecutadoExactos día'
+                : '$mesesEjecutado meses : $diasEjecutadoExactos días',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 14 : 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Cajón para "Condena restante"
+    Widget boxCondenaRestante = Container(
+      width: 200,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary,width: 3),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            'Condena restante',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 16 : 12,
+              color: negroLetras,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            mesesRestante == 1
+                ? diasRestanteExactos == 1
+                ? '$mesesRestante mes : $diasRestanteExactos día'
+                : '$mesesRestante mes : $diasRestanteExactos días'
+                : mesesRestante > 0
+                ? diasRestanteExactos == 1
+                ? '$mesesRestante meses : $diasRestanteExactos día'
+                : '$mesesRestante meses : $diasRestanteExactos días'
+                : diasRestanteExactos == 1
+                ? '$diasRestanteExactos día'
+                : '$diasRestanteExactos días',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 14 : 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Cajón para "Porcentaje ejecutado"
+    Widget boxPorcentajeEjecutado = Container(
+      width: 200,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary,width: 3),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Porcentaje ejecutado: ',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 14 : 12,
+              color: negroLetras,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${porcentajeEjecutado.toStringAsFixed(1)}%',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 14 : 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // Utiliza un Wrap para que los cajones se organicen en filas en dispositivos móviles
+    return Wrap(
+      spacing: 10,  // Espacio horizontal entre cajones
+      runSpacing: 10,  // Espacio vertical entre filas
       children: [
-        Row(
-          children: [
-            Text(
-              'Condena transcurrida',
-              style: TextStyle(fontSize: screenWidth > 600 ? 16 : 12,
-                  color: negroLetras),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              mesesEjecutado == 1
-                  ? diasEjecutadoExactos == 1
-                  ? '$mesesEjecutado mes : $diasEjecutadoExactos día'
-                  : '$mesesEjecutado mes : $diasEjecutadoExactos días'
-                  : diasEjecutadoExactos == 1
-                  ? '$mesesEjecutado meses : $diasEjecutadoExactos día'
-                  : '$mesesEjecutado meses : $diasEjecutadoExactos días',
-              style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, fontWeight: FontWeight.bold),
-            )
-          ],
-        ),
-        Row(
-          children: [
-            Text(
-              'Condena restante',
-              style: TextStyle(fontSize: screenWidth > 600 ? 16 : 12,
-                  color: negroLetras),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(width: 10),
-            Text(
-              mesesRestante == 1
-                  ? diasRestanteExactos == 1
-                  ? '$mesesRestante mes : $diasRestanteExactos día'
-                  : '$mesesRestante mes : $diasRestanteExactos días'
-                  : mesesRestante > 0
-                  ? diasRestanteExactos == 1
-                  ? '$mesesRestante meses : $diasRestanteExactos día'
-                  : '$mesesRestante meses : $diasRestanteExactos días'
-                  : diasRestanteExactos == 1
-                  ? '$diasRestanteExactos día'
-                  : '$diasRestanteExactos días',
-              style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, fontWeight: FontWeight.bold),
-            )
-          ],
-        ),
-        Row(
-          children: [
-            Text(
-              'Porcentaje ejecutado',
-              style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, color: negroLetras),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              '${porcentajeEjecutado.toStringAsFixed(1)}%',
-              style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
+        boxCondenaTranscurrida,
+        boxCondenaRestante,
+        boxPorcentajeEjecutado,
       ],
     );
   }
+
 
   Widget nombrePpl() {
     return textFormField(
@@ -1088,6 +1378,32 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  Widget laborDescuentoPpl(){
+    return textFormField(
+      controller: _laborDescuentoController,
+      labelText: 'labor de descuento',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese la labor de descuento';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget fechaInicioDescuentoPpl(){
+    return textFormField(
+      controller: _fechaInicioDescuentoController,
+      labelText: 'Fecha inicio descuento (YYYY-MM-DD)',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese la fecha de inicio de descuento';
+        }
+        return null;
+      },
+    );
+  }
+
   Widget nombreAcudiente(){
     return textFormField(
       controller: _nombreAcudienteController,
@@ -1184,60 +1500,119 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Widget botonGuardar(){
+  Widget botonGuardar() {
+    bool isCentroValid = (selectedCentro != null && selectedCentro!.trim().isNotEmpty) ||
+        (widget.doc['centro_reclusion'] != null && widget.doc['centro_reclusion'].toString().trim().isNotEmpty);
+
+    bool isRegionalValid = (selectedRegional != null && selectedRegional!.trim().isNotEmpty) ||
+        (widget.doc['regional'] != null && widget.doc['regional'].toString().trim().isNotEmpty);
+
+    bool isCiudadValid = (selectedCiudad != null && selectedCiudad!.trim().isNotEmpty) ||
+        (widget.doc['ciudad'] != null && widget.doc['ciudad'].toString().trim().isNotEmpty);
+
+    bool isJuzgadoEjValid = (selectedJuzgadoEjecucionPenas != null && selectedJuzgadoEjecucionPenas!.trim().isNotEmpty) ||
+        (widget.doc['juzgado_ejecucion_penas'] != null && widget.doc['juzgado_ejecucion_penas'].toString().trim().isNotEmpty);
+
+    bool isJuzgadoQueValid = (selectedJuzgadoNombre != null && selectedJuzgadoNombre!.trim().isNotEmpty) ||
+        (widget.doc['juzgado_que_condeno'] != null && widget.doc['juzgado_que_condeno'].toString().trim().isNotEmpty);
+
+    bool isDelitoValid = (selectedDelito != null && selectedDelito!.trim().isNotEmpty) ||
+        (widget.doc['delito'] != null && widget.doc['delito'].toString().trim().isNotEmpty);
     return Container(
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white, backgroundColor: primary,
+          foregroundColor: Colors.white,
+          backgroundColor: primary,
         ),
         onPressed: () {
-          if (_formKey.currentState!.validate()) {
-            int tiempoCondena = int.parse(_tiempoCondenaController.text);
-            // Oculta el teclado
-            SystemChannels.textInput.invokeMethod('TextInput.hide');
-            // Actualiza el documento en Firestore
-            widget.doc.reference.update({
-              'nombre_ppl': _nombreController.text,
-              'apellido_ppl': _apellidoController.text,
-              'numero_documento_ppl': _numeroDocumentoController.text,
-              'tipo_documento_ppl': _tipoDocumento,
-              'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
-              'regional': selectedRegional ?? widget.doc['regional'],
-              'ciudad': selectedCiudad ?? widget.doc['ciudad'],
-              'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'].toString(),
-              'delito': selectedDelito ?? widget.doc['delito'],
-              'radicado': _radicadoController.text,
-              'tiempo_condena': tiempoCondena,
-              'fecha_captura': _fechaDeCapturaController.text,
-              'td': _tdController.text,
-              'nui': _nuiController.text,
-              'patio': _patioController.text,
-              'nombre_acudiente': _nombreAcudienteController.text,
-              'apellido_acudiente': _apellidosAcudienteController.text,
-              'parentesco_representante': _parentescoAcudienteController.text,
-              'celular': _celularAcudienteController.text,
-              'email': _emailAcudienteController.text,
-            }).then((_) {
-              // Muestra un snackbar
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Datos guardados con éxito'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            });
-          } else {
+          // Primero validamos el formulario
+          if (!_formKey.currentState!.validate()) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 backgroundColor: Colors.red,
                 content: Text(
-                  'Hay información que aún no se ha llenado',
+                  'No se puede guardar hasta que estén todos los campos llenos',
                   style: TextStyle(color: Colors.white),
                 ),
                 duration: Duration(seconds: 2),
               ),
             );
+            return;
           }
+
+          // Validaciones adicionales para campos que no forman parte del Form
+          // (por ejemplo, dropdowns u otros controles)
+          if (!isCentroValid || !isRegionalValid || !isCiudadValid || !isJuzgadoEjValid || !isJuzgadoQueValid || !isDelitoValid ||
+              _nombreController.text.trim().isEmpty ||
+              _apellidoController.text.trim().isEmpty ||
+              _numeroDocumentoController.text.trim().isEmpty ||
+              _tipoDocumento.trim().isEmpty ||
+              _radicadoController.text.trim().isEmpty ||
+              _fechaDeCapturaController.text.trim().isEmpty ||
+              _tdController.text.trim().isEmpty ||
+              _nuiController.text.trim().isEmpty ||
+              _patioController.text.trim().isEmpty ||
+              _nombreAcudienteController.text.trim().isEmpty ||
+              _apellidosAcudienteController.text.trim().isEmpty ||
+              _parentescoAcudienteController.text.trim().isEmpty ||
+              _celularAcudienteController.text.trim().isEmpty ||
+              _emailAcudienteController.text.trim().isEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                backgroundColor: Colors.red,
+                content: Text(
+                  'No se puede guardar hasta que estén todos los campos llenos',
+                  style: TextStyle(color: Colors.white),
+                ),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
+
+          // Si todo está bien, parseamos los datos necesarios
+          int tiempoCondena = int.parse(_tiempoCondenaController.text);
+
+          // Oculta el teclado
+          SystemChannels.textInput.invokeMethod('TextInput.hide');
+
+          // Actualiza el documento en Firestore
+          widget.doc.reference.update({
+            'nombre_ppl': _nombreController.text,
+            'apellido_ppl': _apellidoController.text,
+            'numero_documento_ppl': _numeroDocumentoController.text,
+            'tipo_documento_ppl': _tipoDocumento,
+            'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
+            'regional': selectedRegional ?? widget.doc['regional'],
+            'ciudad': selectedCiudad ?? widget.doc['ciudad'],
+            'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'].toString(),
+            'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'].toString(),
+            'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'].toString(),
+            'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'].toString(),
+            'delito': selectedDelito ?? widget.doc['delito'],
+            'radicado': _radicadoController.text,
+            'tiempo_condena': tiempoCondena,
+            'fecha_captura': _fechaDeCapturaController.text,
+            'td': _tdController.text,
+            'nui': _nuiController.text,
+            'patio': _patioController.text,
+            'labor_descuento': _laborDescuentoController.text,
+            'fecha_inicio_descuento': _fechaInicioDescuentoController.text,
+            'nombre_acudiente': _nombreAcudienteController.text,
+            'apellido_acudiente': _apellidosAcudienteController.text,
+            'parentesco_representante': _parentescoAcudienteController.text,
+            'celular': _celularAcudienteController.text,
+            'email': _emailAcudienteController.text,
+            'status': 'activado',
+          }).then((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Datos guardados con éxito y usuario ha quedado activado'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          });
+
         },
         child: const Text('Guardar Cambios'),
       ),
