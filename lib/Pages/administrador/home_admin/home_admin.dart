@@ -35,7 +35,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     }
   }
 
-  /// para validar si se realizo el rebase
 
   @override
   Widget build(BuildContext context) {
