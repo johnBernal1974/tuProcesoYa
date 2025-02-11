@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
-import 'package:tuprocesoya/src/colors/colors.dart';
 
 class HomeAdministradorPage extends StatefulWidget {
   const HomeAdministradorPage({super.key});

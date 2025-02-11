@@ -1,13 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:tuprocesoya/Pages/estamos_validando/estamos_validando.dart';
 import 'package:tuprocesoya/models/ppl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
-import '../../providers/auth_provider.dart';
-import '../home/home.dart';
+import '../../../providers/auth_provider.dart';
+import '../estamos_validando/estamos_validando.dart';
 
 class RegistroPage extends StatefulWidget {
   const RegistroPage({super.key});

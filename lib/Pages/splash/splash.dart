@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-// Importa tu servicio de autenticación
 import 'package:firebase_auth/firebase_auth.dart';
-
 import '../administrador/home_admin/home_admin.dart';
-import '../estamos_validando/estamos_validando.dart';
-import '../home/home.dart';
+import '../client/estamos_validando/estamos_validando.dart';
+import '../client/home/home.dart';
 import '../login/login.dart';
 
 class SplashPage extends StatefulWidget {

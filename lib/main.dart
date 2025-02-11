@@ -2,19 +2,24 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tuprocesoya/Pages/mis_datos/mis_datos.dart';
+import 'package:tuprocesoya/Pages/client/derecho_de_peticion_solicitud/derecho_de_peticion_solicitud.dart';
+import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
-import 'Pages/derecho_de_peticion/derecho_de_peticion.dart';
-import 'Pages/estamos_validando/estamos_validando.dart';
-import 'Pages/home/home.dart';
+import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
+import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
+import 'Pages/client/estamos_validando/estamos_validando.dart';
+import 'Pages/client/home/home.dart';
+import 'Pages/client/mis_datos/mis_datos.dart';
+import 'Pages/client/register/register.dart';
+import 'Pages/client/solicitudes_page/solicitudes_page.dart';
+import 'Pages/client/tutela/tutela.dart';
+import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/login/login.dart';
-import 'Pages/register/register.dart';
-import 'Pages/solicitudes_page/solicitudes_page.dart';
 import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -66,12 +71,17 @@ class MyApp extends StatelessWidget {
         'nosotros': (context) => const NosotrosPage(),
         'solicitudes_page': (context) => const SolicitudesdeServicioPage(),
         'derecho_peticion': (context) => const DerechoDePeticionPage(),
+        'tutela': (context) => const TutelaPage(),
+        'derecho_peticion_solicitud': (context) => const DerechoDePeticionSolicitudPage(),
+        'tutela_solicitud': (context) => const TutelaSolicitudPage(),
         'home_admin': (context) => const HomeAdministradorPage(),
         'editar_registro_admin': (context) {
           final doc = ModalRoute.of(context)!.settings.arguments as DocumentSnapshot;
           return EditarRegistroPage(doc: doc);
         },
         'estamos_validando': (context) => EstamosValidandoPage(),
+        'derechos_info': (context) => const DerechosInfoPage(),
+        'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
 
       },
       localizationsDelegates: const [

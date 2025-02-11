@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
-import '../splash/splash.dart';
+import '../../splash/splash.dart';
 
 class EstamosValidandoPage extends StatelessWidget {
   @override

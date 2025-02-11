@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -57,13 +58,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   String? selectedJuzgadoNombre;
   String? selectedDelito;
 
-  String _regional = "";
-  String _centroReclusion = "";
-  String _juzgadoEjecucionPenas= "";
-  String _ciudad= "";
   String _juzgadoQueCondeno= "";
   String _juzgado= "";
-  String _delito= "";
 
   String? selectedJuzgadoEjecucionEmail;
   String? selectedJuzgadoConocimientoEmail;
@@ -97,8 +93,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     super.initState();
     _initCalculoCondena();
     _initFormFields();
-    _regional = widget.doc['regional'] ?? "";
-    _centroReclusion = widget.doc['centro_reclusion'] ?? "";
     Future.delayed(Duration.zero, () {
       setState(() {
         isLoading = false; // Cambia el estado después de que se verifiquen los valores
@@ -128,10 +122,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         centrosReclusionTodos = fetchedTodosCentros;
       });
 
-      print("Centros de reclusión globales: $centrosReclusionTodos");
-      print("Número de centros: ${fetchedTodosCentros.length}");
     } catch (e) {
-      print("Error al obtener centros de reclusión: $e");
+      if (kDebugMode) {
+        print("Error al obtener centros de reclusión: $e");
+      }
     }
   }
 
@@ -149,37 +143,35 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   void _initFormFields() {
-    if (widget.doc != null) {
-      _nombreController.text = widget.doc.get('nombre_ppl') ?? "";
-      _apellidoController.text = widget.doc.get('apellido_ppl') ?? "";
-      _numeroDocumentoController.text = widget.doc.get('numero_documento_ppl').toString() ?? "";
-      _tipoDocumento = widget.doc.get('tipo_documento_ppl') ?? "";
-      _radicadoController.text = widget.doc.get('radicado') ?? "";
-      _tiempoCondenaController.text = widget.doc.get('tiempo_condena').toString() ?? "";
-      _fechaDeCapturaController.text = widget.doc.get('fecha_captura') ?? "";
-      _tdController.text = widget.doc.get('td') ?? "";
-      _nuiController.text = widget.doc.get('nui') ?? "";
-      _patioController.text = widget.doc.get('patio') ?? "";
-      String laborDescuento = widget.doc.get('labor_descuento') as String;
-      if(laborDescuento.trim().isEmpty) {
-        _laborDescuentoController.text = "Ningúna informada";
-      } else {
-        _laborDescuentoController.text = laborDescuento;
-      }
-
-      String fechaInicioDescuento = widget.doc.get('fecha_inicio_descuento') ?? "";
-      if(fechaInicioDescuento.trim().isEmpty) {
-        _fechaInicioDescuentoController.text = widget.doc.get('fecha_captura') ?? "";
-      } else {
-        _fechaInicioDescuentoController.text = fechaInicioDescuento;
-      }
-      _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
-      _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
-      _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
-      _celularAcudienteController.text = widget.doc.get('celular') ?? "";
-      _emailAcudienteController.text = widget.doc.get('email') ?? "";
+    _nombreController.text = widget.doc.get('nombre_ppl') ?? "";
+    _apellidoController.text = widget.doc.get('apellido_ppl') ?? "";
+    _numeroDocumentoController.text = widget.doc.get('numero_documento_ppl').toString();
+    _tipoDocumento = widget.doc.get('tipo_documento_ppl') ?? "";
+    _radicadoController.text = widget.doc.get('radicado') ?? "";
+    _tiempoCondenaController.text = widget.doc.get('tiempo_condena').toString();
+    _fechaDeCapturaController.text = widget.doc.get('fecha_captura') ?? "";
+    _tdController.text = widget.doc.get('td') ?? "";
+    _nuiController.text = widget.doc.get('nui') ?? "";
+    _patioController.text = widget.doc.get('patio') ?? "";
+    String laborDescuento = widget.doc.get('labor_descuento') as String;
+    if(laborDescuento.trim().isEmpty) {
+      _laborDescuentoController.text = "Ningúna informada";
+    } else {
+      _laborDescuentoController.text = laborDescuento;
     }
-  }
+
+    String fechaInicioDescuento = widget.doc.get('fecha_inicio_descuento') ?? "";
+    if(fechaInicioDescuento.trim().isEmpty) {
+      _fechaInicioDescuentoController.text = null.toString();
+    } else {
+      _fechaInicioDescuentoController.text = fechaInicioDescuento;
+    }
+    _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
+    _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
+    _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
+    _celularAcudienteController.text = widget.doc.get('celular') ?? "";
+    _emailAcudienteController.text = widget.doc.get('email') ?? "";
+    }
 
   @override
   void dispose() {
@@ -204,7 +196,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       content: Form(
         key: _formKey,
         child: Center(
-          child: Container(
+          child: SizedBox(
             // Si el ancho de la pantalla es mayor o igual a 800, usa 800, de lo contrario ocupa todo el ancho disponible
             width: MediaQuery.of(context).size.width >= 800 ? 800 : double.infinity,
             child: ListView(
@@ -214,7 +206,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
                 ),
                 // Puedes mostrar el id en pantalla si lo deseas
-                Text('ID: ${widget.doc.id}', style: TextStyle(fontSize: 11)),
+                Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
                 const SizedBox(height: 20),
                 datosEjecucionCondena(),
                 const SizedBox(height: 20),
@@ -273,83 +265,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ),
       ),
     );
-  }
-
-
-  //** codigo completo para seleccionar centro de reclusion
-
-  /// Método para obtener las regionales desde Firestore
-  Future<void> _fetchRegionales() async {
-    try {
-      // Obtener la colección 'regional'
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('regional')
-          .get();
-
-      // Crear una lista para almacenar las regionales y sus centros de reclusión
-      List<Map<String, dynamic>> fetchedRegionales = [];
-
-      // Iterar sobre los documentos de la colección 'regional'
-      for (var doc in querySnapshot.docs) {
-        // Obtener el nombre de la regional desde el campo 'name'
-        String regionalName = doc['name'] ?? 'Nombre no disponible'; // Asegurarse de que no sea nulo
-
-        // Acceder a la subcolección 'centros_reclusion' para obtener los centros
-        QuerySnapshot centrosReclusionSnapshot = await doc.reference
-            .collection('centros_reclusion')
-            .get();
-
-        // Crear una lista con los centros de reclusión
-        List<String> centrosReclusion = centrosReclusionSnapshot.docs
-            .map((centerDoc) => centerDoc.id)  // Usar el id del centro como nombre o identificador
-            .toList();
-
-        // Agregar los datos de la regional y sus centros a la lista
-        fetchedRegionales.add({
-          'id': doc.id,  // El id del documento de la regional
-          'nombre': regionalName,  // El nombre de la regional
-          'centros_reclusion': centrosReclusion,  // Lista de centros de reclusión
-        });
-      }
-
-      // Actualizar el estado con las regionales y centros de reclusión
-      setState(() {
-        regionales = fetchedRegionales;
-      });
-
-      print('Regiones cargadas correctamente');
-      print('Regiones: $regionales');
-    } catch (e) {
-      print('Error al cargar las regionales: $e');
-    }
-  }
-  /// Método para obtener los centros de reclusión según la regional seleccionada
-  Future<void> _fetchCentrosReclusion(String regionalId) async {
-    try {
-      print("Cargando centros de la regional: $regionalId"); // 📌 Agregar esta línea
-
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('regional')
-          .doc(regionalId)  // 🔥 Solo carga los centros de esta regional
-          .collection('centros_reclusion')
-          .get();
-
-      List<Map<String, String>> fetchedCentros = querySnapshot.docs.map((doc) {
-        return {
-          'id': doc.id,
-          'nombre': doc.id,  // Usamos el 'id' como el 'nombre' del centro
-        };
-      }).toList();
-
-      setState(() {
-        centrosReclusion = fetchedCentros;
-      });
-
-      print("Centros de reclusión cargados para $regionalId: $centrosReclusion"); // 📌 Imprimir resultado
-
-    } catch (e) {
-      print("Error al obtener los centros de reclusión: $e");
-    }
   }
 
   Widget seleccionarCentroReclusion() {
@@ -470,11 +385,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               setState(() {
                 selectedCentro = selection['id'];
                 // Actualizamos _centroReclusion para que muestre el nombre del centro seleccionado.
-                _centroReclusion = selection['nombre'] ?? "";
                 // Guardamos también el ID de la regional asociada
                 selectedRegional = selection['regional'];
               });
-              print("Valor a actualizar en ***** 'regional': ${selectedRegional ?? widget.doc['regional']}");
+              if (kDebugMode) {
+                print("Valor a actualizar en ***** 'regional': ${selectedRegional ?? widget.doc['regional']}");
+              }
             },
 
           ),
@@ -495,7 +411,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 setState(() {
                   _mostrarDropdowns = false;
                   // Restaura el valor original del documento, si es que existe.
-                  _centroReclusion = widget.doc['centro_reclusion'] ?? "";
                   selectedCentro = null;
                 });
               },
@@ -513,15 +428,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-
-
-
-  //** final codigo para seleccionar centro de reclusion
-
-
-  //** codigo completo para seleccionar juzgados de ejecucion de penas
-
-  /// Método para obtener los juzgados de ejecucion
   Future<void> _fetchJuzgadosEjecucion() async {
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('ejecucion_penas').get();
@@ -538,14 +444,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       setState(() {
         juzgadosEjecucionPenas = fetchedEjecucionPenas;
       });
-      print("Juzgados de ejecucion penas*********************$juzgadosEjecucionPenas");
-
-
-      // if (delitos.isNotEmpty) {
-      //   selectedDelito = delitos.first['delito'];  // Seleccionamos el primer delito por defecto
-      // }
     } catch (e) {
-      print("Error al obtener los juzgados de ejecucion: $e");
+      if (kDebugMode) {
+        print("Error al obtener los juzgados de ejecucion: $e");
+      }
     }
   }
 
@@ -635,8 +537,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                         orElse: () => <String, String>{},  // Especifica explícitamente el tipo
                       );
                       selectedJuzgadoEjecucionEmail = selected['email'];
-
-                      print(" Este es el correo de ejecucion de penas************ $selectedJuzgadoEjecucionEmail");
                     });
                   },
                   isExpanded: true,
@@ -675,11 +575,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  //** final codigo para seleccionar juzgados de ejecucion de penas
-
-
-  //** codigo completo para seleccionar juzgados que condeno
-  Future<void> _fetchJuzgado_condeno() async {
+  Future<void> _fetchJuzgadoCcondeno() async {
     try {
       // Obtener la colección 'juzgado_condeno'
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
@@ -691,9 +587,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
       // Iterar sobre los documentos de la colección 'juzgado_condeno'
       for (var doc in querySnapshot.docs) {
-        // Imprimir la información completa del documento
-        print("Documento obtenido: ${doc.id} => ${doc.data()}");
-
         // Obtener el nombre de la "regional" desde el campo 'name'
         String juzgadoCondenoName = doc['name'] ?? 'Nombre no disponible';
 
@@ -701,13 +594,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         QuerySnapshot juzgadosSnapshot = await doc.reference
             .collection('juzgados')
             .get();
-
-        // Imprimir la cantidad de documentos en la subcolección
-        print("Subcolección 'juzgados' para ${doc.id} tiene ${juzgadosSnapshot.docs.length} documentos.");
-
         // Crear una lista con los juzgados usando el campo 'nombre' de cada documento
         List<String> juzgados = juzgadosSnapshot.docs.map<String>((centerDoc) {
-          print("  - Documento en 'juzgados': ${centerDoc.id} => ${centerDoc.data()}");
           // Devuelve el campo 'nombre' convertido a String o, si es null, el id convertido a String
           return (centerDoc['nombre'] ?? centerDoc.id).toString();
         }).toList();
@@ -719,10 +607,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           'nombre': juzgadoCondenoName,   // Nombre obtenido
           'juzgados': juzgados,           // Lista de nombres de los juzgados
         };
-
-        // Imprimir la información final de esta "regional"
-        print("Datos cargados para ${doc.id}: $regionalData");
-
         // Agregar la información a la lista final
         fetchedJuzgadoCondeno.add(regionalData);
       }
@@ -731,14 +615,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       setState(() {
         juzgadoQueCondeno = fetchedJuzgadoCondeno;
       });
-
-      print('Ciudades (regionales) cargadas correctamente.');
     } catch (e) {
-      print('Error al cargar las ciudades: $e');
+      if (kDebugMode) {
+        print('Error al cargar las ciudades: $e');
+      }
     }
   }
 
-  /// Método para obtener los juzgados de conocimiento según la ciudad seleccionada
   Future<void> _fetchJuzgadosConocimiento(String juzgadoCondenoId) async {
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
@@ -758,11 +641,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       setState(() {
         juzgadosConocimiento = fetchedJuzgadoConocimiento;
       });
-      print("Juzgandos de conocimiento*********************$juzgadosConocimiento");
-
-
     } catch (e) {
-      print("Error al obtener los juzgado de conocimiento: $e");
+      if (kDebugMode) {
+        print("Error al obtener los juzgado de conocimiento: $e");
+      }
     }
   }
 
@@ -792,7 +674,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       _juzgadoQueCondeno = "";
                       _juzgado = "";
                     });
-                    _fetchJuzgado_condeno();
+                    _fetchJuzgadoCcondeno();
                     // No es necesario llamar a  aquí;
                     // se llamará cuando se seleccione la ciudad en el dropdown.
                   },
@@ -834,7 +716,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 setState(() {
                   _mostrarDropdownJuzgadoCondeno = true;
                 });
-                _fetchJuzgado_condeno();
+                _fetchJuzgadoCcondeno();
               },
               child: const Text("Seleccionar Juzgado de Conocimiento"),
             ),
@@ -883,7 +765,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 onTap: () {
                   setState(() {
                     _mostrarDropdownJuzgadoCondeno = false;
-                    _ciudad = widget.doc['ciudad'];
                     _juzgado = widget.doc['juzgado_que_condeno'];
                   });
                 },
@@ -920,8 +801,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                           orElse: () => <String, String>{},  // Especifica explícitamente el tipo
                         );
                         selectedJuzgadoConocimientoEmail = selected['correo'];
-
-                        print(" Este es el correo de juzgado de conocimeinto************ $selectedJuzgadoConocimientoEmail");
                       });
                     },
                     isExpanded: true,
@@ -950,10 +829,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  //** final codigo para seleccionar juzgados que condeno
-
-  //** codigo completo para seleccionar delito
-  /// Método para obtener los delitos
   Future<void> _fetchDelitos() async {
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('delitos').get();
@@ -968,13 +843,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       setState(() {
         delito = fetchedDelitos;
       });
-      print("Delitos*********************$delito");
-
-      // if (delitos.isNotEmpty) {
-      //   selectedDelito = delitos.first['delito'];  // Seleccionamos el primer delito por defecto
-      // }
     } catch (e) {
-      print("Error al obtener los delitos: $e");
+      if (kDebugMode) {
+        print("Error al obtener los delitos: $e");
+      }
     }
   }
 
@@ -1098,40 +970,27 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  //** final codigo para seleccionar delito
-
-
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final DocumentSnapshot document = await firestore.collection('Ppl').doc(widget.doc.id).get();
 
     if (document.exists) {
       final Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-      final String regional = data['regional'];
-      final String centroReclusion = data['centro_reclusion'];
-      final String juzgadoEjecucionPenas = data['juzgado_ejecucion_penas'];
+      //final String regional = data['regional'];
+      //final String centroReclusion = data['centro_reclusion'];
+      //final String juzgadoEjecucionPenas = data['juzgado_ejecucion_penas'];
       final String juzgado = data['juzgado_que_condeno'];
       final String juzgadoQueCondeno = data['ciudad'];
-      final String delito = data['delito'];
+      //final String delito = data['delito'];
 
       setState(() {
-        _regional = regional;
-        _centroReclusion = centroReclusion;
-        _juzgadoEjecucionPenas = juzgadoEjecucionPenas;
         _juzgado = juzgado;
         _juzgadoQueCondeno = juzgadoQueCondeno;
-        _delito = delito;
       });
-      print("*****Regional: $_regional");
-      print("*****centro reclusión: $_centroReclusion");
-      print("*****Juzgado de ejecucion de penas es: $_juzgadoEjecucionPenas");
-      print("*****La ciudad donde pertenece el juzgado de conocimiento es: $juzgadoQueCondeno");
-      print("*****juzgado que condeno fue: $juzgado");
-      print("*****el delito es: $delito");
-
-
     } else {
-      print('El documento no existe');
+      if (kDebugMode) {
+        print('El documento no existe');
+      }
     }
   }
 
@@ -1139,7 +998,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     double screenWidth = MediaQuery.of(context).size.width;
     // Cajón para "Condena transcurrida"
     Widget boxCondenaTranscurrida = Container(
-      width: 200,
+      width: 130,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1154,6 +1013,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             style: TextStyle(
               fontSize: screenWidth > 600 ? 16 : 12,
               color: negroLetras,
+              height: 1
             ),
             textAlign: TextAlign.center,
           ),
@@ -1177,7 +1037,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     // Cajón para "Condena restante"
     Widget boxCondenaRestante = Container(
-      width: 200,
+      width: 130,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1188,10 +1048,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'Condena restante',
+            'Condena\nrestante',
             style: TextStyle(
               fontSize: screenWidth > 600 ? 16 : 12,
               color: negroLetras,
+              height: 1
             ),
             textAlign: TextAlign.center,
           ),
@@ -1219,7 +1080,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     // Cajón para "Porcentaje ejecutado"
     Widget boxPorcentajeEjecutado = Container(
-      width: 200,
+      width: 130,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1230,10 +1091,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            'Porcentaje ejecutado: ',
+            'Porcentaje\nejecutado: ',
             style: TextStyle(
               fontSize: screenWidth > 600 ? 14 : 12,
               color: negroLetras,
+              height: 1
             ),
           ),
           const SizedBox(height: 6),
@@ -1259,7 +1121,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ],
     );
   }
-
 
   Widget nombrePpl() {
     return textFormField(
@@ -1497,8 +1358,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
       validator: validator,
       keyboardType: keyboardType,
-    );
-  }
+    );  }
 
   Widget botonGuardar() {
     bool isCentroValid = (selectedCentro != null && selectedCentro!.trim().isNotEmpty) ||
@@ -1518,104 +1378,102 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     bool isDelitoValid = (selectedDelito != null && selectedDelito!.trim().isNotEmpty) ||
         (widget.doc['delito'] != null && widget.doc['delito'].toString().trim().isNotEmpty);
-    return Container(
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white,
-          backgroundColor: primary,
-        ),
-        onPressed: () {
-          // Primero validamos el formulario
-          if (!_formKey.currentState!.validate()) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                backgroundColor: Colors.red,
-                content: Text(
-                  'No se puede guardar hasta que estén todos los campos llenos',
-                  style: TextStyle(color: Colors.white),
-                ),
-                duration: Duration(seconds: 2),
-              ),
-            );
-            return;
-          }
-
-          // Validaciones adicionales para campos que no forman parte del Form
-          // (por ejemplo, dropdowns u otros controles)
-          if (!isCentroValid || !isRegionalValid || !isCiudadValid || !isJuzgadoEjValid || !isJuzgadoQueValid || !isDelitoValid ||
-              _nombreController.text.trim().isEmpty ||
-              _apellidoController.text.trim().isEmpty ||
-              _numeroDocumentoController.text.trim().isEmpty ||
-              _tipoDocumento.trim().isEmpty ||
-              _radicadoController.text.trim().isEmpty ||
-              _fechaDeCapturaController.text.trim().isEmpty ||
-              _tdController.text.trim().isEmpty ||
-              _nuiController.text.trim().isEmpty ||
-              _patioController.text.trim().isEmpty ||
-              _nombreAcudienteController.text.trim().isEmpty ||
-              _apellidosAcudienteController.text.trim().isEmpty ||
-              _parentescoAcudienteController.text.trim().isEmpty ||
-              _celularAcudienteController.text.trim().isEmpty ||
-              _emailAcudienteController.text.trim().isEmpty) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                backgroundColor: Colors.red,
-                content: Text(
-                  'No se puede guardar hasta que estén todos los campos llenos',
-                  style: TextStyle(color: Colors.white),
-                ),
-                duration: Duration(seconds: 2),
-              ),
-            );
-            return;
-          }
-
-          // Si todo está bien, parseamos los datos necesarios
-          int tiempoCondena = int.parse(_tiempoCondenaController.text);
-
-          // Oculta el teclado
-          SystemChannels.textInput.invokeMethod('TextInput.hide');
-
-          // Actualiza el documento en Firestore
-          widget.doc.reference.update({
-            'nombre_ppl': _nombreController.text,
-            'apellido_ppl': _apellidoController.text,
-            'numero_documento_ppl': _numeroDocumentoController.text,
-            'tipo_documento_ppl': _tipoDocumento,
-            'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
-            'regional': selectedRegional ?? widget.doc['regional'],
-            'ciudad': selectedCiudad ?? widget.doc['ciudad'],
-            'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'].toString(),
-            'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'].toString(),
-            'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'].toString(),
-            'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'].toString(),
-            'delito': selectedDelito ?? widget.doc['delito'],
-            'radicado': _radicadoController.text,
-            'tiempo_condena': tiempoCondena,
-            'fecha_captura': _fechaDeCapturaController.text,
-            'td': _tdController.text,
-            'nui': _nuiController.text,
-            'patio': _patioController.text,
-            'labor_descuento': _laborDescuentoController.text,
-            'fecha_inicio_descuento': _fechaInicioDescuentoController.text,
-            'nombre_acudiente': _nombreAcudienteController.text,
-            'apellido_acudiente': _apellidosAcudienteController.text,
-            'parentesco_representante': _parentescoAcudienteController.text,
-            'celular': _celularAcudienteController.text,
-            'email': _emailAcudienteController.text,
-            'status': 'activado',
-          }).then((_) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Datos guardados con éxito y usuario ha quedado activado'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          });
-
-        },
-        child: const Text('Guardar Cambios'),
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        foregroundColor: Colors.white,
+        backgroundColor: primary,
       ),
+      onPressed: () {
+        // Primero validamos el formulario
+        if (!_formKey.currentState!.validate()) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.red,
+              content: Text(
+                'No se puede guardar hasta que estén todos los campos llenos',
+                style: TextStyle(color: Colors.white),
+              ),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
+        // Validaciones adicionales para campos que no forman parte del Form
+        // (por ejemplo, dropdowns u otros controles)
+        if (!isCentroValid || !isRegionalValid || !isCiudadValid || !isJuzgadoEjValid || !isJuzgadoQueValid || !isDelitoValid ||
+            _nombreController.text.trim().isEmpty ||
+            _apellidoController.text.trim().isEmpty ||
+            _numeroDocumentoController.text.trim().isEmpty ||
+            _tipoDocumento.trim().isEmpty ||
+            _radicadoController.text.trim().isEmpty ||
+            _fechaDeCapturaController.text.trim().isEmpty ||
+            _tdController.text.trim().isEmpty ||
+            _nuiController.text.trim().isEmpty ||
+            _patioController.text.trim().isEmpty ||
+            _nombreAcudienteController.text.trim().isEmpty ||
+            _apellidosAcudienteController.text.trim().isEmpty ||
+            _parentescoAcudienteController.text.trim().isEmpty ||
+            _celularAcudienteController.text.trim().isEmpty ||
+            _emailAcudienteController.text.trim().isEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.red,
+              content: Text(
+                'No se puede guardar hasta que estén todos los campos llenos',
+                style: TextStyle(color: Colors.white),
+              ),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
+        // Si todo está bien, parseamos los datos necesarios
+        int tiempoCondena = int.parse(_tiempoCondenaController.text);
+
+        // Oculta el teclado
+        SystemChannels.textInput.invokeMethod('TextInput.hide');
+
+        // Actualiza el documento en Firestore
+        widget.doc.reference.update({
+          'nombre_ppl': _nombreController.text,
+          'apellido_ppl': _apellidoController.text,
+          'numero_documento_ppl': _numeroDocumentoController.text,
+          'tipo_documento_ppl': _tipoDocumento,
+          'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
+          'regional': selectedRegional ?? widget.doc['regional'],
+          'ciudad': selectedCiudad ?? widget.doc['ciudad'],
+          'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'].toString(),
+          'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'].toString(),
+          'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'].toString(),
+          'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'].toString(),
+          'delito': selectedDelito ?? widget.doc['delito'],
+          'radicado': _radicadoController.text,
+          'tiempo_condena': tiempoCondena,
+          'fecha_captura': _fechaDeCapturaController.text,
+          'td': _tdController.text,
+          'nui': _nuiController.text,
+          'patio': _patioController.text,
+          'labor_descuento': _laborDescuentoController.text,
+          'fecha_inicio_descuento': _fechaInicioDescuentoController.text,
+          'nombre_acudiente': _nombreAcudienteController.text,
+          'apellido_acudiente': _apellidosAcudienteController.text,
+          'parentesco_representante': _parentescoAcudienteController.text,
+          'celular': _celularAcudienteController.text,
+          'email': _emailAcudienteController.text,
+          'status': 'activado',
+        }).then((_) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Datos guardados con éxito y usuario ha quedado activado'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        });
+
+      },
+      child: const Text('Guardar Cambios'),
     );
   }
 

@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../src/colors/colors.dart';
 
@@ -45,7 +44,7 @@ class _SideBarState extends State<SideBar> {
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 40),
                   _buildDrawerHeader(snapshot.data),
                   const Divider(height: 1, color: grisMedio),
                   ..._buildDrawerItems(context, snapshot.data),
@@ -63,33 +62,54 @@ class _SideBarState extends State<SideBar> {
   }
 
   Widget _buildDrawerHeader(bool? isAdmin) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: Text(
-        isAdmin ?? false ? "Panel de administración" : "Tu proceso ya",
-        style: const TextStyle(
-          fontSize: 20,
-          color: Colors.white,
-          fontWeight: FontWeight.w800,
+    if (isAdmin ?? false) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+        decoration: const BoxDecoration(
+          color: blancoCards,
         ),
-      ),
-    );
+        child: Column(
+          children: [
+            Image.asset(
+              'assets/images/logo_tu_proceso_ya_transparente.png',
+              height: 40,
+            ),
+            const Text("Administrador")
+          ],
+        ),
+      );
+    } else {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+        decoration: const BoxDecoration(
+          color: blancoCards,
+        ),
+        child: Image.asset(
+          'assets/images/logo_tu_proceso_ya_transparente.png',
+          height: 40,
+        ),
+      );
+    }
   }
 
   List<Widget> _buildDrawerItems(BuildContext context, bool? isAdmin) {
     if (isAdmin == true) {
       return [
+        const SizedBox(height: 50),
         _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home_admin'),
         _buildDrawerTile(context, "Configuraciones", Icons.settings, 'prices_page'),
         _buildLogoutTile(context),
       ];
     } else {
       return [
+        const SizedBox(height: 50),
         _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
-        _buildDrawerTile(context, "Historial de actuaciones", Icons.date_range_outlined, 'operadores_page'),
+        //_buildDrawerTile(context, "Historial de actuaciones", Icons.date_range_outlined, 'operadores_page'),
+        _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.event_note_outlined, 'solicitudes_page'),
         _buildDrawerTile(context, "Quienes somos", Icons.info, 'nosotros'),
+        _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
         _buildLogoutTile(context),
       ];
     }
@@ -99,12 +119,15 @@ class _SideBarState extends State<SideBar> {
     return DrawerListTitle(
       title: title,
       icon: icon,
-      iconColor: Colors.white,
+      iconColor: blanco,
       press: () {
-        Navigator.pushNamedAndRemoveUntil(context, route, (Route<dynamic> route) => false);
+        if (ModalRoute.of(context)?.settings.name != route) {
+          Navigator.pushNamed(context, route);
+        }
       },
     );
   }
+
 
   Widget _buildLogoutTile(BuildContext context) {
     return DrawerListTitle(
