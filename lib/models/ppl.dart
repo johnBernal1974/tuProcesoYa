@@ -34,6 +34,7 @@ class Ppl {
   final DateTime? fechaInicioDescuento;
   final String laborDescuento;
   final String status;
+  final bool isNotificatedActivated;
 
   // Constructor
   Ppl({
@@ -64,6 +65,7 @@ class Ppl {
     required this.fechaInicioDescuento,
     required this.laborDescuento,
     required this.status,
+    required this.isNotificatedActivated,
   });
 
   // Factory para crear una instancia de Ppl desde JSON
@@ -95,6 +97,7 @@ class Ppl {
     fechaInicioDescuento: json["fecha_inicio_descuento"] != null ? DateTime.parse(json["fecha_inicio_descuento"]) : null,
     laborDescuento: json["labor_descuento"] ?? '',
     status: json["status"] ?? '',
+    isNotificatedActivated: json["isNotificatedActivated"] ?? false,
   );
 
   // Método para convertir una instancia de Ppl a JSON
@@ -126,5 +129,6 @@ class Ppl {
     "fecha_inicio_descuento": fechaInicioDescuento?.toIso8601String(),
     "labor_descuento": laborDescuento,
     "status": status,
+    "isNotificatedActivated": isNotificatedActivated,
   };
 }

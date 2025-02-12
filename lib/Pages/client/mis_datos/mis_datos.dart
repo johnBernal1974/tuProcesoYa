@@ -183,13 +183,19 @@ class _MisDatosPageState extends State<MisDatosPage> {
                   ),
                   Row(
                     children: [
-                      const Text('Fecha Inicio Descuento:  ', style: TextStyle(fontSize: 13, color: negro)),
+                      const Text(
+                        'Fecha Inicio Descuento:  ',
+                        style: TextStyle(fontSize: 13, color: negro),
+                      ),
                       Text(
-                        DateFormat('yyyy-MM-dd').format(_ppl!.fechaInicioDescuento!),
+                        _ppl!.fechaInicioDescuento != null
+                            ? DateFormat('yyyy-MM-dd').format(_ppl!.fechaInicioDescuento!)
+                            : 'No disponible', // Muestra un mensaje si es null
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      )
+                      ),
                     ],
                   ),
+
                   Row(
                     children: [
                       const Text('Labor Descuento:  ', style: TextStyle(fontSize: 13, color: negro)),

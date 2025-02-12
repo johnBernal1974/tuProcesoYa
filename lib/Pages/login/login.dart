@@ -19,11 +19,11 @@ class _LoginPageState extends State<LoginPage> {
   final MyAuthProvider _authProvider = MyAuthProvider();
 
   bool _isLoading = false;
+  bool _obscureText = true;
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primary,
@@ -113,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                       // CAMPO DE CONTRASEÑA
                       TextFormField(
                         controller: _passwordController,
-                        obscureText: true,
+                        obscureText: _obscureText,
                         decoration: InputDecoration(
                           labelText: "Contraseña",
                           border: OutlineInputBorder(
@@ -129,6 +129,16 @@ class _LoginPageState extends State<LoginPage> {
                             borderSide: const BorderSide(color: primary, width: 2),
                           ),
                           prefixIcon: const Icon(Icons.lock),
+                          suffixIcon: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _obscureText = !_obscureText;
+                              });
+                            },
+                            child: Icon(
+                              _obscureText ? Icons.visibility : Icons.visibility_off,
+                            ),
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.isEmpty) {

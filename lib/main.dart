@@ -7,6 +7,7 @@ import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
+import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
@@ -19,6 +20,7 @@ import 'Pages/client/register/register.dart';
 import 'Pages/client/solicitudes_page/solicitudes_page.dart';
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
+import 'Pages/forgot_password/forgot_password.dart';
 import 'Pages/login/login.dart';
 import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -82,6 +84,8 @@ class MyApp extends StatelessWidget {
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
+        'forgot_password': (context) => const ForgotPasswordPage(),
+        'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
 
       },
       localizationsDelegates: const [

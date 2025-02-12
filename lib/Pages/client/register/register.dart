@@ -164,7 +164,9 @@ class _RegistroPageState extends State<RegistroPage> {
           laborDescuento: "",
           fechaCaptura: null,
           fechaInicioDescuento: null,
-          status: "registrado"
+          status: "registrado",
+          isNotificatedActivated: false
+
         );
 
         print('Guardando usuario en Firestore...');

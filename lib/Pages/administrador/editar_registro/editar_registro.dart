@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
@@ -161,11 +162,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
 
     String fechaInicioDescuento = widget.doc.get('fecha_inicio_descuento') ?? "";
-    if(fechaInicioDescuento.trim().isEmpty) {
-      _fechaInicioDescuentoController.text = null.toString();
+    if (fechaInicioDescuento.trim().isEmpty) {
+      _fechaInicioDescuentoController.text = "Sin información"; // Solo para mostrarlo en UI
     } else {
-      _fechaInicioDescuentoController.text = fechaInicioDescuento;
+      _fechaInicioDescuentoController.text = fechaInicioDescuento; // Mantiene el valor real
     }
+
     _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
     _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
     _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
@@ -198,7 +200,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         child: Center(
           child: SizedBox(
             // Si el ancho de la pantalla es mayor o igual a 800, usa 800, de lo contrario ocupa todo el ancho disponible
-            width: MediaQuery.of(context).size.width >= 800 ? 800 : double.infinity,
+            width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
             child: ListView(
               children: [
                 const Text(
@@ -256,6 +258,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 celularAcudiente(),
                 const SizedBox(height: 15),
                 emailAcudiente(),
+                const SizedBox(height: 50),
+                estadoUsuarioWidget(widget.doc["status"]),
+                estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
                 const SizedBox(height: 50),
                 botonGuardar(),
                 const SizedBox(height: 150),
@@ -998,7 +1003,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     double screenWidth = MediaQuery.of(context).size.width;
     // Cajón para "Condena transcurrida"
     Widget boxCondenaTranscurrida = Container(
-      width: 130,
+      width: 170,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1009,9 +1014,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
-            'Condena transcurrida',
+            'Condena\ntranscurrida',
             style: TextStyle(
-              fontSize: screenWidth > 600 ? 16 : 12,
+              fontSize: screenWidth > 600 ? 14 : 12,
               color: negroLetras,
               height: 1
             ),
@@ -1037,7 +1042,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     // Cajón para "Condena restante"
     Widget boxCondenaRestante = Container(
-      width: 130,
+      width: 170,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1050,7 +1055,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           Text(
             'Condena\nrestante',
             style: TextStyle(
-              fontSize: screenWidth > 600 ? 16 : 12,
+              fontSize: screenWidth > 600 ? 14 : 12,
               color: negroLetras,
               height: 1
             ),
@@ -1080,7 +1085,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     // Cajón para "Porcentaje ejecutado"
     Widget boxPorcentajeEjecutado = Container(
-      width: 130,
+      width: 170,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1378,102 +1383,114 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     bool isDelitoValid = (selectedDelito != null && selectedDelito!.trim().isNotEmpty) ||
         (widget.doc['delito'] != null && widget.doc['delito'].toString().trim().isNotEmpty);
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.white,
-        backgroundColor: primary,
+    return Container(
+      width: 120,
+      child: Align(
+        alignment: Alignment.center, // Centra horizontalmente
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            foregroundColor: Colors.white,
+            backgroundColor: primary,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          onPressed: () {
+            // Primero validamos el formulario
+            if (!_formKey.currentState!.validate()) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Colors.red,
+                  content: Text(
+                    'No se puede guardar hasta que estén todos los campos llenos',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              return;
+            }
+        
+            // Validaciones adicionales para campos que no forman parte del Form
+            // (por ejemplo, dropdowns u otros controles)
+            if (!isCentroValid || !isRegionalValid || !isCiudadValid || !isJuzgadoEjValid || !isJuzgadoQueValid || !isDelitoValid ||
+                _nombreController.text.trim().isEmpty ||
+                _apellidoController.text.trim().isEmpty ||
+                _numeroDocumentoController.text.trim().isEmpty ||
+                _tipoDocumento.trim().isEmpty ||
+                _radicadoController.text.trim().isEmpty ||
+                _fechaDeCapturaController.text.trim().isEmpty ||
+                _tdController.text.trim().isEmpty ||
+                _nuiController.text.trim().isEmpty ||
+                _patioController.text.trim().isEmpty ||
+                _nombreAcudienteController.text.trim().isEmpty ||
+                _apellidosAcudienteController.text.trim().isEmpty ||
+                _parentescoAcudienteController.text.trim().isEmpty ||
+                _celularAcudienteController.text.trim().isEmpty ||
+                _emailAcudienteController.text.trim().isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Colors.red,
+                  content: Text(
+                    'No se puede guardar hasta que estén todos los campos llenos',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              return;
+            }
+        
+            // Si todo está bien, parseamos los datos necesarios
+            int tiempoCondena = int.parse(_tiempoCondenaController.text);
+        
+            // Oculta el teclado
+            SystemChannels.textInput.invokeMethod('TextInput.hide');
+        
+            // Actualiza el documento en Firestore
+            widget.doc.reference.update({
+              'nombre_ppl': _nombreController.text,
+              'apellido_ppl': _apellidoController.text,
+              'numero_documento_ppl': _numeroDocumentoController.text,
+              'tipo_documento_ppl': _tipoDocumento,
+              'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
+              'regional': selectedRegional ?? widget.doc['regional'],
+              'ciudad': selectedCiudad ?? widget.doc['ciudad'],
+              'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'].toString(),
+              'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'].toString(),
+              'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'].toString(),
+              'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'].toString(),
+              'delito': selectedDelito ?? widget.doc['delito'],
+              'radicado': _radicadoController.text,
+              'tiempo_condena': tiempoCondena,
+              'fecha_captura': _fechaDeCapturaController.text,
+              'td': _tdController.text,
+              'nui': _nuiController.text,
+              'patio': _patioController.text,
+              'labor_descuento': _laborDescuentoController.text,
+              'fecha_inicio_descuento': (_fechaInicioDescuentoController.text.trim().isEmpty ||
+                  _fechaInicioDescuentoController.text.trim() == 'Sin información')
+                  ? null
+                  : _fechaInicioDescuentoController.text.trim(),
+              'nombre_acudiente': _nombreAcudienteController.text,
+              'apellido_acudiente': _apellidosAcudienteController.text,
+              'parentesco_representante': _parentescoAcudienteController.text,
+              'celular': _celularAcudienteController.text,
+              'email': _emailAcudienteController.text,
+              'status': 'activado',
+            }).then((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Datos guardados con éxito y el usuario está activado'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            });
+            // Llamar al método para enviar mensaje de WhatsApp
+            validarYEnviarMensaje();
+
+          },
+          child: const Text('Guardar Cambios'),
+        ),
       ),
-      onPressed: () {
-        // Primero validamos el formulario
-        if (!_formKey.currentState!.validate()) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: Colors.red,
-              content: Text(
-                'No se puede guardar hasta que estén todos los campos llenos',
-                style: TextStyle(color: Colors.white),
-              ),
-              duration: Duration(seconds: 2),
-            ),
-          );
-          return;
-        }
-
-        // Validaciones adicionales para campos que no forman parte del Form
-        // (por ejemplo, dropdowns u otros controles)
-        if (!isCentroValid || !isRegionalValid || !isCiudadValid || !isJuzgadoEjValid || !isJuzgadoQueValid || !isDelitoValid ||
-            _nombreController.text.trim().isEmpty ||
-            _apellidoController.text.trim().isEmpty ||
-            _numeroDocumentoController.text.trim().isEmpty ||
-            _tipoDocumento.trim().isEmpty ||
-            _radicadoController.text.trim().isEmpty ||
-            _fechaDeCapturaController.text.trim().isEmpty ||
-            _tdController.text.trim().isEmpty ||
-            _nuiController.text.trim().isEmpty ||
-            _patioController.text.trim().isEmpty ||
-            _nombreAcudienteController.text.trim().isEmpty ||
-            _apellidosAcudienteController.text.trim().isEmpty ||
-            _parentescoAcudienteController.text.trim().isEmpty ||
-            _celularAcudienteController.text.trim().isEmpty ||
-            _emailAcudienteController.text.trim().isEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              backgroundColor: Colors.red,
-              content: Text(
-                'No se puede guardar hasta que estén todos los campos llenos',
-                style: TextStyle(color: Colors.white),
-              ),
-              duration: Duration(seconds: 2),
-            ),
-          );
-          return;
-        }
-
-        // Si todo está bien, parseamos los datos necesarios
-        int tiempoCondena = int.parse(_tiempoCondenaController.text);
-
-        // Oculta el teclado
-        SystemChannels.textInput.invokeMethod('TextInput.hide');
-
-        // Actualiza el documento en Firestore
-        widget.doc.reference.update({
-          'nombre_ppl': _nombreController.text,
-          'apellido_ppl': _apellidoController.text,
-          'numero_documento_ppl': _numeroDocumentoController.text,
-          'tipo_documento_ppl': _tipoDocumento,
-          'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
-          'regional': selectedRegional ?? widget.doc['regional'],
-          'ciudad': selectedCiudad ?? widget.doc['ciudad'],
-          'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'].toString(),
-          'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'].toString(),
-          'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'].toString(),
-          'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'].toString(),
-          'delito': selectedDelito ?? widget.doc['delito'],
-          'radicado': _radicadoController.text,
-          'tiempo_condena': tiempoCondena,
-          'fecha_captura': _fechaDeCapturaController.text,
-          'td': _tdController.text,
-          'nui': _nuiController.text,
-          'patio': _patioController.text,
-          'labor_descuento': _laborDescuentoController.text,
-          'fecha_inicio_descuento': _fechaInicioDescuentoController.text,
-          'nombre_acudiente': _nombreAcudienteController.text,
-          'apellido_acudiente': _apellidosAcudienteController.text,
-          'parentesco_representante': _parentescoAcudienteController.text,
-          'celular': _celularAcudienteController.text,
-          'email': _emailAcudienteController.text,
-          'status': 'activado',
-        }).then((_) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Datos guardados con éxito y usuario ha quedado activado'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-        });
-
-      },
-      child: const Text('Guardar Cambios'),
     );
   }
 
@@ -1508,4 +1525,143 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
+  Future<void> enviarMensajeWhatsApp(String celular, String docId) async {
+    if (celular.isEmpty) {
+      print('El número de celular es inválido');
+      return;
+    }
+
+    // Asegurar que el número tenga el prefijo +57 (Colombia)
+    if (!celular.startsWith("+57")) {
+      celular = "+57$celular";
+    }
+
+    // Obtener el nombre del acudiente desde Firestore
+    String nombreAcudiente = "Estimado usuario"; // Valor por defecto si no se encuentra
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance.collection('Ppl').doc(docId).get();
+      if (doc.exists && doc.data() != null) {
+        nombreAcudiente = doc['nombre_acudiente'] ?? "Estimado usuario";
+      }
+    } catch (e) {
+      print("Error obteniendo nombre del acudiente: $e");
+    }
+
+    // Construir el mensaje
+    String mensaje = Uri.encodeComponent(
+        "Hola *$nombreAcudiente*,\n\n"
+            "Tu cuenta de *Tu Proceso Ya* ha sido activada.\n\n"
+            "Gracias por confiar en nosotros.\n\n"
+            "Cordialmente,\nEl equipo de soporte."
+    );
+
+    String whatsappBusinessUri = "whatsapp://send?phone=$celular&text=$mensaje"; // WhatsApp Business
+    String webUrl = "https://wa.me/$celular?text=$mensaje"; // WhatsApp Web
+
+    // Intenta abrir WhatsApp Business o normal
+    if (await canLaunchUrl(Uri.parse(whatsappBusinessUri))) {
+      await launchUrl(Uri.parse(whatsappBusinessUri));
+    } else {
+      // Si no está instalado, abrir WhatsApp Web o enviar al usuario a instalarlo
+      await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> validarYEnviarMensaje() async {
+    String celular = widget.doc['celular'] ?? '';
+    String docId = widget.doc['id'] ?? '';
+
+    if (celular.isEmpty || docId.isEmpty) {
+      print("Error: Datos insuficientes para enviar el mensaje.");
+      return;
+    }
+
+    DocumentReference docRef = FirebaseFirestore.instance.collection('Ppl').doc(docId);
+
+    try {
+      DocumentSnapshot docSnapshot = await docRef.get();
+
+      // Verificar si el nodo isNotificated existe y es true
+      if (docSnapshot.exists && docSnapshot.data() != null) {
+        bool isNotificated = docSnapshot['isNotificatedActivated'] ?? false;
+        if (isNotificated) {
+          print("El usuario ya ha sido notificado. No se enviará el mensaje.");
+          return;
+        }
+      }
+
+      // Enviar mensaje de WhatsApp
+      await enviarMensajeWhatsApp(celular, docId);
+
+      // Crear o actualizar isNotificated a true
+      await docRef.set({'isNotificatedActivated': true}, SetOptions(merge: true));
+
+      print("Mensaje enviado y estado actualizado.");
+    } catch (e) {
+      print("Error al verificar o actualizar la notificación: $e");
+    }
+  }
+
+  Widget estadoUsuarioWidget(String status) {
+    Color color;
+    IconData icono;
+    String mensaje;
+
+    if (status == "activado") {
+      color = Colors.green;
+      icono = Icons.check_circle;
+      mensaje = "El usuario ya está activado";
+    } else if (status == "servicio_solicitado") {
+      color = Colors.blue;
+      icono = Icons.info;
+      mensaje = "Este usuario tiene solicitudes pendientes";
+    } else {
+      color = Colors.red;
+      icono = Icons.error;
+      mensaje = "El usuario aún no está activado";
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icono, color: color, size: 20),
+        const SizedBox(width: 8), // Espacio entre icono y texto
+        Text(
+          mensaje,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget estadoNotificacionWidget(bool isNotificatedActivated) {
+    Color color = isNotificatedActivated ? Colors.green : Colors.red;
+    IconData icono = isNotificatedActivated ? Icons.check_circle : Icons.error;
+    String mensaje = isNotificatedActivated
+        ? "Ya se notificó al usuario de la activación de la cuenta"
+        : "El usuario aún no ha sido notificado de la activación";
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icono, color: color, size: 20),
+        const SizedBox(width: 8), // Espacio entre icono y texto
+        Text(
+          mensaje,
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
+
 }

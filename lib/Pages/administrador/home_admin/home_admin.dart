@@ -57,7 +57,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       .where((doc) => doc.get('status').toString().toLowerCase() == 'activado')
                       .length;
                   final int countPendiente = docs
-                      .where((doc) => doc.get('status').toString().toLowerCase() == 'pendiente')
+                      .where((doc) => doc.get('status').toString().toLowerCase() == 'servicio_solicitado')
                       .length;
                   final int countTotal = countRegistrado + countActivado + countPendiente;
 
@@ -188,7 +188,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           InkWell(
                             onTap: () {
                               setState(() {
-                                filterStatus = "pendiente";
+                                filterStatus = "servicio_solicitado";
                               });
                             },
                             child: Container(
@@ -386,7 +386,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                   ? "No hay Nuevos registros"
                                   : filterStatus!.toLowerCase() == "activado"
                                   ? "No hay usuarios activados"
-                                  : filterStatus!.toLowerCase() == "pendiente"
+                                  : filterStatus!.toLowerCase() == "servicio_solicitado"
                                   ? "No hay solicitudes pendientes"
                                   : "No hay registros",
                               style: const TextStyle(fontSize: 16, color: Colors.grey),

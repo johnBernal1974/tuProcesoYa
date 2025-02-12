@@ -13,10 +13,12 @@ class SideBar extends StatefulWidget {
 
 class _SideBarState extends State<SideBar> {
   final MyAuthProvider _authProvider = MyAuthProvider();
+  int _pendingSuggestions = 0;
 
   @override
   void initState() {
     super.initState();
+    _fetchPendingSuggestions();
   }
 
   Future<bool> _checkIfAdmin() async {
@@ -61,6 +63,19 @@ class _SideBarState extends State<SideBar> {
     );
   }
 
+  Future<void> _fetchPendingSuggestions() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('buzon_sugerencias')
+        .where('contestado', isEqualTo: false) // Filtra solo las no respondidas
+        .get();
+
+    if (mounted) {
+      setState(() {
+        _pendingSuggestions = querySnapshot.docs.length;
+      });
+    }
+  }
+
   Widget _buildDrawerHeader(bool? isAdmin) {
     if (isAdmin ?? false) {
       return Container(
@@ -97,6 +112,7 @@ class _SideBarState extends State<SideBar> {
       return [
         const SizedBox(height: 50),
         _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home_admin'),
+        _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias_administrador', showBadge: _pendingSuggestions > 0),
         _buildDrawerTile(context, "Configuraciones", Icons.settings, 'prices_page'),
         _buildLogoutTile(context),
       ];
@@ -105,28 +121,48 @@ class _SideBarState extends State<SideBar> {
         const SizedBox(height: 50),
         _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
-        //_buildDrawerTile(context, "Historial de actuaciones", Icons.date_range_outlined, 'operadores_page'),
         _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.event_note_outlined, 'solicitudes_page'),
         _buildDrawerTile(context, "Quienes somos", Icons.info, 'nosotros'),
-        _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
+        _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias', showBadge: _pendingSuggestions > 0),
         _buildLogoutTile(context),
       ];
     }
   }
 
-  Widget _buildDrawerTile(BuildContext context, String title, IconData icon, String route) {
-    return DrawerListTitle(
-      title: title,
-      icon: icon,
-      iconColor: blanco,
-      press: () {
+  Widget _buildDrawerTile(BuildContext context, String title, IconData icon, String route, {bool showBadge = false}) {
+    return ListTile(
+      onTap: () {
         if (ModalRoute.of(context)?.settings.name != route) {
           Navigator.pushNamed(context, route);
         }
       },
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(icon, color: Colors.white),
+          if (showBadge) // Si hay sugerencias sin responder, muestra el punto rojo
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+      ),
     );
   }
+
 
 
   Widget _buildLogoutTile(BuildContext context) {
