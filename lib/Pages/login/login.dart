@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/src/colors/colors.dart'; // Asegúrate de que el color primary esté definido aquí
 
+import '../../commons/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 
 class LoginPage extends StatefulWidget {
@@ -251,6 +252,8 @@ class _LoginPageState extends State<LoginPage> {
         final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
         if (adminDoc.exists) {
+          // ✅ Cargar el nombre del admin antes de navegar
+          await AdminProvider().loadAdminName();
           // El usuario es administrador
           if (context.mounted) {
             Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);

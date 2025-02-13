@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../providers/auth_provider.dart';
 import '../src/colors/colors.dart';
+import 'admin_provider.dart';
 
 class SideBar extends StatefulWidget {
   const SideBar({super.key});
@@ -124,7 +125,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.event_note_outlined, 'solicitudes_page'),
         _buildDrawerTile(context, "Quienes somos", Icons.info, 'nosotros'),
-        _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias', showBadge: _pendingSuggestions > 0),
+        _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
         _buildLogoutTile(context),
       ];
     }
@@ -184,6 +185,7 @@ class _SideBarState extends State<SideBar> {
                   onPressed: () async {
                     try {
                       await _authProvider.signOut();
+                      AdminProvider().reset();
                       if(context.mounted){
                         Navigator.of(context).pop();
                         Navigator.pushNamedAndRemoveUntil(context, 'login', (Route<dynamic> route) => false);

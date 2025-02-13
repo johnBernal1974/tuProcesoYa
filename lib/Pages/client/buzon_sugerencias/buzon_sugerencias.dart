@@ -24,6 +24,12 @@ class _BuzonSugerenciasPageState extends State<BuzonSugerenciasPage> {
 
   Future<void> _enviarSugerencia() async {
     if (_sugerenciaController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No has ingresado ningúna sugerencia.'),
+          duration: Duration(seconds: 2),
+        ),
+      );
       return;
     }
 
@@ -56,7 +62,7 @@ class _BuzonSugerenciasPageState extends State<BuzonSugerenciasPage> {
         _isSending = false;
       });
 
-      if(context.mounted){
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('¡Gracias por tu sugerencia!'),
@@ -73,6 +79,7 @@ class _BuzonSugerenciasPageState extends State<BuzonSugerenciasPage> {
       });
     }
   }
+
 
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(

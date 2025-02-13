@@ -10,6 +10,7 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
+import 'Pages/administrador/respuesta_sugerencia_page/respuesta_sugerencia_page.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
@@ -88,6 +89,21 @@ class MyApp extends StatelessWidget {
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
 
       },
+      onGenerateRoute: (settings) {
+        if (settings.name == 'respuesta_sugerencia_page_admin') {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (context) => RespuestaSugerenciaPage(
+              userId: args['userId'],
+              nombre: args['nombre'],
+              sugerencia: args['sugerencia'],
+              celular: args['celular'],
+            ),
+          );
+        }
+        return null; // Manejar otras rutas si es necesario
+      },
+
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

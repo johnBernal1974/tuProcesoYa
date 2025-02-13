@@ -2,10 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tuprocesoya/src/colors/colors.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import '../../../commons/main_layaout.dart';
 
 class BuzonSugerenciasAdministradorPage extends StatefulWidget {
@@ -29,35 +25,6 @@ class _BuzonSugerenciasAdministradorPageState
   String userId = "";
   String selectedFilter = 'Sin contestar'; // Estado del filtro
 
-  Future<void> enviarMensajeWhatsApp(
-      String celular, String nombre, String sugerencia, String respuesta) async {
-    if (celular.isEmpty) {
-      print('El número de celular es inválido');
-      return;
-    }
-    if (!celular.startsWith("+57")) {
-      celular = "+57$celular";
-    }
-
-    String mensaje = Uri.encodeComponent(
-        "Hola, *$nombre*, gracias por tu comentario:\n _\"$sugerencia\"_\n\n*Respuesta:* $respuesta\n\nCordialmente,\nEquipo de *Tu Proceso Ya*.");
-    String whatsappUrl = "https://wa.me/$celular?text=$mensaje";
-    await launchUrl(Uri.parse(whatsappUrl), mode: LaunchMode.externalApplication);
-  }
-
-  Future<void> guardarRespuestaEnFirestore(String userId, String respuesta) async {
-    await FirebaseFirestore.instance
-        .collection('buzon_sugerencias')
-        .doc(userId)
-        .update({
-      'respuesta': respuesta,
-      'fecha_respuesta': FieldValue.serverTimestamp(),
-      'contestado': true,
-      'respondido_por': '${currentUserName ?? ''} ${currentUserLastName ?? ''}'.trim(),
-
-
-    });
-  }
 
   String _formatearFecha(Timestamp timestamp) {
     DateTime fecha = timestamp.toDate();
@@ -147,7 +114,15 @@ class _BuzonSugerenciasAdministradorPageState
                     ],
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 20),
+                  if (noContestadas == 0)
+                  const Text(
+                  'No hay sugerencias sin contestar.',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  )
+                  else
+                  const SizedBox(),
+                  // 🔹 Filtrar sugerencias según `selectedFilter`
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.all(10),
@@ -164,8 +139,6 @@ class _BuzonSugerenciasAdministradorPageState
                         String respuesta = doc['respuesta'] ?? '';
                         Timestamp? fechaRespuesta = doc['fecha_respuesta'];
                         bool fueRespondida = doc['contestado'] ?? false;
-
-                        controladoresRespuestas.putIfAbsent(userId, () => TextEditingController());
 
                         return Card(
                           surfaceTintColor: Colors.white,
@@ -235,70 +208,26 @@ class _BuzonSugerenciasAdministradorPageState
                                             ),
                                           ],
                                         )
-
                                       ]
-
                                     ],
                                   ),
                                 ),
                                 if (!fueRespondida)
                                   TextButton(
                                     onPressed: () {
-                                      setState(() {
-                                        mostrarCajon[userId] = !(mostrarCajon[userId] ?? false);
-                                      });
+                                      Navigator.pushNamed(
+                                        context,
+                                        'respuesta_sugerencia_page_admin',
+                                        arguments: {
+                                          'userId': userId,
+                                          'nombre': nombre,
+                                          'sugerencia': sugerencia,
+                                          'celular': celular,
+                                        },
+                                      );
                                     },
                                     child: const Text('Responder sugerencia'),
                                   ),
-                                if (mostrarCajon[userId] ?? false) ...[
-                                  Container(
-                                    margin: const EdgeInsets.all(8),
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      border: Border.all(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Column(
-                                      children: [
-                                        TextField(
-                                          controller: controladoresRespuestas[userId],
-                                          decoration: const InputDecoration(
-                                            hintText: 'Escribe tu respuesta aquí...',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          maxLines: 3,
-                                        ),
-                                        const SizedBox(height: 10),
-                                        ElevatedButton(
-                                          onPressed: () async {
-                                            String respuestaTexto = (controladoresRespuestas[userId]?.text ?? '').trim();
-                                            if (respuestaTexto.isNotEmpty) {
-                                              try {
-                                                await FirebaseFirestore.instance.collection('buzon_sugerencias').doc(userId).update({
-                                                  'respuesta': respuestaTexto,
-                                                  'respondido_por': '${currentUserName ?? ''} ${currentUserLastName ?? ''}'.trim(),
-                                                  'fecha_respuesta': FieldValue.serverTimestamp(),
-                                                  'contestado': true,
-                                                });
-
-                                                await enviarMensajeWhatsApp(celular, nombre, sugerencia, respuestaTexto);
-
-                                                setState(() {
-                                                  mostrarCajon[userId] = false;
-                                                });
-
-                                                controladoresRespuestas[userId]?.clear();
-                                              } catch (e) {
-                                                print("Error al guardar la respuesta: $e");
-                                              }
-                                            }
-                                          },
-                                          child: const Text('Responder'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
                               ],
                             ),
                           ),
@@ -314,6 +243,7 @@ class _BuzonSugerenciasAdministradorPageState
       ),
     );
   }
+
 
 
   Future<void> fetchCurrentAdminInfo() async {

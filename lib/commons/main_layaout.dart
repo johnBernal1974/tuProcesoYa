@@ -1,10 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tuprocesoya/commons/side_bar_menu.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
-class MainLayout extends StatelessWidget {
+import 'admin_provider.dart'; // Importamos la clase AdminProvider
+
+class MainLayout extends StatefulWidget {
   final Widget content;
   final String pageTitle;
 
@@ -12,7 +13,22 @@ class MainLayout extends StatelessWidget {
       : super(key: key);
 
   @override
+  _MainLayoutState createState() => _MainLayoutState();
+}
+
+class _MainLayoutState extends State<MainLayout> {
+  final AdminProvider _adminProvider = AdminProvider(); // Instancia única
+
+  @override
+  void initState() {
+    super.initState();
+    print("🟢 initState() de MainLayout ejecutado");
+    _adminProvider.loadAdminName(); // Carga solo si es necesario
+  }
+
+  @override
   Widget build(BuildContext context) {
+    print("🔵 build() de MainLayout ejecutado");
     final user = FirebaseAuth.instance.currentUser;
     double width = MediaQuery.of(context).size.width;
     bool isTablet = width >= 600 && width < 1200;
@@ -23,7 +39,7 @@ class MainLayout extends StatelessWidget {
       drawer: isDesktop ? null : const SideBar(),
       appBar: AppBar(
         title: Text(
-          pageTitle,
+          widget.pageTitle,
           style: const TextStyle(
             color: blanco,
             fontWeight: FontWeight.w900,
@@ -34,13 +50,9 @@ class MainLayout extends StatelessWidget {
         iconTheme: const IconThemeData(color: blanco),
         actions: [
           if (user != null)
-            FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('admin')
-                  .doc(user.uid)
-                  .get(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+            Builder(
+              builder: (context) {
+                if (_adminProvider.adminName == null) {
                   return const Padding(
                     padding: EdgeInsets.all(8.0),
                     child: CircularProgressIndicator(
@@ -49,31 +61,22 @@ class MainLayout extends StatelessWidget {
                     ),
                   );
                 }
-                if (snapshot.hasData && snapshot.data!.exists) {
-                  final adminData =
-                  snapshot.data!.data() as Map<String, dynamic>;
-                  return Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Center(
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            adminData['name'],
-                            style: const TextStyle(fontSize: 14, color: Colors.white),
-                          ),
-                        ],
-                      ),
+                return Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Center(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.person, color: Colors.white),
+                        const SizedBox(width: 4),
+                        Text(
+                          _adminProvider.adminName!,
+                          style: const TextStyle(fontSize: 14, color: Colors.white),
+                        ),
+                      ],
                     ),
-                  );
-
-                }
-                return const SizedBox.shrink();
+                  ),
+                );
               },
             ),
         ],
@@ -98,7 +101,7 @@ class MainLayout extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 20),
                     child: Align(
                       alignment: Alignment.topCenter,
-                      child: content,
+                      child: widget.content,
                     ),
                   ),
                 ),
