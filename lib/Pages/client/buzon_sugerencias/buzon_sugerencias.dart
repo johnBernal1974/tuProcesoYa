@@ -140,6 +140,7 @@ class _BuzonSugerenciasPageState extends State<BuzonSugerenciasPage> {
 
                 const SizedBox(height: 20),
                 TextField(
+                  textCapitalization: TextCapitalization.sentences,
                   controller: _sugerenciaController,
                   maxLines: 5,
                   decoration: _inputDecoration('Escribe tu sugerencia aquí'),

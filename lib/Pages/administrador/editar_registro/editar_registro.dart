@@ -1003,7 +1003,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     double screenWidth = MediaQuery.of(context).size.width;
     // Cajón para "Condena transcurrida"
     Widget boxCondenaTranscurrida = Container(
-      width: 170,
+      width: 150,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1032,7 +1032,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ? '$mesesEjecutado meses : $diasEjecutadoExactos día'
                 : '$mesesEjecutado meses : $diasEjecutadoExactos días',
             style: TextStyle(
-              fontSize: screenWidth > 600 ? 14 : 12,
+              fontSize: screenWidth > 600 ? 14 : 11,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1042,7 +1042,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     // Cajón para "Condena restante"
     Widget boxCondenaRestante = Container(
-      width: 170,
+      width: 150,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1075,7 +1075,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ? '$diasRestanteExactos día'
                 : '$diasRestanteExactos días',
             style: TextStyle(
-              fontSize: screenWidth > 600 ? 14 : 12,
+              fontSize: screenWidth > 600 ? 14 : 11,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1085,7 +1085,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     // Cajón para "Porcentaje ejecutado"
     Widget boxPorcentajeEjecutado = Container(
-      width: 170,
+      width: 150,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         border: Border.all(color: primary,width: 3),
@@ -1107,7 +1107,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           Text(
             '${porcentajeEjecutado.toStringAsFixed(1)}%',
             style: TextStyle(
-              fontSize: screenWidth > 600 ? 14 : 12,
+              fontSize: screenWidth > 600 ? 14 : 11,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -1646,22 +1646,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ? "Ya se notificó al usuario de la activación de la cuenta"
         : "El usuario aún no ha sido notificado de la activación";
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(icono, color: color, size: 20),
-        const SizedBox(width: 8), // Espacio entre icono y texto
-        Text(
-          mensaje,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icono, color: color, size: 20),
+          const SizedBox(width: 8), // Espacio entre icono y texto
+          Expanded( // Permite que el texto se ajuste dentro del espacio disponible
+            child: Text(
+              mensaje,
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+              ),
+              overflow: TextOverflow.ellipsis, // Evita desbordamientos
+              maxLines: 1, // Mantiene el texto en una sola línea
+              softWrap: false, // Evita saltos de línea
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
+
 
 
 }

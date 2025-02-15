@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../providers/auth_provider.dart';
 import '../src/colors/colors.dart';
 import 'admin_provider.dart';
@@ -15,54 +16,72 @@ class SideBar extends StatefulWidget {
 class _SideBarState extends State<SideBar> {
   final MyAuthProvider _authProvider = MyAuthProvider();
   int _pendingSuggestions = 0;
+  bool? _isAdmin;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _fetchPendingSuggestions();
+    _checkIfAdmin();
+
   }
 
-  Future<bool> _checkIfAdmin() async {
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      return false; // El usuario no está autenticado
+  Future<void> _checkIfAdmin() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Revisa si ya tenemos el valor almacenado
+    if (prefs.containsKey('isAdmin')) {
+      setState(() {
+        _isAdmin = prefs.getBool('isAdmin');
+        _isLoading = false; // Termina la carga
+      });
+      return;
     }
 
-    final adminsCollection = FirebaseFirestore.instance.collection('admin');
-    final adminDoc = await adminsCollection.doc(userId).get();
+    // Si no está en SharedPreferences, consulta Firestore
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      setState(() {
+        _isAdmin = false;
+        _isLoading = false;
+      });
+      return;
+    }
 
-    return adminDoc.exists;
+    final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
+
+    if (mounted) {
+      setState(() {
+        _isAdmin = adminDoc.exists;
+        _isLoading = false;
+      });
+      await prefs.setBool('isAdmin', adminDoc.exists); // Guarda el valor
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: _checkIfAdmin(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
-          return Drawer(
-            elevation: 1,
-            child: Container(
-              color: violetaOscuro,
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  const SizedBox(height: 40),
-                  _buildDrawerHeader(snapshot.data),
-                  const Divider(height: 1, color: grisMedio),
-                  ..._buildDrawerItems(context, snapshot.data),
-                ],
-              ),
-            ),
-          );
-        } else {
-          return const Center(
-            child: CircularProgressIndicator(),
-          );
-        }
-      },
+    return Drawer(
+      elevation: 1,
+      child: Container(
+        color: violetaOscuro,
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator()) // Muestra un loader mientras carga
+            : ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            const SizedBox(height: 40),
+            _buildDrawerHeader(_isAdmin),
+            const Divider(height: 1, color: grisMedio),
+            ..._buildDrawerItems(context, _isAdmin),
+          ],
+        ),
+      ),
     );
   }
+
 
   Future<void> _fetchPendingSuggestions() async {
     final querySnapshot = await FirebaseFirestore.instance
@@ -78,46 +97,31 @@ class _SideBarState extends State<SideBar> {
   }
 
   Widget _buildDrawerHeader(bool? isAdmin) {
-    if (isAdmin ?? false) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-        decoration: const BoxDecoration(
-          color: blancoCards,
-        ),
-        child: Column(
-          children: [
-            Image.asset(
-              'assets/images/logo_tu_proceso_ya_transparente.png',
-              height: 40,
-            ),
-            const Text("Administrador")
-          ],
-        ),
-      );
-    } else {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-        decoration: const BoxDecoration(
-          color: blancoCards,
-        ),
-        child: Image.asset(
-          'assets/images/logo_tu_proceso_ya_transparente.png',
-          height: 40,
-        ),
-      );
-    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+      decoration: const BoxDecoration(color: blancoCards),
+      child: Column(
+        children: [
+          Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
+          if (isAdmin == true) const Text("Administrador"),
+        ],
+      ),
+    );
   }
 
   List<Widget> _buildDrawerItems(BuildContext context, bool? isAdmin) {
     if (isAdmin == true) {
+      // Menú para administradores
       return [
         const SizedBox(height: 50),
         _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home_admin'),
         _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias_administrador', showBadge: _pendingSuggestions > 0),
-        _buildDrawerTile(context, "Configuraciones", Icons.settings, 'prices_page'),
+        _buildDrawerTile(context, "Configuraciones", Icons.settings, 'configuraciones_admin'),
+        _buildDrawerTile(context, "Solicitudes derechos petición", Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
         _buildLogoutTile(context),
       ];
     } else {
+      // Menú para usuarios normales
       return [
         const SizedBox(height: 50),
         _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
@@ -130,6 +134,7 @@ class _SideBarState extends State<SideBar> {
       ];
     }
   }
+
 
   Widget _buildDrawerTile(BuildContext context, String title, IconData icon, String route, {bool showBadge = false}) {
     return ListTile(
@@ -184,6 +189,8 @@ class _SideBarState extends State<SideBar> {
                   child: const Text("SI", style: TextStyle(color: Colors.black)),
                   onPressed: () async {
                     try {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.remove('isAdmin'); // 🔹 BORRA EL ESTADO GUARDADO
                       await _authProvider.signOut();
                       AdminProvider().reset();
                       if(context.mounted){

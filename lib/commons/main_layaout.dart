@@ -18,17 +18,37 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   final AdminProvider _adminProvider = AdminProvider(); // Instancia única
+  bool _isAdmin = false;
+  bool _isLoadingAdminCheck = true;
 
   @override
   void initState() {
     super.initState();
     print("🟢 initState() de MainLayout ejecutado");
-    _adminProvider.loadAdminName(); // Carga solo si es necesario
+    _checkIfUserIsAdmin();
+  }
+
+  Future<void> _checkIfUserIsAdmin() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    bool isAdmin = await _adminProvider.isUserAdmin(user.uid);
+    if (mounted) {
+      setState(() {
+        _isAdmin = isAdmin;
+        _isLoadingAdminCheck = false;
+      });
+    }
+
+    if (_isAdmin) {
+      await _adminProvider.loadAdminName(); // Cargar solo si es admin
+      setState(() {}); // Refrescar el widget con el nombre del admin
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    print("🔵 build() de MainLayout ejecutado");
+    //print("🔵 build() de MainLayout ejecutado");
     final user = FirebaseAuth.instance.currentUser;
     double width = MediaQuery.of(context).size.width;
     bool isTablet = width >= 600 && width < 1200;
@@ -52,6 +72,16 @@ class _MainLayoutState extends State<MainLayout> {
           if (user != null)
             Builder(
               builder: (context) {
+                if (_isLoadingAdminCheck) {
+                  return const Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  );
+                }
+                if (!_isAdmin) return const SizedBox(); // No mostrar nada si no es admin
                 if (_adminProvider.adminName == null) {
                   return const Padding(
                     padding: EdgeInsets.all(8.0),

@@ -69,7 +69,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                   const SizedBox(height: 20),// Logo
                   const Text("En ésta sección encontrarás la información guardada en el momento del registro. Por favor "
                       "verifica que los datos sean correctos y esten completos.", style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black
+                    fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black,height: 1.2
                   )),
                   const SizedBox(height: 20),
                   const Text("Datos del PPL", style: TextStyle(
@@ -111,7 +111,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Centro Reclusión:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.centroReclusion, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text(_ppl!.centroReclusion, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600, height: 1.1)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -119,7 +119,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Juzgado Ejecución Penas:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.juzgadoEjecucionPenas, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text(_ppl!.juzgadoEjecucionPenas, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600, height: 1.1)),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -127,7 +127,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text('Juzgado Que Condenó:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.juzgadoQueCondeno, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text(_ppl!.juzgadoQueCondeno, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600, height: 1.1)),
                     ],
                   ),
                   const SizedBox(height: 10),
