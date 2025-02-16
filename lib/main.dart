@@ -8,6 +8,7 @@ import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
+import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
@@ -91,26 +92,45 @@ class MyApp extends StatelessWidget {
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
         'forgot_password': (context) => const ForgotPasswordPage(),
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
-        'solicitud_exitosa_derecho_peticion': (context) => SolicitudExitosaDerechoPeticionPage(),
         'solicitudes_derecho_peticion_admin': (context) => const SolicitudesDerechoPeticionAdminPage(),
 
       },
-      onGenerateRoute: (settings) {
-        if (settings.name == 'respuesta_sugerencia_page_admin') {
-          final args = settings.arguments as Map<String, dynamic>;
-          return MaterialPageRoute(
-            builder: (context) => RespuestaSugerenciaPage(
-              userId: args['userId'],
-              nombre: args['nombre'],
-              sugerencia: args['sugerencia'],
-              celular: args['celular'],
-            ),
-          );
-        }
-        return null; // Manejar otras rutas si es necesario
-      },
-
-      localizationsDelegates: const [
+        onGenerateRoute: (settings) {
+          if (settings.name == 'respuesta_sugerencia_page_admin') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => RespuestaSugerenciaPage(
+                userId: args['userId'],
+                nombre: args['nombre'],
+                sugerencia: args['sugerencia'],
+                celular: args['celular'],
+              ),
+            );
+          } else if (settings.name == 'solicitud_exitosa_derecho_peticion') {
+            final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
+            return MaterialPageRoute(
+              builder: (context) => SolicitudExitosaDerechoPeticionPage(
+                numeroSeguimiento: numeroSeguimiento,
+              ),
+            );
+          } else if (settings.name == 'atender_derecho_peticion_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderDerechoPeticionPage(
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'],
+                subcategoria: args['subcategoria'],
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
+                respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
+              ),
+            );
+          }
+          return null; // Manejar rutas desconocidas si es necesario
+        },
+        localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,

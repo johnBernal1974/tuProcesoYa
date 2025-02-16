@@ -5,6 +5,9 @@ import '../../../commons/main_layaout.dart';
 import '../home/home.dart';
 
 class SolicitudExitosaDerechoPeticionPage extends StatelessWidget {
+  final String numeroSeguimiento;
+
+  const SolicitudExitosaDerechoPeticionPage({super.key, required this.numeroSeguimiento});
 
   @override
   Widget build(BuildContext context) {
@@ -25,6 +28,18 @@ class SolicitudExitosaDerechoPeticionPage extends StatelessWidget {
                 const Text(
                   "Tu solicitud ha sido recibida",
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, height: 1),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  "Numero de seguimiento",
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  numeroSeguimiento,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, height: 1),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 30),

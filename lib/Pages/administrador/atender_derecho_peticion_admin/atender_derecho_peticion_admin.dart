@@ -7,30 +7,31 @@ import '../../../models/ppl.dart';
 import '../../../src/colors/colors.dart';
 
 class AtenderDerechoPeticionPage extends StatefulWidget {
-
   final String numeroSeguimiento;
   final String categoria;
   final String subcategoria;
-  final String texto;
   final String fecha;
   final String idUser;
   final List<dynamic> archivos; // Lista de archivos
+  final List<String> respuestas; // Lista de respuestas
+  final List<String> preguntas; // Lista de respuestas
 
   const AtenderDerechoPeticionPage({
     super.key,
     required this.numeroSeguimiento,
     required this.categoria,
     required this.subcategoria,
-    required this.texto,
     required this.fecha,
     required this.idUser,
     required this.archivos,
+    required this.respuestas,
+    required this.preguntas,// Nuevo parámetro agregado
   });
-
 
   @override
   State<AtenderDerechoPeticionPage> createState() => _AtenderDerechoPeticionPageState();
 }
+
 
 class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage> {
   late PplProvider _pplProvider;
@@ -158,7 +159,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
         ),
         const SizedBox(height: 30),
+        const Divider(color: gris),
+        const Text("Espacio de diligenciamiento", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28)),
         ingresarAnotaciones(),
+
         const SizedBox(height: 150),// Se muestra debajo del contenido principal
 
       ],
@@ -222,7 +226,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Solicitud hecha por el usuario:", style: TextStyle(fontSize: 12, color: Colors.black)),
+        const Divider(color: gris),
+        const Text(
+          "Comentarios hechos por el usuario",
+          style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w900),
+        ),
+
+        const SizedBox(height: 15),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -230,14 +240,40 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
           width: double.infinity,
           padding: const EdgeInsets.all(12),
-          child: Text(
-            widget.texto ?? "Sin información",
-            style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
+          child: widget.preguntas.isNotEmpty && widget.respuestas.isNotEmpty
+              ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(
+              widget.preguntas.length,
+                  (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.preguntas[index],
+                      style: const TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      index < widget.respuestas.length ? widget.respuestas[index] : 'No hay respuesta',
+                      style: const TextStyle(fontSize: 12, color: Colors.black),
+                    ),
+                    const Divider(), // Separador entre preguntas
+                  ],
+                ),
+              ),
+            ),
+          )
+              : const Text(
+            "No hay preguntas ni respuestas registradas.",
+            style: TextStyle(fontSize: 12, color: Colors.black54),
           ),
         ),
       ],
     );
   }
+
+
 
   /// 📆 Función para manejar errores en la conversión de fechas
   String _formatFecha(String? fecha) {
