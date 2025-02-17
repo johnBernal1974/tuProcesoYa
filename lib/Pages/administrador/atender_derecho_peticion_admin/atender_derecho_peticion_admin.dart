@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
@@ -204,7 +205,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         const SizedBox(height: 30),
         ingresarRazones(),
         const SizedBox(height: 30),
-        Row(
+        Wrap(
           children: [
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -222,19 +223,52 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ),
             const SizedBox(width: 50),
             if(_mostrarBotonVistaPrevia)
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                backgroundColor: Colors.white, // Fondo blanco
-                foregroundColor: Colors.black, // Letra en negro
-              ),
-              onPressed: () {
-                setState(() {
-                  _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
-                });
+            Wrap(
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                    backgroundColor: Colors.white, // Fondo blanco
+                    foregroundColor: Colors.black, // Letra en negro
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
+                    });
 
-              },
-              child: const Text("Vista previa"),
+                  },
+                  child: const Text("Vista previa"),
+                ),
+                const SizedBox(width: 30),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                    backgroundColor: Colors.white, // Fondo blanco
+                    foregroundColor: Colors.black, // Letra en negro
+                  ),
+                  onPressed: () {
+                    var derechoPeticion = DerechoPeticionTemplate(
+                      entidad: userData?.centroReclusion ?? "",
+                      nombrePpl: userData?.nombrePpl ?? "",
+                      apellidoPpl: userData?.apellidoPpl ?? "",
+                      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+                      centroPenitenciario: userData?.centroReclusion ?? "",
+                      textoPrincipal: textoPrincipal,
+                      razonesPeticion: razonesPeticion,
+                      emailUsuario: userData?.email ?? "",
+                      nui: userData?.nui ?? "",
+                      td: userData?.td ?? "",
+                    );
+
+                    enviarCorreoWeb(
+                      "johnnever.bernal@gmail.com",
+                      "Derecho de Petición",
+                      derechoPeticion.generarTexto().toPlainText(),
+                    );
+                  },
+                  child: const Text("Enviar por correo"),
+                ),
+              ],
             ),
           ],
         ),
@@ -551,7 +585,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       ),
     );
   }
-
   /// 🔹 Construye un par de columnas para información general
   Widget _buildInfoRow(String title1, String value1, String title2, String value2) {
     return Row(
@@ -965,6 +998,19 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         ),
       ],
     );
+  }
+
+
+  ////temporal para enviar correos
+  Future<void> enviarCorreoWeb(String destinatario, String asunto, String cuerpo) async {
+    final String emailUrl =
+        'mailto:$destinatario?subject=${Uri.encodeComponent(asunto)}&body=${Uri.encodeComponent(cuerpo)}';
+
+    if (await canLaunch(emailUrl)) {
+      await launch(emailUrl);
+    } else {
+      print("❌ No se pudo abrir el cliente de correo.");
+    }
   }
 
 }
