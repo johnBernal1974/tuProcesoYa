@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
+import '../../../plantillas/plantilla_derecho_peticion.dart';
 import '../../../src/colors/colors.dart';
 
 class AtenderDerechoPeticionPage extends StatefulWidget {
@@ -50,8 +52,16 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   List<String> archivos = [];
 
   bool _expandido = false;
-  final TextEditingController _controller = TextEditingController();
+  final TextEditingController _textoPrincipalController = TextEditingController();
+  final TextEditingController _textoRazonesController = TextEditingController();
+  final AtenderDerechoPeticionAdminController _controller = AtenderDerechoPeticionAdminController();
   int _maxLines = 1; // Empieza con 1 línea
+
+  String textoPrincipal = "";
+  String razonesPeticion = "";
+  bool _mostrarVistaPrevia = false;
+  bool _mostrarBotonVistaPrevia = false;
+
 
 
 
@@ -64,20 +74,48 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     archivos = List<String>.from(widget.archivos); // Copia los archivos una vez
     fetchUserData();
     calcularTiempo(widget.idUser);
-    _controller.addListener(_actualizarAltura);
+    _textoPrincipalController.addListener(_actualizarAltura);
+    _textoRazonesController.addListener(_actualizarAltura);
   }
 
   void _actualizarAltura() {
-    int lineas = '\n'.allMatches(_controller.text).length + 1;
+    int lineas = '\n'.allMatches(_textoPrincipalController.text).length + 1;
     setState(() {
       _maxLines = lineas > 5 ? 5 : lineas; // Limita el crecimiento a 5 líneas
     });
   }
 
+  void _guardarDatosEnVariables() {
+    if (_textoPrincipalController.text.isEmpty || _textoRazonesController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("⚠️ Todos los campos deben estar llenos."),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      _mostrarBotonVistaPrevia = false;
+      _mostrarVistaPrevia = false;
+      return; // Detiene la ejecución si hay campos vacíos
+    }
+
+    setState(() {
+      textoPrincipal = _textoPrincipalController.text;
+      razonesPeticion = _textoRazonesController.text;
+    });
+    _mostrarBotonVistaPrevia = true;
+
+    print("📌 Texto principal: $textoPrincipal");
+    print("📌 Razones de petición: $razonesPeticion");
+  }
+
+
   @override
   void dispose() {
-    _controller.removeListener(_actualizarAltura);
-    _controller.dispose();
+    _textoPrincipalController.removeListener(_actualizarAltura);
+    _textoRazonesController.removeListener(_actualizarAltura);
+    _textoPrincipalController.dispose();
+    _textoRazonesController.dispose();
     super.dispose();
   }
 
@@ -161,9 +199,50 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         const SizedBox(height: 30),
         const Divider(color: gris),
         const Text("Espacio de diligenciamiento", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28)),
+        const SizedBox(height: 30),
         ingresarAnotaciones(),
+        const SizedBox(height: 30),
+        ingresarRazones(),
+        const SizedBox(height: 30),
+        Row(
+          children: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                backgroundColor: Colors.white, // Fondo blanco
+                foregroundColor: Colors.black, // Letra en negro
+              ),
+              onPressed: () {
+                setState(() {
+                  _guardarDatosEnVariables();
+                });
 
-        const SizedBox(height: 150),// Se muestra debajo del contenido principal
+              },
+              child: const Text("Guardar datos"),
+            ),
+            const SizedBox(width: 50),
+            if(_mostrarBotonVistaPrevia)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                backgroundColor: Colors.white, // Fondo blanco
+                foregroundColor: Colors.black, // Letra en negro
+              ),
+              onPressed: () {
+                setState(() {
+                  _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
+                });
+
+              },
+              child: const Text("Vista previa"),
+            ),
+          ],
+        ),
+        const SizedBox(height: 50),
+        // ✅ Solo muestra la vista previa si _mostrarVistaPrevia es true
+        if (_mostrarVistaPrevia)
+          vistaPreviaDerechoPeticion(userData, textoPrincipal, razonesPeticion),
+
 
       ],
     );
@@ -273,8 +352,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-
-
   /// 📆 Función para manejar errores en la conversión de fechas
   String _formatFecha(String? fecha) {
     try {
@@ -344,6 +421,11 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               Text(userData!.juzgadoEjecucionPenas, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
             ],
           ),
+          Text(
+            "Correo: ${userData!.juzgadoEjecucionPenasEmail}",
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1.1),
+          ),
+
           const SizedBox(height: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,6 +433,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               const Text('Juzgado Que Condenó:', style: TextStyle(fontSize: 12, color: Colors.black)),
               Text(userData!.juzgadoQueCondeno, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
             ],
+          ),
+          Text(
+            "Correo: ${userData!.juzgadoQueCondenoEmail}",
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, height: 1.1),
           ),
           const SizedBox(height: 10),
           Column(
@@ -742,7 +828,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Ingresar anotaciones",
+          "Ingresar las peticiones",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 5),
@@ -775,7 +861,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: TextField(
-                    controller: _controller,
+                    controller: _textoPrincipalController,
+                    minLines: 3,
                     maxLines: 20,
                     decoration: const InputDecoration(
                       hintText: "Escribe aquí...",
@@ -784,6 +871,96 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                   ),
                 ),
             ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget ingresarRazones(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Ingresar razones de la peticion",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 5),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300), // Animación suave
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      _expandido ? Icons.expand_less : Icons.expand_more,
+                      color: Colors.grey,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _expandido = !_expandido;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              if (_expandido) // Solo muestra el campo si está expandido
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: TextField(
+                    controller: _textoRazonesController,
+                    minLines: 3,
+                    maxLines: 20,
+                    decoration: const InputDecoration(
+                      hintText: "Escribe aquí...",
+                      border: InputBorder.none, // Sin borde interno
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget vistaPreviaDerechoPeticion(userData, String textoPrincipal, String razonesPeticion) {
+    var derechoPeticion = DerechoPeticionTemplate(
+      entidad: userData?.centroReclusion ?? "",
+      nombrePpl: userData?.nombrePpl?.trim() ?? "",
+      apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
+      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+      centroPenitenciario: userData?.centroReclusion ?? "",
+      textoPrincipal: textoPrincipal,
+      razonesPeticion: razonesPeticion,
+      emailUsuario: userData?.email?.trim() ?? "",
+      td: userData?.td?.trim() ?? "",
+      nui: userData?.nui?.trim() ?? "",
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Vista previa del derecho de petición",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: SelectableText.rich(
+            derechoPeticion.generarTexto(),
           ),
         ),
       ],

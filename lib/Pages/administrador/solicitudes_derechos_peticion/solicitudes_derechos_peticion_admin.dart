@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../../commons/main_layaout.dart';
+import '../../../src/colors/colors.dart';
 
 class SolicitudesDerechoPeticionAdminPage extends StatefulWidget {
   const SolicitudesDerechoPeticionAdminPage({super.key});
@@ -23,7 +24,10 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         child: SizedBox(
           width: MediaQuery.of(context).size.width >= 1000 ? 600 : double.infinity,
           child: StreamBuilder<QuerySnapshot>(
-            stream: firestore.collection('derechos_peticion_solicitados').snapshots(),
+            stream: firestore.
+            collection('derechos_peticion_solicitados')
+                .orderBy('fecha', descending: true)
+                .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
@@ -42,65 +46,89 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
                   DocumentSnapshot document = snapshot.data!.docs[index];
+
+                  // Extraer datos del documento
+                  Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+
+                  // Extraer preguntas y respuestas del campo "preguntas_respuestas"
+                  List<Map<String, dynamic>> preguntasRespuestas = data.containsKey('preguntas_respuestas')
+                      ? List<Map<String, dynamic>>.from(data['preguntas_respuestas'])
+                      : [];
+
+                  List<String> preguntas = preguntasRespuestas.map((e) => e['pregunta'].toString()).toList();
+                  List<String> respuestas = preguntasRespuestas.map((e) => e['respuesta'].toString()).toList();
+
                   return Column(
                     children: [
-                      Card(
-                        child: Column(
-                          children: [
-                            ListTile(
-                              title: Text("No: ${document['numero_seguimiento']}", style: const TextStyle(
-                                  fontWeight: FontWeight.w900, fontSize: 12
-                              ),),
-                              subtitle: RichText(
-                                text: TextSpan(
-                                  children: [
-                                    const TextSpan(text: 'Categoría: ', style: TextStyle(fontSize: 12)),
-                                    TextSpan(text: document['categoria'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                                    const TextSpan(text: '\n\nFecha de solicitud: ', style: TextStyle(fontSize: 12)),
-                                    TextSpan(text: DateFormat('yyyy-MM-dd HH:mm').format(document['fecha'].toDate()), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                  ],
-                                ),
-                              ),
-                              trailing: IconButton(
-                                icon: const Icon(Icons.double_arrow),
-                                onPressed: () {
-                                  Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-
-                                  // Extraer preguntas y respuestas del campo "preguntas_respuestas"
-                                  List<Map<String, dynamic>> preguntasRespuestas = data.containsKey('preguntas_respuestas')
-                                      ? List<Map<String, dynamic>>.from(data['preguntas_respuestas'])
-                                      : [];
-
-                                  List<String> preguntas = preguntasRespuestas.map((e) => e['pregunta'].toString()).toList();
-                                  List<String> respuestas = preguntasRespuestas.map((e) => e['respuesta'].toString()).toList();
-
-                                  Navigator.pushNamed(
-                                    context,
-                                    'atender_derecho_peticion_page',
-                                    arguments: {
-                                      'numeroSeguimiento': data['numero_seguimiento'],
-                                      'categoria': data['categoria'],
-                                      'subcategoria': data['subcategoria'],
-                                      'fecha': data['fecha'].toDate().toString(),
-                                      'idUser': data['idUser'],
-                                      'archivos': data.containsKey('archivos') ? List<String>.from(data['archivos']) : [],
-                                      'preguntas': preguntas, // ✅ Lista de preguntas extraída correctamente
-                                      'respuestas': respuestas, // ✅ Lista de respuestas extraída correctamente
-                                    },
-                                  );
-                                },
-
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(
+                            context,
+                            'atender_derecho_peticion_page',
+                            arguments: {
+                              'numeroSeguimiento': data['numero_seguimiento'],
+                              'categoria': data['categoria'],
+                              'subcategoria': data['subcategoria'],
+                              'fecha': data['fecha'].toDate().toString(),
+                              'idUser': data['idUser'],
+                              'archivos': data.containsKey('archivos') ? List<String>.from(data['archivos']) : [],
+                              'preguntas': preguntas, // ✅ Lista de preguntas extraída correctamente
+                              'respuestas': respuestas, // ✅ Lista de respuestas extraída correctamente
+                            },
+                          );
+                        },
+                        child: SizedBox(
+                          width: 800,
+                          child: Card(
+                            color: blancoCards,
+                            surfaceTintColor: blancoCards,
+                            elevation: 5,
+                            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text("No. Seguimiento", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                          Text("${data['numero_seguimiento']}", style: const TextStyle(
+                                              fontWeight: FontWeight.w900, fontSize: 12
+                                          )),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          const Text("Fecha de solicitud", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                          Text(DateFormat('yyyy-MM-dd HH:mm').format(data['fecha'].toDate()), style: const TextStyle(
+                                              fontWeight: FontWeight.w900, fontSize: 12
+                                          )),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 5),
+                                  const Text("Categoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                  Text("${data['categoria']}", style: const TextStyle(
+                                      fontWeight: FontWeight.w900, fontSize: 14
+                                  )),
+                                  const SizedBox(height: 5),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 10)
-                          ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 10),
                     ],
                   );
                 },
               );
+
             },
           ),
         ),
