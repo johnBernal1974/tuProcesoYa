@@ -93,6 +93,9 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
   Widget adjuntarDocumento() {
     return Column(
       children: [
+        const SizedBox(height: 15),
+        const Text("Si cuentas con documentos que puedan respaldar tu solicitud por favor adjuntalos"),
+        const SizedBox(height: 10),
         GestureDetector(
           onTap: pickFiles,
           child: const Row(
@@ -286,7 +289,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
                 const SizedBox(height: 10),
                 TextField(
                   controller: _controllers[index],
-                  maxLines: 3,
+                  maxLines: 10,
                   decoration: InputDecoration(
                     border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
@@ -299,12 +302,9 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
             );
           },
         ),
-
         const SizedBox(height: 20),
-
         adjuntarDocumento(),
         const SizedBox(height: 30),
-
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
           onPressed: () {
@@ -316,10 +316,10 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
             style: TextStyle(color: Colors.white),
           ),
         ),
+        const SizedBox(height: 100),
       ],
     );
   }
-
 
   /// Método para reutilizar el estilo de los inputs.
   InputDecoration _inputDecoration(String labelText) {
@@ -362,8 +362,6 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
     guardarSolicitud(respuestas);
   }
 
-
-
   Future<void> guardarSolicitud(List<String> respuestas) async {
     if (selectedCategory == null || selectedSubCategory == null) {
       print("❌ Categoría o subcategoría no seleccionadas.");
@@ -376,23 +374,48 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
       return;
     }
 
-    String idUser = user.uid;
-
-    showDialog(
+    bool confirmarEnvio = await showDialog(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        backgroundColor: blancoCards,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 10),
-            Text("Subiendo información, por favor espera..."),
-          ],
-        ),
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Confirmar envío"),
+        content: const Text("Antes de enviar tu solicitud, asegúrate de haber "
+            "proporcionado toda la información necesaria y veraz. La precisión "
+            "y detalle en la información son clave para una diligencia eficiente. "
+            "Si necesitas revisar o agregar algo, por favor hazlo antes de enviar."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Revisar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Enviar solicitud"),
+          ),
+        ],
       ),
     );
+
+    if (!confirmarEnvio) return;
+
+    String idUser = user.uid;
+    if(context.mounted){
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          backgroundColor: blancoCards,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text("Subiendo información, por favor espera..."),
+            ],
+          ),
+        ),
+      );
+    }
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -410,9 +433,12 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
 
           UploadTask uploadTask;
           String ext = file.name.split('.').last.toLowerCase();
-          String contentType = (ext == "jpg" || ext == "jpeg") ? "image/jpeg"
-              : (ext == "png") ? "image/png"
-              : (ext == "pdf") ? "application/pdf"
+          String contentType = (ext == "jpg" || ext == "jpeg")
+              ? "image/jpeg"
+              : (ext == "png")
+              ? "image/png"
+              : (ext == "pdf")
+              ? "application/pdf"
               : "application/octet-stream";
 
           if (kIsWeb) {
@@ -452,7 +478,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         "numero_seguimiento": numeroSeguimiento,
         "categoria": selectedCategory,
         "subcategoria": selectedSubCategory,
-        "preguntas_respuestas": preguntasRespuestas, // Guardamos preguntas y respuestas en Firestore
+        "preguntas_respuestas": preguntasRespuestas,
         "archivos": archivosUrls,
         "fecha": FieldValue.serverTimestamp(),
         "status": "solicitado"
@@ -490,5 +516,6 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
       }
     }
   }
+
 
 }

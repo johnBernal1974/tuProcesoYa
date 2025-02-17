@@ -5,7 +5,10 @@ import 'package:url_launcher/url_launcher.dart';
 class ArchivoViewerWeb extends StatelessWidget {
   final List<String> archivos;
 
+
   const ArchivoViewerWeb({super.key, required this.archivos});
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +24,6 @@ class ArchivoViewerWeb extends StatelessWidget {
       itemCount: archivos.length,
       itemBuilder: (context, index) {
         String archivo = archivos[index];
-        debugPrint('URL del archivo: $archivo', wrapWidth: 1024);
 
         bool esImagen(String url) {
           return RegExp(r'\.(jpg|jpeg|png|gif|webp)$', caseSensitive: false)

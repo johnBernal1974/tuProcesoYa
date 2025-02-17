@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_derecho_peticion.dart';
 import '../../../src/colors/colors.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class AtenderDerechoPeticionPage extends StatefulWidget {
   final String numeroSeguimiento;
@@ -109,7 +111,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     print("📌 Texto principal: $textoPrincipal");
     print("📌 Razones de petición: $razonesPeticion");
   }
-
 
   @override
   void dispose() {
@@ -240,34 +241,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                   child: const Text("Vista previa"),
                 ),
                 const SizedBox(width: 30),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                    backgroundColor: Colors.white, // Fondo blanco
-                    foregroundColor: Colors.black, // Letra en negro
-                  ),
-                  onPressed: () {
-                    var derechoPeticion = DerechoPeticionTemplate(
-                      entidad: userData?.centroReclusion ?? "",
-                      nombrePpl: userData?.nombrePpl ?? "",
-                      apellidoPpl: userData?.apellidoPpl ?? "",
-                      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-                      centroPenitenciario: userData?.centroReclusion ?? "",
-                      textoPrincipal: textoPrincipal,
-                      razonesPeticion: razonesPeticion,
-                      emailUsuario: userData?.email ?? "",
-                      nui: userData?.nui ?? "",
-                      td: userData?.td ?? "",
-                    );
 
-                    enviarCorreoWeb(
-                      "johnnever.bernal@gmail.com",
-                      "Derecho de Petición",
-                      derechoPeticion.generarTexto().toPlainText(),
-                    );
-                  },
-                  child: const Text("Enviar por correo"),
-                ),
               ],
             ),
           ],
@@ -276,8 +250,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         // ✅ Solo muestra la vista previa si _mostrarVistaPrevia es true
         if (_mostrarVistaPrevia)
           vistaPreviaDerechoPeticion(userData, textoPrincipal, razonesPeticion),
-
-
       ],
     );
   }
@@ -992,25 +964,106 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             color: Colors.grey[200],
             borderRadius: BorderRadius.circular(8),
           ),
-          child: SelectableText.rich(
-            derechoPeticion.generarTexto(),
+          child: Html(
+            data: derechoPeticion.generarTextoHtml(),
           ),
         ),
+        const SizedBox(height: 50),
+        botonEnviarCorreo(),
+        const SizedBox(height: 150),
       ],
     );
   }
 
+  ///aca esta enviando los correos sin archivos adjuntos
 
-  ////temporal para enviar correos
-  Future<void> enviarCorreoWeb(String destinatario, String asunto, String cuerpo) async {
-    final String emailUrl =
-        'mailto:$destinatario?subject=${Uri.encodeComponent(asunto)}&body=${Uri.encodeComponent(cuerpo)}';
+  Future<void> enviarCorreo() async {
+    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/enviarCorreo/enviarCorreo");
 
-    if (await canLaunch(emailUrl)) {
-      await launch(emailUrl);
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",  // Importante para CORS
+      },
+      body: jsonEncode({
+        "destinatario": "tayronapp@gmail.com",
+        "asunto": "Correo desde Flutter Web",
+        "mensaje": "<b>Hola, este es un mensaje en negrita.</b>"
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print("Correo enviado con éxito");
     } else {
-      print("❌ No se pudo abrir el cliente de correo.");
+      print("Error al enviar el correo: ${response.body}");
     }
+  }
+
+  Widget botonEnviarCorreo(){
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
+      onPressed: () async {
+        final confirmacion = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: blanco,
+            title: const Text("Confirmación"),
+            content: const Text("¿Estás seguro de enviar el correo?"),
+            actions: [
+              TextButton(
+                child: const Text("Cancelar"),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              TextButton(
+                child: const Text("Enviar"),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmacion ?? false) {
+          var derechoPeticion = DerechoPeticionTemplate(
+            entidad: userData?.centroReclusion ?? "",
+            nombrePpl: userData?.nombrePpl ?? "",
+            apellidoPpl: userData?.apellidoPpl ?? "",
+            identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+            centroPenitenciario: userData?.centroReclusion ?? "",
+            textoPrincipal: textoPrincipal,
+            razonesPeticion: razonesPeticion,
+            emailUsuario: userData?.email ?? "",
+            nui: userData?.nui ?? "",
+            td: userData?.td ?? "",
+          );
+
+          final mensajeHtml = derechoPeticion.generarTextoHtml();
+
+          final response = await http.post(
+            Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/enviarCorreo/enviarCorreo"),
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: jsonEncode({
+              "destinatario": "patybernal1980@gmail.com",
+              "asunto": "Derecho de Petición",
+              "mensaje": mensajeHtml,
+            }),
+          );
+
+          if (response.statusCode == 200) {
+            print("Correo enviado con éxito");
+          } else {
+            print("Error al enviar el correo: ${response.body}");
+          }
+        }
+      },
+      child: const Text("Enviar por correo"),
+    );
   }
 
 }

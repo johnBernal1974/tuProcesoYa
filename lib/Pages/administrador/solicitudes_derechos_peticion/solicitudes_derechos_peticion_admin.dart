@@ -14,6 +14,7 @@ class SolicitudesDerechoPeticionAdminPage extends StatefulWidget {
 
 class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerechoPeticionAdminPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  int _maxLines = 1; // Empieza con 1 línea
 
 
   @override
@@ -22,7 +23,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
       pageTitle: 'Solicitudes de derecho de petición',
       content: Center(
         child: SizedBox(
-          width: MediaQuery.of(context).size.width >= 1000 ? 600 : double.infinity,
+          width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
           child: StreamBuilder<QuerySnapshot>(
             stream: firestore.
             collection('derechos_peticion_solicitados')
@@ -78,7 +79,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                           );
                         },
                         child: SizedBox(
-                          width: 800,
+                          width: 1000,
                           child: Card(
                             color: blancoCards,
                             surfaceTintColor: blancoCards,
@@ -112,10 +113,39 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                                     ],
                                   ),
                                   const SizedBox(height: 5),
-                                  const Text("Categoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                  Text("${data['categoria']}", style: const TextStyle(
-                                      fontWeight: FontWeight.w900, fontSize: 14
-                                  )),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Text("Categoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                          Text("${data['categoria']}", style: const TextStyle(
+                                              fontWeight: FontWeight.w900, fontSize: 12
+                                          )),
+                                        ],
+                                      ),
+                                      Column(
+                                        children: [
+                                          const Text("", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.circle,
+                                                size: 20,
+                                                color: getColorEstado(data['status']), // Color del ícono
+                                              ),
+                                              const SizedBox(width: 5),
+                                              Text("${data['status']}", style: const TextStyle(
+                                                  fontWeight: FontWeight.w900, fontSize: 12
+                                              )),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+
                                   const SizedBox(height: 5),
                                 ],
                               ),
@@ -134,5 +164,21 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         ),
       ),
     );
+  }
+
+  // Función que devuelve el color según el estado
+  Color getColorEstado(String estado) {
+    switch (estado) {
+      case "Solicitado":
+        return Colors.red;
+      case "Diligenciado":
+        return Colors.amber;
+      case "Revisado":
+        return Theme.of(context).primaryColor;
+      case "Enviado":
+        return Colors.green;
+      default:
+        return Colors.grey;
+    }
   }
 }
