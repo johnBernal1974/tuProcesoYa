@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 class AtenderDerechoPeticionAdminController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
 
   Future<void> actualizarSolicitud(BuildContext context, String docId, Map<String, dynamic> nuevosDatos) async {
     try {
@@ -22,5 +24,6 @@ class AtenderDerechoPeticionAdminController {
       );
     }
   }
+
 
 }

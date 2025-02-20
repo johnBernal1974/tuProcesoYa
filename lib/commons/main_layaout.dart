@@ -41,7 +41,7 @@ class _MainLayoutState extends State<MainLayout> {
     }
 
     if (_isAdmin) {
-      await _adminProvider.loadAdminName(); // Cargar solo si es admin
+      await _adminProvider.loadAdminData(); // Cargar solo si es admin
       setState(() {}); // Refrescar el widget con el nombre del admin
     }
   }

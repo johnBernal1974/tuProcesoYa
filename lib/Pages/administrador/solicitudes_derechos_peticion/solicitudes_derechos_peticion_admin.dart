@@ -17,6 +17,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
   int _maxLines = 1; // Empieza con 1 línea
 
 
+
+
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -51,7 +53,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                   // Extraer datos del documento
                   Map<String, dynamic> data = document.data() as Map<String, dynamic>;
 
-                  // Extraer preguntas y respuestas del campo "preguntas_respuestas"
+                  // Extraer preguntas y respuestas
                   List<Map<String, dynamic>> preguntasRespuestas = data.containsKey('preguntas_respuestas')
                       ? List<Map<String, dynamic>>.from(data['preguntas_respuestas'])
                       : [];
@@ -63,18 +65,23 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                     children: [
                       GestureDetector(
                         onTap: () {
+                          // 🔥 Validamos a qué página redirigir según el status
+                          String rutaDestino = obtenerRutaSegunStatus(data['status']);
+
                           Navigator.pushNamed(
                             context,
-                            'atender_derecho_peticion_page',
+                            rutaDestino,
                             arguments: {
+                              'status': data['status'],
+                              'idDocumento': document.id,
                               'numeroSeguimiento': data['numero_seguimiento'],
                               'categoria': data['categoria'],
                               'subcategoria': data['subcategoria'],
                               'fecha': data['fecha'].toDate().toString(),
                               'idUser': data['idUser'],
                               'archivos': data.containsKey('archivos') ? List<String>.from(data['archivos']) : [],
-                              'preguntas': preguntas, // ✅ Lista de preguntas extraída correctamente
-                              'respuestas': respuestas, // ✅ Lista de respuestas extraída correctamente
+                              'preguntas': preguntas,
+                              'respuestas': respuestas,
                             },
                           );
                         },
@@ -145,7 +152,6 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                                       ),
                                     ],
                                   ),
-
                                   const SizedBox(height: 5),
                                 ],
                               ),
@@ -158,12 +164,20 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                   );
                 },
               );
-
             },
           ),
         ),
       ),
     );
+  }
+
+  String obtenerRutaSegunStatus(String status) {
+    switch (status) {
+      case "Enviado":
+        return 'derechos_peticion_enviados_por_correo';
+      default:
+        return 'atender_derecho_peticion_page'; // Ruta por defecto en caso de error
+    }
   }
 
   // Función que devuelve el color según el estado

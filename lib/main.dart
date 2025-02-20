@@ -10,6 +10,7 @@ import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
+import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
@@ -117,6 +118,25 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => AtenderDerechoPeticionPage(
+                status: args['status'] ?? "Diligenciado",  // 👈 Evita error si es null
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'],
+                subcategoria: args['subcategoria'],
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
+                respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
+              ),
+            );
+          }
+          else if (settings.name == 'derechos_peticion_enviados_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DerechoSPeticionEnviadosPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",  // 👈 Evita error si es null
+                idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'],
                 categoria: args['categoria'],
                 subcategoria: args['subcategoria'],

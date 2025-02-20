@@ -164,7 +164,7 @@ class _RegistroPageState extends State<RegistroPage> {
           laborDescuento: "",
           fechaCaptura: null,
           fechaInicioDescuento: null,
-          status: "registrado",
+          status: "Registrado",
           isNotificatedActivated: false
 
         );

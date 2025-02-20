@@ -16,9 +16,9 @@ class ArchivoViewerWeb extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
+        crossAxisCount: 6,
+        crossAxisSpacing: 6,
+        mainAxisSpacing: 6,
         childAspectRatio: 1,
       ),
       itemCount: archivos.length,
@@ -64,8 +64,8 @@ class ArchivoViewerWeb extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
             child: CachedNetworkImage(
               imageUrl: url,
-              width: 100,
-              height: 100,
+              width: 50,
+              height: 50,
               fit: BoxFit.cover,
               placeholder: (context, url) => _buildLoadingPlaceholder(),
               errorWidget: (context, url, error) =>
@@ -159,8 +159,8 @@ class ArchivoViewerWeb extends StatelessWidget {
   /// ⏳ Placeholder de carga
   Widget _buildLoadingPlaceholder() {
     return Container(
-      width: 100,
-      height: 100,
+      width: 50,
+      height: 50,
       color: Colors.grey[300],
       child: const Center(child: CircularProgressIndicator()),
     );

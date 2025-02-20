@@ -253,7 +253,7 @@ class _LoginPageState extends State<LoginPage> {
 
         if (adminDoc.exists) {
           // ✅ Cargar el nombre del admin antes de navegar
-          await AdminProvider().loadAdminName();
+          await AdminProvider().loadAdminData();
           // El usuario es administrador
           if (context.mounted) {
             Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);

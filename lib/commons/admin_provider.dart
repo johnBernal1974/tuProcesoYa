@@ -7,13 +7,15 @@ class AdminProvider {
   AdminProvider._internal();
 
   String? adminName;
+  String? adminApellido;
+  String? adminFullName; // Nuevo campo con el nombre completo
   bool isLoading = false;
 
   // Método para verificar si el usuario es admin
   Future<bool> isUserAdmin(String uid) async {
     try {
       DocumentSnapshot adminDoc = await FirebaseFirestore.instance
-          .collection('admin') // Asegúrate de que esta colección existe en Firestore
+          .collection('admin')
           .doc(uid)
           .get();
 
@@ -24,15 +26,17 @@ class AdminProvider {
     }
   }
 
-  // Método para cargar el nombre del admin
-  Future<void> loadAdminName() async {
-    if (adminName != null || isLoading) return; // Evita recargar innecesariamente
+  // Método para cargar el nombre y apellido del admin
+  Future<void> loadAdminData() async {
+    if ((adminName != null && adminApellido != null) || isLoading) return;
     isLoading = true;
 
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        adminName = ''; // Usuario no autenticado, evita mostrar el CircularProgressIndicator
+        adminName = '';
+        adminApellido = '';
+        adminFullName = '';
         isLoading = false;
         return;
       }
@@ -43,13 +47,19 @@ class AdminProvider {
           .get();
 
       if (adminDoc.exists) {
-        adminName = adminDoc['name']; // Asegúrate de que en Firestore hay un campo "name"
+        adminName = adminDoc['name'] ?? ''; // Obtiene solo el nombre
+        adminApellido = adminDoc['apellidos'] ?? ''; // Obtiene solo el apellido
+        adminFullName = "$adminName $adminApellido".trim(); // Concatena nombre y apellido
       } else {
-        adminName = ''; // Si el usuario no es admin, asigna una cadena vacía
+        adminName = '';
+        adminApellido = '';
+        adminFullName = '';
       }
     } catch (e) {
-      print("❌ Error cargando el nombre del admin: $e");
-      adminName = ''; // Previene errores en la UI
+      print("❌ Error cargando datos del admin: $e");
+      adminName = '';
+      adminApellido = '';
+      adminFullName = '';
     }
 
     isLoading = false;
@@ -58,5 +68,7 @@ class AdminProvider {
   // Método para resetear los datos cuando se cierre sesión
   void reset() {
     adminName = null;
+    adminApellido = null;
+    adminFullName = null;
   }
 }

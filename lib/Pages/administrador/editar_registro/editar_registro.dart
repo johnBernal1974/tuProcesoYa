@@ -49,7 +49,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   List<Map<String, dynamic>> juzgadoQueCondeno = [];
   List<Map<String, dynamic>> juzgadosConocimiento = [];
   List<Map<String, dynamic>> delito = [];
-  List<Map<String, String>> centrosReclusionTodos = [];
+  List<Map<String, Object>> centrosReclusionTodos = [];
+
+
 
   /// variables para guardar opciones seleccionadas
   String? selectedRegional; // Regional seleccionada
@@ -109,13 +111,20 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           .collectionGroup('centros_reclusion')
           .get();
 
-      List<Map<String, String>> fetchedTodosCentros = querySnapshot.docs.map((doc) {
+      List<Map<String, Object>> fetchedTodosCentros = querySnapshot.docs.map((doc) {
         final regionalId = doc.reference.parent.parent?.id ?? "";
+        final data = doc.data() as Map<String, dynamic>; // Convertir a Map<String, dynamic>
+
         return {
           'id': doc.id,
-          // Supongamos que cada documento tiene un campo 'nombre'
-          'nombre': doc.get('nombre').toString(),
-          'regional': regionalId, // Aquí guardamos el ID de la regional
+          'nombre': data.containsKey('nombre') ? data['nombre'].toString() : '',
+          'regional': regionalId,
+          'correos': {
+            'correo_direccion': data.containsKey('correo_direccion') ? data['correo_direccion'] ?? '' : '',
+            'correo_juridica': data.containsKey('correo_juridica') ? data['correo_juridica'] ?? '' : '',
+            'correo_principal': data.containsKey('correo_principal') ? data['correo_principal'] ?? '' : '',
+            'correo_sanidad': data.containsKey('correo_sanidad') ? data['correo_sanidad'] ?? '' : '',
+          }
         };
       }).toList();
 
@@ -129,6 +138,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       }
     }
   }
+
+
 
   void _initCalculoCondena() async {
     try {
@@ -336,10 +347,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               if (textEditingValue.text.isEmpty) {
                 return const Iterable<Map<String, String>>.empty();
               }
-              return centrosReclusionTodos.where((Map<String, String> option) =>
-                  option['nombre']!
-                      .toLowerCase()
-                      .contains(textEditingValue.text.toLowerCase()));
+              return centrosReclusionTodos
+                  .map((option) => option.map((key, value) => MapEntry(key, value.toString()))) // Convierte todo a String
+                  .where((Map<String, String> option) =>
+                  option['nombre']!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+
             },
             displayStringForOption: (Map<String, String> option) =>
             option['nombre']!,
@@ -1444,7 +1456,34 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         
             // Oculta el teclado
             SystemChannels.textInput.invokeMethod('TextInput.hide');
-        
+
+            Map<String, String> correosCentro = {
+              'correo_direccion': '',
+              'correo_juridica': '',
+              'correo_principal': '',
+              'correo_sanidad': '',
+            };
+
+            // Verificar si hay un centro de reclusión seleccionado y obtener sus correos
+            if (selectedCentro != null) {
+              var centroEncontrado = centrosReclusionTodos.firstWhere(
+                    (centro) => centro['id'] == selectedCentro,
+                orElse: () => <String, Object>{},  // Asegúrate de que esto sea Map<String, dynamic>
+              );
+
+
+              if (centroEncontrado.isNotEmpty && centroEncontrado.containsKey('correos')) {
+                var correosMap = centroEncontrado['correos'] as Map<String, dynamic>;  // Convertir a Map<String, dynamic>
+
+                correosCentro = {
+                  'correo_direccion': correosMap['correo_direccion']?.toString() ?? '',
+                  'correo_juridica': correosMap['correo_juridica']?.toString() ?? '',
+                  'correo_principal': correosMap['correo_principal']?.toString() ?? '',
+                  'correo_sanidad': correosMap['correo_sanidad']?.toString() ?? '',
+                };
+              }
+            }
+
             // Actualiza el documento en Firestore
             widget.doc.reference.update({
               'nombre_ppl': _nombreController.text,
@@ -1477,6 +1516,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'email': _emailAcudienteController.text,
               'status': 'activado',
             }).then((_) {
+              // Guardar automáticamente los correos en la subcolección "correos_centro_reclusion"
+              if(widget.doc != null && widget.doc.reference != null) {
+                widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set({
+                  'correo_direccion': correosCentro['correo_direccion'] ?? '',
+                  'correo_juridica': correosCentro['correo_juridica'] ?? '',
+                  'correo_principal': correosCentro['correo_principal'] ?? '',
+                  'correo_sanidad': correosCentro['correo_sanidad'] ?? '',
+                });
+              }else{
+                print("Error: widget.doc o widget.doc.reference es null");
+              }
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Datos guardados con éxito y el usuario está activado'),
@@ -1484,6 +1534,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
               );
             });
+
             // Llamar al método para enviar mensaje de WhatsApp
             validarYEnviarMensaje();
 
