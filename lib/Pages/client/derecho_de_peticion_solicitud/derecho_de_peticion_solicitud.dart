@@ -7,7 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:tuprocesoya/Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
 import 'package:tuprocesoya/commons/opciones_menu_derecho_peticion_helper.dart';
 import 'package:tuprocesoya/commons/preguntasDerechoPeticionHelper.dart';
@@ -22,7 +22,6 @@ class DerechoDePeticionSolicitudPage extends StatefulWidget {
 }
 
 class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolicitudPage> {
-  final _textController = TextEditingController();
   String _hintCategory = 'Seleccione una categoría';
   String _hintSubCategory = 'Seleccione una subcategoría';
   List<String> categorias = MenuOptionsDerechoPeticionHelper.obtenerCategorias();
@@ -32,8 +31,6 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
   List<String> archivosUrls = [];
   List<String> preguntas = [];
   List<TextEditingController> _controllers = [];
-
-
 
 
   @override
@@ -78,15 +75,15 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
       );
 
       if (result != null) {
-        print("Número de archivos seleccionados: ${result.files.length}");
-
         setState(() {
           // Agregar los archivos seleccionados a la lista existente
           _selectedFiles.addAll(result.files);
         });
       }
     } catch (e) {
-      print("Error al seleccionar archivos: $e");
+      if (kDebugMode) {
+        print("Error al seleccionar archivos: $e");
+      }
     }
   }
 
@@ -308,7 +305,6 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
           onPressed: () {
-            mostrarInformacion();
             _guardarSolicitudConValoresActualizados();
           },
           child: const Text(
@@ -336,13 +332,6 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
     );
   }
 
-  void mostrarInformacion() {
-    print("Categoría seleccionada: ${selectedCategory}");
-    print("Subcategoría seleccionada: ${selectedSubCategory}");
-    print("Texto ingresado: $_textController");
-    print("Archivos seleccionados: ${_selectedFiles.join(', ')}");
-  }
-
   void _guardarSolicitudConValoresActualizados() {
     // Actualizar manualmente los valores de los controladores
     List<String> respuestas = _controllers.map((c) => c.text.trim()).toList();
@@ -364,13 +353,17 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
 
   Future<void> guardarSolicitud(List<String> respuestas) async {
     if (selectedCategory == null || selectedSubCategory == null) {
-      print("❌ Categoría o subcategoría no seleccionadas.");
+      if (kDebugMode) {
+        print("❌ Categoría o subcategoría no seleccionadas.");
+      }
       return;
     }
 
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      print("❌ No hay usuario autenticado.");
+      if (kDebugMode) {
+        print("❌ No hay usuario autenticado.");
+      }
       return;
     }
 
@@ -452,7 +445,9 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
           String downloadUrl = await snapshot.ref.getDownloadURL();
           archivosUrls.add(downloadUrl);
         } catch (e) {
-          print("Error al subir el archivo ${file.name}: $e");
+          if (kDebugMode) {
+            print("Error al subir el archivo ${file.name}: $e");
+          }
         }
       }
 
@@ -494,9 +489,13 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         );
       }
 
-      print("✅ Solicitud guardada con éxito.");
+      if (kDebugMode) {
+        print("✅ Solicitud guardada con éxito.");
+      }
     } catch (e) {
-      print("❌ Error al guardar la solicitud: $e");
+      if (kDebugMode) {
+        print("❌ Error al guardar la solicitud: $e");
+      }
 
       if (context.mounted) {
         Navigator.pop(context);

@@ -1,4 +1,5 @@
 
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -58,7 +59,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
-  List<String> archivos = [];
+  List<Map<String, String>> archivosAdjuntos = [];
   bool _expandidoConsideraciones = false;
   bool _expandidoFundamentosDerecho = false;
   bool _expandidoPeticionConcreta = false;
@@ -91,6 +92,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   DateTime? fechaEnvio;
   DateTime? fechaDiligenciamiento;
   DateTime? fechaRevision;
+  List<String> archivos = [];
 
 
 
@@ -99,7 +101,12 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     // TODO: implement initState
     super.initState();
     _pplProvider = PplProvider();
-    archivos = List<String>.from(widget.archivos); // Copia los archivos una vez
+    archivosAdjuntos = widget.archivos.map((archivo) {
+      return {
+        "nombre": obtenerNombreArchivo(archivo), // Asegura que es String
+        "contenido": archivo as String, // Asegura que es String
+      };
+    }).toList();
     fetchUserData();
     fetchDocumentoDerechoPeticion();
     calcularTiempo(widget.idUser);
@@ -123,9 +130,17 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         print("❌ No se pudo obtener el nombre del administrador.");
       }
     }
+    archivos = List<String>.from(widget.archivos); // Copia los archivos una vez
   }
 
-
+  String obtenerNombreArchivo(String url) {
+    // Decodifica la URL para que %2F se convierta en "/"
+    String decodedUrl = Uri.decodeFull(url);
+    // Separa por "/" y toma la última parte
+    List<String> partes = decodedUrl.split('/');
+    // El nombre real del archivo es la última parte después de la última "/"
+    return partes.last.split('?').first; // Quita cualquier parámetro después de "?"
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -195,14 +210,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
             fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
           });
-          print("Diligencio: ***$diligencio ");
-          print(" Fecha Diligencio: ***$fechaDiligenciamiento ");
-
-          print("reviso: ***$reviso ");
-          print(" Fecha reviso: ***$fechaRevision ");
-
-          print("envio: ***$envio ");
-          print(" Fecha envio: ***$fechaEnvio ");
         }
       } else {
         if (kDebugMode) {
@@ -215,7 +222,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
-
 
   Future<void> cargarCorreos() async {
     Map<String, String> correos = await obtenerCorreosCentro(userDoc);
@@ -311,7 +317,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
-
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -364,7 +369,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           const SizedBox(height: 30),
 
           /// 📂 **Mostramos los archivos aquí**
-          archivos.isNotEmpty
+          archivosAdjuntos.isNotEmpty
               ? ArchivoViewerWeb(archivos: archivos)
               : const Text(
             "El usuario no compartió ningún archivo",
@@ -1488,36 +1493,61 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
   Future<void> enviarCorreo() async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/enviarCorreo/enviarCorreo");
-
     // 🔹 Crear la plantilla del derecho de petición
     var derechoPeticion = DerechoPeticionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: userData?.centroReclusion ?? "",
       referencia: '${widget.categoria} - ${widget.subcategoria}',
-      nombrePpl: userData?.nombrePpl?.trim() ?? "",
-      apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
+      nombrePpl: userData?.nombrePpl.trim() ?? "",
+      apellidoPpl: userData?.apellidoPpl.trim() ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
       centroPenitenciario: userData?.centroReclusion ?? "",
-      consideraciones: consideraciones ?? "",
-      fundamentosDeDerecho: fundamentosDeDerecho ?? "",
-      peticionConcreta: peticionConcreta ?? "",
-      emailUsuario: userData?.email?.trim() ?? "",
-      nui: userData?.nui?.trim() ?? "",
-      td: userData?.td?.trim() ?? "",
+      consideraciones: consideraciones,
+      fundamentosDeDerecho: fundamentosDeDerecho,
+      peticionConcreta: peticionConcreta,
+      emailUsuario: userData?.email.trim() ?? "",
+      nui: userData?.nui.trim() ?? "",
+      td: userData?.td.trim() ?? "",
     );
 
     // 🔹 Generar el HTML del derecho de petición
     String mensajeHtml = derechoPeticion.generarTextoHtml();
 
-    // 🔥 Enviar correo con la plantilla
+    // 📥 Descargar archivos desde Firebase Storage y convertirlos a Base64
+    List<Map<String, String>> archivosBase64 = [];
+
+    for (String archivoUrl in widget.archivos) {
+      try {
+        String nombreArchivo = obtenerNombreArchivo(archivoUrl);
+
+        // Descargar archivo
+        final response = await http.get(Uri.parse(archivoUrl));
+        if (response.statusCode == 200) {
+          String base64String = base64Encode(response.bodyBytes);
+          archivosBase64.add({"nombre": nombreArchivo, "base64": base64String});
+        } else {
+          if (kDebugMode) {
+            print("❌ No se pudo descargar el archivo: $nombreArchivo (Error ${response.statusCode})");
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print("❌ Error al procesar archivo: $e");
+        }
+      }
+    }
+
+    // 🔥 Enviar correo con adjuntos
+    final body = jsonEncode({
+      "destinatario": correoSeleccionado,
+      "asunto": "Derecho de Petición",
+      "mensaje": mensajeHtml,
+      "archivos": archivosBase64,
+    });
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
-      body: jsonEncode({
-        "destinatario": correoSeleccionado,
-        "asunto": "Derecho de Petición",
-        "mensaje": mensajeHtml,  // Aquí enviamos el HTML generado dinámicamente
-      }),
+      body: body,
     );
 
     if (response.statusCode == 200) {
@@ -1529,16 +1559,14 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
-
-      if (kDebugMode) {
-        print("✅ Correo enviado con éxito");
-      }
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo: ${response.body}");
       }
     }
   }
+
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(

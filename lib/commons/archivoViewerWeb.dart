@@ -1,14 +1,13 @@
+
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ArchivoViewerWeb extends StatelessWidget {
   final List<String> archivos;
 
-
   const ArchivoViewerWeb({super.key, required this.archivos});
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +132,9 @@ class ArchivoViewerWeb extends StatelessWidget {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      print("❌ No se pudo abrir el archivo.");
+      if (kDebugMode) {
+        print("❌ No se pudo abrir el archivo.");
+      }
     }
   }
 

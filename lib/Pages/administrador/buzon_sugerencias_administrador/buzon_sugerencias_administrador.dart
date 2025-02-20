@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../commons/main_layaout.dart';
@@ -33,17 +34,12 @@ class _BuzonSugerenciasAdministradorPageState
 
   void fetchCurrentTime() {
     currentTime = Timestamp.now();
-    print("Esta es la hora y fecha***********$currentTime");
   }
 
+  @override
   void initState() {
     super.initState();
     fetchCurrentAdminInfo();
-    // fetchCurrentAdminInfo().then((_) {
-    //   if (mounted) {
-    //     setState(() {});
-    //   }
-    // });
     fetchCurrentTime();
     _cargarEstadoRespuestas();
   }
@@ -263,13 +259,13 @@ class _BuzonSugerenciasAdministradorPageState
           if (data != null) {
             currentUserName = data['name'] ?? 'Desconocido';
             currentUserLastName = data['apellidos'] ?? 'Desconocido';
-            print("Este es el nombre del operador******$currentUserName");
-            print("Este es el apellido del operador******$currentUserLastName");
           }
         }
       }
     } catch (e) {
-      print("Error obteniendo datos del admin: $e");
+      if (kDebugMode) {
+        print("Error obteniendo datos del admin: $e");
+      }
     }
   }
 

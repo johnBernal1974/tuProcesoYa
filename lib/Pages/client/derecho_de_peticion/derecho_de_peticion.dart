@@ -20,7 +20,7 @@ class _DerechoDePeticionPageState extends State<DerechoDePeticionPage> {
       pageTitle: 'Solicitud de servicio',
       content: SingleChildScrollView(
         child: Center(
-          child: Container(
+          child: SizedBox(
             width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

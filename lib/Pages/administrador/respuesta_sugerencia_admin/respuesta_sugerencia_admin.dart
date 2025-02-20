@@ -1,8 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
-import 'package:url_launcher/url_launcher.dart'; // Para enviar WhatsApp
-import '../../../src/colors/colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RespuestaSugerenciaPage extends StatefulWidget {
   final String userId;
@@ -52,7 +52,9 @@ class _RespuestaSugerenciaPageState extends State<RespuestaSugerenciaPage> {
         Navigator.pop(context, true); // Regresar con un resultado positivo
       }
     } catch (e) {
-      print("Error al guardar la respuesta: $e");
+      if (kDebugMode) {
+        print("Error al guardar la respuesta: $e");
+      }
     }
 
     setState(() => _isLoading = false);
@@ -62,7 +64,9 @@ class _RespuestaSugerenciaPageState extends State<RespuestaSugerenciaPage> {
   Future<void> enviarMensajeWhatsApp(
       String celular, String nombre, String sugerencia, String respuesta) async {
     if (celular.isEmpty) {
-      print('El número de celular es inválido');
+      if (kDebugMode) {
+        print('El número de celular es inválido');
+      }
       return;
     }
     if (!celular.startsWith("+57")) {

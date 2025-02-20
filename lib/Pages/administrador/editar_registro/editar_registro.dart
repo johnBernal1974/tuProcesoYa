@@ -1395,7 +1395,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     bool isDelitoValid = (selectedDelito != null && selectedDelito!.trim().isNotEmpty) ||
         (widget.doc['delito'] != null && widget.doc['delito'].toString().trim().isNotEmpty);
-    return Container(
+    return SizedBox(
       width: 120,
       child: Align(
         alignment: Alignment.center, // Centra horizontalmente
@@ -1517,17 +1517,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'status': 'activado',
             }).then((_) {
               // Guardar automáticamente los correos en la subcolección "correos_centro_reclusion"
-              if(widget.doc != null && widget.doc.reference != null) {
-                widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set({
-                  'correo_direccion': correosCentro['correo_direccion'] ?? '',
-                  'correo_juridica': correosCentro['correo_juridica'] ?? '',
-                  'correo_principal': correosCentro['correo_principal'] ?? '',
-                  'correo_sanidad': correosCentro['correo_sanidad'] ?? '',
-                });
-              }else{
-                print("Error: widget.doc o widget.doc.reference es null");
-              }
-              ScaffoldMessenger.of(context).showSnackBar(
+              widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set({
+                'correo_direccion': correosCentro['correo_direccion'] ?? '',
+                'correo_juridica': correosCentro['correo_juridica'] ?? '',
+                'correo_principal': correosCentro['correo_principal'] ?? '',
+                'correo_sanidad': correosCentro['correo_sanidad'] ?? '',
+              });
+                          ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Datos guardados con éxito y el usuario está activado'),
                   duration: Duration(seconds: 2),
@@ -1579,7 +1575,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   Future<void> enviarMensajeWhatsApp(String celular, String docId) async {
     if (celular.isEmpty) {
-      print('El número de celular es inválido');
+      if (kDebugMode) {
+        print('El número de celular es inválido');
+      }
       return;
     }
 
@@ -1596,7 +1594,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         nombreAcudiente = doc['nombre_acudiente'] ?? "Estimado usuario";
       }
     } catch (e) {
-      print("Error obteniendo nombre del acudiente: $e");
+      if (kDebugMode) {
+        print("Error obteniendo nombre del acudiente: $e");
+      }
     }
 
     // Construir el mensaje
@@ -1624,7 +1624,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     String docId = widget.doc['id'] ?? '';
 
     if (celular.isEmpty || docId.isEmpty) {
-      print("Error: Datos insuficientes para enviar el mensaje.");
+      if (kDebugMode) {
+        print("Error: Datos insuficientes para enviar el mensaje.");
+      }
       return;
     }
 
@@ -1637,7 +1639,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       if (docSnapshot.exists && docSnapshot.data() != null) {
         bool isNotificated = docSnapshot['isNotificatedActivated'] ?? false;
         if (isNotificated) {
-          print("El usuario ya ha sido notificado. No se enviará el mensaje.");
+          if (kDebugMode) {
+            print("El usuario ya ha sido notificado. No se enviará el mensaje.");
+          }
           return;
         }
       }
@@ -1648,9 +1652,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       // Crear o actualizar isNotificated a true
       await docRef.set({'isNotificatedActivated': true}, SetOptions(merge: true));
 
-      print("Mensaje enviado y estado actualizado.");
+      if (kDebugMode) {
+        print("Mensaje enviado y estado actualizado.");
+      }
     } catch (e) {
-      print("Error al verificar o actualizar la notificación: $e");
+      if (kDebugMode) {
+        print("Error al verificar o actualizar la notificación: $e");
+      }
     }
   }
 
