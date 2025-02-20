@@ -83,6 +83,15 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   bool _isFundamentosLoaded = false; // Bandera para evitar sobrescribir
   bool _isPeticionConcretaLoaded = false; // Bandera para evitar sobrescribir
   String adminFullName="";
+  String entidad= "";
+
+  String diligencio = '';
+  String reviso = '';
+  String envio = '';
+  DateTime? fechaEnvio;
+  DateTime? fechaDiligenciamiento;
+  DateTime? fechaRevision;
+
 
 
   @override
@@ -92,6 +101,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     _pplProvider = PplProvider();
     archivos = List<String>.from(widget.archivos); // Copia los archivos una vez
     fetchUserData();
+    fetchDocumentoDerechoPeticion();
     calcularTiempo(widget.idUser);
     _consideracionesController.addListener(_actualizarAltura);
     _fundamentosDerechoController.addListener(_actualizarAltura);
@@ -115,72 +125,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     }
   }
 
-  Future<void> cargarCorreos() async {
-    Map<String, String> correos = await obtenerCorreosCentro(userDoc);
-    if (mounted) {
-      setState(() {
-        correosCentro = correos;
-      });
-    }
-  }
-
-  void _actualizarAltura() {
-    int lineas = '\n'.allMatches(_consideracionesController.text).length + 1;
-    setState(() {
-      _maxLines = lineas > 5 ? 5 : lineas; // Limita el crecimiento a 5 líneas
-    });
-  }
-
-  void _guardarDatosEnVariables() {
-    if (_consideracionesController.text.isEmpty || _fundamentosDerechoController.text.isEmpty
-    || _peticionConcretaController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("⚠️ Todos los campos deben estar llenos."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      _mostrarBotonVistaPrevia = false;
-      _mostrarVistaPrevia = false;
-      return; // Detiene la ejecución si hay campos vacíos
-    }
-
-    setState(() {
-      consideraciones = _consideracionesController.text;
-      fundamentosDeDerecho = _fundamentosDerechoController.text;
-      peticionConcreta = _peticionConcretaController.text;
-    });
-    _mostrarBotonVistaPrevia = true;
-  }
-
-  @override
-  void dispose() {
-    _consideracionesController.removeListener(_actualizarAltura);
-    _fundamentosDerechoController.removeListener(_actualizarAltura);
-    _consideracionesController.dispose();
-    _fundamentosDerechoController.dispose();
-    super.dispose();
-  }
-
-  String obtenerTituloCorreo(String? nombreCorreo) {
-    switch (nombreCorreo) {
-      case 'Director':
-        return 'Señor\nDirector';
-      case 'Jurídica':
-        return 'Señores Oficina Jurídica';
-      case 'Principal':
-        return 'Señores';
-      case 'Sanidad':
-        return 'Señores Oficina de Sanidad';
-      case 'Correo JEP':
-        return 'Señor(a) Juez';
-      case 'Correo JDC':
-        return 'Señor(a) Juez';
-      default:
-        return '';
-    }
-  }
 
 
   @override
@@ -231,100 +175,293 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
+  void fetchDocumentoDerechoPeticion() async {
+    try {
+      DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
+          .collection('derechos_peticion_solicitados')
+          .doc(widget.idDocumento)
+          .get();
+
+      if (documentSnapshot.exists) {
+        Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
+
+        if (data != null && mounted) {
+          setState(() {
+            diligencio = data['diligencio'] ?? 'No Diligenciado';
+            reviso = data['reviso'] ?? 'No Revisado';
+            envio = data['envió'] ?? 'No enviado';
+
+            fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
+            fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
+            fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
+          });
+          print("Diligencio: ***$diligencio ");
+          print(" Fecha Diligencio: ***$fechaDiligenciamiento ");
+
+          print("reviso: ***$reviso ");
+          print(" Fecha reviso: ***$fechaRevision ");
+
+          print("envio: ***$envio ");
+          print(" Fecha envio: ***$fechaEnvio ");
+        }
+      } else {
+        if (kDebugMode) {
+          print("⚠️ Documento no encontrado en Firestore");
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error al obtener datos de Firestore: $e");
+      }
+    }
+  }
+
+
+  Future<void> cargarCorreos() async {
+    Map<String, String> correos = await obtenerCorreosCentro(userDoc);
+    if (mounted) {
+      setState(() {
+        correosCentro = correos;
+      });
+    }
+  }
+
+  void _actualizarAltura() {
+    int lineas = '\n'.allMatches(_consideracionesController.text).length + 1;
+    setState(() {
+      _maxLines = lineas > 5 ? 5 : lineas; // Limita el crecimiento a 5 líneas
+    });
+  }
+
+  void _guardarDatosEnVariables() {
+    if (_consideracionesController.text.isEmpty || _fundamentosDerechoController.text.isEmpty
+        || _peticionConcretaController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("⚠️ Todos los campos deben estar llenos."),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      _mostrarBotonVistaPrevia = false;
+      _mostrarVistaPrevia = false;
+      return; // Detiene la ejecución si hay campos vacíos
+    }
+
+    setState(() {
+      consideraciones = _consideracionesController.text;
+      fundamentosDeDerecho = _fundamentosDerechoController.text;
+      peticionConcreta = _peticionConcretaController.text;
+    });
+    _mostrarBotonVistaPrevia = true;
+  }
+
+  @override
+  void dispose() {
+    _consideracionesController.removeListener(_actualizarAltura);
+    _fundamentosDerechoController.removeListener(_actualizarAltura);
+    _consideracionesController.dispose();
+    _fundamentosDerechoController.dispose();
+    super.dispose();
+  }
+
+  String obtenerTituloCorreo(String? nombreCorreo) {
+    switch (nombreCorreo) {
+      case 'Director':
+        return 'Señor\nDirector';
+      case 'Jurídica':
+        return 'Señores Oficina Jurídica';
+      case 'Principal':
+        return 'Señores';
+      case 'Sanidad':
+        return 'Señores Oficina de Sanidad';
+      case 'Correo JEP':
+        return 'Señor(a) Juez';
+      case 'Correo JDC':
+        return 'Señor(a) Juez';
+      default:
+        return '';
+    }
+  }
+  Color _obtenerColorStatus(String status) {
+    switch (status) {
+      case "Solicitado":
+        return Colors.red;
+      case "Diligenciado":
+        return Colors.amber;
+      case "Revisado":
+        return primary; // Puedes usar Colors.blue o Theme.of(context).primaryColor
+      default:
+        return Colors.grey; // Color por defecto
+    }
+  }
+
+  Color _obtenerColorFondo(String status) {
+    switch (status) {
+      case "Solicitado":
+        return const Color(0xFFFFF5F5); // Rojo extra claro
+      case "Diligenciado":
+        return const Color(0xFFFFFBEA); // Ámbar extra claro
+      case "Revisado":
+        return const Color(0xFFF5EAFE); // primary extra claro
+      default:
+        return const Color(0xFFFAFAFA); // Gris casi blanco
+    }
+  }
+
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildFechaHoy(),
-        const SizedBox(height: 10),
-        const Text("Derecho de petición", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28)),
-        Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Solicitado por: ${userData?.nombreAcudiente ?? "Sin información"} ${userData?.apellidoAcudiente ?? "Sin información"}",
-              style: const TextStyle(fontSize: 14),
+          _buildFechaHoy(),
+          const SizedBox(height: 10),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: _obtenerColorFondo(widget.status),
             ),
-          ],
-        ),
-        const SizedBox(height: 15),
-        _buildDetallesSolicitud(),
-        const SizedBox(height: 20),
-        _buildSolicitudTexto(),
-        const SizedBox(height: 30),
-        const Row(
-          children: [
-            Icon(Icons.attach_file),
-            Text("Archivos adjuntos", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-        const SizedBox(height: 30),
-
-        /// 📂 **Mostramos los archivos aquí**
-        archivos.isNotEmpty
-            ? ArchivoViewerWeb(archivos: archivos)
-            : const Text(
-          "El usuario no compartió ningún archivo",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
-        ),
-        const SizedBox(height: 30),
-        const Divider(color: gris),
-        const Text("Espacio de diligenciamiento", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28)),
-        const SizedBox(height: 30),
-        ingresarConsideraciones(),
-        const SizedBox(height: 30),
-        ingresarFundamentosDeDerecho(),
-        const SizedBox(height: 30),
-        ingresarPeticionConcreta(),
-        const SizedBox(height: 30),
-        Wrap(
-          children: [
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                backgroundColor: Colors.white, // Fondo blanco
-                foregroundColor: Colors.black, // Letra en negro
-              ),
-              onPressed: () {
-                setState(() {
-                  _guardarDatosEnVariables();
-                });
-
-              },
-              child: const Text("Guardar datos"),
-            ),
-            const SizedBox(width: 50),
-            if(_mostrarBotonVistaPrevia)
-            Wrap(
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+            child: Column(
               children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                    backgroundColor: Colors.white, // Fondo blanco
-                    foregroundColor: Colors.black, // Letra en negro
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      // Actualizar las variables con los valores de los controladores
-                      consideraciones = _consideracionesController.text.trim();
-                      fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
-                      peticionConcreta = _peticionConcretaController.text.trim();
-                      _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
-                    });
+                Row(
+                  children: [
+                    Text(
+                      "Derecho de petición - ${widget.status}",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
+                    ),
 
-                  },
-                  child: const Text("Vista previa"),
+                    const SizedBox(width: 14), // Espacio entre el texto y el círculo
+                    CircleAvatar(
+                      radius: 12,
+                      backgroundColor: _obtenerColorStatus(widget.status),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 30),
-
+                Row(
+                  children: [
+                    Text(
+                      "Solicitado por: ${userData?.nombreAcudiente ?? "Sin información"} ${userData?.apellidoAcudiente ?? "Sin información"}",
+                      style: const TextStyle(fontSize: 14),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                _buildDetallesSolicitud(),
+                const SizedBox(height: 20),
               ],
             ),
-          ],
-        ),
-        const SizedBox(height: 50),
-        // ✅ Solo muestra la vista previa si _mostrarVistaPrevia es true
-        if (_mostrarVistaPrevia)
-          vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
+          ),
+          _buildSolicitudTexto(),
+          const SizedBox(height: 30),
+          const Row(
+            children: [
+              Icon(Icons.attach_file),
+              Text("Archivos adjuntos", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            ],
+          ),
+          const SizedBox(height: 30),
+
+          /// 📂 **Mostramos los archivos aquí**
+          archivos.isNotEmpty
+              ? ArchivoViewerWeb(archivos: archivos)
+              : const Text(
+            "El usuario no compartió ningún archivo",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
+          ),
+          const SizedBox(height: 30),
+          const Divider(color: gris),
+          const Text("Espacio de diligenciamiento", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28)),
+          const SizedBox(height: 30),
+          ingresarConsideraciones(),
+          const SizedBox(height: 30),
+          ingresarFundamentosDeDerecho(),
+          const SizedBox(height: 30),
+          ingresarPeticionConcreta(),
+          const SizedBox(height: 30),
+          Wrap(
+            children: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                  backgroundColor: Colors.white, // Fondo blanco
+                  foregroundColor: Colors.black, // Letra en negro
+                ),
+                onPressed: () {
+                  setState(() {
+                    _guardarDatosEnVariables();
+                  });
+
+                },
+                child: const Text("Guardar datos"),
+              ),
+              const SizedBox(width: 50),
+              if(_mostrarBotonVistaPrevia)
+              Wrap(
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                      backgroundColor: Colors.white, // Fondo blanco
+                      foregroundColor: Colors.black, // Letra en negro
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        // Actualizar las variables con los valores de los controladores
+                        consideraciones = _consideracionesController.text.trim();
+                        fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
+                        peticionConcreta = _peticionConcretaController.text.trim();
+                        _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
+                      });
+
+                    },
+                    child: const Text("Vista previa"),
+                  ),
+                  const SizedBox(width: 30),
+
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 50),
+          // ✅ Solo muestra la vista previa si _mostrarVistaPrevia es true
+          if (_mostrarVistaPrevia)
+            vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
+        ],
+    );
+  }
+
+  Widget infoAccionesAdmin(){
+    return Column(
+      children: [
+        if (widget.status == "Diligenciado" || widget.status == "Revisado" || widget.status == "Enviado")
+          Row(
+            children: [
+              const Text("Diligenció: ", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              Text(diligencio, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 15),
+              Text(_formatFecha(fechaDiligenciamiento), style: const TextStyle(fontSize: 13)),
+            ],
+          ),
+        if (widget.status == "Revisado" || widget.status == "Enviado")
+          Row(
+            children: [
+              const Text("Revisó: ", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              Text(reviso, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 15),
+              Text(_formatFecha(fechaRevision), style: const TextStyle(fontSize: 13)),
+            ],
+          ),
+        if (widget.status == "Enviado")
+          Row(
+            children: [
+              const Text("Envió: ", style: TextStyle(color: Colors.grey, fontSize: 13)),
+              Text(envio, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 15),
+              Text(_formatFecha(fechaEnvio), style: const TextStyle(fontSize: 13)),
+            ],
+          ),
       ],
     );
   }
@@ -367,7 +504,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           children: [
             const Text("Fecha de solicitud", style: TextStyle(fontSize: 12, color: Colors.grey)),
             Text(
-              _formatFecha(widget.fecha),
+              _formatFecha(DateTime.tryParse(widget.fecha)),
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 5),
@@ -432,16 +569,9 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   }
 
   /// 📆 Función para manejar errores en la conversión de fechas
-  String _formatFecha(String? fecha, {String formato = 'yyyy-MM-dd HH:mm'}) {
-    if (fecha == null) {
-      return "Sin fecha";
-    }
-
-    try {
-      return DateFormat(formato).format(DateTime.parse(fecha));
-    } catch (e) {
-      throw const FormatException("Fecha inválida");
-    }
+  String _formatFecha(DateTime? fecha, {String formato = 'yyyy-MM-dd HH:mm'}) {
+    if (fecha == null) return "";  // ✅ Devuelve siempre un String
+    return DateFormat(formato).format(fecha);
   }
 
   /// 🎉 Nuevo Widget (Columna extra en PC, o debajo en móvil)
@@ -635,15 +765,26 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
+  String obtenerEntidad(String nombre) {
+    if (["Principal", "Director", "Jurídica", "Sanidad"].contains(nombre)) {
+      return userData?.centroReclusion ?? "";
+    } else if (nombre == "Correo JEP") {
+      return userData?.juzgadoEjecucionPenas ?? "";
+    } else if (nombre == "Correo JDC") {
+      return userData?.juzgadoQueCondeno ?? "";
+    }
+    return "";
+  }
+
   // Función para generar cada fila con el botón "Elegir"
   Widget correoConBoton(String nombre, String? correo) {
     bool isSelected = nombre == nombreCorreoSeleccionado; // Verifica si es el seleccionado
-
     return GestureDetector(
       onTap: () {
         setState(() {
           correoSeleccionado = correo;
-          nombreCorreoSeleccionado = nombre; // Guarda el nombre del correo
+          nombreCorreoSeleccionado = nombre;
+          entidad = obtenerEntidad(nombre);
         });
       },
       child: Container(
@@ -667,6 +808,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                 setState(() {
                   correoSeleccionado = correo;
                   nombreCorreoSeleccionado = nombre;
+                  entidad = obtenerEntidad(nombre);
                 });
               },
               child: Text(
@@ -1291,7 +1433,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   Widget vistaPreviaDerechoPeticion(userData, String consideraciones, String fundamentosDeDerecho, String peticionConcreta) {
     var derechoPeticion = DerechoPeticionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: userData?.centroReclusion ?? "",
+      entidad: entidad,
       referencia: '${widget.categoria} - ${widget.subcategoria}',
       nombrePpl: userData?.nombrePpl?.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
@@ -1324,6 +1466,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
         ),
         const SizedBox(height: 50),
+        infoAccionesAdmin(),
+        const SizedBox(height: 30),
         Wrap(
           children: [
             if (widget.status == "Solicitado") ...[
@@ -1395,7 +1539,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1498,6 +1641,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
+
   Future<Map<String, String>> obtenerCorreosCentro(DocumentReference userDoc) async {
     try {
       DocumentSnapshot correoDoc = await userDoc.collection('correos_centro_reclusion').doc('emails').get();
@@ -1572,6 +1716,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Solicitud marcada como diligenciada"))
             );
+
           }
         } catch (e) {
           if (kDebugMode) {
