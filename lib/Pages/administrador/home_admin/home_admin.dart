@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
 
+import '../../../src/colors/colors.dart';
+
 class HomeAdministradorPage extends StatefulWidget {
   const HomeAdministradorPage({super.key});
 
@@ -108,19 +110,19 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               width: 130,
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.red[200],
+                                color: Colors.red,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
                                 children: [
                                   const Text(
                                     "Usuarios\nRegistrados",
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13,color: blanco, height: 1.1),
                                     textAlign: TextAlign.center,
                                   ),
                                   Text(
                                     countRegistrado.toString(),
-                                    style: const TextStyle(fontSize: 16),
+                                    style: const TextStyle(fontSize: 16, color: blanco),
                                   ),
                                 ],
                               ),
@@ -137,19 +139,19 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               width: 130,
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.green[200],
+                                color: Colors.green,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
                                 children: [
                                   const Text(
                                     "Usuarios\nActivados",
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1.1, color: blanco),
                                     textAlign: TextAlign.center,
                                   ),
                                   Text(
                                     countActivado.toString(),
-                                    style: const TextStyle(fontSize: 16),
+                                    style: const TextStyle(fontSize: 16, color: blanco),
                                   ),
                                 ],
                               ),
@@ -166,47 +168,18 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               width: 130,
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: Colors.amber[200],
+                                color: Colors.amber,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
                                 children: [
                                   const Text(
                                     "Total\nUsuarios",
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1.1),
                                     textAlign: TextAlign.center,
                                   ),
                                   Text(
                                     countTotal.toString(),
-                                    style: const TextStyle(fontSize: 16),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          // Cajón "Solicitudes Pendientes"
-                          InkWell(
-                            onTap: () {
-                              setState(() {
-                                filterStatus = "servicio_solicitado";
-                              });
-                            },
-                            child: Container(
-                              width: 130,
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue[200],
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    "Solicitudes\nPendientes",
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, height: 1),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                  Text(
-                                    countPendiente.toString(),
                                     style: const TextStyle(fontSize: 16),
                                   ),
                                 ],

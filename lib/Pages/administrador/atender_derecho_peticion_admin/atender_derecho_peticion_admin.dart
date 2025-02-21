@@ -447,6 +447,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               Text(diligencio, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(width: 15),
               Text(_formatFecha(fechaDiligenciamiento), style: const TextStyle(fontSize: 13)),
+
             ],
           ),
         if (widget.status == "Revisado" || widget.status == "Enviado")
@@ -464,6 +465,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               const Text("Envió: ", style: TextStyle(color: Colors.grey, fontSize: 13)),
               Text(envio, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
               const SizedBox(width: 15),
+
               Text(_formatFecha(fechaEnvio), style: const TextStyle(fontSize: 13)),
             ],
           ),
@@ -574,10 +576,11 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   }
 
   /// 📆 Función para manejar errores en la conversión de fechas
-  String _formatFecha(DateTime? fecha, {String formato = 'yyyy-MM-dd HH:mm'}) {
-    if (fecha == null) return "";  // ✅ Devuelve siempre un String
-    return DateFormat(formato).format(fecha);
+  String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
+    if (fecha == null) return "";
+    return DateFormat(formato, 'es').format(fecha);
   }
+
 
   /// 🎉 Nuevo Widget (Columna extra en PC, o debajo en móvil)
   Widget _buildExtraWidget() {

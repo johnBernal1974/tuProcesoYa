@@ -13,6 +13,8 @@ import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_ad
 import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
+import 'Pages/administrador/operadores_page/operadores_page.dart';
+import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
@@ -94,6 +96,8 @@ class MyApp extends StatelessWidget {
         'forgot_password': (context) => const ForgotPasswordPage(),
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
         'solicitudes_derecho_peticion_admin': (context) => const SolicitudesDerechoPeticionAdminPage(),
+        'registrar_operadores': (context) => const RegistrarOperadoresPage(),
+        'operadores_page': (context) => const OperadoresPage(),
 
       },
         onGenerateRoute: (settings) {

@@ -84,7 +84,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
-
   late String _tipoDocumento;
 
 
@@ -138,53 +137,121 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       }
     }
   }
-
-
-
-  void _initCalculoCondena() async {
+  Future<void> _fetchJuzgadosEjecucion() async {
     try {
-      await _calculoCondenaController.calcularTiempo(widget.doc.id);
-      mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
-      diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
-      mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
-      diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
-      porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0;
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('ejecucion_penas').get();
+
+      List<Map<String, String>> fetchedEjecucionPenas = querySnapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'juzgadoEP': doc.get('juzgadoEP').toString(),
+          'email': doc.get('email').toString(),
+        };
+
+      }).toList();
+
+      setState(() {
+        juzgadosEjecucionPenas = fetchedEjecucionPenas;
+      });
     } catch (e) {
-      // Maneja la excepción
+      if (kDebugMode) {
+        print("Error al obtener los juzgados de ejecucion: $e");
+      }
     }
   }
 
-  void _initFormFields() {
-    _nombreController.text = widget.doc.get('nombre_ppl') ?? "";
-    _apellidoController.text = widget.doc.get('apellido_ppl') ?? "";
-    _numeroDocumentoController.text = widget.doc.get('numero_documento_ppl').toString();
-    _tipoDocumento = widget.doc.get('tipo_documento_ppl') ?? "";
-    _radicadoController.text = widget.doc.get('radicado') ?? "";
-    _tiempoCondenaController.text = widget.doc.get('tiempo_condena').toString();
-    _fechaDeCapturaController.text = widget.doc.get('fecha_captura') ?? "";
-    _tdController.text = widget.doc.get('td') ?? "";
-    _nuiController.text = widget.doc.get('nui') ?? "";
-    _patioController.text = widget.doc.get('patio') ?? "";
-    String laborDescuento = widget.doc.get('labor_descuento') as String;
-    if(laborDescuento.trim().isEmpty) {
-      _laborDescuentoController.text = "Ningúna informada";
-    } else {
-      _laborDescuentoController.text = laborDescuento;
-    }
+  Future<void> _fetchJuzgadoCondenoPorCiudad() async {
+    try {
+      // Obtener la colección 'juzgado_condeno'
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('juzgado_condeno')
+          .get();
 
-    String fechaInicioDescuento = widget.doc.get('fecha_inicio_descuento') ?? "";
-    if (fechaInicioDescuento.trim().isEmpty) {
-      _fechaInicioDescuentoController.text = "Sin información"; // Solo para mostrarlo en UI
-    } else {
-      _fechaInicioDescuentoController.text = fechaInicioDescuento; // Mantiene el valor real
-    }
+      // Crear una lista para almacenar las "regionales" y sus "juzgados"
+      List<Map<String, dynamic>> fetchedJuzgadoCondeno = [];
 
-    _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
-    _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
-    _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
-    _celularAcudienteController.text = widget.doc.get('celular') ?? "";
-    _emailAcudienteController.text = widget.doc.get('email') ?? "";
+      // Iterar sobre los documentos de la colección 'juzgado_condeno'
+      for (var doc in querySnapshot.docs) {
+        // Obtener el nombre de la "regional" desde el campo 'name'
+        String juzgadoCondenoName = doc['name'] ?? 'Nombre no disponible';
+
+        // Acceder a la subcolección 'juzgados'
+        QuerySnapshot juzgadosSnapshot = await doc.reference
+            .collection('juzgados')
+            .get();
+        // Crear una lista con los juzgados usando el campo 'nombre' de cada documento
+        List<String> juzgados = juzgadosSnapshot.docs.map<String>((centerDoc) {
+          // Devuelve el campo 'nombre' convertido a String o, si es null, el id convertido a String
+          return (centerDoc['nombre'] ?? centerDoc.id).toString();
+        }).toList();
+
+
+        // Armar el mapa con la información de la "regional" y sus "juzgados"
+        Map<String, dynamic> regionalData = {
+          'id': doc.id,                 // ID del documento de la "regional"
+          'nombre': juzgadoCondenoName,   // Nombre obtenido
+          'juzgados': juzgados,           // Lista de nombres de los juzgados
+        };
+        // Agregar la información a la lista final
+        fetchedJuzgadoCondeno.add(regionalData);
+      }
+
+      // Actualizar el estado con las regionales y sus juzgados
+      setState(() {
+        juzgadoQueCondeno = fetchedJuzgadoCondeno;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error al cargar las ciudades: $e');
+      }
     }
+  }
+  Future<void> _fetchJuzgadosConocimiento(String juzgadoCondenoId) async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('juzgado_condeno')
+          .doc(juzgadoCondenoId)
+          .collection('juzgados')
+          .get();
+
+      List<Map<String, String>> fetchedJuzgadoConocimiento = querySnapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'nombre': doc.get('nombre').toString(),  // Castear a String
+          'correo': doc.get('correo').toString(),  // Castear a String
+        };
+      }).toList();
+
+      setState(() {
+        juzgadosConocimiento = fetchedJuzgadoConocimiento;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error al obtener los juzgado de conocimiento: $e");
+      }
+    }
+  }
+
+  Future<void> _fetchDelitos() async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('delitos').get();
+
+      List<Map<String, String>> fetchedDelitos = querySnapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'delito': doc.get('delito').toString(),
+        };
+      }).toList();
+
+      setState(() {
+        delito = fetchedDelitos;
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error al obtener los delitos: $e");
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -334,137 +401,133 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       if (centrosReclusionTodos.isEmpty) {
         Future.microtask(() => _fetchTodosCentrosReclusion());
       }
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Buscar centro de reclusión",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          Autocomplete<Map<String, String>>(
-            optionsBuilder: (TextEditingValue textEditingValue) {
-              if (textEditingValue.text.isEmpty) {
-                return const Iterable<Map<String, String>>.empty();
-              }
-              return centrosReclusionTodos
-                  .map((option) => option.map((key, value) => MapEntry(key, value.toString()))) // Convierte todo a String
-                  .where((Map<String, String> option) =>
-                  option['nombre']!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: primary),
+          borderRadius: BorderRadius.circular(4),
+          color: Colors.white,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Buscar centro de reclusión",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            Autocomplete<Map<String, String>>(
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                if (textEditingValue.text.isEmpty) {
+                  return const Iterable<Map<String, String>>.empty();
+                }
+                return centrosReclusionTodos
+                    .map((option) => option.map((key, value) => MapEntry(key, value.toString()))) // Convierte todo a String
+                    .where((Map<String, String> option) =>
+                    option['nombre']!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
 
-            },
-            displayStringForOption: (Map<String, String> option) =>
-            option['nombre']!,
-            fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-              return TextField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                decoration: const InputDecoration(
-                  hintText: "Busca ingresando la ciudad",
-                  labelText: "Centro de reclusión",
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                ),
-              );
-            },
-            optionsViewBuilder: (context, onSelected, options) {
-              if (options.isEmpty) {
-                return Material(
-                  elevation: 4.0,
-                  child: Container(
-                    padding: const EdgeInsets.all(8.0),
-                    child: const Text("No se encontraron centros"),
+              },
+              displayStringForOption: (Map<String, String> option) =>
+              option['nombre']!,
+              fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                return TextField(
+                  controller: textEditingController,
+                  focusNode: focusNode,
+                  decoration: InputDecoration(
+                    hintText: "Busca ingresando la ciudad",
+                    labelText: "Centro de reclusión",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   ),
                 );
-              }
-              return Align(
-                alignment: Alignment.topLeft,
-                child: Material(
-                  elevation: 4.0,
-                  child: ListView.builder(
-                    padding: EdgeInsets.zero,
-                    shrinkWrap: true,
-                    itemCount: options.length,
-                    itemBuilder: (context, index) {
-                      final Map<String, String> option = options.elementAt(index);
-                      return ListTile(
-                        title: Text(option['nombre']!),
-                        onTap: () {
-                          onSelected(option);
-                        },
-                      );
-                    },
-                  ),
-                ),
-              );
-            },
-            onSelected: (Map<String, String> selection) {
-              setState(() {
-                selectedCentro = selection['id'];
-                // Actualizamos _centroReclusion para que muestre el nombre del centro seleccionado.
-                // Guardamos también el ID de la regional asociada
-                selectedRegional = selection['regional'];
-              });
-              if (kDebugMode) {
-                print("Valor a actualizar en ***** 'regional': ${selectedRegional ?? widget.doc['regional']}");
-              }
-            },
-
-          ),
-          const SizedBox(height: 10),
-          if (selectedCentro != null)
-            Text(
-              "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
-                    (centro) => centro['id'] == selectedCentro,
-                orElse: () => <String, String>{},
-              )['nombre']!}",
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-            ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.center,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _mostrarDropdowns = false;
-                  // Restaura el valor original del documento, si es que existe.
-                  selectedCentro = null;
-                });
               },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.cancel, size: 15),
-                  Text("Cancelar", style: TextStyle(fontSize: 11)),
-                ],
+              optionsViewBuilder: (context, onSelected, options) {
+                if (options.isEmpty) {
+                  return Material(
+                    elevation: 4.0,
+                    child: Container(
+                      padding: const EdgeInsets.all(8.0),
+                      child: const Text("No se encontraron centros"),
+                    ),
+                  );
+                }
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4.0,
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (context, index) {
+                        final Map<String, String> option = options.elementAt(index);
+                        return ListTile(
+                          title: Text(option['nombre']!),
+                          onTap: () {
+                            onSelected(option);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+              onSelected: (Map<String, String> selection) {
+                setState(() {
+                  selectedCentro = selection['id'];
+                  // Actualizamos _centroReclusion para que muestre el nombre del centro seleccionado.
+                  // Guardamos también el ID de la regional asociada
+                  selectedRegional = selection['regional'];
+                });
+                if (kDebugMode) {
+                  print("Valor a actualizar en ***** 'regional': ${selectedRegional ?? widget.doc['regional']}");
+                }
+              },
+
+            ),
+            const SizedBox(height: 10),
+            if (selectedCentro != null)
+              Text(
+                "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
+                      (centro) => centro['id'] == selectedCentro,
+                  orElse: () => <String, String>{},
+                )['nombre']!}",
+                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+              ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.center,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _mostrarDropdowns = false;
+                    // Restaura el valor original del documento, si es que existe.
+                    selectedCentro = null;
+                  });
+                },
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.cancel, size: 15),
+                    Text("Cancelar", style: TextStyle(fontSize: 11)),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       );
-    }
-  }
-
-  Future<void> _fetchJuzgadosEjecucion() async {
-    try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('ejecucion_penas').get();
-
-      List<Map<String, String>> fetchedEjecucionPenas = querySnapshot.docs.map((doc) {
-        return {
-          'id': doc.id,
-          'juzgadoEP': doc.get('juzgadoEP').toString(),
-          'email': doc.get('email').toString(),
-        };
-
-      }).toList();
-
-      setState(() {
-        juzgadosEjecucionPenas = fetchedEjecucionPenas;
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error al obtener los juzgados de ejecucion: $e");
-      }
     }
   }
 
@@ -538,37 +601,39 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
+                  border: Border.all(color: primary),
                   borderRadius: BorderRadius.circular(4),
                   color: Colors.white,
                 ),
-                child: DropdownButton<String>(
-                  value: selectedJuzgadoEjecucionPenas,
-                  hint: const Text('Selecciona un Juzgado de Ejecución de Penas'),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedJuzgadoEjecucionPenas = value;
-                      // Buscar el email correspondiente en la lista de juzgados
-                      final selected = juzgadosEjecucionPenas.firstWhere(
-                            (element) => element['juzgadoEP'] == value,
-                        orElse: () => <String, String>{},  // Especifica explícitamente el tipo
+                  child: DropdownButton<String>(
+                    value: selectedJuzgadoEjecucionPenas,
+                    hint: const Text('Selecciona un Juzgado de Ejecución de Penas'),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedJuzgadoEjecucionPenas = value;
+                        // Buscar el email correspondiente en la lista de juzgados
+                        final selected = juzgadosEjecucionPenas.firstWhere(
+                              (element) => element['juzgadoEP'] == value,
+                          orElse: () => <String, String>{}, // Especifica explícitamente el tipo
+                        );
+                        selectedJuzgadoEjecucionEmail = selected['email'];
+                      });
+                    },
+                    isExpanded: true,
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(color: Colors.black),
+                    items: (List<Map<String, String>>.from(juzgadosEjecucionPenas)
+                      ..sort((a, b) => a['juzgadoEP']!.compareTo(b['juzgadoEP']!))) // Ordena alfabéticamente
+                        .map((juzgado) {
+                      return DropdownMenuItem<String>(
+                        value: juzgado['juzgadoEP'],
+                        child: Text(
+                          juzgado['juzgadoEP']!,
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                        ),
                       );
-                      selectedJuzgadoEjecucionEmail = selected['email'];
-                    });
-                  },
-                  isExpanded: true,
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(color: Colors.black),
-                  items: juzgadosEjecucionPenas.map((juzgado) {
-                    return DropdownMenuItem<String>(
-                      value: juzgado['juzgadoEP'],
-                      child: Text(
-                        juzgado['juzgadoEP']!,
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  }).toList(),
-                )
+                    }).toList(),
+                  )
               ),
               const SizedBox(height: 10),
               GestureDetector(
@@ -590,79 +655,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
       ],
     );
-  }
-
-  Future<void> _fetchJuzgadoCcondeno() async {
-    try {
-      // Obtener la colección 'juzgado_condeno'
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('juzgado_condeno')
-          .get();
-
-      // Crear una lista para almacenar las "regionales" y sus "juzgados"
-      List<Map<String, dynamic>> fetchedJuzgadoCondeno = [];
-
-      // Iterar sobre los documentos de la colección 'juzgado_condeno'
-      for (var doc in querySnapshot.docs) {
-        // Obtener el nombre de la "regional" desde el campo 'name'
-        String juzgadoCondenoName = doc['name'] ?? 'Nombre no disponible';
-
-        // Acceder a la subcolección 'juzgados'
-        QuerySnapshot juzgadosSnapshot = await doc.reference
-            .collection('juzgados')
-            .get();
-        // Crear una lista con los juzgados usando el campo 'nombre' de cada documento
-        List<String> juzgados = juzgadosSnapshot.docs.map<String>((centerDoc) {
-          // Devuelve el campo 'nombre' convertido a String o, si es null, el id convertido a String
-          return (centerDoc['nombre'] ?? centerDoc.id).toString();
-        }).toList();
-
-
-        // Armar el mapa con la información de la "regional" y sus "juzgados"
-        Map<String, dynamic> regionalData = {
-          'id': doc.id,                 // ID del documento de la "regional"
-          'nombre': juzgadoCondenoName,   // Nombre obtenido
-          'juzgados': juzgados,           // Lista de nombres de los juzgados
-        };
-        // Agregar la información a la lista final
-        fetchedJuzgadoCondeno.add(regionalData);
-      }
-
-      // Actualizar el estado con las regionales y sus juzgados
-      setState(() {
-        juzgadoQueCondeno = fetchedJuzgadoCondeno;
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error al cargar las ciudades: $e');
-      }
-    }
-  }
-
-  Future<void> _fetchJuzgadosConocimiento(String juzgadoCondenoId) async {
-    try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('juzgado_condeno')
-          .doc(juzgadoCondenoId)
-          .collection('juzgados')
-          .get();
-
-      List<Map<String, String>> fetchedJuzgadoConocimiento = querySnapshot.docs.map((doc) {
-        return {
-          'id': doc.id,
-          'nombre': doc.get('nombre').toString(),  // Castear a String
-          'correo': doc.get('correo').toString(),  // Castear a String
-        };
-      }).toList();
-
-      setState(() {
-        juzgadosConocimiento = fetchedJuzgadoConocimiento;
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error al obtener los juzgado de conocimiento: $e");
-      }
-    }
   }
 
   Widget seleccionarJuzgadoQueCondeno() {
@@ -691,7 +683,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       _juzgadoQueCondeno = "";
                       _juzgado = "";
                     });
-                    _fetchJuzgadoCcondeno();
+                    _fetchJuzgadoCondenoPorCiudad();
                     // No es necesario llamar a  aquí;
                     // se llamará cuando se seleccione la ciudad en el dropdown.
                   },
@@ -733,69 +725,23 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 setState(() {
                   _mostrarDropdownJuzgadoCondeno = true;
                 });
-                _fetchJuzgadoCcondeno();
+                _fetchJuzgadoCondenoPorCiudad();
               },
               child: const Text("Seleccionar Juzgado de Conocimiento"),
             ),
           )
         // Modo edición: se muestran los dropdowns para seleccionar ciudad y luego el juzgado
         else
-          Column(
-            children: [
-              // Dropdown para seleccionar la ciudad (documentos de la colección juzgado_condeno)
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                child: DropdownButton<String>(
-                  value: selectedCiudad,
-                  hint: const Text('Selecciona una ciudad'),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedCiudad = value;
-                      // Limpiar la selección previa del juzgado
-                      selectedJuzgadoNombre = null;
-                    });
-                    // Cargar los juzgados de conocimiento correspondientes a la ciudad seleccionada
-                    _fetchJuzgadosConocimiento(value!);
-                  },
-                  isExpanded: true,
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(color: Colors.black),
-                  items: juzgadoQueCondeno.map((ciudad) {
-                    return DropdownMenuItem<String>(
-                      value: ciudad['id'],
-                      child: Text(
-                        ciudad['nombre']!,
-                        style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              // Botón para cancelar y restaurar los valores originales
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownJuzgadoCondeno = false;
-                    _juzgado = widget.doc['juzgado_que_condeno'];
-                  });
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel, size: 15),
-                    Text("Cancelar", style: TextStyle(fontSize: 11)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // Dropdown para seleccionar el juzgado de conocimiento (solo si se ha seleccionado la ciudad)
-              if (selectedCiudad != null)
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: primary),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
+            ),
+            child: Column(
+              children: [
+                // Dropdown para seleccionar la ciudad (documentos de la colección juzgado_condeno)
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
@@ -804,67 +750,114 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     color: Colors.white,
                   ),
                   child: DropdownButton<String>(
-                    value: selectedJuzgadoNombre,
-                    hint: const Text('Selecciona un juzgado de conocimiento'),
+                    value: selectedCiudad,
+                    hint: const Text('Selecciona una ciudad'),
                     onChanged: (value) {
                       setState(() {
-                        selectedJuzgadoNombre = value;
+                        selectedCiudad = value;
+                        // Limpiar la selección previa del juzgado
+                        selectedJuzgadoNombre = null;
                       });
-                      setState(() {
-                        selectedJuzgadoNombre = value;
-                        // Buscar el email correspondiente en la lista de juzgados
-                        final selected = juzgadosConocimiento.firstWhere(
-                              (element) => element['nombre'] == value,
-                          orElse: () => <String, String>{},  // Especifica explícitamente el tipo
-                        );
-                        selectedJuzgadoConocimientoEmail = selected['correo'];
-                      });
+                      // Cargar los juzgados de conocimiento correspondientes a la ciudad seleccionada
+                      _fetchJuzgadosConocimiento(value!);
                     },
                     isExpanded: true,
                     dropdownColor: Colors.white,
                     style: const TextStyle(color: Colors.black),
-                    items: juzgadosConocimiento.map((juzgado) {
+                    items: juzgadoQueCondeno.map((ciudad) {
                       return DropdownMenuItem<String>(
-                        value: juzgado['nombre'], // Usamos el nombre como valor
+                        value: ciudad['id'],
                         child: Text(
-                          juzgado['nombre']!,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
+                          ciudad['nombre']!,
+                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
                         ),
                       );
                     }).toList(),
                   ),
                 ),
-            ],
+                const SizedBox(height: 10),
+                // Botón para cancelar y restaurar los valores originales
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdownJuzgadoCondeno = false;
+                      _juzgadoQueCondeno = widget.doc['juzgado_que_condeno'];
+                      _juzgado = widget.doc['juzgado_que_condeno'];
+                      selectedCiudad = null; // 🔥 Evita que la ciudad anterior se muestre en el dropdown
+
+                      // Verificar que el juzgado existe en la lista antes de asignarlo
+                      if (juzgadosConocimiento.any((j) => j['nombre'] == widget.doc['juzgado_que_condeno'])) {
+                        selectedJuzgadoNombre = widget.doc['juzgado_que_condeno'];
+                      } else {
+                        selectedJuzgadoNombre = null;
+                      }
+
+                      selectedJuzgadoConocimientoEmail = widget.doc['juzgado_que_condeno_email'];
+                    });
+                  },
+
+
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.cancel, size: 15),
+                      Text("Cancelar", style: TextStyle(fontSize: 11)),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+                // Dropdown para seleccionar el juzgado de conocimiento (solo si se ha seleccionado la ciudad)
+                if (selectedCiudad != null)
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(4),
+                      color: Colors.white,
+                    ),
+                    child: DropdownButton<String>(
+                      value: selectedJuzgadoNombre,
+                      hint: const Text('Selecciona un juzgado de conocimiento'),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedJuzgadoNombre = value;
+                        });
+                        setState(() {
+                          selectedJuzgadoNombre = value;
+                          // Buscar el email correspondiente en la lista de juzgados
+                          final selected = juzgadosConocimiento.firstWhere(
+                                (element) => element['nombre'] == value,
+                            orElse: () => <String, String>{},  // Especifica explícitamente el tipo
+                          );
+                          selectedJuzgadoConocimientoEmail = selected['correo'];
+                        });
+                      },
+                      isExpanded: true,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(color: Colors.black),
+                      items: juzgadosConocimiento.map((juzgado) {
+                        return DropdownMenuItem<String>(
+                          value: juzgado['nombre'], // Usamos el nombre como valor
+                          child: Text(
+                            juzgado['nombre']!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+              ],
+            ),
           ),
       ],
     );
-  }
-
-  Future<void> _fetchDelitos() async {
-    try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('delitos').get();
-
-      List<Map<String, String>> fetchedDelitos = querySnapshot.docs.map((doc) {
-        return {
-          'id': doc.id,
-          'delito': doc.get('delito').toString(),
-        };
-      }).toList();
-
-      setState(() {
-        delito = fetchedDelitos;
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error al obtener los delitos: $e");
-      }
-    }
   }
 
   Widget seleccionarDelito() {
@@ -935,7 +928,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
+                  border: Border.all(color: primary),
                   borderRadius: BorderRadius.circular(4),
                   color: Colors.white,
                 ),
@@ -1009,6 +1002,49 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         print('El documento no existe');
       }
     }
+  }
+  void _initCalculoCondena() async {
+    try {
+      await _calculoCondenaController.calcularTiempo(widget.doc.id);
+      mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
+      diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
+      mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
+      diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
+      porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0;
+    } catch (e) {
+      // Maneja la excepción
+    }
+  }
+  void _initFormFields() {
+    _nombreController.text = widget.doc.get('nombre_ppl') ?? "";
+    _apellidoController.text = widget.doc.get('apellido_ppl') ?? "";
+    _numeroDocumentoController.text = widget.doc.get('numero_documento_ppl').toString();
+    _tipoDocumento = widget.doc.get('tipo_documento_ppl') ?? "";
+    _radicadoController.text = widget.doc.get('radicado') ?? "";
+    _tiempoCondenaController.text = widget.doc.get('tiempo_condena').toString();
+    _fechaDeCapturaController.text = widget.doc.get('fecha_captura') ?? "";
+    _tdController.text = widget.doc.get('td') ?? "";
+    _nuiController.text = widget.doc.get('nui') ?? "";
+    _patioController.text = widget.doc.get('patio') ?? "";
+    String laborDescuento = widget.doc.get('labor_descuento') as String;
+    if(laborDescuento.trim().isEmpty) {
+      _laborDescuentoController.text = "Ningúna informada";
+    } else {
+      _laborDescuentoController.text = laborDescuento;
+    }
+
+    String fechaInicioDescuento = widget.doc.get('fecha_inicio_descuento') ?? "";
+    if (fechaInicioDescuento.trim().isEmpty) {
+      _fechaInicioDescuentoController.text = "Sin información"; // Solo para mostrarlo en UI
+    } else {
+      _fechaInicioDescuentoController.text = fechaInicioDescuento; // Mantiene el valor real
+    }
+
+    _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
+    _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
+    _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
+    _celularAcudienteController.text = widget.doc.get('celular') ?? "";
+    _emailAcudienteController.text = widget.doc.get('email') ?? "";
   }
 
   Widget datosEjecucionCondena() {
@@ -1619,7 +1655,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  Future<void> validarYEnviarMensaje() async {
+  Future<void> validarYEnviarMensaje() async
+  {
     String celular = widget.doc['celular'] ?? '';
     String docId = widget.doc['id'] ?? '';
 

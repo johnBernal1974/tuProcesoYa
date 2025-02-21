@@ -320,9 +320,9 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
   }
 
   /// 📆 Función para manejar errores en la conversión de fechas
-  String _formatFecha(DateTime? fecha, {String formato = 'yyyy-MM-dd HH:mm'}) {
-    if (fecha == null) return "Sin fecha";  // ✅ Devuelve siempre un String
-    return DateFormat(formato).format(fecha);
+  String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
+    if (fecha == null) return "";
+    return DateFormat(formato, 'es').format(fecha);
   }
 
 

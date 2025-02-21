@@ -67,20 +67,31 @@ class _SideBarState extends State<SideBar> {
       elevation: 1,
       child: Container(
         color: violetaOscuro,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator()) // Muestra un loader mientras carga
-            : ListView(
-          padding: EdgeInsets.zero,
+        child: Stack( // 👈 Usa Stack para posicionar el logout abajo
           children: [
-            const SizedBox(height: 40),
-            _buildDrawerHeader(_isAdmin),
-            const Divider(height: 1, color: grisMedio),
-            ..._buildDrawerItems(context, _isAdmin),
+            ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                const SizedBox(height: 40),
+                _buildDrawerHeader(_isAdmin),
+                const Divider(height: 1, color: grisMedio),
+                ..._buildDrawerItems(context, _isAdmin),
+                const SizedBox(height: 60), // Espacio extra para el botón
+              ],
+            ),
+            Positioned(
+              bottom: 20,
+              left: 0,
+              right: 0,
+              child: _buildLogoutTile(context), // 🔥 Se mantiene en la parte inferior
+            ),
           ],
         ),
       ),
     );
   }
+
+
 
 
   Future<void> _fetchPendingSuggestions() async {
@@ -110,30 +121,30 @@ class _SideBarState extends State<SideBar> {
   }
 
   List<Widget> _buildDrawerItems(BuildContext context, bool? isAdmin) {
-    if (isAdmin == true) {
-      // Menú para administradores
-      return [
-        const SizedBox(height: 50),
+    List<Widget> items = [
+      const SizedBox(height: 50),
+      if (isAdmin == true) ...[
         _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home_admin'),
         _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias_administrador', showBadge: _pendingSuggestions > 0),
         _buildDrawerTile(context, "Configuraciones", Icons.settings, 'configuraciones_admin'),
         _buildDrawerTile(context, "Solicitudes derechos petición", Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
-        _buildLogoutTile(context),
-      ];
-    } else {
-      // Menú para usuarios normales
-      return [
-        const SizedBox(height: 50),
+        _buildDrawerTile(context, "Registrar Operadores", Icons.account_box, 'registrar_operadores'),
+        _buildDrawerTile(context, "Operadores", Icons.account_box, 'operadores_page'),
+      ] else ...[
         _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.event_note_outlined, 'solicitudes_page'),
         _buildDrawerTile(context, "Quienes somos", Icons.info, 'nosotros'),
         _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
-        _buildLogoutTile(context),
-      ];
-    }
+      ],
+      const SizedBox(height: 60), // Espacio para evitar que el último item quede pegado
+    ];
+
+    return items;
   }
+
+
 
 
   Widget _buildDrawerTile(BuildContext context, String title, IconData icon, String route, {bool showBadge = false}) {
