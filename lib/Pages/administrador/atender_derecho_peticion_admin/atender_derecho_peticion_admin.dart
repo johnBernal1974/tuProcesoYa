@@ -155,7 +155,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   bool isWide = constraints.maxWidth > 800; // Si es PC/tablet grande
-
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -482,7 +481,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     });
   }
 
-
   /// 📅 Muestra la fecha de hoy en formato adecuado
   Widget _buildFechaHoy() {
     return Text(
@@ -523,7 +521,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-  /// 📝 Muestra la descripción de la solicitud en un contenedor estilizado
+
   Widget _buildSolicitudTexto() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

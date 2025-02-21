@@ -55,7 +55,7 @@ class _MainLayoutState extends State<MainLayout> {
     bool isDesktop = width >= 1200;
 
     return Scaffold(
-      backgroundColor: blanco,
+      backgroundColor: grisMedio,
       drawer: isDesktop ? null : const SideBar(),
       appBar: AppBar(
         title: Text(

@@ -142,6 +142,14 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
   // 🔥 Widget para cada solicitud
   Widget _buildSolicitudCard(Map<String, dynamic> data, String idDocumento) {
+    // Extraer preguntas y respuestas
+    List<Map<String, dynamic>> preguntasRespuestas = data.containsKey('preguntas_respuestas')
+        ? List<Map<String, dynamic>>.from(data['preguntas_respuestas'])
+        : [];
+
+    List<String> preguntas = preguntasRespuestas.map((e) => e['pregunta'].toString()).toList();
+    List<String> respuestas = preguntasRespuestas.map((e) => e['respuesta'].toString()).toList();
+
     return GestureDetector(
       onTap: () {
         String rutaDestino = obtenerRutaSegunStatus(data['status']);
@@ -157,6 +165,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
             'fecha': data['fecha'].toDate().toString(),
             'idUser': data['idUser'],
             'archivos': data.containsKey('archivos') ? List<String>.from(data['archivos']) : [],
+            'preguntas': preguntas, // ✅ Añadimos preguntas
+            'respuestas': respuestas, // ✅ Añadimos respuestas
           },
         );
       },
@@ -186,8 +196,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                   Text("Categoría: ${data['categoria']}", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                   Row(
                     children: [
-                      Icon(Icons.circle, size: 16, color: getColorEstado(data['status'])), // Círculo con color del estado
-                      const SizedBox(width: 5), // Espaciado
+                      Icon(Icons.circle, size: 16, color: getColorEstado(data['status'])),
+                      const SizedBox(width: 5),
                       Text(data['status'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ],
                   ),

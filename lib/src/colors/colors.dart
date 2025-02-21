@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 
 const gris = Color.fromARGB(255, 139, 139, 139);
-const grisMedio = Color.fromARGB(255, 215, 215, 215);
+const grisMedio = Color.fromARGB(255, 241, 239, 239);
 const primary = violeta;
 const rojo = Color.fromARGB(255, 233, 7, 7);
 const naranja = Color.fromRGBO(255, 140, 0, 1.0);
