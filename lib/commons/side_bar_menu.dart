@@ -128,7 +128,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias_administrador', showBadge: _pendingSuggestions > 0),
         _buildDrawerTile(context, "Configuraciones", Icons.settings, 'configuraciones_admin'),
         _buildDrawerTile(context, "Solicitudes derechos petición", Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
-        _buildDrawerTile(context, "Registrar Operadores", Icons.account_box, 'registrar_operadores'),
+        _buildDrawerTile(context, "Registrar Operadores", Icons.app_registration, 'registrar_operadores'),
         _buildDrawerTile(context, "Operadores", Icons.account_box, 'operadores_page'),
       ] else ...[
         _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
