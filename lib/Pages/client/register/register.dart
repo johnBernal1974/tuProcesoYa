@@ -165,7 +165,8 @@ class _RegistroPageState extends State<RegistroPage> {
           fechaCaptura: null,
           fechaInicioDescuento: null,
           status: "Registrado",
-          isNotificatedActivated: false
+          isNotificatedActivated: false,
+          isPaid: false,
 
         );
 

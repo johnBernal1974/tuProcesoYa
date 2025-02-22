@@ -18,13 +18,25 @@ class _SideBarState extends State<SideBar> {
   int _pendingSuggestions = 0;
   bool? _isAdmin;
   bool _isLoading = true;
+  final ValueNotifier<bool> _isPaid = ValueNotifier<bool>(false);
 
   @override
   void initState() {
     super.initState();
     _fetchPendingSuggestions();
     _checkIfAdmin();
+    _loadData();
 
+  }
+
+  Future<void> _loadData() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+    if (userDoc.exists) {
+      _isPaid.value = userDoc.data()?['isPaid'] ?? false;
+    }
   }
 
   Future<void> _checkIfAdmin() async {
@@ -91,9 +103,6 @@ class _SideBarState extends State<SideBar> {
     );
   }
 
-
-
-
   Future<void> _fetchPendingSuggestions() async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('buzon_sugerencias')
@@ -144,43 +153,76 @@ class _SideBarState extends State<SideBar> {
     return items;
   }
 
-
-
-
   Widget _buildDrawerTile(BuildContext context, String title, IconData icon, String route, {bool showBadge = false}) {
-    return ListTile(
-      onTap: () {
-        if (ModalRoute.of(context)?.settings.name != route) {
-          Navigator.pushNamed(context, route);
-        }
-      },
-      leading: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Icon(icon, color: Colors.white),
-          if (showBadge) // Si hay sugerencias sin responder, muestra el punto rojo
-            Positioned(
-              right: -2,
-              top: -2,
-              child: Container(
-                width: 10,
-                height: 10,
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
+    return ValueListenableBuilder<bool>(
+      valueListenable: _isPaid,
+      builder: (context, isPaid, child) {
+        return ListTile(
+          onTap: () {
+            if (!isPaid && _isAdmin! == false) {
+              _showPaymentDialog(context);
+              return;
+            }
+            if (ModalRoute.of(context)?.settings.name != route) {
+              Navigator.pushNamed(context, route);
+            }
+          },
+          leading: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Icon(icon, color: Colors.white),
+              if (showBadge)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: Container(
+                    width: 10,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-        ],
-      ),
-      title: Text(
-        title,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
-      ),
+            ],
+          ),
+          title: Text(
+            title,
+            style: const TextStyle(color: Colors.white, fontSize: 14),
+          ),
+        );
+      },
     );
   }
 
 
+  void _showPaymentDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Acceso restringido"),
+          content: const Text("Para acceder a esta sección, debes pagar la suscripción."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("Cancelar"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushNamed(context, 'pago_suscripcion');
+              },
+              child: const Text("Realizar pago"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildLogoutTile(BuildContext context) {
     return DrawerListTitle(

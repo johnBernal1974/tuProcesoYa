@@ -35,6 +35,7 @@ class Ppl {
   final String laborDescuento;
   final String status;
   final bool isNotificatedActivated;
+  final bool isPaid;
 
   // Constructor
   Ppl({
@@ -66,6 +67,7 @@ class Ppl {
     required this.laborDescuento,
     required this.status,
     required this.isNotificatedActivated,
+    required this.isPaid,
   });
 
   // Factory para crear una instancia de Ppl desde JSON
@@ -98,6 +100,7 @@ class Ppl {
     laborDescuento: json["labor_descuento"] ?? '',
     status: json["status"] ?? '',
     isNotificatedActivated: json["isNotificatedActivated"] ?? false,
+    isPaid: json["isPaid"] ?? false,
   );
 
   // Método para convertir una instancia de Ppl a JSON
@@ -130,5 +133,6 @@ class Ppl {
     "labor_descuento": laborDescuento,
     "status": status,
     "isNotificatedActivated": isNotificatedActivated,
+    "isPaid": isPaid,
   };
 }

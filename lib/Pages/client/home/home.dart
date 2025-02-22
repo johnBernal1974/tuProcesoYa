@@ -31,6 +31,9 @@ class _HomePageState extends State<HomePage> {
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
 
+  bool _isPaid = false;
+
+
 
   @override
   void initState() {
@@ -56,13 +59,12 @@ class _HomePageState extends State<HomePage> {
     final pplData = await pplProvider.getById(_uid);
     setState(() {
       _ppl = pplData;
+      _isPaid = pplData?.isPaid ?? false; // Suponiendo que el modelo tiene isPaid
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     return MainLayout(
       pageTitle: 'Página Principal',
       content: SingleChildScrollView(
@@ -78,132 +80,253 @@ class _HomePageState extends State<HomePage> {
                 style: const TextStyle(fontSize: 12),
               ),
               const SizedBox(height: 10),
-              Text("${_ppl?.nombrePpl ?? ""} ${_ppl?.apellidoPpl ?? ""}", style: const TextStyle(
-                fontWeight: FontWeight.bold
-              ), textAlign: TextAlign.center),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      side: const BorderSide(color: primary, width: 1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    elevation: 3,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Condena\ntranscurrido',
-                              style: TextStyle(fontSize: screenWidth > 600 ? 12 : 11, fontWeight: FontWeight.bold,
-                              color: negroLetras,
-                              height: 1),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              mesesEjecutado == 1
-                                  ? diasEjecutadoExactos == 1
-                                  ? '$mesesEjecutado mes : $diasEjecutadoExactos día'
-                                  : '$mesesEjecutado mes : $diasEjecutadoExactos días'
-                                  : diasEjecutadoExactos == 1
-                                  ? '$mesesEjecutado meses : $diasEjecutadoExactos día'
-                                  : '$mesesEjecutado meses : $diasEjecutadoExactos días',
-                              style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, fontWeight: FontWeight.bold),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      side: const BorderSide(color: primary, width: 1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    elevation: 3,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Condena\nrestante',
-                              style: TextStyle(fontSize: screenWidth > 600 ? 12 : 11, fontWeight: FontWeight.bold,
-                              color: negroLetras,
-                              height: 1),
-                              textAlign: TextAlign.center,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              mesesRestante == 1
-                                  ? diasRestanteExactos == 1
-                                  ? '$mesesRestante mes : $diasRestanteExactos día'
-                                  : '$mesesRestante mes : $diasRestanteExactos días'
-                                  : mesesRestante > 0
-                                  ? diasRestanteExactos == 1
-                                  ? '$mesesRestante meses : $diasRestanteExactos día'
-                                  : '$mesesRestante meses : $diasRestanteExactos días'
-                                  : diasRestanteExactos == 1
-                                  ? '$diasRestanteExactos día'
-                                  : '$diasRestanteExactos días',
-                              style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, fontWeight: FontWeight.bold),
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
-                  )
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Porcentaje de condena ejecutado: ${porcentajeEjecutado.toStringAsFixed(1)}%',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 20),
-
-              Column(
-                children: [
-                  _buildBenefitCard(
-                    title: 'Permiso Administrativo de 72 horas',
-                    condition: porcentajeEjecutado >= 33.33,
-                    remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                  ),
-                  _buildBenefitCard(
-                    title: 'Prisión Domiciliaria',
-                    condition: porcentajeEjecutado >= 50,
-                    remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                  ),
-                  _buildBenefitCard(
-                    title: 'Libertad Condicional',
-                    condition: porcentajeEjecutado >= 60,
-                    remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                  ),
-                  _buildBenefitCard(
-                    title: 'Extinción de la Pena',
-                    condition: porcentajeEjecutado >= 100,
-                    remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 50),
+              _isPaid ? _buildPaidContent() : _buildUnpaidContent(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Contenido si el usuario **ha pagado**
+  Widget _buildPaidContent() {
+    return Column(
+      children: [
+        Text(
+          "${_ppl?.nombrePpl ?? ""} ${_ppl?.apellidoPpl ?? ""}",
+          style: const TextStyle(fontWeight: FontWeight.bold),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildCondenaCard('Tiempo de\nCondena\ntranscurrida', mesesEjecutado, diasEjecutadoExactos),
+            const SizedBox(width: 10),
+            _buildCondenaCard('Tiempo de\nCondena\nrestante', mesesRestante, diasRestanteExactos),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+        Text(
+          'Porcentaje de condena ejecutado: ${porcentajeEjecutado.toStringAsFixed(1)}%',
+          style: const TextStyle(fontSize: 16),
+        ),
+        const SizedBox(height: 20),
+        Column(
+          children: [
+            _buildBenefitCard(
+              title: 'Permiso Administrativo de 72 horas',
+              condition: porcentajeEjecutado >= 33.33,
+              remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+            ),
+            _buildBenefitCard(
+              title: 'Prisión Domiciliaria',
+              condition: porcentajeEjecutado >= 50,
+              remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+            ),
+            _buildBenefitCard(
+              title: 'Libertad Condicional',
+              condition: porcentajeEjecutado >= 60,
+              remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+            ),
+            _buildBenefitCard(
+              title: 'Extinción de la Pena',
+              condition: porcentajeEjecutado >= 100,
+              remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+            ),
+          ],
+        ),
+        const SizedBox(height: 50),
+      ],
+    );
+  }
+
+  /// Contenido si el usuario **no ha pagado**
+  Widget _buildUnpaidContent() {
+    return Column(
+      children: [
+        Text(
+          "${_ppl?.nombrePpl ?? ""} ${_ppl?.apellidoPpl ?? ""}",
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 5),
+        Text(
+          "NUI: ${_ppl?.nui ?? "No disponible"}     TD: ${_ppl?.td ?? "No disponible"}",
+          style: const TextStyle(fontSize: 14, color: Colors.grey),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            _buildCondenaCard('Tiempo de\nCondena\ntranscurrida', 0, 0, oculto: true),
+            const SizedBox(width: 10),
+            _buildCondenaCard('Tiempo de\nCondena\nrestante', 0, 0, oculto: true),
+          ],
+        ),
+         Row(
+           mainAxisAlignment: MainAxisAlignment.center,
+           children: [
+             _buildPorcentajeCard(0, oculto: true),
+             const SizedBox(width: 10),
+             _buildBeneficioCard("Beneficios adquiridos por tiempo", "0 días", oculto: true),
+           ],
+         ),
+        const SizedBox(height: 50),
+        const Text(
+          '¡Has el pago de la suscripción!',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: primary, height: 1.1),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Accede a una experiencia completa y exclusiva en nuestra plataforma. Desbloquea todos los beneficios y servicios que tenemos para ti.',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87, height: 1.1),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 40),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: primary
+          ),
+          onPressed: () {
+            // Acción para realizar el pago
+          },
+          child: const Text('Realizar pago', style: TextStyle(color: blanco)),
+        ),
+      ],
+    );
+  }
+
+  /// **Modificación en _buildCondenaCard()**
+  Widget _buildCondenaCard(String title, int meses, int dias, {bool oculto = false}) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: oculto ? Colors.grey.shade400 : primary, width: 1),
+        borderRadius: BorderRadius.circular(oculto ? 8 : 4),
+      ),
+      elevation: 2,
+      child: Container(
+        width: oculto ? 120 : null, // Ancho fijo si es oculto
+        constraints: const BoxConstraints(minHeight: 80), // Altura mínima
+        decoration: BoxDecoration(
+          color: Colors.white, // Fondo blanco
+          borderRadius: BorderRadius.circular(oculto ? 8 : 4),
+        ),
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                height: 1,
+                color: oculto ? Colors.grey.shade700 : Colors.black, // Texto más oscuro si no es oculto
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              oculto ? '... meses' : '$meses meses : $dias días',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: oculto ? Colors.grey.shade500 : Colors.black87, // Más oscuro si está visible
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+  Widget _buildPorcentajeCard(double porcentaje, {bool oculto = false}) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: Colors.grey.shade400, width: 1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      elevation: 2,
+      child: Container(
+        width: 120, // Ancho fijo
+        constraints: const BoxConstraints(minHeight: 80), // Altura mínima
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200, // Fondo gris claro para efecto de borrador
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              'Porcentaje de condena ejecutado',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                height: 1,
+                color: Colors.grey.shade700, // Texto en tono gris oscuro
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              oculto ? '... %' : '${porcentaje.toStringAsFixed(1)}%',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: oculto ? Colors.grey.shade500 : Colors.black87, // Diferenciación de colores
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBeneficioCard(String titulo, String valor, {bool oculto = false}) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: Colors.grey.shade400, width: 1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      elevation: 2,
+      child: Container(
+        width: 120, // Ancho fijo
+        constraints: const BoxConstraints(minHeight: 80), // Altura mínima
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200, // Fondo gris claro para efecto de borrador
+          borderRadius: BorderRadius.circular(8),
+        ),
+        padding: const EdgeInsets.all(10.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              titulo,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                height: 1,
+                color: Colors.grey.shade700, // Texto en tono gris oscuro
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              oculto ? '... Cumplido' : valor,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: oculto ? Colors.grey.shade500 : Colors.black87, // Diferenciación de colores
+              ),
+            ),
+          ],
         ),
       ),
     );
