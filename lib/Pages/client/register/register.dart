@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:tuprocesoya/models/ppl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
@@ -9,7 +9,6 @@ import '../../../providers/auth_provider.dart';
 import '../estamos_validando/estamos_validando.dart';
 
 class RegistroPage extends StatefulWidget {
-  const RegistroPage({super.key});
 
   @override
   _RegistroPageState createState() => _RegistroPageState();
@@ -43,6 +42,7 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController fechaInicioDescuentoController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController passwordConfirmarController = TextEditingController();
+  TextEditingController _centroReclusionController = TextEditingController(); // Controlador del campo de texto
   DateTime? fechaCaptura;
   DateTime? fechaInicioDescuento;
   final TextEditingController laborDescuentoController = TextEditingController();
@@ -64,10 +64,11 @@ class _RegistroPageState extends State<RegistroPage> {
 
   late MyAuthProvider _authProvider;
   late PplProvider _pplProvider;
+  bool _mostrarDropdowns = false;
 
   // Listas de opciones para los Dropdowns
   List<Map<String, dynamic>> regionales = [];
-  List<Map<String, dynamic>> centrosReclusion = [];
+  List<Map<String, Object>> centrosReclusionTodos = [];
   final List<String> parentescoOptions = ['Padre', 'Madre', 'Hermano/a', "Hijo/a", "Esposo/a", "Amigo/a", "Tio/a", "Sobrino/a", "Nieto/a", "Abuelo/a",'Abogado/a', 'Tutor/a', 'Otro'];
   final List<String> tipoDocumentoOptions = ['Cédula de Ciudadanía', 'Pasaporte', 'Tarjeta de Identidad'];
   final List<String> laborDescuentoOptions = ['Limpieza de celdas', 'Cocina', 'Trabajo en el taller de carpintería', 'Trabajo en el taller de costura', 'Servicio en biblioteca', 'Trabajo agrícola', 'Reparación de vehículos', 'Enseñanza en oficios', 'Asistencia en la zona de salud', 'Trabajo en el área de jardinería'];
@@ -77,23 +78,179 @@ class _RegistroPageState extends State<RegistroPage> {
     super.initState();
     _authProvider = MyAuthProvider();
     _pplProvider = PplProvider();
-    _fetchRegionales();
   }
 
 
-// Método auxiliar para convertir el texto del controlador a DateTime
-  DateTime? _parseFecha(String fecha) {
-    try {
-      // Define el formato esperado para la entrada
-      final formato = DateFormat('d/M/yyyy');
-      return formato.parse(fecha);
-    } catch (e) {
-      print('Error al parsear fecha "$fecha": $e');
-      return null;
-    }
+  @override
+  Widget build(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: primary,
+        iconTheme: const IconThemeData(color: Colors.white, size: 30),
+        title: const Text('Registro', style: TextStyle(color: Colors.white)),
+      ),
+      body: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(10.0),
+        child: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isMobile ? double.infinity : 600, // Limitar el ancho en pantallas grandes
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Align(
+                      alignment: Alignment.topRight,
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        child: Row(
+                          mainAxisAlignment:MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text("¡Información Importante!", style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 24
+                            ),),
+                            Image.asset(
+                              'assets/images/logo_tu_proceso_ya.png',
+                              width: 100,
+                              height: 100,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    RichText(
+                      textAlign: TextAlign.justify,
+                      text: const TextSpan(
+                        style: TextStyle(fontSize: 14, height: 1.2, color: Colors.black),
+                        children: [
+                          TextSpan(text: "Por favor, asegúrate de ingresar todos los datos de manera "),
+                          TextSpan(text: "completa", style: TextStyle(fontWeight: FontWeight.bold)),
+                          TextSpan(text: ", "),
+                          TextSpan(text: "correcta", style: TextStyle(fontWeight: FontWeight.bold)),
+                          TextSpan(text: " y "),
+                          TextSpan(text: "veraz", style: TextStyle(fontWeight: FontWeight.bold)),
+                          TextSpan(text: ". La precisión de la información es fundamental para que la plataforma pueda gestionar de manera efectiva las diligencias necesarias para la persona privada de la libertad (PPL). Cualquier error en los datos puede afectar los procesos y retrasar la asistencia que necesita. ¡Tu colaboración es clave para un servicio ágil y eficiente!"),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    const Text("Datos del acudiente.", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                    const Text("Es la persona que solicitará los servicios en nombre de la persona privada de la libertad .", style: TextStyle(fontSize: 13,
+                        height: 1.1)),
+                    _buildTextFormField(controller: nombreAcudienteController, label: 'Nombres del Acudiente', textCapitalization: TextCapitalization.words ),
+                    _buildTextFormField(controller: apellidoAcudienteController, label: 'Apellidos del Acudiente', textCapitalization: TextCapitalization.words),
+
+                    // Aseguramos que el Dropdown no se desborde
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: _buildDropdown(
+                        value: parentesco,
+                        label: 'Parentesco del acudiente',
+                        items: parentescoOptions,
+                        onChanged: (value) {
+                          setState(() {
+                            parentesco = value;
+                          });
+                        },
+                      ),
+                    ),
+
+                    const Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.amber, size: 30), // Icono amarillo de atención
+                        SizedBox(width: 10), // Espacio entre el icono y el texto
+                        Expanded( // Asegura que el texto se adapte al ancho disponible
+                          child: Text("Por favor ingresa un número de celular activo y que tenga cuenta de WhatsApp, ya que por "
+                              "este medio también podemos enviarte información relevante.", style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                    _buildTextFormField(controller: celularController, label: 'Celular', keyboardType: TextInputType.phone),
+                    const SizedBox(height: 30),
+                    const Text("Datos de la persona privada de la libertad.", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                    _buildTextFormField(controller: nombrePplController, label: 'Nombres del PPL', textCapitalization: TextCapitalization.words),
+                    _buildTextFormField(controller: apellidoPplController, label: 'Apellidos del PPL', textCapitalization: TextCapitalization.words),
+
+                    // Otros Dropdowns
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: _buildDropdown(
+                        value: tipoDocumento,
+                        label: 'Tipo de Documento',
+                        items: tipoDocumentoOptions,
+                        onChanged: (value) {
+                          setState(() {
+                            tipoDocumento = value;
+                          });
+                        },
+                      ),
+                    ),
+                    _buildTextFormField(controller: numeroDocumentoPplController, label: 'Número de Documento'),
+                    const SizedBox(height: 15),
+                    const Divider(height: 2, color: primary),
+                    const SizedBox(height: 15),
+                    const Text("Lugar de reclusión", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 15),
+                    seleccionarCentroReclusion(),
+
+                    _buildTextFormField(controller: tdController, label: 'TD', keyboardType: TextInputType.number),
+                    _buildTextFormField(controller: nuiController, label: 'NUI', keyboardType: TextInputType.number),
+                    _buildTextFormField(controller: patioController, label: 'Patio'),
+                    const SizedBox(height: 15),
+                    const Divider(height: 2, color: primary),
+                    const SizedBox(height: 15),
+                    const Text("Creacion de cuenta", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                    const Row(
+                      children: [
+                        Icon(Icons.warning_amber, color: Colors.amber, size: 30), // Icono amarillo de atención
+                        SizedBox(width: 10), // Espacio entre el icono y el texto
+                        Expanded( // Asegura que el texto se adapte al ancho disponible
+                          child: Text("Por favor ingresa un correo electrónico válido, que esté activo y al cual tengas acceso, ya que allí "
+                              "se te estará enviando toda la información relacionada con el PPL", style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                    _buildTextFormField(controller: emailController, label: 'Tu Email', keyboardType: TextInputType.emailAddress),
+                    _buildTextFormField(controller: emailConfirmarController, label: 'Confirmar Email', keyboardType: TextInputType.emailAddress),
+                    const Row(
+                      children: [
+                        Icon(Icons.info, color: Colors.amber, size: 30), // Icono amarillo de atención
+                        SizedBox(width: 10), // Espacio entre el icono y el texto
+                        Expanded( // Asegura que el texto se adapte al ancho disponible
+                          child: Text("Ten en cuenta que la contraseña que vas a crear debe tener mínimo 6 carácteres. Por la seguridad de tus datos no la compartas con nadie", style: TextStyle(fontSize: 12)),
+                        ),
+                      ],
+                    ),
+                    _buildTextFormField(controller: passwordController, label: 'Crea una contraseña', keyboardType: TextInputType.visiblePassword, obscureText: true ),
+                    _buildTextFormField(controller: passwordConfirmarController, label: 'Confirmar Contraseña', keyboardType: TextInputType.visiblePassword, obscureText: true),
+                    const SizedBox(height: 50),
+                    SizedBox(
+                      width: 250,
+                      height: 45,
+                      child: ElevatedButton(
+                        onPressed: signUp,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Guardar Registro'),
+                      ),
+                    ),
+                    const SizedBox(height: 50),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
-
-
 
   Future<void> signUp() async {
     try {
@@ -164,7 +321,7 @@ class _RegistroPageState extends State<RegistroPage> {
           laborDescuento: "",
           fechaCaptura: null,
           fechaInicioDescuento: null,
-          status: "Registrado",
+          status: "registrado",
           isNotificatedActivated: false,
           isPaid: false,
 
@@ -189,13 +346,13 @@ class _RegistroPageState extends State<RegistroPage> {
     }
   }
 
-
 // Método auxiliar para mostrar mensajes
   void _mostrarMensaje(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensaje)),
     );
   }
+
 
 
 // Método para limpiar los controladores de texto
@@ -324,310 +481,163 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-
-
-  /// Método para obtener las regionales desde Firestore
-  Future<void> _fetchRegionales() async {
-    try {
-      // Obtener la colección 'regional'
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('regional')
-          .get();
-
-      // Crear una lista para almacenar las regionales y sus centros de reclusión
-      List<Map<String, dynamic>> fetchedRegionales = [];
-
-      // Iterar sobre los documentos de la colección 'regional'
-      for (var doc in querySnapshot.docs) {
-        // Obtener el nombre de la regional desde el campo 'name'
-        String regionalName = doc['name'] ?? 'Nombre no disponible'; // Asegurarse de que no sea nulo
-
-        // Acceder a la subcolección 'centros_reclusion' para obtener los centros
-        QuerySnapshot centrosReclusionSnapshot = await doc.reference
-            .collection('centros_reclusion')
-            .get();
-
-        // Crear una lista con los centros de reclusión
-        List<String> centrosReclusion = centrosReclusionSnapshot.docs
-            .map((centerDoc) => centerDoc.id)  // Usar el id del centro como nombre o identificador
-            .toList();
-
-        // Agregar los datos de la regional y sus centros a la lista
-        fetchedRegionales.add({
-          'id': doc.id,  // El id del documento de la regional
-          'nombre': regionalName,  // El nombre de la regional
-          'centros_reclusion': centrosReclusion,  // Lista de centros de reclusión
-        });
-      }
-
-      // Actualizar el estado con las regionales y centros de reclusión
-      setState(() {
-        regionales = fetchedRegionales;
-      });
-
-      // Si hay regionales, seleccionar la primera y obtener los centros de reclusión
-      if (regionales.isNotEmpty) {
-        // Asegurarse de que selectedRegional no sea nulo antes de usarlo
-        if (selectedRegional != null) {
-          _fetchCentrosReclusion(selectedRegional!);  // Obtener los centros de reclusión para la regional seleccionada
-        } else {
-          print('No se ha seleccionado ninguna regional');
-        }
-      }
-    } catch (e) {
-      print("Error al obtener las regionales: $e");
-    }
-  }
-
-
-  /// Método para obtener los centros de reclusión según la regional seleccionada
-  Future<void> _fetchCentrosReclusion(String regionalId) async {
+  Future<void> _fetchTodosCentrosReclusion() async {
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('regional')
-          .doc(regionalId)
-          .collection('centros_reclusion')
+          .collectionGroup('centros_reclusion')
           .get();
 
-      List<Map<String, String>> fetchedCentros = querySnapshot.docs.map((doc) {
+      List<Map<String, Object>> fetchedTodosCentros = querySnapshot.docs.map((doc) {
+        final regionalId = doc.reference.parent.parent?.id ?? "";
+        final data = doc.data() as Map<String, dynamic>; // Convertir a Map<String, dynamic>
+
         return {
           'id': doc.id,
-          'nombre': doc.id,  // Usamos el 'id' como el 'nombre' del centro
+          'nombre': data.containsKey('nombre') ? data['nombre'].toString() : '',
+          'regional': regionalId,
+
         };
       }).toList();
 
       setState(() {
-        centrosReclusion = fetchedCentros;
+        centrosReclusionTodos = fetchedTodosCentros;
       });
 
-      // if (centrosReclusion.isNotEmpty) {
-      //   selectedCentro = centrosReclusion.first['id'];  // Seleccionamos el primer centro por defecto
-      // }
     } catch (e) {
-      print("Error al obtener los centros de reclusión: $e");
+      if (kDebugMode) {
+        print("Error al obtener centros de reclusión: $e");
+      }
     }
   }
 
+  Widget seleccionarCentroReclusion() {
+    if (centrosReclusionTodos.isEmpty) {
+      Future.microtask(() => _fetchTodosCentrosReclusion());
+    }
 
-  @override
-  Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: primary,
-        iconTheme: const IconThemeData(color: Colors.white, size: 30),
-        title: const Text('Registro', style: TextStyle(color: Colors.white)),
-      ),
-      body: Container(
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary),
+        borderRadius: BorderRadius.circular(4),
         color: Colors.white,
-        padding: const EdgeInsets.all(10.0),
-        child: SingleChildScrollView(
-          child: Form(
-            key: _formKey,
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isMobile ? double.infinity : 600, // Limitar el ancho en pantallas grandes
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Align(
-                      alignment: Alignment.topRight,
-                      child: Container(
-                        margin: const EdgeInsets.only(top: 8),
-                        child: Image.asset(
-                          'assets/images/logo_tu_proceso_ya.png',
-                          width: 140,
-                          height: 140,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Buscar centro de reclusión (Escribe el nombre y selecciónalo)",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(
+                child: Autocomplete<Map<String, String>>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<Map<String, String>>.empty();
+                    }
+                    return centrosReclusionTodos
+                        .map((option) => option.map((key, value) => MapEntry(key, value.toString())))
+                        .where((Map<String, String> option) =>
+                        option['nombre']!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+                  },
+                  displayStringForOption: (Map<String, String> option) => option['nombre']!,
+                  fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                    _centroReclusionController = textEditingController; // Guardamos el controlador
+                    return TextField(
+                      controller: _centroReclusionController,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        hintText: "Busca ingresando la ciudad",
+                        labelText: "Centro de reclusión",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.grey, width: 1),
                         ),
-                      ),
-                    ),
-                    const Text("Para garantizar que la plataforma funcione de manera óptima..."),
-                    const SizedBox(height: 30),
-                    const Text("Datos del acudiente.", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-                    _buildTextFormField(controller: nombreAcudienteController, label: 'Nombre Acudiente', textCapitalization: TextCapitalization.words ),
-                    _buildTextFormField(controller: apellidoAcudienteController, label: 'Apellido Acudiente', textCapitalization: TextCapitalization.words),
-
-                    // Aseguramos que el Dropdown no se desborde
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: _buildDropdown(
-                        value: parentesco,
-                        label: 'Parentesco del acudiente',
-                        items: parentescoOptions,
-                        onChanged: (value) {
-                          setState(() {
-                            parentesco = value;
-                          });
-                        },
-                      ),
-                    ),
-
-                    const Row(
-                      children: [
-                        Icon(Icons.warning_amber, color: Colors.amber, size: 30), // Icono amarillo de atención
-                        SizedBox(width: 10), // Espacio entre el icono y el texto
-                        Expanded( // Asegura que el texto se adapte al ancho disponible
-                          child: Text("Por favor ingresa un número de celular activo y que tenga cuenta de WhatsApp, ya que por "
-                              "este medio también podemos enviarte información relevante.", style: TextStyle(fontSize: 12)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.grey, width: 1),
                         ),
-                      ],
-                    ),
-                    _buildTextFormField(controller: celularController, label: 'Celular', keyboardType: TextInputType.phone),
-                    const SizedBox(height: 30),
-                    const Text("Datos de la persona privada de la libertad.", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-                    _buildTextFormField(controller: nombrePplController, label: 'Nombre PPL', textCapitalization: TextCapitalization.words),
-                    _buildTextFormField(controller: apellidoPplController, label: 'Apellido PPL', textCapitalization: TextCapitalization.words),
-
-                    // Otros Dropdowns
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: _buildDropdown(
-                        value: tipoDocumento,
-                        label: 'Tipo de Documento',
-                        items: tipoDocumentoOptions,
-                        onChanged: (value) {
-                          setState(() {
-                            tipoDocumento = value;
-                          });
-                        },
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.grey, width: 1),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
-                    ),
-                    _buildTextFormField(controller: numeroDocumentoPplController, label: 'Número de Documento'),
-                    const SizedBox(height: 15),
-                    const Divider(height: 2, color: primary),
-                    const SizedBox(height: 15),
-                    const Text("Lugar de reclusión", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 15),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Primer DropdownButton para seleccionar la regional
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey), // Borde gris
-                            borderRadius: BorderRadius.circular(4), // Borde redondeado
-                            color: Colors.white, // Fondo blanco
-                          ),
-                          child: DropdownButton<String>(
-                            value: selectedRegional,
-                            hint: const Text('Selecciona una regional'),
-                            onChanged: (value) {
-                              setState(() {
-                                selectedRegional = value;
-                                selectedCentro = null;  // Limpiar la selección de centro cuando cambie la regional
-                              });
-                              _fetchCentrosReclusion(value!);  // Cargar los centros de reclusión
-                            },
-                            isExpanded: true,  // Hacer que el DropdownButton ocupe el ancho disponible
-                            dropdownColor: Colors.white, // Color de fondo del desplegable
-                            style: const TextStyle(color: Colors.black), // Color de texto negro
-                            items: regionales.map((regional) {
-                              return DropdownMenuItem<String>(
-                                value: regional['id'],
-                                child: Text(
-                                  regional['nombre']!,
-                                  style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),  // Texto en negro
-                                ),
+                    );
+                  },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    if (options.isEmpty) {
+                      return Material(
+                        elevation: 4.0,
+                        child: Container(
+                          padding: const EdgeInsets.all(8.0),
+                          child: const Text("No se encontraron centros"),
+                        ),
+                      );
+                    }
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 4.0,
+                        child: Container(
+                          padding: const EdgeInsets.all(8.0),
+                          color: blancoCards,
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            itemBuilder: (context, index) {
+                              final Map<String, String> option = options.elementAt(index);
+                              return ListTile(
+                                title: Text(option['nombre']!),
+                                onTap: () {
+                                  onSelected(option);
+                                },
                               );
-                            }).toList(),
+                            },
                           ),
                         ),
-
-                        // Agregar espacio entre los dos DropdownButtons
-                        const SizedBox(height: 20),
-
-                        // Segundo DropdownButton para seleccionar el centro de reclusión
-                        if (selectedRegional != null)
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey), // Borde gris
-                              borderRadius: BorderRadius.circular(4), // Borde redondeado
-                              color: Colors.white, // Fondo blanco
-                            ),
-                            child: DropdownButton<String>(
-                              value: selectedCentro,
-                              hint: const Text('Selecciona un centro de reclusión'),
-                              onChanged: (value) {
-                                setState(() {
-                                  selectedCentro = value;
-                                });
-                              },
-                              isExpanded: true,  // Hacer que el DropdownButton ocupe el ancho disponible
-                              dropdownColor: Colors.white, // Color de fondo del desplegable
-                              style: const TextStyle(color: Colors.black), // Color de texto negro
-                              items: centrosReclusion.map((centro) {
-                                return DropdownMenuItem<String>(
-                                  value: centro['id'],
-                                  child: Text(
-                                    centro['nombre']!,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,  // Texto en negro
-                                    ),
-                                    maxLines: 3,  // Permitir hasta 3 líneas de texto
-                                    overflow: TextOverflow.ellipsis,
-                                    // Asegurarse de que el texto no se desborde
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                      ],
-                    ),
-                    _buildTextFormField(controller: tdController, label: 'TD', keyboardType: TextInputType.number),
-                    _buildTextFormField(controller: nuiController, label: 'NUI', keyboardType: TextInputType.number),
-                    _buildTextFormField(controller: patioController, label: 'Patio'),
-                    const SizedBox(height: 15),
-                    const Divider(height: 2, color: primary),
-                    const SizedBox(height: 15),
-                    const Text("Creacion de cuenta", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-                    const Row(
-                      children: [
-                        Icon(Icons.warning_amber, color: Colors.amber, size: 30), // Icono amarillo de atención
-                        SizedBox(width: 10), // Espacio entre el icono y el texto
-                        Expanded( // Asegura que el texto se adapte al ancho disponible
-                          child: Text("Por favor ingresa un correo electrónico válido, que esté activo y al cual tengas acceso, ya que allí "
-                              "se te estará enviando toda la información relacionada con el PPL", style: TextStyle(fontSize: 12)),
-                        ),
-                      ],
-                    ),
-                    _buildTextFormField(controller: emailController, label: 'Tu Email', keyboardType: TextInputType.emailAddress),
-                    _buildTextFormField(controller: emailConfirmarController, label: 'Confirmar Email', keyboardType: TextInputType.emailAddress),
-                    const Row(
-                      children: [
-                        Icon(Icons.info, color: Colors.amber, size: 30), // Icono amarillo de atención
-                        SizedBox(width: 10), // Espacio entre el icono y el texto
-                        Expanded( // Asegura que el texto se adapte al ancho disponible
-                          child: Text("Ten en cuenta que la contraseña que vas a crear debe tener mínimo 6 carácteres. Por la seguridad de tus datos no la compartas con nadie", style: TextStyle(fontSize: 12)),
-                        ),
-                      ],
-                    ),
-                    _buildTextFormField(controller: passwordController, label: 'Crea una contraseña', keyboardType: TextInputType.visiblePassword, obscureText: true ),
-                    _buildTextFormField(controller: passwordConfirmarController, label: 'Confirmar Contraseña', keyboardType: TextInputType.visiblePassword, obscureText: true),
-                    const SizedBox(height: 50),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: signUp,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Enviar Formulario'),
                       ),
-                    ),
-                    const SizedBox(height: 50),
-                  ],
+                    );
+                  },
+                  onSelected: (Map<String, String> selection) {
+                    setState(() {
+                      selectedCentro = selection['id'];
+                      selectedRegional = selection['regional'];
+                    });
+                    debugPrint("Centro seleccionado: ${selection['nombre']}");
+                    debugPrint("Regional asociada: ${selection['regional']}");
+                  },
                 ),
               ),
-            ),
+              if (selectedCentro != null) // Solo mostrar el icono si hay un centro seleccionado
+                IconButton(
+                  icon: const Icon(Icons.clear, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      selectedCentro = null;
+                      selectedRegional = null;
+                      _centroReclusionController.clear(); // 🔥 Limpia el texto del Autocomplete
+                    });
+                    debugPrint("Selección de centro de reclusión eliminada.");
+                  },
+                ),
+            ],
           ),
-        ),
+          const SizedBox(height: 10),
+          if (selectedCentro != null)
+            Text(
+              "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
+                    (centro) => centro['id'] == selectedCentro,
+                orElse: () => <String, String>{},
+              )['nombre']!}",
+              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+            ),
+          const SizedBox(height: 10),
+        ],
       ),
     );
   }

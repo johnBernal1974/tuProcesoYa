@@ -75,7 +75,7 @@ class MyApp extends StatelessWidget {
       routes: {
         'home': (context) => const HomePage(), // Página principal
         'login': (context) => const LoginPage(),
-        'register': (context) => const RegistroPage(),
+        'register': (context) => RegistroPage(),
         'splash': (context) => SplashPage(),
         'cargar_info': (context) => AddDelitoPage(),
         'mis_datos': (context) => const MisDatosPage(),

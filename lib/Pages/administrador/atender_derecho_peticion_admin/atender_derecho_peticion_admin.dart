@@ -578,7 +578,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     return DateFormat(formato, 'es').format(fecha);
   }
 
-
   /// 🎉 Nuevo Widget (Columna extra en PC, o debajo en móvil)
   Widget _buildExtraWidget() {
     if (userData == null) {
@@ -1566,8 +1565,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     }
   }
 
-
-
   Widget botonEnviarCorreo() {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
@@ -1668,7 +1665,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       child: const Text("Enviar por correo"),
     );
   }
-
 
   Future<Map<String, String>> obtenerCorreosCentro(DocumentReference userDoc) async {
     try {

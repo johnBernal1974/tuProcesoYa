@@ -87,6 +87,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   late String _tipoDocumento;
 
 
+  bool _isLoadingJuzgados = false; // Bandera para evitar múltiples cargas
+
+
   /// opciones de documento de identidad
   final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte'];
 
@@ -206,31 +209,42 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       }
     }
   }
-  Future<void> _fetchJuzgadosConocimiento(String juzgadoCondenoId) async {
+
+  Future<void> _fetchTodosJuzgadosConocimiento() async {
+    if (juzgadosConocimiento.isNotEmpty) return; // Si ya se cargaron, no volver a hacer la petición
+
+    if (_isLoadingJuzgados) return; // Si ya está cargando, evitar múltiples llamadas
+    _isLoadingJuzgados = true;
+
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('juzgado_condeno')
-          .doc(juzgadoCondenoId)
-          .collection('juzgados')
+          .collectionGroup('juzgados')
           .get();
 
-      List<Map<String, String>> fetchedJuzgadoConocimiento = querySnapshot.docs.map((doc) {
+      List<Map<String, String>> fetchedJuzgados = querySnapshot.docs.map((doc) {
+        final ciudadId = doc.reference.parent.parent?.id ?? ""; // Obtener la ciudad (juzgado_condeno)
+        final data = doc.data() as Map<String, dynamic>; // Convertir a Map
+
         return {
           'id': doc.id,
-          'nombre': doc.get('nombre').toString(),  // Castear a String
-          'correo': doc.get('correo').toString(),  // Castear a String
+          'nombre': data['nombre'].toString(),
+          'correo': data.containsKey('correo') ? data['correo'].toString() : '',
+          'ciudad': ciudadId, // Asociar la ciudad del juzgado
         };
       }).toList();
 
       setState(() {
-        juzgadosConocimiento = fetchedJuzgadoConocimiento;
+        juzgadosConocimiento = fetchedJuzgados;
       });
+
+      debugPrint("✅ Juzgados de conocimiento cargados correctamente.");
     } catch (e) {
-      if (kDebugMode) {
-        print("Error al obtener los juzgado de conocimiento: $e");
-      }
+      debugPrint("❌ Error al obtener los juzgados de conocimiento: $e");
+    } finally {
+      _isLoadingJuzgados = false;
     }
   }
+
 
   Future<void> _fetchDelitos() async {
     try {
@@ -466,19 +480,23 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   alignment: Alignment.topLeft,
                   child: Material(
                     elevation: 4.0,
-                    child: ListView.builder(
-                      padding: EdgeInsets.zero,
-                      shrinkWrap: true,
-                      itemCount: options.length,
-                      itemBuilder: (context, index) {
-                        final Map<String, String> option = options.elementAt(index);
-                        return ListTile(
-                          title: Text(option['nombre']!),
-                          onTap: () {
-                            onSelected(option);
-                          },
-                        );
-                      },
+                    child: Container(
+                      color: blancoCards,
+                      padding: const EdgeInsets.all(10),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (context, index) {
+                          final Map<String, String> option = options.elementAt(index);
+                          return ListTile(
+                            title: Text(option['nombre']!),
+                            onTap: () {
+                              onSelected(option);
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 );
@@ -658,207 +676,217 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget seleccionarJuzgadoQueCondeno() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Si ya hay información guardada, mostrarla con opción a editar
-        if (!_mostrarDropdownJuzgadoCondeno &&
-            _juzgadoQueCondeno != "" &&
-            _juzgado != "")
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
-              borderRadius: BorderRadius.circular(4),
-              color: Colors.white,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _mostrarDropdownJuzgadoCondeno = true;
-                      // Limpiar los valores para forzar la nueva selección
-                      _juzgadoQueCondeno = "";
-                      _juzgado = "";
-                    });
-                    _fetchJuzgadoCondenoPorCiudad();
-                    // No es necesario llamar a  aquí;
-                    // se llamará cuando se seleccione la ciudad en el dropdown.
-                  },
-                  child: const Row(
-                    children: [
-                      Text("Ciudad juzgado de conocimiento", style: TextStyle(fontSize: 11)),
-                      Icon(Icons.edit, size: 15),
-                    ],
-                  ),
-                ),
-                Text(widget.doc['ciudad'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-                const SizedBox(height: 5),
-                const Text("Juzgado de conocimiento", style: TextStyle(fontSize: 11)),
-                Text(widget.doc['juzgado_que_condeno'], style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-                const SizedBox(height: 10),
-                Text(
-                  "correo: ${widget.doc['juzgado_que_condeno_email']!}",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 12,
-                    height: 1,
-                  ),
-                ),
-                const SizedBox(height: 15),
-              ],
-            ),
-          )
-        // Si no hay información (o se pulsa editar) se muestra el botón de selección o los dropdowns
-        else if (!_mostrarDropdownJuzgadoCondeno)
-          Align(
-            alignment: Alignment.centerLeft,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                backgroundColor: Colors.white, // Fondo blanco
-                foregroundColor: Colors.black, // Letra en negro
-              ),
-              onPressed: () {
+    // Si ya existe información guardada en el documento y no estamos en modo edición,
+    // se muestra el contenedor con la información almacenada.
+    if (!_mostrarDropdownJuzgadoCondeno &&
+        widget.doc['juzgado_que_condeno'] != null &&
+        widget.doc['juzgado_que_condeno'].toString().trim().isNotEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(4),
+          color: Colors.white,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
                 setState(() {
                   _mostrarDropdownJuzgadoCondeno = true;
+                  selectedJuzgadoNombre = null;
+                  selectedCiudad = null;
+                  selectedJuzgadoConocimientoEmail = null;
                 });
-                _fetchJuzgadoCondenoPorCiudad();
+                _fetchTodosJuzgadosConocimiento();
               },
-              child: const Text("Seleccionar Juzgado de Conocimiento"),
+              child: const Row(
+                children: [
+                  Text("Ciudad del Juzgado", style: TextStyle(fontSize: 11)),
+                  Icon(Icons.edit, size: 15),
+                ],
+              ),
             ),
-          )
-        // Modo edición: se muestran los dropdowns para seleccionar ciudad y luego el juzgado
-        else
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              border: Border.all(color: primary),
-              borderRadius: BorderRadius.circular(4),
-              color: Colors.white,
+            Text(
+              widget.doc['ciudad'] ?? '',
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
             ),
-            child: Column(
+            const SizedBox(height: 10),
+            const Text("Juzgado de Conocimiento", style: TextStyle(fontSize: 11)),
+            Text(
+              widget.doc['juzgado_que_condeno'] ?? '',
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+            ),
+            const SizedBox(height: 10),
+            Row(
               children: [
-                // Dropdown para seleccionar la ciudad (documentos de la colección juzgado_condeno)
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(4),
-                    color: Colors.white,
-                  ),
-                  child: DropdownButton<String>(
-                    value: selectedCiudad,
-                    hint: const Text('Selecciona una ciudad'),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedCiudad = value;
-                        // Limpiar la selección previa del juzgado
-                        selectedJuzgadoNombre = null;
-                      });
-                      // Cargar los juzgados de conocimiento correspondientes a la ciudad seleccionada
-                      _fetchJuzgadosConocimiento(value!);
-                    },
-                    isExpanded: true,
-                    dropdownColor: Colors.white,
-                    style: const TextStyle(color: Colors.black),
-                    items: juzgadoQueCondeno.map((ciudad) {
-                      return DropdownMenuItem<String>(
-                        value: ciudad['id'],
-                        child: Text(
-                          ciudad['nombre']!,
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                        ),
-                      );
-                    }).toList(),
-                  ),
+                const Text("correo: ", style: TextStyle(fontSize: 12)),
+                Text(
+                  widget.doc['juzgado_que_condeno_email'] ?? 'No disponible',
+                  style: const TextStyle(fontSize: 12, height: 1),
                 ),
-                const SizedBox(height: 10),
-                // Botón para cancelar y restaurar los valores originales
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _mostrarDropdownJuzgadoCondeno = false;
-                      _juzgadoQueCondeno = widget.doc['juzgado_que_condeno'];
-                      _juzgado = widget.doc['juzgado_que_condeno'];
-                      selectedCiudad = null; // 🔥 Evita que la ciudad anterior se muestre en el dropdown
-
-                      // Verificar que el juzgado existe en la lista antes de asignarlo
-                      if (juzgadosConocimiento.any((j) => j['nombre'] == widget.doc['juzgado_que_condeno'])) {
-                        selectedJuzgadoNombre = widget.doc['juzgado_que_condeno'];
-                      } else {
-                        selectedJuzgadoNombre = null;
-                      }
-
-                      selectedJuzgadoConocimientoEmail = widget.doc['juzgado_que_condeno_email'];
-                    });
-                  },
-
-
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.cancel, size: 15),
-                      Text("Cancelar", style: TextStyle(fontSize: 11)),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-                // Dropdown para seleccionar el juzgado de conocimiento (solo si se ha seleccionado la ciudad)
-                if (selectedCiudad != null)
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(4),
-                      color: Colors.white,
-                    ),
-                    child: DropdownButton<String>(
-                      value: selectedJuzgadoNombre,
-                      hint: const Text('Selecciona un juzgado de conocimiento'),
-                      onChanged: (value) {
-                        setState(() {
-                          selectedJuzgadoNombre = value;
-                        });
-                        setState(() {
-                          selectedJuzgadoNombre = value;
-                          // Buscar el email correspondiente en la lista de juzgados
-                          final selected = juzgadosConocimiento.firstWhere(
-                                (element) => element['nombre'] == value,
-                            orElse: () => <String, String>{},  // Especifica explícitamente el tipo
-                          );
-                          selectedJuzgadoConocimientoEmail = selected['correo'];
-                        });
-                      },
-                      isExpanded: true,
-                      dropdownColor: Colors.white,
-                      style: const TextStyle(color: Colors.black),
-                      items: juzgadosConocimiento.map((juzgado) {
-                        return DropdownMenuItem<String>(
-                          value: juzgado['nombre'], // Usamos el nombre como valor
-                          child: Text(
-                            juzgado['nombre']!,
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
               ],
             ),
-          ),
-      ],
-    );
+
+          ],
+        ),
+      );
+    } else {
+      if (juzgadosConocimiento.isEmpty) {
+        Future.microtask(() => _fetchTodosJuzgadosConocimiento());
+      }
+
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: primary),
+          borderRadius: BorderRadius.circular(4),
+          color: Colors.white,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Buscar Juzgado de Conocimiento",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+
+            // 🔹 AUTOCOMPLETE 🔹
+            Autocomplete<Map<String, String>>(
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                if (textEditingValue.text.isEmpty) {
+                  return const Iterable<Map<String, String>>.empty();
+                }
+                return juzgadosConocimiento
+                    .map((juzgado) => {
+                  'id': juzgado['id'].toString(),
+                  'nombre': juzgado['nombre'].toString(),
+                  'correo': juzgado['correo'].toString(),
+                  'ciudad': juzgado['ciudad'].toString(),
+                })
+                    .where(
+                      (juzgado) =>
+                      juzgado['nombre']!
+                          .toLowerCase()
+                          .contains(textEditingValue.text.toLowerCase()),
+                );
+              },
+              displayStringForOption: (Map<String, String> option) => option['nombre']!,
+              fieldViewBuilder:
+                  (context, textEditingController, focusNode, onFieldSubmitted) {
+                return TextField(
+                  controller: textEditingController,
+                  focusNode: focusNode,
+                  decoration: InputDecoration(
+                    hintText: "Busca ingresando el nombre",
+                    labelText: "Juzgado de conocimiento",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    suffixIcon: selectedJuzgadoNombre != null
+                        ? IconButton(
+                      icon: const Icon(Icons.clear, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          selectedJuzgadoNombre = null;
+                          selectedCiudad = null;
+                          selectedJuzgadoConocimientoEmail = null;
+                          textEditingController.clear(); // 🔥 Limpiar el campo del Autocomplete
+                        });
+                        debugPrint("❌ Selección de juzgado eliminada.");
+                      },
+                    )
+                        : null,
+                  ),
+                );
+              },
+              optionsViewBuilder: (context, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4.0,
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (context, index) {
+                        final Map<String, String> option = options.elementAt(index);
+                        return ListTile(
+                          title: Text(option['nombre']!),
+                          subtitle: Text("Ciudad: ${option['ciudad']!}"),
+                          onTap: () {
+                            onSelected(option);
+                            setState(() {
+                              selectedJuzgadoNombre = option['nombre'];
+                              selectedCiudad = option['ciudad'];
+                              selectedJuzgadoConocimientoEmail = option['correo'];
+                            });
+                            debugPrint("📌 Juzgado seleccionado: ${option['nombre']}");
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+
+            // 🔹 Mostrar la selección actual 🔹
+            if (selectedJuzgadoNombre != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Juzgado seleccionado: $selectedJuzgadoNombre",
+                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    "Correo: ${selectedJuzgadoConocimientoEmail ?? 'No disponible'}",
+                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                  ),
+                ],
+              ),
+
+            const SizedBox(height: 10),
+
+            // 🔹 Botón para cancelar 🔹
+            Align(
+              alignment: Alignment.center,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _mostrarDropdownJuzgadoCondeno = false;
+                    selectedJuzgadoNombre = null;
+                    selectedCiudad = null;
+                    selectedJuzgadoConocimientoEmail = null;
+                  });
+                },
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.cancel, size: 15),
+                    Text("Cancelar", style: TextStyle(fontSize: 11)),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
+
+
+
+
+
 
   Widget seleccionarDelito() {
     return Column(
@@ -1214,10 +1242,29 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Widget fechaCapturaPpl(){
-    return textFormField(
+  Widget fechaCapturaPpl() {
+    return TextFormField(
       controller: _fechaDeCapturaController,
-      labelText: 'Fecha de captura (YYYY-MM-DD)',
+      readOnly: true, // Evita que el usuario escriba manualmente
+      decoration: InputDecoration(
+        labelText: 'Fecha de captura (YYYY-MM-DD)',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.deepPurple, width: 1), // Borde gris cuando no está enfocado
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1), // Borde gris cuando está enfocado
+        ),
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
+          onPressed: () => _seleccionarFechaCaptura(context),
+        ),
+      ),
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Por favor ingrese la fecha de captura';
@@ -1225,6 +1272,38 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         return null;
       },
     );
+  }
+
+
+  // Método auxiliar para formatear números con dos dígitos
+  String _formatDosDigitos(int n) => n.toString().padLeft(2, '0');
+
+  // Método para seleccionar la fecha
+  Future<void> _seleccionarFechaCaptura(BuildContext context) async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            primaryColor: Colors.deepPurple,
+            hintColor: Colors.deepPurple,
+            colorScheme: ColorScheme.light(primary: Colors.deepPurple),
+            buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        _fechaDeCapturaController.text = "${pickedDate.year}-${_formatDosDigitos(pickedDate.month)}-${_formatDosDigitos(pickedDate.day)}";
+      });
+      debugPrint("📅 Fecha de captura seleccionada: ${_fechaDeCapturaController.text}");
+    }
   }
 
   Widget radicadoPpl(){
@@ -1414,27 +1493,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );  }
 
   Widget botonGuardar() {
-    bool isCentroValid = (selectedCentro != null && selectedCentro!.trim().isNotEmpty) ||
-        (widget.doc['centro_reclusion'] != null && widget.doc['centro_reclusion'].toString().trim().isNotEmpty);
-
-    bool isRegionalValid = (selectedRegional != null && selectedRegional!.trim().isNotEmpty) ||
-        (widget.doc['regional'] != null && widget.doc['regional'].toString().trim().isNotEmpty);
-
-    bool isCiudadValid = (selectedCiudad != null && selectedCiudad!.trim().isNotEmpty) ||
-        (widget.doc['ciudad'] != null && widget.doc['ciudad'].toString().trim().isNotEmpty);
-
-    bool isJuzgadoEjValid = (selectedJuzgadoEjecucionPenas != null && selectedJuzgadoEjecucionPenas!.trim().isNotEmpty) ||
-        (widget.doc['juzgado_ejecucion_penas'] != null && widget.doc['juzgado_ejecucion_penas'].toString().trim().isNotEmpty);
-
-    bool isJuzgadoQueValid = (selectedJuzgadoNombre != null && selectedJuzgadoNombre!.trim().isNotEmpty) ||
-        (widget.doc['juzgado_que_condeno'] != null && widget.doc['juzgado_que_condeno'].toString().trim().isNotEmpty);
-
-    bool isDelitoValid = (selectedDelito != null && selectedDelito!.trim().isNotEmpty) ||
-        (widget.doc['delito'] != null && widget.doc['delito'].toString().trim().isNotEmpty);
     return SizedBox(
       width: 120,
       child: Align(
-        alignment: Alignment.center, // Centra horizontalmente
+        alignment: Alignment.center,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             foregroundColor: Colors.white,
@@ -1442,7 +1504,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
           onPressed: () {
-            // Primero validamos el formulario
+            // 🔍 Depuración: Verifica qué campos están vacíos antes de guardar
+            debugPrint("📝 Verificando campos antes de guardar:");
+            debugPrint("Centro de reclusión: ${selectedCentro ?? widget.doc['centro_reclusion']}");
+            debugPrint("Regional: ${selectedRegional ?? widget.doc['regional']}");
+            debugPrint("Ciudad: ${selectedCiudad ?? widget.doc['ciudad']}");
+            debugPrint("Juzgado de ejecución de penas: ${selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']}");
+            debugPrint("Juzgado que condenó: ${selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']}");
+            debugPrint("Delito: ${selectedDelito ?? widget.doc['delito']}");
+
+            // Validamos el formulario
             if (!_formKey.currentState!.validate()) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -1456,40 +1527,48 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
               return;
             }
-        
-            // Validaciones adicionales para campos que no forman parte del Form
-            // (por ejemplo, dropdowns u otros controles)
-            if (!isCentroValid || !isRegionalValid || !isCiudadValid || !isJuzgadoEjValid || !isJuzgadoQueValid || !isDelitoValid ||
-                _nombreController.text.trim().isEmpty ||
-                _apellidoController.text.trim().isEmpty ||
-                _numeroDocumentoController.text.trim().isEmpty ||
-                _tipoDocumento.trim().isEmpty ||
-                _radicadoController.text.trim().isEmpty ||
-                _fechaDeCapturaController.text.trim().isEmpty ||
-                _tdController.text.trim().isEmpty ||
-                _nuiController.text.trim().isEmpty ||
-                _patioController.text.trim().isEmpty ||
-                _nombreAcudienteController.text.trim().isEmpty ||
-                _apellidosAcudienteController.text.trim().isEmpty ||
-                _parentescoAcudienteController.text.trim().isEmpty ||
-                _celularAcudienteController.text.trim().isEmpty ||
-                _emailAcudienteController.text.trim().isEmpty) {
+
+            // Validaciones adicionales para dropdowns y otros campos no incluidos en el Form
+            List<String> camposFaltantes = [];
+
+            if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
+            if ((selectedRegional ?? widget.doc['regional']) == null) camposFaltantes.add("Regional");
+            if ((selectedCiudad ?? widget.doc['ciudad']) == null) camposFaltantes.add("Ciudad");
+            if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) camposFaltantes.add("Juzgado de Ejecución de Penas");
+            if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) camposFaltantes.add("Juzgado que Condenó");
+            if ((selectedDelito ?? widget.doc['delito']) == null) camposFaltantes.add("Delito");
+
+            // Validaciones de los TextFields
+            if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
+            if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
+            if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
+            if (_tipoDocumento.trim().isEmpty) camposFaltantes.add("Tipo de Documento");
+            if (_radicadoController.text.trim().isEmpty) camposFaltantes.add("Radicado");
+            if (_fechaDeCapturaController.text.trim().isEmpty) camposFaltantes.add("Fecha de Captura");
+            if (_tdController.text.trim().isEmpty) camposFaltantes.add("TD");
+            if (_nuiController.text.trim().isEmpty) camposFaltantes.add("NUI");
+            if (_patioController.text.trim().isEmpty) camposFaltantes.add("Patio");
+            if (_nombreAcudienteController.text.trim().isEmpty) camposFaltantes.add("Nombre del Acudiente");
+            if (_apellidosAcudienteController.text.trim().isEmpty) camposFaltantes.add("Apellido del Acudiente");
+            if (_parentescoAcudienteController.text.trim().isEmpty) camposFaltantes.add("Parentesco del Acudiente");
+            if (_celularAcudienteController.text.trim().isEmpty) camposFaltantes.add("Celular del Acudiente");
+            if (_emailAcudienteController.text.trim().isEmpty) camposFaltantes.add("Email del Acudiente");
+
+            // Si hay campos faltantes, mostrar error
+            if (camposFaltantes.isNotEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
+                SnackBar(
                   backgroundColor: Colors.red,
-                  content: Text(
-                    'No se puede guardar hasta que estén todos los campos llenos',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  duration: Duration(seconds: 2),
+                  content: Text("Faltan los siguientes campos:\n${camposFaltantes.join('\n')}"),
+                  duration: const Duration(seconds: 3),
                 ),
               );
               return;
             }
-        
-            // Si todo está bien, parseamos los datos necesarios
-            int tiempoCondena = int.parse(_tiempoCondenaController.text);
-        
+
+            // Parsear los valores numéricos
+            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
+
             // Oculta el teclado
             SystemChannels.textInput.invokeMethod('TextInput.hide');
 
@@ -1500,17 +1579,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'correo_sanidad': '',
             };
 
-            // Verificar si hay un centro de reclusión seleccionado y obtener sus correos
+            // Obtener correos del centro de reclusión seleccionado
             if (selectedCentro != null) {
               var centroEncontrado = centrosReclusionTodos.firstWhere(
                     (centro) => centro['id'] == selectedCentro,
-                orElse: () => <String, Object>{},  // Asegúrate de que esto sea Map<String, dynamic>
+                orElse: () => <String, Object>{},
               );
 
-
               if (centroEncontrado.isNotEmpty && centroEncontrado.containsKey('correos')) {
-                var correosMap = centroEncontrado['correos'] as Map<String, dynamic>;  // Convertir a Map<String, dynamic>
-
+                var correosMap = centroEncontrado['correos'] as Map<String, dynamic>;
                 correosCentro = {
                   'correo_direccion': correosMap['correo_direccion']?.toString() ?? '',
                   'correo_juridica': correosMap['correo_juridica']?.toString() ?? '',
@@ -1520,7 +1597,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
             }
 
-            // Actualiza el documento en Firestore
+            // Guardar en Firestore
             widget.doc.reference.update({
               'nombre_ppl': _nombreController.text,
               'apellido_ppl': _apellidoController.text,
@@ -1529,10 +1606,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
               'regional': selectedRegional ?? widget.doc['regional'],
               'ciudad': selectedCiudad ?? widget.doc['ciudad'],
-              'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'].toString(),
-              'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'].toString(),
-              'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'].toString(),
-              'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'].toString(),
+              'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
+              'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'], // ✅ Guarda el correo
+              'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
+              'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'], // ✅ Guarda el correo
               'delito': selectedDelito ?? widget.doc['delito'],
               'radicado': _radicadoController.text,
               'tiempo_condena': tiempoCondena,
@@ -1541,10 +1618,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'nui': _nuiController.text,
               'patio': _patioController.text,
               'labor_descuento': _laborDescuentoController.text,
-              'fecha_inicio_descuento': (_fechaInicioDescuentoController.text.trim().isEmpty ||
-                  _fechaInicioDescuentoController.text.trim() == 'Sin información')
-                  ? null
-                  : _fechaInicioDescuentoController.text.trim(),
+              'fecha_inicio_descuento': _fechaInicioDescuentoController.text.trim().isEmpty ? null : _fechaInicioDescuentoController.text.trim(),
               'nombre_acudiente': _nombreAcudienteController.text,
               'apellido_acudiente': _apellidosAcudienteController.text,
               'parentesco_representante': _parentescoAcudienteController.text,
@@ -1552,14 +1626,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'email': _emailAcudienteController.text,
               'status': 'activado',
             }).then((_) {
-              // Guardar automáticamente los correos en la subcolección "correos_centro_reclusion"
-              widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set({
-                'correo_direccion': correosCentro['correo_direccion'] ?? '',
-                'correo_juridica': correosCentro['correo_juridica'] ?? '',
-                'correo_principal': correosCentro['correo_principal'] ?? '',
-                'correo_sanidad': correosCentro['correo_sanidad'] ?? '',
-              });
-                          ScaffoldMessenger.of(context).showSnackBar(
+              // Guardar correos en la subcolección
+              widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
+
+              ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Datos guardados con éxito y el usuario está activado'),
                   duration: Duration(seconds: 2),
@@ -1567,15 +1637,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
             });
 
-            // Llamar al método para enviar mensaje de WhatsApp
-            validarYEnviarMensaje();
 
+            // Enviar mensaje de WhatsApp
+            validarYEnviarMensaje();
           },
           child: const Text('Guardar Cambios'),
         ),
       ),
     );
   }
+
 
   Widget tipoDocumentoPpl(){
     return DropdownButtonFormField(
