@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:tuprocesoya/providers/auth_provider.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../splash/splash.dart';
 
-class EstamosValidandoPage extends StatelessWidget {
+class EstamosValidandoPage extends StatefulWidget {
+
+
+  @override
+  State<EstamosValidandoPage> createState() => _EstamosValidandoPageState();
+}
+
+class _EstamosValidandoPageState extends State<EstamosValidandoPage> {
+
+  final MyAuthProvider _authProvider = MyAuthProvider();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -58,7 +69,21 @@ class EstamosValidandoPage extends StatelessWidget {
                   },
                   child: const Text('Entendido'),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 100),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor, // Fondo en color primary
+                    foregroundColor: Colors.white, // Texto en blanco
+                  ),
+                  onPressed: () async {
+                    await _authProvider.signOut();
+                    if(context.mounted){
+                      Navigator.of(context).pop();
+                      Navigator.pushNamedAndRemoveUntil(context, 'login', (Route<dynamic> route) => false);
+                    }
+                  },
+                  child: const Text('Cerrar Sesión'),
+                ),
               ],
             ),
           ),

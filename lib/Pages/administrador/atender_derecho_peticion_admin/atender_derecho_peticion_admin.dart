@@ -396,9 +396,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                   setState(() {
                     _guardarDatosEnVariables();
                   });
-
                 },
-                child: const Text("Guardar datos"),
+                child: const Text("Cargar vista previa"),
               ),
               const SizedBox(width: 50),
               if(_mostrarBotonVistaPrevia)
