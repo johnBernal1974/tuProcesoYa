@@ -8,7 +8,8 @@ class AdminProvider {
 
   String? adminName;
   String? adminApellido;
-  String? adminFullName; // Nuevo campo con el nombre completo
+  String? adminFullName;
+  String? rol;
   bool isLoading = false;
 
   // Método para verificar si el usuario es admin
@@ -19,7 +20,11 @@ class AdminProvider {
           .doc(uid)
           .get();
 
-      return adminDoc.exists; // Si el documento existe, es admin
+      if (adminDoc.exists) {
+        // Actualizamos el rol desde el nodo 'rol'
+        rol = adminDoc['rol'] ?? 'user';
+      }
+      return adminDoc.exists;
     } catch (e) {
       print("❌ Error verificando admin: $e");
       return false;
@@ -28,7 +33,7 @@ class AdminProvider {
 
   // Método para cargar el nombre y apellido del admin
   Future<void> loadAdminData() async {
-    if ((adminName != null && adminApellido != null) || isLoading) return;
+    if ((adminName != null && adminApellido != null && rol != null) || isLoading) return;
     isLoading = true;
 
     try {
@@ -37,6 +42,7 @@ class AdminProvider {
         adminName = '';
         adminApellido = '';
         adminFullName = '';
+        rol = '';
         isLoading = false;
         return;
       }
@@ -47,19 +53,22 @@ class AdminProvider {
           .get();
 
       if (adminDoc.exists) {
-        adminName = adminDoc['name'] ?? ''; // Obtiene solo el nombre
-        adminApellido = adminDoc['apellidos'] ?? ''; // Obtiene solo el apellido
-        adminFullName = "$adminName $adminApellido".trim(); // Concatena nombre y apellido
+        adminName = adminDoc['name'] ?? '';
+        adminApellido = adminDoc['apellidos'] ?? '';
+        adminFullName = "$adminName $adminApellido".trim();
+        rol = adminDoc['rol'] ?? '';
       } else {
         adminName = '';
         adminApellido = '';
         adminFullName = '';
+        rol = '';
       }
     } catch (e) {
       print("❌ Error cargando datos del admin: $e");
       adminName = '';
       adminApellido = '';
       adminFullName = '';
+      rol = '';
     }
 
     isLoading = false;
@@ -70,5 +79,6 @@ class AdminProvider {
     adminName = null;
     adminApellido = null;
     adminFullName = null;
+    rol = null;
   }
 }

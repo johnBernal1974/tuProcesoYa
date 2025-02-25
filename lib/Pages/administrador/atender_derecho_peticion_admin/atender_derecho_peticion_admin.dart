@@ -93,6 +93,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   DateTime? fechaDiligenciamiento;
   DateTime? fechaRevision;
   List<String> archivos = [];
+  String rol = AdminProvider().rol ?? "";
 
 
 
@@ -1477,14 +1478,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             if (widget.status == "Solicitado") ...[
               guardarVistaPrevia(widget.idDocumento),
             ],
-            if (widget.status == "Diligenciado" || widget.status == "Revisado") ...[
+            if ((widget.status == "Diligenciado" || widget.status == "Revisado") && rol != "pasante 1") ...[
               guardarRevisado(widget.idDocumento),
               const SizedBox(width: 20), // Espaciado entre botones
               botonEnviarCorreo(),
             ],
           ],
         ),
-
         const SizedBox(height: 150),
       ],
     );

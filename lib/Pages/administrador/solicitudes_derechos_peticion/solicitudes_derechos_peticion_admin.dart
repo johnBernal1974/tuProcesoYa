@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../src/colors/colors.dart';
 
@@ -15,6 +16,28 @@ class SolicitudesDerechoPeticionAdminPage extends StatefulWidget {
 class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerechoPeticionAdminPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   String _filtroEstado = "Solicitado"; // Estado por defecto
+  String rol = AdminProvider().rol ?? "";
+  bool _isLoadingRole = true; // Indicador de carga para el rol
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAdminRole();
+    // Otras inicializaciones, por ejemplo:
+    // _fetchPendingSuggestions();
+  }
+
+  Future<void> _loadAdminRole() async {
+    await AdminProvider().loadAdminData();
+    setState(() {
+      rol = AdminProvider().rol!;
+      // Si el rol es "pasante 2", establecer el filtro por defecto a "Diligenciado"
+      if (rol == "pasante 2") {
+        _filtroEstado = "Diligenciado";
+      }
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +48,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
           width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
           child: Column(
             children: [
-              _buildEstadoCards(),
+              _buildEstadoCards(rol),
               const SizedBox(height: 50),
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
@@ -53,19 +76,25 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                     }).toList();
 
                     if (filteredDocs.isEmpty) {
-                      return Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.warning, color: Colors.red, size: 24), // Ícono de advertencia
-                            const SizedBox(width: 8), // Espaciado entre el icono y el texto
-                            Text(
-                              "No hay documentos ${_filtroEstado}s.",
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
-                            ),
-                          ],
-                        ),
-                      );
+                      // Para pasante 2, si el filtro es "Solicitado" no se muestra mensaje,
+                      // pero si es "Diligenciado" u otro, se muestra normalmente.
+                      if (rol == "pasante 2" && _filtroEstado == "Solicitado") {
+                        return Container();
+                      } else {
+                        return Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.warning, color: Colors.red, size: 24),
+                              const SizedBox(width: 8),
+                              Text(
+                                "No hay documentos ${_filtroEstado}s.",
+                                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
                     }
                     return ListView.builder(
                       itemCount: filteredDocs.length,
@@ -87,7 +116,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
   }
 
   // 🔥 Widget para las tarjetas de conteo por estado
-  Widget _buildEstadoCards() {
+  Widget _buildEstadoCards(String role) {
     return StreamBuilder<QuerySnapshot>(
       stream: firestore.collection('derechos_peticion_solicitados').snapshots(),
       builder: (context, snapshot) {
@@ -101,18 +130,33 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         int countRevisado = docs.where((d) => d['status'] == 'Revisado').length;
         int countEnviado = docs.where((d) => d['status'] == 'Enviado').length;
 
+        List<Widget> cards = [];
+
+        if (role == "pasante 1") {
+          // Para pasante 1 se muestran "Solicitado" y "Diligenciado"
+          cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.red));
+          cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
+        } else if (role == "pasante 2") {
+          // Para pasante 2 se muestran "Diligenciado", "Revisado" y "Enviado"
+          cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
+          cards.add(_buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor));
+          cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.green));
+        } else {
+          // Para los demás roles se muestran todas las cards
+          cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.red));
+          cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
+          cards.add(_buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor));
+          cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.green));
+        }
+
         return Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            _buildEstadoCard("Solicitado", countSolicitado, Colors.red),
-            _buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber),
-            _buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor),
-            _buildEstadoCard("Enviado", countEnviado, Colors.green),
-          ],
+          children: cards,
         );
       },
     );
   }
+
 
   // 🔥 Widget para cada tarjeta de estado
   Widget _buildEstadoCard(String estado, int count, Color color) {

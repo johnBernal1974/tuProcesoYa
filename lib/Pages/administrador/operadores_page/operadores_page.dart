@@ -24,7 +24,7 @@ class _OperadoresPageState extends State<OperadoresPage> {
   DocumentSnapshot? _lastDocument;
   bool _isLoading = false;
   bool _hasMore = true;
-  final int _pageSize = 1;
+  final int _pageSize = 5;
   bool _isLoadingMore = false;
 
 

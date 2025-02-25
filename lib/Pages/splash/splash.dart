@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../administrador/home_admin/home_admin.dart';
+import '../administrador/solicitudes_derechos_peticion/solicitudes_derechos_peticion_admin.dart';
 import '../client/estamos_validando/estamos_validando.dart';
 import '../client/home/home.dart';
 import '../login/login.dart';
@@ -35,19 +36,33 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
 
     if (user != null) {
       final userId = user.uid;
-      // Verifica si el usuario es administrador consultando la colección "admin"
+      // Consulta el documento en la colección "admin"
       final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
       if (adminDoc.exists) {
-        // Usuario es administrador, redirige a la página de administrador
-        if (context.mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
-          );
+        // Usuario es administrador, obtenemos el rol
+        String role = adminDoc.data()?['rol'] ?? "";
+
+        // Redirige según el rol obtenido:
+        if (role == "pasante 1" || role == "pasante 2") {
+          // Si es pasante 1 o pasante 2, enviar a SolicitudesDerechoPeticionAdminPage
+          if (context.mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const SolicitudesDerechoPeticionAdminPage()),
+            );
+          }
+        } else {
+          // Para los demás roles se redirige a HomeAdministradorPage
+          if (context.mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
+            );
+          }
         }
       } else {
-        // Usuario no es administrador, consultamos su documento en la colección "users"
+        // Usuario no es administrador, consultamos su documento en la colección "Ppl"
         final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
 
         if (userDoc.exists) {
@@ -71,7 +86,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
             }
           }
         } else {
-          // Si no se encuentra el documento del usuario, redirige a HomePage (o maneja el error de otra forma)
+          // Si no se encuentra el documento del usuario, redirige a LoginPage (o maneja el error de otra forma)
           if (context.mounted) {
             Navigator.pushReplacement(
               context,
@@ -90,6 +105,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
       }
     }
   }
+
 
 
   @override
