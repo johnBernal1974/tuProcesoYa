@@ -51,7 +51,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
               _buildEstadoCards(rol),
               const SizedBox(height: 50),
               Expanded(
-                child: StreamBuilder<QuerySnapshot>(
+                child:StreamBuilder<QuerySnapshot>(
                   stream: firestore
                       .collection('derechos_peticion_solicitados')
                       .orderBy('fecha', descending: true)
@@ -70,25 +70,25 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                       );
                     }
 
-                    // Filtrar documentos según el estado seleccionado y asignación
+                    // Obtener el usuario actual
                     final currentUser = FirebaseAuth.instance.currentUser;
                     final currentUserUid = currentUser?.uid;
+
                     var filteredDocs = snapshot.data!.docs.where((doc) {
-                      // Se obtienen los datos de la solicitud
                       final data = doc.data() as Map<String, dynamic>;
                       final asignadoA = data['asignadoA'];
-                      // Se considera "sin asignar" si asignadoA es null o está vacío.
                       bool unassigned = asignadoA == null || asignadoA.toString().trim().isEmpty;
-                      // Si ya está asignado, se muestra solo si fue asignado al usuario actual.
-                      bool assignedToMe = currentUserUid != null &&
-                          asignadoA != null &&
-                          asignadoA.toString().trim() == currentUserUid;
+                      bool assignedToMe = currentUserUid != null && asignadoA.toString().trim() == currentUserUid;
+
+                      if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
+                        // 🔹 Estos roles ven TODO sin importar asignaciones
+                        return data["status"] == _filtroEstado;
+                      }
+
                       return (unassigned || assignedToMe) && (data["status"] == _filtroEstado);
                     }).toList();
 
                     if (filteredDocs.isEmpty) {
-                      // Si no hay documentos filtrados, mostrar mensaje (según el filtro actual)
-                      // Por ejemplo, si el filtro es "Diligenciado", mostrar "No hay documentos Diligenciados."
                       return Center(
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -103,16 +103,17 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                         ),
                       );
                     }
+
                     return ListView.builder(
                       itemCount: filteredDocs.length,
                       itemBuilder: (context, index) {
                         DocumentSnapshot document = filteredDocs[index];
                         Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-                        return _buildSolicitudCard(data, document.id);
+                        return _buildSolicitudCard(data, document.id, rol);
                       },
                     );
                   },
-                ),
+                )
               ),
             ],
           ),
@@ -131,12 +132,11 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         }
 
         var docs = snapshot.data!.docs;
+        String? currentUserUid = FirebaseAuth.instance.currentUser?.uid;
 
-        // Para "Solicitado", si el rol es "pasante 1", se filtran los documentos sin asignar
-        // o asignados al usuario actual.
+        // 🔹 Contar "Solicitados" (misma lógica actual)
         int countSolicitado;
         if (role == "pasante 1") {
-          String? currentUserUid = FirebaseAuth.instance.currentUser?.uid;
           countSolicitado = docs.where((d) {
             if (d['status'] != 'Solicitado') return false;
             var asignadoA = d['asignadoA'];
@@ -144,27 +144,44 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
             bool assignedToMe = currentUserUid != null && asignadoA.toString().trim() == currentUserUid;
             return unassigned || assignedToMe;
           }).length;
+        } else if (role == "pasante 2") {
+          countSolicitado = 0; // No ve "Solicitado"
         } else {
           countSolicitado = docs.where((d) => d['status'] == 'Solicitado').length;
         }
 
-        int countDiligenciado = docs.where((d) => d['status'] == 'Diligenciado').length;
+        // 🔹 Contar solo los "Diligenciados" asignados al pasante 1
+        int countDiligenciado = 0;
+        if (role == "pasante 1") {
+          countDiligenciado = docs.where((d) {
+            final data = d.data() as Map<String, dynamic>; // ✅ Convertir snapshot en un Map
+            if (data['status'] != 'Diligenciado') return false;
+
+            var asignadoA = data['asignadoA']?.toString().trim();
+            return asignadoA == currentUserUid; // ✅ Solo contar si el UID del pasante es el mismo
+          }).length;
+        } else {
+          countDiligenciado = docs.where((d) {
+            final data = d.data() as Map<String, dynamic>;
+            return data['status'] == 'Diligenciado';
+          }).length;
+        }
+
         int countRevisado = docs.where((d) => d['status'] == 'Revisado').length;
         int countEnviado = docs.where((d) => d['status'] == 'Enviado').length;
 
         List<Widget> cards = [];
 
         if (role == "pasante 1") {
-          // Para pasante 1, mostramos "Solicitado" y "Diligenciado"
+          // 🔹 Mostrar solo la cantidad de Diligenciados asignados al pasante 1
           cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.red));
           cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
         } else if (role == "pasante 2") {
-          // Para pasante 2 se muestran "Diligenciado", "Revisado" y "Enviado"
           cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
           cards.add(_buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor));
           cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.green));
         } else {
-          // Para otros roles se muestran todas las cards
+          // 🔹 Si el rol es "master", "masterFull", "coordinador 1" o "coordinador 2", muestra todas las tarjetas sin filtrar
           cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.red));
           cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
           cards.add(_buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor));
@@ -178,6 +195,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
       },
     );
   }
+
+
 
   // 🔥 Widget para cada tarjeta de estado
   Widget _buildEstadoCard(String estado, int count, Color color) {
@@ -206,7 +225,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
   }
 
   // 🔥 Widget para cada solicitud
-  Widget _buildSolicitudCard(Map<String, dynamic> data, String idDocumento) {
+  Widget _buildSolicitudCard(Map<String, dynamic> data, String idDocumento, String userRole) {
     // Extraer preguntas y respuestas
     List<Map<String, dynamic>> preguntasRespuestas = data.containsKey('preguntas_respuestas')
         ? List<Map<String, dynamic>>.from(data['preguntas_respuestas'])
@@ -222,6 +241,27 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
             const SnackBar(content: Text("Usuario no autenticado")),
           );
           return;
+        }
+
+        // Si el rol es 'master' o 'masterFull', solo navega sin asignar
+        if (userRole == "master" || userRole == "masterFull") {
+          Navigator.pushNamed(
+            context,
+            obtenerRutaSegunStatus(data['status']),
+            arguments: {
+              'status': data['status'],
+              'idDocumento': idDocumento,
+              'numeroSeguimiento': data['numero_seguimiento'],
+              'categoria': data['categoria'],
+              'subcategoria': data['subcategoria'],
+              'fecha': data['fecha'].toDate().toString(),
+              'idUser': data['idUser'],
+              'archivos': data.containsKey('archivos') ? List<String>.from(data['archivos']) : [],
+              'preguntas': preguntas,
+              'respuestas': respuestas,
+            },
+          );
+          return; // 🔹 Sale de la función sin hacer asignación
         }
 
         // Re-obtén el documento para obtener la data más reciente
@@ -249,47 +289,49 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         // Verificar si 'asignadoA' existe en el documento
         String? asignadoA = latestData.containsKey('asignadoA') ? latestData['asignadoA']?.toString().trim() : null;
 
-        // Si la solicitud no está asignada, o está asignada pero a este usuario, procede
-        if (asignadoA == null || asignadoA.isEmpty) {
-          try {
-            await FirebaseFirestore.instance
-                .collection('derechos_peticion_solicitados')
-                .doc(idDocumento)
-                .update({
-              'asignadoA': user.uid,
-              'asignado_fecha': FieldValue.serverTimestamp(),
-            });
+        // Solo los "pasante 1" pueden asignarse solicitudes
+        if (userRole == "pasante 1") {
+          if (asignadoA == null || asignadoA.isEmpty) {
+            try {
+              await FirebaseFirestore.instance
+                  .collection('derechos_peticion_solicitados')
+                  .doc(idDocumento)
+                  .update({
+                'asignadoA': user.uid,
+                'asignado_fecha': FieldValue.serverTimestamp(),
+              });
 
-            latestData['asignadoA'] = user.uid;
-            if(context.mounted){
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Solicitud asignada a ti")),
-              );
+              latestData['asignadoA'] = user.uid;
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Solicitud asignada a ti")),
+                );
+              }
+            } catch (error) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Error al asignar la solicitud: $error")),
+                );
+              }
+              return;
             }
-          } catch (error) {
-            if(context.mounted){
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Error al asignar la solicitud: $error")),
-              );
+          } else {
+            if (asignadoA != user.uid) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Esta solicitud ya está asignada")),
+                );
+              }
+              return;
             }
-            return;
-          }
-        } else {
-          if (asignadoA != user.uid) {
-            if(context.mounted){
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Esta solicitud ya está asignada")),
-              );
-            }
-            return;
           }
         }
 
-        String rutaDestino = obtenerRutaSegunStatus(latestData['status']);
-        if(context.mounted){
+        // Navegar a la siguiente pantalla
+        if (context.mounted) {
           Navigator.pushNamed(
             context,
-            rutaDestino,
+            obtenerRutaSegunStatus(latestData['status']),
             arguments: {
               'status': latestData['status'],
               'idDocumento': idDocumento,
@@ -341,29 +383,29 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                 ],
               ),
               const SizedBox(height: 10),
-              if(data['asignado_fecha'] != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: Colors.green[50]
+              if (data['asignado_fecha'] != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+                  decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12), color: Colors.green[50]),
+                  child: Row(
+                    children: [
+                      const Text(
+                        "Asignado: ",
+                        style: TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        data.containsKey('asignadoA') &&
+                            data['asignadoA'] != null &&
+                            data['asignadoA'].toString().trim().isNotEmpty
+                            ? " ${data.containsKey('asignado_fecha') && data['asignado_fecha'] != null ? _formatFecha((data['asignado_fecha'] as Timestamp).toDate()) : "Fecha no disponible"}"
+                            : "No asignado",
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const Text(
-                      "Asignado: ",
-                      style: TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      data.containsKey('asignadoA') && data['asignadoA'] != null && data['asignadoA'].toString().trim().isNotEmpty
-                          ? " ${data.containsKey('asignado_fecha') && data['asignado_fecha'] != null ? _formatFecha((data['asignado_fecha'] as Timestamp).toDate()) : "Fecha no disponible"}"
-                          : "No asignado",
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
             ],
           ),
         ),
@@ -371,16 +413,10 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
     );
   }
 
-
-
-
-
   String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
     if (fecha == null) return "";
     return DateFormat(formato, 'es').format(fecha);
   }
-
-
 
   Color getColorEstado(String estado) {
     switch (estado) {
