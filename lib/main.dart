@@ -132,6 +132,8 @@ class MyApp extends StatelessWidget {
                 archivos: List<String>.from(args['archivos'] ?? []),
                 preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
+
+
               ),
             );
           }

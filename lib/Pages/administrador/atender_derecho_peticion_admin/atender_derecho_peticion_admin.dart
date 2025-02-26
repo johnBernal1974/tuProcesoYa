@@ -491,30 +491,34 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
   /// 📌 Muestra detalles de la solicitud (seguimiento, categoría, fecha, subcategoría)
   Widget _buildDetallesSolicitud() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("Número de seguimiento", style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text(widget.numeroSeguimiento, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 5),
-            const Text("Categoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text(widget.categoria, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Fecha de solicitud", style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text(
-              _formatFecha(DateTime.tryParse(widget.fecha)),
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Número de seguimiento", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(widget.numeroSeguimiento, style: const TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 5),
+                const Text("Categoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(widget.categoria, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
             ),
-            const SizedBox(height: 5),
-            const Text("Subcategoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
-            Text(widget.subcategoria, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text("Fecha de solicitud", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(
+                  _formatFecha(DateTime.tryParse(widget.fecha)),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 5),
+                const Text("Subcategoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Text(widget.subcategoria, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
           ],
         ),
       ],

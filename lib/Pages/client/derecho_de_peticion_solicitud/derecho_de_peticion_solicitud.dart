@@ -476,7 +476,8 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         "preguntas_respuestas": preguntasRespuestas,
         "archivos": archivosUrls,
         "fecha": FieldValue.serverTimestamp(),
-        "status": "Solicitado"
+        "status": "Solicitado",
+        "asignadoA": "",
       });
 
       if (context.mounted) {
