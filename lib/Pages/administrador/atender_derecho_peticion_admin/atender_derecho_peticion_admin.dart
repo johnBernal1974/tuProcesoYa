@@ -330,13 +330,45 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             child: Column(
               children: [
-                Row(
+                MediaQuery.of(context).size.width < 600
+                    ? Column( // En móviles, cambia a columna
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Derecho de petición ",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20, // Reduce tamaño en móviles
+                      ),
+                    ),
+                    const SizedBox(height: 5), // Espaciado entre el texto y el círculo en móvil
+                    Row(
+                      children: [
+                        Text(
+                          widget.status,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16, // Reduce tamaño en móviles
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        CircleAvatar(
+                          radius: 6,
+                          backgroundColor: _obtenerColorStatus(widget.status),
+                        ),
+                      ],
+                    ),
+                  ],
+                )
+                    : Row( // En pantallas grandes, mantiene la fila
                   children: [
                     Text(
                       "Derecho de petición - ${widget.status}",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 28),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 28,
+                      ),
                     ),
-
                     const SizedBox(width: 14), // Espacio entre el texto y el círculo
                     CircleAvatar(
                       radius: 12,
@@ -344,19 +376,15 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Text(
-                      "Solicitado por: ${userData?.nombreAcudiente ?? "Sin información"} ${userData?.apellidoAcudiente ?? "Sin información"}",
-                      style: const TextStyle(fontSize: 14),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 10),
+                _buildSolicitadoPor(),
+
                 const SizedBox(height: 15),
                 _buildDetallesSolicitud(),
                 const SizedBox(height: 20),
               ],
             ),
+
           ),
           _buildSolicitudTexto(),
           const SizedBox(height: 30),
@@ -377,7 +405,14 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
           const SizedBox(height: 30),
           const Divider(color: gris),
-          const Text("Espacio de diligenciamiento", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28)),
+          Text(
+            "Espacio de diligenciamiento",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: MediaQuery.of(context).size.width < 600 ? 20 : 28, // Reduce el tamaño en móviles
+            ),
+          ),
+
           const SizedBox(height: 30),
           ingresarConsideraciones(),
           const SizedBox(height: 30),
@@ -436,6 +471,49 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
+  Widget _buildSolicitadoPor() {
+    bool isMobile = MediaQuery.of(context).size.width < 600; // Detectar si es móvil
+
+    return isMobile
+    ? Align(
+      alignment: Alignment.centerLeft, // Asegura que todo el contenido esté alineado a la izquierda
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Solicitado por:",
+            style: TextStyle(
+              fontSize: 12, // Tamaño reducido en móviles
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 2), // Espaciado entre las líneas en móvil
+          Text(
+            "${userData?.nombreAcudiente ?? "Sin información"} ${userData?.apellidoAcudiente ?? "Sin información"}",
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+    )
+
+    : Row( // En PC, mantener en una fila
+      children: [
+        const Text(
+          "Solicitado por:",
+          style: TextStyle(
+            fontSize: 14, // Tamaño normal en PC
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(width: 8), // Espacio entre los textos en PC
+        Text(
+          "${userData?.nombreAcudiente ?? "Sin información"} ${userData?.apellidoAcudiente ?? "Sin información"}",
+          style: const TextStyle(fontSize: 14),
+        ),
+      ],
+    );
+  }
+
   Widget infoAccionesAdmin(){
     return Column(
       children: [
@@ -491,36 +569,60 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
   /// 📌 Muestra detalles de la solicitud (seguimiento, categoría, fecha, subcategoría)
   Widget _buildDetallesSolicitud() {
+    double fontSize = MediaQuery.of(context).size.width < 600 ? 10 : 12; // Tamaño más pequeño en móviles
+    bool isMobile = MediaQuery.of(context).size.width < 600; // Verifica si es móvil
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, // Asegurar alineación izquierda en móviles
+        children: [
+          isMobile
+              ? Column( // En móviles, mostrar en columnas
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Categoría", widget.categoria, fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
+            ],
+          )
+              : Row( // En PC, mantener filas
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
+                  const SizedBox(height: 5),
+                  _buildDetalleItem("Categoría", widget.categoria, fontSize),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
+                  const SizedBox(height: 5),
+                  _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+// Método auxiliar para evitar repetir código
+  Widget _buildDetalleItem(String title, String value, double fontSize) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Número de seguimiento", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                Text(widget.numeroSeguimiento, style: const TextStyle(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 5),
-                const Text("Categoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                Text(widget.categoria, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Fecha de solicitud", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                Text(
-                  _formatFecha(DateTime.tryParse(widget.fecha)),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 5),
-                const Text("Subcategoría", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                Text(widget.subcategoria, style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ],
-        ),
+        Text(title, style: TextStyle(fontSize: fontSize, color: Colors.grey)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize + 2)),
       ],
     );
   }

@@ -38,7 +38,6 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
     });
   }
 
-
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -122,7 +121,6 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
     );
   }
 
-  // 🔥 Widget para las tarjetas de conteo por estado
   Widget _buildEstadoCards(String role) {
     return StreamBuilder<QuerySnapshot>(
       stream: firestore.collection('derechos_peticion_solicitados').snapshots(),
@@ -133,8 +131,9 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
         var docs = snapshot.data!.docs;
         String? currentUserUid = FirebaseAuth.instance.currentUser?.uid;
+        bool isMobile = MediaQuery.of(context).size.width < 600; // Detecta si es móvil
 
-        // 🔹 Contar "Solicitados" (misma lógica actual)
+        // 🔹 Contar "Solicitados"
         int countSolicitado;
         if (role == "pasante 1") {
           countSolicitado = docs.where((d) {
@@ -145,20 +144,19 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
             return unassigned || assignedToMe;
           }).length;
         } else if (role == "pasante 2") {
-          countSolicitado = 0; // No ve "Solicitado"
+          countSolicitado = 0;
         } else {
           countSolicitado = docs.where((d) => d['status'] == 'Solicitado').length;
         }
 
-        // 🔹 Contar solo los "Diligenciados" asignados al pasante 1
+        // 🔹 Contar "Diligenciados"
         int countDiligenciado = 0;
         if (role == "pasante 1") {
           countDiligenciado = docs.where((d) {
-            final data = d.data() as Map<String, dynamic>; // ✅ Convertir snapshot en un Map
+            final data = d.data() as Map<String, dynamic>;
             if (data['status'] != 'Diligenciado') return false;
-
             var asignadoA = data['asignadoA']?.toString().trim();
-            return asignadoA == currentUserUid; // ✅ Solo contar si el UID del pasante es el mismo
+            return asignadoA == currentUserUid;
           }).length;
         } else {
           countDiligenciado = docs.where((d) {
@@ -173,7 +171,6 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         List<Widget> cards = [];
 
         if (role == "pasante 1") {
-          // 🔹 Mostrar solo la cantidad de Diligenciados asignados al pasante 1
           cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.red));
           cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
         } else if (role == "pasante 2") {
@@ -181,22 +178,42 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
           cards.add(_buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor));
           cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.green));
         } else {
-          // 🔹 Si el rol es "master", "masterFull", "coordinador 1" o "coordinador 2", muestra todas las tarjetas sin filtrar
           cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.red));
           cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
           cards.add(_buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor));
           cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.green));
         }
 
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: cards,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            if (isMobile) {
+              return Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                alignment: WrapAlignment.center,
+                children: cards.map((card) {
+                  return SizedBox(
+                    width: constraints.maxWidth / 2 - 12, // Divide el ancho en 2 columnas
+                    child: card,
+                  );
+                }).toList(),
+              );
+            } else {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: cards.map((card) {
+                  return SizedBox(
+                    width: 180, // Ancho fijo en PC
+                    child: card,
+                  );
+                }).toList(),
+              );
+            }
+          },
         );
       },
     );
   }
-
-
 
   // 🔥 Widget para cada tarjeta de estado
   Widget _buildEstadoCard(String estado, int count, Color color) {
@@ -226,6 +243,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
   // 🔥 Widget para cada solicitud
   Widget _buildSolicitudCard(Map<String, dynamic> data, String idDocumento, String userRole) {
+    bool isMobile = MediaQuery.of(context).size.width < 600; // Detectar si es móvil
+
     // Extraer preguntas y respuestas
     List<Map<String, dynamic>> preguntasRespuestas = data.containsKey('preguntas_respuestas')
         ? List<Map<String, dynamic>>.from(data['preguntas_respuestas'])
@@ -243,28 +262,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
           return;
         }
 
-        // Si el rol es 'master' o 'masterFull', solo navega sin asignar
-        if (userRole == "master" || userRole == "masterFull") {
-          Navigator.pushNamed(
-            context,
-            obtenerRutaSegunStatus(data['status']),
-            arguments: {
-              'status': data['status'],
-              'idDocumento': idDocumento,
-              'numeroSeguimiento': data['numero_seguimiento'],
-              'categoria': data['categoria'],
-              'subcategoria': data['subcategoria'],
-              'fecha': data['fecha'].toDate().toString(),
-              'idUser': data['idUser'],
-              'archivos': data.containsKey('archivos') ? List<String>.from(data['archivos']) : [],
-              'preguntas': preguntas,
-              'respuestas': respuestas,
-            },
-          );
-          return; // 🔹 Sale de la función sin hacer asignación
-        }
-
-        // Re-obtén el documento para obtener la data más reciente
+        // 🔹 Obtener la solicitud más reciente de Firestore
         DocumentSnapshot docSnap = await FirebaseFirestore.instance
             .collection('derechos_peticion_solicitados')
             .doc(idDocumento)
@@ -286,48 +284,45 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
           return;
         }
 
-        // Verificar si 'asignadoA' existe en el documento
+        // 🔹 Verificar si la solicitud ya está asignada
         String? asignadoA = latestData.containsKey('asignadoA') ? latestData['asignadoA']?.toString().trim() : null;
 
-        // Solo los "pasante 1" pueden asignarse solicitudes
-        if (userRole == "pasante 1") {
-          if (asignadoA == null || asignadoA.isEmpty) {
-            try {
-              await FirebaseFirestore.instance
-                  .collection('derechos_peticion_solicitados')
-                  .doc(idDocumento)
-                  .update({
-                'asignadoA': user.uid,
-                'asignado_fecha': FieldValue.serverTimestamp(),
-              });
+        if (asignadoA == null || asignadoA.isEmpty) {
+          try {
+            // 🔥 Asignar la solicitud al usuario actual
+            await FirebaseFirestore.instance
+                .collection('derechos_peticion_solicitados')
+                .doc(idDocumento)
+                .update({
+              'asignadoA': user.uid,
+              'asignado_fecha': FieldValue.serverTimestamp(),
+            });
 
-              latestData['asignadoA'] = user.uid;
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Solicitud asignada a ti")),
-                );
-              }
-            } catch (error) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Error al asignar la solicitud: $error")),
-                );
-              }
-              return;
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Solicitud asignada a ti")),
+              );
             }
-          } else {
-            if (asignadoA != user.uid) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Esta solicitud ya está asignada")),
-                );
-              }
-              return;
+          } catch (error) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Error al asignar la solicitud: $error")),
+              );
             }
+            return;
+          }
+        } else {
+          if (asignadoA != user.uid) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("Esta solicitud ya está asignada a otro usuario")),
+              );
+            }
+            return;
           }
         }
 
-        // Navegar a la siguiente pantalla
+        // 🔹 Navegar a la siguiente pantalla después de la asignación
         if (context.mounted) {
           Navigator.pushNamed(
             context,
@@ -356,23 +351,21 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              isMobile
+                  ? Column( // 📱 En móviles, todo en columna
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text("No. Seguimiento: ${data['numero_seguimiento']}",
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
                   Text(
                     DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es').format(data['fecha'].toDate()),
                     style: const TextStyle(fontSize: 12),
-                  )
-                ],
-              ),
-              const SizedBox(height: 5),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
+                  ),
+                  const SizedBox(height: 5),
                   Text("Categoría: ${data['categoria']}",
                       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 5),
                   Row(
                     children: [
                       Icon(Icons.circle, size: 16, color: getColorEstado(data['status'])),
@@ -381,14 +374,66 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                     ],
                   ),
                 ],
+              )
+                  : Column( // 💻 En PC, se mantiene la estructura original con todo
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("No. Seguimiento: ${data['numero_seguimiento']}",
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      Text(
+                        DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es').format(data['fecha'].toDate()),
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Categoría: ${data['categoria']}",
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                      Row(
+                        children: [
+                          Icon(Icons.circle, size: 16, color: getColorEstado(data['status'])),
+                          const SizedBox(width: 5),
+                          Text(data['status'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
               if (data['asignado_fecha'] != null)
                 Container(
+                  width: double.infinity,
                   padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
                   decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12), color: Colors.green[50]),
-                  child: Row(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.green[50],
+                  ),
+                  child: MediaQuery.of(context).size.width < 600
+                      ? Column( // 📱 En móviles, mostrar en columna
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Asignado: ",
+                        style: TextStyle(fontSize: 12, color: gris, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        data.containsKey('asignadoA') &&
+                            data['asignadoA'] != null &&
+                            data['asignadoA'].toString().trim().isNotEmpty
+                            ? " ${data.containsKey('asignado_fecha') && data['asignado_fecha'] != null ? _formatFecha((data['asignado_fecha'] as Timestamp).toDate()) : "Fecha no disponible"}"
+                            : "No asignado",
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  )
+                      : Row( // 💻 En PC, mantener en una fila
                     children: [
                       const Text(
                         "Asignado: ",
@@ -412,6 +457,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
       ),
     );
   }
+
 
   String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
     if (fecha == null) return "";
