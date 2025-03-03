@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/models/ppl.dart';
@@ -39,13 +40,10 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController nuiController = TextEditingController();
   final TextEditingController patioController = TextEditingController();
   final TextEditingController fechaCapturaController = TextEditingController();
-  final TextEditingController fechaInicioDescuentoController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController passwordConfirmarController = TextEditingController();
   TextEditingController _centroReclusionController = TextEditingController(); // Controlador del campo de texto
   DateTime? fechaCaptura;
-  DateTime? fechaInicioDescuento;
-  final TextEditingController laborDescuentoController = TextEditingController();
 
   // Variables para los Dropdowns
   String? parentesco;
@@ -57,7 +55,6 @@ class _RegistroPageState extends State<RegistroPage> {
   String? delito;
   String? laborDescuento;
   String? _errorFechaCaptura;
-  String? _errorFechaInicioDescuento;
 
   String? selectedRegional; // Regional seleccionada
   String? selectedCentro; // Centro de reclusión seleccionado
@@ -196,7 +193,7 @@ class _RegistroPageState extends State<RegistroPage> {
                     const SizedBox(height: 15),
                     const Text("Lugar de reclusión", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
                     const SizedBox(height: 15),
-                    seleccionarCentroReclusion(),
+                    //seleccionarCentroReclusion(),
 
                     _buildTextFormField(controller: tdController, label: 'TD', keyboardType: TextInputType.number),
                     _buildTextFormField(controller: nuiController, label: 'NUI', keyboardType: TextInputType.number),
@@ -287,57 +284,62 @@ class _RegistroPageState extends State<RegistroPage> {
         }
 
         print('Intentando registrar el usuario...');
-        bool isSignUp = await _authProvider.signUp(email, password);
-        print('Registro exitoso: $isSignUp');
+        try {
+          bool isSignUp = await _authProvider.signUp(email, password);
+          print('Registro exitoso: $isSignUp');
 
-        if (!isSignUp) {
-          throw Exception('El registro del usuario falló. Por favor, inténtalo de nuevo.');
+          if (!isSignUp) {
+            throw Exception('El registro del usuario falló. Por favor, inténtalo de nuevo.');
+          }
+
+          Ppl ppl = Ppl(
+            id: _authProvider.getUser()!.uid,
+            nombreAcudiente: nombreAcudienteController.text.trim(),
+            apellidoAcudiente: apellidoAcudienteController.text.trim(),
+            parentescoRepresentante: parentesco ?? "",
+            celular: celularController.text.trim(),
+            email: emailController.text.trim(),
+            nombrePpl: nombrePplController.text.trim(),
+            apellidoPpl: apellidoPplController.text.trim(),
+            tipoDocumentoPpl: tipoDocumento ?? "",
+            numeroDocumentoPpl: numeroDocumentoPplController.text.trim(),
+            //regional: selectedRegional ?? regionalController.text.trim(),
+            regional: "",
+            //centroReclusion: selectedCentro ?? centroReclusionController.text.trim(),
+            centroReclusion: "",
+            juzgadoEjecucionPenas: "",
+            juzgadoEjecucionPenasEmail: "",
+            ciudad: "",
+            juzgadoQueCondeno: "",
+            juzgadoQueCondenoEmail: "",
+            delito: "",
+            radicado: "",
+            tiempoCondena: 0,
+            td: tdController.text.trim(),
+            nui: nuiController.text.trim(),
+            patio: patioController.text.trim(),
+            fechaCaptura: null,
+            status: "registrado",
+            isNotificatedActivated: false,
+            isPaid: false,
+          );
+
+          print('Guardando usuario en Firestore...');
+          await _pplProvider.create(ppl);
+          print('Usuario guardado exitosamente.');
+
+          Navigator.of(context).pop(); // Cerrar el indicador de carga
+          _mostrarMensaje('Usuario registrado correctamente.');
+
+          _formKey.currentState!.reset();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
+          );
+        } on FirebaseAuthException catch (e) {
+          Navigator.of(context).pop(); // Cerrar el indicador de carga
+          print('Error en FirebaseAuth: ${e.code}');
+          _mostrarMensaje(_traducirErrorFirebase(e.code));
         }
-
-        Ppl ppl = Ppl(
-          id: _authProvider.getUser()!.uid,
-          nombreAcudiente: nombreAcudienteController.text.trim(),
-          apellidoAcudiente: apellidoAcudienteController.text.trim(),
-          parentescoRepresentante: parentesco ?? "",
-          celular: celularController.text.trim(),
-          email: emailController.text.trim(),
-          nombrePpl: nombrePplController.text.trim(),
-          apellidoPpl: apellidoPplController.text.trim(),
-          tipoDocumentoPpl: tipoDocumento ?? "",
-          numeroDocumentoPpl: numeroDocumentoPplController.text.trim(),
-          regional: selectedRegional ?? regionalController.text.trim(),
-          centroReclusion: selectedCentro ?? centroReclusionController.text.trim(),
-          juzgadoEjecucionPenas: "",
-          juzgadoEjecucionPenasEmail: "",
-          ciudad: "",
-          juzgadoQueCondeno: "",
-          juzgadoQueCondenoEmail: "",
-          delito: "",
-          radicado: "",
-          tiempoCondena: 0,
-          td: tdController.text.trim(),
-          nui: nuiController.text.trim(),
-          patio: patioController.text.trim(),
-          laborDescuento: "",
-          fechaCaptura: null,
-          fechaInicioDescuento: null,
-          status: "registrado",
-          isNotificatedActivated: false,
-          isPaid: false,
-
-        );
-
-        print('Guardando usuario en Firestore...');
-        await _pplProvider.create(ppl);
-        print('Usuario guardado exitosamente.');
-
-        Navigator.of(context).pop(); // Cerrar el indicador de carga
-        _mostrarMensaje('Usuario registrado correctamente.');
-
-        _formKey.currentState!.reset();
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
-        );
       }
     } catch (e) {
       Navigator.of(context).pop();
@@ -346,14 +348,35 @@ class _RegistroPageState extends State<RegistroPage> {
     }
   }
 
+  /// Método para traducir los códigos de error de Firebase al español
+  String _traducirErrorFirebase(String errorCode) {
+    switch (errorCode) {
+      case "email-already-in-use":
+        return "El correo electrónico ya está registrado.";
+      case "invalid-email":
+        return "El formato del correo electrónico no es válido.";
+      case "operation-not-allowed":
+        return "El registro de nuevos usuarios está deshabilitado.";
+      case "weak-password":
+        return "La contraseña es demasiado débil. Intenta con una más segura.";
+      case "user-disabled":
+        return "Tu cuenta ha sido deshabilitada. Contacta al soporte.";
+      case "too-many-requests":
+        return "Has realizado demasiados intentos. Intenta de nuevo más tarde.";
+      case "network-request-failed":
+        return "Error de conexión. Revisa tu internet e intenta nuevamente.";
+      default:
+        return "Se ha producido un error desconocido. Inténtalo de nuevo.";
+    }
+  }
+
+
 // Método auxiliar para mostrar mensajes
   void _mostrarMensaje(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(mensaje)),
     );
   }
-
-
 
 // Método para limpiar los controladores de texto
   void _limpiarControladores() {
@@ -375,9 +398,7 @@ class _RegistroPageState extends State<RegistroPage> {
     tdController.clear();
     nuiController.clear();
     patioController.clear();
-    laborDescuento = null;
     fechaCaptura = null;
-    fechaInicioDescuento = null;
   }
 
   // Método para crear un TextFormField con diseño común
@@ -510,136 +531,136 @@ class _RegistroPageState extends State<RegistroPage> {
     }
   }
 
-  Widget seleccionarCentroReclusion() {
-    if (centrosReclusionTodos.isEmpty) {
-      Future.microtask(() => _fetchTodosCentrosReclusion());
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        border: Border.all(color: primary),
-        borderRadius: BorderRadius.circular(4),
-        color: Colors.white,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Buscar centro de reclusión (Escribe el nombre y selecciónalo)",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Autocomplete<Map<String, String>>(
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text.isEmpty) {
-                      return const Iterable<Map<String, String>>.empty();
-                    }
-                    return centrosReclusionTodos
-                        .map((option) => option.map((key, value) => MapEntry(key, value.toString())))
-                        .where((Map<String, String> option) =>
-                        option['nombre']!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-                  },
-                  displayStringForOption: (Map<String, String> option) => option['nombre']!,
-                  fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                    _centroReclusionController = textEditingController; // Guardamos el controlador
-                    return TextField(
-                      controller: _centroReclusionController,
-                      focusNode: focusNode,
-                      decoration: InputDecoration(
-                        hintText: "Busca ingresando la ciudad",
-                        labelText: "Centro de reclusión",
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.grey, width: 1),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.grey, width: 1),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(color: Colors.grey, width: 1),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                      ),
-                    );
-                  },
-                  optionsViewBuilder: (context, onSelected, options) {
-                    if (options.isEmpty) {
-                      return Material(
-                        elevation: 4.0,
-                        child: Container(
-                          padding: const EdgeInsets.all(8.0),
-                          child: const Text("No se encontraron centros"),
-                        ),
-                      );
-                    }
-                    return Align(
-                      alignment: Alignment.topLeft,
-                      child: Material(
-                        elevation: 4.0,
-                        child: Container(
-                          padding: const EdgeInsets.all(8.0),
-                          color: blancoCards,
-                          child: ListView.builder(
-                            padding: EdgeInsets.zero,
-                            shrinkWrap: true,
-                            itemCount: options.length,
-                            itemBuilder: (context, index) {
-                              final Map<String, String> option = options.elementAt(index);
-                              return ListTile(
-                                title: Text(option['nombre']!),
-                                onTap: () {
-                                  onSelected(option);
-                                },
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                  onSelected: (Map<String, String> selection) {
-                    setState(() {
-                      selectedCentro = selection['id'];
-                      selectedRegional = selection['regional'];
-                    });
-                    debugPrint("Centro seleccionado: ${selection['nombre']}");
-                    debugPrint("Regional asociada: ${selection['regional']}");
-                  },
-                ),
-              ),
-              if (selectedCentro != null) // Solo mostrar el icono si hay un centro seleccionado
-                IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.red),
-                  onPressed: () {
-                    setState(() {
-                      selectedCentro = null;
-                      selectedRegional = null;
-                      _centroReclusionController.clear(); // 🔥 Limpia el texto del Autocomplete
-                    });
-                    debugPrint("Selección de centro de reclusión eliminada.");
-                  },
-                ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          if (selectedCentro != null)
-            Text(
-              "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
-                    (centro) => centro['id'] == selectedCentro,
-                orElse: () => <String, String>{},
-              )['nombre']!}",
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-            ),
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
+  // Widget seleccionarCentroReclusion() {
+  //   if (centrosReclusionTodos.isEmpty) {
+  //     Future.microtask(() => _fetchTodosCentrosReclusion());
+  //   }
+  //
+  //   return Container(
+  //     padding: const EdgeInsets.all(8),
+  //     decoration: BoxDecoration(
+  //       border: Border.all(color: primary),
+  //       borderRadius: BorderRadius.circular(4),
+  //       color: Colors.white,
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         const Text(
+  //           "Buscar centro de reclusión (Escribe el nombre y selecciónalo)",
+  //           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+  //         ),
+  //         const SizedBox(height: 8),
+  //         Row(
+  //           children: [
+  //             Expanded(
+  //               child: Autocomplete<Map<String, String>>(
+  //                 optionsBuilder: (TextEditingValue textEditingValue) {
+  //                   if (textEditingValue.text.isEmpty) {
+  //                     return const Iterable<Map<String, String>>.empty();
+  //                   }
+  //                   return centrosReclusionTodos
+  //                       .map((option) => option.map((key, value) => MapEntry(key, value.toString())))
+  //                       .where((Map<String, String> option) =>
+  //                       option['nombre']!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+  //                 },
+  //                 displayStringForOption: (Map<String, String> option) => option['nombre']!,
+  //                 fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+  //                   _centroReclusionController = textEditingController; // Guardamos el controlador
+  //                   return TextField(
+  //                     controller: _centroReclusionController,
+  //                     focusNode: focusNode,
+  //                     decoration: InputDecoration(
+  //                       hintText: "Busca ingresando la ciudad",
+  //                       labelText: "Centro de reclusión",
+  //                       border: OutlineInputBorder(
+  //                         borderRadius: BorderRadius.circular(10),
+  //                         borderSide: const BorderSide(color: Colors.grey, width: 1),
+  //                       ),
+  //                       focusedBorder: OutlineInputBorder(
+  //                         borderRadius: BorderRadius.circular(10),
+  //                         borderSide: const BorderSide(color: Colors.grey, width: 1),
+  //                       ),
+  //                       enabledBorder: OutlineInputBorder(
+  //                         borderRadius: BorderRadius.circular(10),
+  //                         borderSide: const BorderSide(color: Colors.grey, width: 1),
+  //                       ),
+  //                       contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+  //                     ),
+  //                   );
+  //                 },
+  //                 optionsViewBuilder: (context, onSelected, options) {
+  //                   if (options.isEmpty) {
+  //                     return Material(
+  //                       elevation: 4.0,
+  //                       child: Container(
+  //                         padding: const EdgeInsets.all(8.0),
+  //                         child: const Text("No se encontraron centros"),
+  //                       ),
+  //                     );
+  //                   }
+  //                   return Align(
+  //                     alignment: Alignment.topLeft,
+  //                     child: Material(
+  //                       elevation: 4.0,
+  //                       child: Container(
+  //                         padding: const EdgeInsets.all(8.0),
+  //                         color: blancoCards,
+  //                         child: ListView.builder(
+  //                           padding: EdgeInsets.zero,
+  //                           shrinkWrap: true,
+  //                           itemCount: options.length,
+  //                           itemBuilder: (context, index) {
+  //                             final Map<String, String> option = options.elementAt(index);
+  //                             return ListTile(
+  //                               title: Text(option['nombre']!),
+  //                               onTap: () {
+  //                                 onSelected(option);
+  //                               },
+  //                             );
+  //                           },
+  //                         ),
+  //                       ),
+  //                     ),
+  //                   );
+  //                 },
+  //                 onSelected: (Map<String, String> selection) {
+  //                   setState(() {
+  //                     selectedCentro = selection['id'];
+  //                     selectedRegional = selection['regional'];
+  //                   });
+  //                   debugPrint("Centro seleccionado: ${selection['nombre']}");
+  //                   debugPrint("Regional asociada: ${selection['regional']}");
+  //                 },
+  //               ),
+  //             ),
+  //             if (selectedCentro != null) // Solo mostrar el icono si hay un centro seleccionado
+  //               IconButton(
+  //                 icon: const Icon(Icons.clear, color: Colors.red),
+  //                 onPressed: () {
+  //                   setState(() {
+  //                     selectedCentro = null;
+  //                     selectedRegional = null;
+  //                     _centroReclusionController.clear(); // 🔥 Limpia el texto del Autocomplete
+  //                   });
+  //                   debugPrint("Selección de centro de reclusión eliminada.");
+  //                 },
+  //               ),
+  //           ],
+  //         ),
+  //         const SizedBox(height: 10),
+  //         if (selectedCentro != null)
+  //           Text(
+  //             "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
+  //                   (centro) => centro['id'] == selectedCentro,
+  //               orElse: () => <String, String>{},
+  //             )['nombre']!}",
+  //             style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+  //           ),
+  //         const SizedBox(height: 10),
+  //       ],
+  //     ),
+  //   );
+  // }
 
 }

@@ -60,8 +60,10 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _ppl = pplData;
       _isPaid = pplData?.isPaid ?? false; // Suponiendo que el modelo tiene isPaid
+      print("_isPaid actualizado a: $_isPaid"); // Depuración
     });
   }
+
 
   @override
   Widget build(BuildContext context) {

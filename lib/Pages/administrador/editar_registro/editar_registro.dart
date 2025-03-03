@@ -31,8 +31,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _tdController = TextEditingController();
   final _nuiController = TextEditingController();
   final _patioController = TextEditingController();
-  final _laborDescuentoController = TextEditingController();
-  final _fechaInicioDescuentoController = TextEditingController();
+
 
   /// controllers para el acudiente
   final _nombreAcudienteController = TextEditingController();
@@ -278,8 +277,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _tdController.dispose();
     _nuiController.dispose();
     _patioController.dispose();
-    _laborDescuentoController.dispose();
-    _fechaInicioDescuentoController.dispose();
     super.dispose();
   }
 
@@ -331,10 +328,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 nuiPpl(),
                 const SizedBox(height: 15),
                 patioPpl(),
-                const SizedBox(height: 15),
-                laborDescuentoPpl(),
-                const SizedBox(height: 15),
-                fechaInicioDescuentoPpl(),
                 const SizedBox(height: 30),
                 const Text(
                   'Información del Acudiente',
@@ -1054,20 +1047,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _tdController.text = widget.doc.get('td') ?? "";
     _nuiController.text = widget.doc.get('nui') ?? "";
     _patioController.text = widget.doc.get('patio') ?? "";
-    String laborDescuento = widget.doc.get('labor_descuento') as String;
-    if(laborDescuento.trim().isEmpty) {
-      _laborDescuentoController.text = "Ningúna informada";
-    } else {
-      _laborDescuentoController.text = laborDescuento;
-    }
-
-    String fechaInicioDescuento = widget.doc.get('fecha_inicio_descuento') ?? "";
-    if (fechaInicioDescuento.trim().isEmpty) {
-      _fechaInicioDescuentoController.text = "Sin información"; // Solo para mostrarlo en UI
-    } else {
-      _fechaInicioDescuentoController.text = fechaInicioDescuento; // Mantiene el valor real
-    }
-
     _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
     _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
     _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
@@ -1371,32 +1350,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Widget laborDescuentoPpl(){
-    return textFormField(
-      controller: _laborDescuentoController,
-      labelText: 'labor de descuento',
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingrese la labor de descuento';
-        }
-        return null;
-      },
-    );
-  }
-
-  Widget fechaInicioDescuentoPpl(){
-    return textFormField(
-      controller: _fechaInicioDescuentoController,
-      labelText: 'Fecha inicio descuento (YYYY-MM-DD)',
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingrese la fecha de inicio de descuento';
-        }
-        return null;
-      },
-    );
-  }
-
   Widget nombreAcudiente(){
     return textFormField(
       controller: _nombreAcudienteController,
@@ -1469,28 +1422,79 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     FormFieldValidator<String>? validator,
     TextInputType? keyboardType,
   }) {
-    return TextFormField(
-      controller: controller,
-      initialValue: initialValue,
-      style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-      decoration: InputDecoration(
-        labelText: labelText,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 1),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 1),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 1),
-        ),
-      ),
-      validator: validator,
-      keyboardType: keyboardType,
-    );  }
+    return StatefulBuilder(
+      builder: (context, setState) {
+        bool isFieldEmpty = controller.text.trim().isEmpty;
+        bool hasFocus = false;
+
+        return Focus(
+          onFocusChange: (focus) {
+            setState(() {
+              hasFocus = focus;
+              isFieldEmpty = controller.text.trim().isEmpty;
+            });
+          },
+          child: TextFormField(
+            controller: controller,
+            initialValue: initialValue,
+            style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+            decoration: InputDecoration(
+              labelText: labelText, // 🔹 Se mantiene el label arriba
+              labelStyle: TextStyle(
+                color: isFieldEmpty ? Colors.red.shade900 : Colors.grey.shade700,
+                fontWeight: FontWeight.bold,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isFieldEmpty ? Colors.red.shade900 : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isFieldEmpty ? Colors.red.shade900 : primary,
+                  width: 2,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: isFieldEmpty ? Colors.red.shade900 : Colors.grey,
+                  width: 2,
+                ),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: Colors.red.shade900,
+                  width: 2,
+                ),
+              ),
+              focusedErrorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide(
+                  color: Colors.red.shade900,
+                  width: 2,
+                ),
+              ),
+              hintText: hasFocus ? '' : labelText, // 🔥 Oculta el hint al enfocar
+              hintStyle: const TextStyle(color: Colors.transparent), // 🔥 Hace invisible el hint
+            ),
+            validator: (value) {
+              bool empty = value == null || value.trim().isEmpty;
+              setState(() => isFieldEmpty = empty);
+              return empty ? 'Por favor ingrese $labelText' : null;
+            },
+            keyboardType: keyboardType,
+          ),
+        );
+      },
+    );
+  }
+
+
 
   Widget botonGuardar() {
     return SizedBox(
@@ -1504,15 +1508,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
           onPressed: () {
-            // 🔍 Depuración: Verifica qué campos están vacíos antes de guardar
-            debugPrint("📝 Verificando campos antes de guardar:");
-            debugPrint("Centro de reclusión: ${selectedCentro ?? widget.doc['centro_reclusion']}");
-            debugPrint("Regional: ${selectedRegional ?? widget.doc['regional']}");
-            debugPrint("Ciudad: ${selectedCiudad ?? widget.doc['ciudad']}");
-            debugPrint("Juzgado de ejecución de penas: ${selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']}");
-            debugPrint("Juzgado que condenó: ${selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']}");
-            debugPrint("Delito: ${selectedDelito ?? widget.doc['delito']}");
-
             // Validamos el formulario
             if (!_formKey.currentState!.validate()) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1554,6 +1549,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             if (_celularAcudienteController.text.trim().isEmpty) camposFaltantes.add("Celular del Acudiente");
             if (_emailAcudienteController.text.trim().isEmpty) camposFaltantes.add("Email del Acudiente");
 
+            // 🚨 Nueva validación para condena en meses 🚨
+            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
+            if (tiempoCondena == 0) {
+              camposFaltantes.add("Condena en meses");
+            }
+
+            // 🔴 Aplicar borde rojo si condena en meses es 0
+            setState(() {});
+
             // Si hay campos faltantes, mostrar error
             if (camposFaltantes.isNotEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1565,9 +1569,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
               return;
             }
-
-            // Parsear los valores numéricos
-            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
 
             // Oculta el teclado
             SystemChannels.textInput.invokeMethod('TextInput.hide');
@@ -1607,9 +1608,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'regional': selectedRegional ?? widget.doc['regional'],
               'ciudad': selectedCiudad ?? widget.doc['ciudad'],
               'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
-              'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'], // ✅ Guarda el correo
+              'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'],
               'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
-              'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'], // ✅ Guarda el correo
+              'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'],
               'delito': selectedDelito ?? widget.doc['delito'],
               'radicado': _radicadoController.text,
               'tiempo_condena': tiempoCondena,
@@ -1617,8 +1618,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'td': _tdController.text,
               'nui': _nuiController.text,
               'patio': _patioController.text,
-              'labor_descuento': _laborDescuentoController.text,
-              'fecha_inicio_descuento': _fechaInicioDescuentoController.text.trim().isEmpty ? null : _fechaInicioDescuentoController.text.trim(),
               'nombre_acudiente': _nombreAcudienteController.text,
               'apellido_acudiente': _apellidosAcudienteController.text,
               'parentesco_representante': _parentescoAcudienteController.text,
@@ -1626,7 +1625,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'email': _emailAcudienteController.text,
               'status': 'activado',
             }).then((_) {
-              // Guardar correos en la subcolección
               widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
 
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1637,8 +1635,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
             });
 
-
-            // Enviar mensaje de WhatsApp
             validarYEnviarMensaje();
           },
           child: const Text('Guardar Cambios'),
@@ -1646,6 +1642,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
 
 
   Widget tipoDocumentoPpl(){

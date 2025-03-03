@@ -813,26 +813,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               ),
             ],
           ),
-          Row(
-            children: [
-              const Text(
-                'Fecha Inicio Descuento:  ',
-                style: TextStyle(fontSize: 12, color: Colors.black),
-              ),
-              Text(
-                userData!.fechaInicioDescuento != null
-                    ? DateFormat('yyyy-MM-dd').format(userData!.fechaInicioDescuento!)
-                    : 'No disponible',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('Labor Descuento:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.laborDescuento, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
+
           const SizedBox(height: 15),
           const Text("Datos del Acudiente", style: TextStyle(
               fontWeight: FontWeight.w900,

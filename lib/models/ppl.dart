@@ -31,8 +31,6 @@ class Ppl {
   final String nui;
   final String patio;
   final DateTime? fechaCaptura;
-  final DateTime? fechaInicioDescuento;
-  final String laborDescuento;
   final String status;
   final bool isNotificatedActivated;
   final bool isPaid;
@@ -63,8 +61,6 @@ class Ppl {
     required this.nui,
     required this.patio,
     required this.fechaCaptura,
-    required this.fechaInicioDescuento,
-    required this.laborDescuento,
     required this.status,
     required this.isNotificatedActivated,
     required this.isPaid,
@@ -96,8 +92,6 @@ class Ppl {
     nui: json["nui"] ?? '',
     patio: json["patio"] ?? '',
     fechaCaptura: json["fecha_captura"] != null ? DateTime.parse(json["fecha_captura"]) : null,
-    fechaInicioDescuento: json["fecha_inicio_descuento"] != null ? DateTime.parse(json["fecha_inicio_descuento"]) : null,
-    laborDescuento: json["labor_descuento"] ?? '',
     status: json["status"] ?? '',
     isNotificatedActivated: json["isNotificatedActivated"] ?? false,
     isPaid: json["isPaid"] ?? false,
@@ -129,8 +123,6 @@ class Ppl {
     "nui": nui,
     "patio": patio,
     "fecha_captura": fechaCaptura?.toIso8601String(),
-    "fecha_inicio_descuento": fechaInicioDescuento?.toIso8601String(),
-    "labor_descuento": laborDescuento,
     "status": status,
     "isNotificatedActivated": isNotificatedActivated,
     "isPaid": isPaid,
