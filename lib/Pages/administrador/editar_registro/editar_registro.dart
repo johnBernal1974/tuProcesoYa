@@ -8,6 +8,7 @@ import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../providers/ppl_provider.dart';
 import '../../../src/colors/colors.dart';
+import '../home_admin/home_admin.dart';
 
 class EditarRegistroPage extends StatefulWidget {
   final DocumentSnapshot doc;
@@ -1507,8 +1508,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             backgroundColor: primary,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
-          onPressed: () {
-            // Validamos el formulario
+          onPressed: () async {
             if (!_formKey.currentState!.validate()) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -1523,7 +1523,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               return;
             }
 
-            // Validaciones adicionales para dropdowns y otros campos no incluidos en el Form
             List<String> camposFaltantes = [];
 
             if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
@@ -1533,32 +1532,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) camposFaltantes.add("Juzgado que Condenó");
             if ((selectedDelito ?? widget.doc['delito']) == null) camposFaltantes.add("Delito");
 
-            // Validaciones de los TextFields
-            if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
-            if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
-            if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
-            if (_tipoDocumento.trim().isEmpty) camposFaltantes.add("Tipo de Documento");
-            if (_radicadoController.text.trim().isEmpty) camposFaltantes.add("Radicado");
-            if (_fechaDeCapturaController.text.trim().isEmpty) camposFaltantes.add("Fecha de Captura");
-            if (_tdController.text.trim().isEmpty) camposFaltantes.add("TD");
-            if (_nuiController.text.trim().isEmpty) camposFaltantes.add("NUI");
-            if (_patioController.text.trim().isEmpty) camposFaltantes.add("Patio");
-            if (_nombreAcudienteController.text.trim().isEmpty) camposFaltantes.add("Nombre del Acudiente");
-            if (_apellidosAcudienteController.text.trim().isEmpty) camposFaltantes.add("Apellido del Acudiente");
-            if (_parentescoAcudienteController.text.trim().isEmpty) camposFaltantes.add("Parentesco del Acudiente");
-            if (_celularAcudienteController.text.trim().isEmpty) camposFaltantes.add("Celular del Acudiente");
-            if (_emailAcudienteController.text.trim().isEmpty) camposFaltantes.add("Email del Acudiente");
-
-            // 🚨 Nueva validación para condena en meses 🚨
             int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
             if (tiempoCondena == 0) {
               camposFaltantes.add("Condena en meses");
             }
 
-            // 🔴 Aplicar borde rojo si condena en meses es 0
-            setState(() {});
-
-            // Si hay campos faltantes, mostrar error
             if (camposFaltantes.isNotEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -1570,36 +1548,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               return;
             }
 
-            // Oculta el teclado
             SystemChannels.textInput.invokeMethod('TextInput.hide');
 
-            Map<String, String> correosCentro = {
-              'correo_direccion': '',
-              'correo_juridica': '',
-              'correo_principal': '',
-              'correo_sanidad': '',
-            };
-
-            // Obtener correos del centro de reclusión seleccionado
-            if (selectedCentro != null) {
-              var centroEncontrado = centrosReclusionTodos.firstWhere(
-                    (centro) => centro['id'] == selectedCentro,
-                orElse: () => <String, Object>{},
-              );
-
-              if (centroEncontrado.isNotEmpty && centroEncontrado.containsKey('correos')) {
-                var correosMap = centroEncontrado['correos'] as Map<String, dynamic>;
-                correosCentro = {
-                  'correo_direccion': correosMap['correo_direccion']?.toString() ?? '',
-                  'correo_juridica': correosMap['correo_juridica']?.toString() ?? '',
-                  'correo_principal': correosMap['correo_principal']?.toString() ?? '',
-                  'correo_sanidad': correosMap['correo_sanidad']?.toString() ?? '',
-                };
-              }
-            }
-
-            // Guardar en Firestore
-            widget.doc.reference.update({
+            await widget.doc.reference.update({
               'nombre_ppl': _nombreController.text,
               'apellido_ppl': _apellidoController.text,
               'numero_documento_ppl': _numeroDocumentoController.text,
@@ -1624,19 +1575,26 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'celular': _celularAcudienteController.text,
               'email': _emailAcudienteController.text,
               'status': 'activado',
-            }).then((_) {
-              widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
+            });
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Datos guardados con éxito y el usuario está activado'),
-                  duration: Duration(seconds: 2),
-                ),
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Datos guardados con éxito.'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+
+            // 🔥 REDIRECCIÓN A HomeAdministradorPage DESPUÉS DE GUARDAR
+            Future.delayed(const Duration(seconds: 1), () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
               );
             });
 
             validarYEnviarMensaje();
           },
+
           child: const Text('Guardar Cambios'),
         ),
       ),
@@ -1834,7 +1792,4 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
-
-
 }
