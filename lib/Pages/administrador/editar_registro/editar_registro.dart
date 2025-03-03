@@ -1,9 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../providers/ppl_provider.dart';
@@ -163,52 +167,52 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  Future<void> _fetchJuzgadoCondenoPorCiudad() async {
-    try {
-      // Obtener la colección 'juzgado_condeno'
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('juzgado_condeno')
-          .get();
-
-      // Crear una lista para almacenar las "regionales" y sus "juzgados"
-      List<Map<String, dynamic>> fetchedJuzgadoCondeno = [];
-
-      // Iterar sobre los documentos de la colección 'juzgado_condeno'
-      for (var doc in querySnapshot.docs) {
-        // Obtener el nombre de la "regional" desde el campo 'name'
-        String juzgadoCondenoName = doc['name'] ?? 'Nombre no disponible';
-
-        // Acceder a la subcolección 'juzgados'
-        QuerySnapshot juzgadosSnapshot = await doc.reference
-            .collection('juzgados')
-            .get();
-        // Crear una lista con los juzgados usando el campo 'nombre' de cada documento
-        List<String> juzgados = juzgadosSnapshot.docs.map<String>((centerDoc) {
-          // Devuelve el campo 'nombre' convertido a String o, si es null, el id convertido a String
-          return (centerDoc['nombre'] ?? centerDoc.id).toString();
-        }).toList();
-
-
-        // Armar el mapa con la información de la "regional" y sus "juzgados"
-        Map<String, dynamic> regionalData = {
-          'id': doc.id,                 // ID del documento de la "regional"
-          'nombre': juzgadoCondenoName,   // Nombre obtenido
-          'juzgados': juzgados,           // Lista de nombres de los juzgados
-        };
-        // Agregar la información a la lista final
-        fetchedJuzgadoCondeno.add(regionalData);
-      }
-
-      // Actualizar el estado con las regionales y sus juzgados
-      setState(() {
-        juzgadoQueCondeno = fetchedJuzgadoCondeno;
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error al cargar las ciudades: $e');
-      }
-    }
-  }
+  // Future<void> _fetchJuzgadoCondenoPorCiudad() async {
+  //   try {
+  //     // Obtener la colección 'juzgado_condeno'
+  //     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+  //         .collection('juzgado_condeno')
+  //         .get();
+  //
+  //     // Crear una lista para almacenar las "regionales" y sus "juzgados"
+  //     List<Map<String, dynamic>> fetchedJuzgadoCondeno = [];
+  //
+  //     // Iterar sobre los documentos de la colección 'juzgado_condeno'
+  //     for (var doc in querySnapshot.docs) {
+  //       // Obtener el nombre de la "regional" desde el campo 'name'
+  //       String juzgadoCondenoName = doc['name'] ?? 'Nombre no disponible';
+  //
+  //       // Acceder a la subcolección 'juzgados'
+  //       QuerySnapshot juzgadosSnapshot = await doc.reference
+  //           .collection('juzgados')
+  //           .get();
+  //       // Crear una lista con los juzgados usando el campo 'nombre' de cada documento
+  //       List<String> juzgados = juzgadosSnapshot.docs.map<String>((centerDoc) {
+  //         // Devuelve el campo 'nombre' convertido a String o, si es null, el id convertido a String
+  //         return (centerDoc['nombre'] ?? centerDoc.id).toString();
+  //       }).toList();
+  //
+  //
+  //       // Armar el mapa con la información de la "regional" y sus "juzgados"
+  //       Map<String, dynamic> regionalData = {
+  //         'id': doc.id,                 // ID del documento de la "regional"
+  //         'nombre': juzgadoCondenoName,   // Nombre obtenido
+  //         'juzgados': juzgados,           // Lista de nombres de los juzgados
+  //       };
+  //       // Agregar la información a la lista final
+  //       fetchedJuzgadoCondeno.add(regionalData);
+  //     }
+  //
+  //     // Actualizar el estado con las regionales y sus juzgados
+  //     setState(() {
+  //       juzgadoQueCondeno = fetchedJuzgadoCondeno;
+  //     });
+  //   } catch (e) {
+  //     if (kDebugMode) {
+  //       print('Error al cargar las ciudades: $e');
+  //     }
+  //   }
+  // }
 
   Future<void> _fetchTodosJuzgadosConocimiento() async {
     if (juzgadosConocimiento.isNotEmpty) return; // Si ya se cargaron, no volver a hacer la petición
@@ -244,7 +248,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       _isLoadingJuzgados = false;
     }
   }
-
 
   Future<void> _fetchDelitos() async {
     try {
@@ -345,10 +348,55 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 const SizedBox(height: 15),
                 emailAcudiente(),
                 const SizedBox(height: 50),
-                estadoUsuarioWidget(widget.doc["status"]),
-                estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
+                // Align(
+                //   alignment: Alignment.centerLeft, // 🔹 Alinear a la izquierda
+                //   child: Column(
+                //     crossAxisAlignment: CrossAxisAlignment.start, // 🔹 Asegurar que los widgets se alineen a la izquierda
+                //     children: [
+                //       estadoUsuarioWidget(widget.doc["status"]),
+                //       const SizedBox(height: 10), // Espaciado opcional
+                //       estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
+                //     ],
+                //   ),
+                // ),
+                // const SizedBox(height: 50),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    if (widget.doc["status"] != "bloqueado") ...[
+                      botonGuardar(),
+                      bloquearUsuario(),
+                    ] else
+                      FutureBuilder<bool>(
+                        future: _adminPuedeDesbloquear(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return const SizedBox(); // Mientras carga, no muestra nada
+                          }
+                          if (snapshot.data == true) {
+                            return desbloquearUsuario(); // Muestra el botón solo si el admin tiene permiso
+                          }
+                          return const SizedBox(); // Si no tiene permiso, no muestra nada
+                        },
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 50),
-                botonGuardar(),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    estadoUsuarioWidget(widget.doc["status"]),
+                    const SizedBox(height: 10),
+                    estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
+                    const SizedBox(height: 20),
+                    const Text(
+                      "Historial de Bloqueo/Desbloqueo",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    const SizedBox(height: 10),
+                    historialAccionUsuario(),
+                  ],
+                ),
                 const SizedBox(height: 150),
               ],
             ),
@@ -356,6 +404,24 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ),
       ),
     );
+  }
+
+  Future<String> obtenerRolActual() async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        return ""; // Si no hay usuario autenticado, retorna vacío
+      }
+
+      // Instancia del provider para obtener el rol
+      AdminProvider adminProvider = AdminProvider();
+      await adminProvider.loadAdminData(); // Cargar los datos del admin
+
+      return adminProvider.rol ?? ""; // Retorna el rol si existe, sino retorna vacío
+    } catch (e) {
+      print("❌ Error obteniendo el rol: $e");
+      return "";
+    }
   }
 
   Widget seleccionarCentroReclusion() {
@@ -877,11 +943,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-
-
-
-
-
   Widget seleccionarDelito() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1025,6 +1086,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       }
     }
   }
+
   void _initCalculoCondena() async {
     try {
       await _calculoCondenaController.calcularTiempo(widget.doc.id);
@@ -1037,6 +1099,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       // Maneja la excepción
     }
   }
+
   void _initFormFields() {
     _nombreController.text = widget.doc.get('nombre_ppl') ?? "";
     _apellidoController.text = widget.doc.get('apellido_ppl') ?? "";
@@ -1170,7 +1233,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ],
       ),
     );
-
     // Utiliza un Wrap para que los cajones se organicen en filas en dispositivos móviles
     return Wrap(
       spacing: 10,  // Espacio horizontal entre cajones
@@ -1253,7 +1315,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
-
 
   // Método auxiliar para formatear números con dos dígitos
   String _formatDosDigitos(int n) => n.toString().padLeft(2, '0');
@@ -1495,13 +1556,256 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  Widget bloquearUsuario() {
+    return SizedBox(
+      width: 200,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          onPressed: () async {
+            bool confirmacion = await _mostrarConfirmacionBloqueo();
+            if (!confirmacion) return;
+
+            try {
+              User? user = FirebaseAuth.instance.currentUser;
+              String adminName = "Desconocido";
+              String adminId = user?.uid ?? "Desconocido";
+
+              DocumentSnapshot adminDoc = await FirebaseFirestore.instance.collection('admin').doc(adminId).get();
+              if (adminDoc.exists) {
+                adminName = "${adminDoc['name']} ${adminDoc['apellidos']}";
+              }
+
+              // Guardar en Firestore
+              await widget.doc.reference.update({
+                'status': 'bloqueado',
+              });
+
+              // Guardar la acción en la subcolección historial_acciones
+              await widget.doc.reference.collection('historial_acciones').add({
+                'admin': adminName,
+                'accion': 'bloqueo',
+                'fecha': DateTime.now().toString(),
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Usuario bloqueado con éxito.'),
+                  duration: Duration(seconds: 2),
+                  backgroundColor: Colors.red,
+                ),
+              );
+
+              Future.delayed(const Duration(seconds: 1), () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
+                );
+              });
+            } catch (error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error al bloquear el usuario: $error'),
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: const Text('Bloquear Usuario'),
+        ),
+      ),
+    );
+  }
+
+  /// 🔹 Función para mostrar la confirmación antes de bloquear al usuario
+  Future<bool> _mostrarConfirmacionBloqueo() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: blancoCards,
+          title: const Text("Confirmar bloqueo"),
+          content: const Text("¿Estás seguro de que deseas bloquear a este usuario?"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(false); // ❌ Devuelve "false" si cancela
+              },
+              child: const Text("Cancelar", style: TextStyle(color: Colors.grey)),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(true); // ✅ Devuelve "true" si confirma
+              },
+              child: const Text("Bloquear", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        );
+      },
+    ) ??
+        false; // Si el usuario cierra el diálogo sin elegir, retorna "false"
+  }
+
+  Future<bool> _adminPuedeDesbloquear() async {
+    String adminRole = await obtenerRolActual(); // Ahora se obtiene el rol real desde Firebase
+
+    List<String> rolesPermitidos = ["master", "masterFull", "coordinador 1", "coordinador 2"];
+
+    return rolesPermitidos.contains(adminRole);
+  }
+
+  Widget desbloquearUsuario() {
+    return SizedBox(
+      width: 200,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          onPressed: () async {
+            bool confirmacion = await _mostrarConfirmacionDesbloqueo();
+            if (!confirmacion) return;
+
+            try {
+              User? user = FirebaseAuth.instance.currentUser;
+              String adminName = "Desconocido";
+              String adminId = user?.uid ?? "Desconocido";
+
+              DocumentSnapshot adminDoc = await FirebaseFirestore.instance.collection('admin').doc(adminId).get();
+              if (adminDoc.exists) {
+                adminName = "${adminDoc['name']} ${adminDoc['apellidos']}";
+              }
+
+              // Guardar en Firestore
+              await widget.doc.reference.update({
+                'status': 'activado',
+              });
+
+              // Guardar la acción en la subcolección historial_acciones
+              await widget.doc.reference.collection('historial_acciones').add({
+                'admin': adminName,
+                'accion': 'desbloqueo',
+                'fecha': DateTime.now().toString(),
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Usuario desbloqueado con éxito.'),
+                  duration: Duration(seconds: 2),
+                  backgroundColor: Colors.green,
+                ),
+              );
+
+              Future.delayed(const Duration(seconds: 1), () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
+                );
+              });
+            } catch (error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error al desbloquear el usuario: $error'),
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+          child: const Text('Desbloquear Usuario'),
+        ),
+      ),
+    );
+  }
+
+  Future<bool> _mostrarConfirmacionDesbloqueo() async {
+    return await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: blancoCards,
+          title: const Text('Confirmar Desbloqueo'),
+          content: const Text('¿Estás seguro de que deseas desbloquear a este usuario?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Desbloquear'),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  Widget historialAccionUsuario() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: widget.doc.reference.collection('historial_acciones').orderBy('fecha', descending: true).snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.data!.docs.isEmpty) {
+          return const Text("No hay historial de acciones.");
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: snapshot.data!.docs.map((doc) {
+            String admin = doc['admin'] ?? "Desconocido";
+            String accion = doc['accion'] ?? "Ninguna";
+            String fechaString = doc['fecha'] ?? "";
+            DateTime? fecha = _parseFecha(fechaString); // Convierte String a DateTime
+            String fechaFormateada = _formatFecha(fecha); // Formatea la fecha
+
+            Color color = accion == "bloqueo" ? Colors.red : Colors.green;
+            IconData icono = accion == "bloqueo" ? Icons.lock : Icons.lock_open;
+
+            return ListTile(
+              leading: Icon(icono, color: color),
+              title: Text("$accion realizado por $admin", style: const TextStyle(fontSize: 12)),
+              subtitle: Text("Fecha: $fechaFormateada", style: const TextStyle(fontSize: 12)),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  /// 📆 Convierte un String a DateTime
+  DateTime? _parseFecha(String fechaString) {
+    try {
+      return DateTime.parse(fechaString);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// 📆 Función para manejar errores en la conversión de fechas
+  String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
+    if (fecha == null) return "Fecha no disponible";
+    return DateFormat(formato, 'es').format(fecha);
+  }
 
 
   Widget botonGuardar() {
     return SizedBox(
-      width: 120,
+      width: 200,
       child: Align(
-        alignment: Alignment.center,
+        alignment: Alignment.centerLeft,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             foregroundColor: Colors.white,
@@ -1600,8 +1904,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
-
 
   Widget tipoDocumentoPpl(){
     return DropdownButtonFormField(
@@ -1734,18 +2036,19 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       color = Colors.green;
       icono = Icons.check_circle;
       mensaje = "El usuario ya está activado";
-    } else if (status == "servicio_solicitado") {
-      color = Colors.blue;
-      icono = Icons.info;
-      mensaje = "Este usuario tiene solicitudes pendientes";
-    } else {
+    } else if (status == "bloqueado") {
       color = Colors.red;
+      icono = Icons.lock;
+      mensaje = "Este usuario se encuentra bloqueado";
+    }
+    else {
+      color = Colors.blue;
       icono = Icons.error;
       mensaje = "El usuario aún no está activado";
     }
 
     return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         Icon(icono, color: color, size: 20),
         const SizedBox(width: 8), // Espacio entre icono y texto
@@ -1769,7 +2072,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         : "El usuario aún no ha sido notificado de la activación";
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(horizontal: 0.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -1792,4 +2095,5 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
 }

@@ -22,11 +22,13 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   Color _getColor(String estado) {
     switch (estado.toLowerCase()) {
       case 'registrado':
-        return Colors.red;
+        return primary;
       case 'revisado':
         return Colors.yellow;
       case 'activado':
         return Colors.green;
+      case 'bloqueado':
+        return Colors.red;
       case 'servicio_solicitado':
         return Colors.blue;
       case 'pendiente':
@@ -55,7 +57,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                   final int countNoSuscritos = docs.where((doc) => doc.get('isPaid') == false).length;
                   final int countRegistrado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'registrado').length;
                   final int countActivado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'activado').length;
-                  final int countPendiente = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'servicio_solicitado').length;
+                  final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
                   final int countTotal = docs.length;
 
                   // 🔹 Aplicar filtros desde el inicio
@@ -86,7 +88,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         spacing: 20,
                         runSpacing: 20,
                         children: [
-                          _buildStatCard("Registrados", countRegistrado, Colors.red, () {
+                          _buildStatCard("Registrados", countRegistrado, primary, () {
                             setState(() {
                               filterStatus = "registrado";
                               filterIsPaid = null;
@@ -113,6 +115,13 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               filterStatus = null;
                             });
                           }, isSelected: filterIsPaid == false),
+
+                          _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
+                            setState(() {
+                              filterStatus = "bloqueado";
+                              filterIsPaid = null;
+                            });
+                          }, isSelected: filterStatus == "bloqueado"),
 
                           _buildStatCard("Total Usuarios", countTotal, Colors.amber, () {
                             setState(() {
@@ -259,7 +268,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
               DataCell(Text(doc.get('numero_documento_ppl').toString())),
               DataCell(Text("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}")),
               DataCell(Text(doc.get('celular').toString())),
-              DataCell(Icon(doc.get('isPaid') ? Icons.check_circle : Icons.cancel, color: doc.get('isPaid') ? Colors.green : Colors.red)),
+              DataCell(Icon(doc.get('isPaid') ? Icons.check_circle : Icons.cancel, color: doc.get('isPaid') ? Colors.blue : Colors.grey)),
             ],
           );
         }).toList(),
