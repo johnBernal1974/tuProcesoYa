@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../commons/admin_provider.dart';
@@ -108,6 +107,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       });
     });
     _obtenerDatos();
+    _asignarDocumento(); // Bloquea el documento al abrirlo
 
   }
 
@@ -281,6 +281,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _tdController.dispose();
     _nuiController.dispose();
     _patioController.dispose();
+    //_liberarDocumento(); // 🔥 Libera el documento al cerrar la pantalla
     super.dispose();
   }
 
@@ -405,6 +406,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+  // 🔹 Bloquea el documento para que solo este operador pueda editarlo
+  // 🔹 Asigna el documento al operador actual para que solo él pueda verlo
+  Future<void> _asignarDocumento() async {
+    String currentUserUid = FirebaseAuth.instance.currentUser!.uid;
+
+    try {
+      await widget.doc.reference.update({'assignedTo': currentUserUid});
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error al asignar el documento: $e");
+      }
+    }
+  }
+
+
+// 🔹 Libera el documento cuando se cierra la pantalla- temporalmente desactivado
+  Future<void> _liberarDocumento() async {
+    try {
+      await widget.doc.reference.update({'lockedBy': ""});
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error al liberar el documento: $e");
+      }
+    }
+  }
 
   Future<String> obtenerRolActual() async {
     try {
@@ -419,7 +445,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
       return adminProvider.rol ?? ""; // Retorna el rol si existe, sino retorna vacío
     } catch (e) {
-      print("❌ Error obteniendo el rol: $e");
+      if (kDebugMode) {
+        print("❌ Error obteniendo el rol: $e");
+      }
       return "";
     }
   }
@@ -1331,7 +1359,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           data: ThemeData.light().copyWith(
             primaryColor: Colors.deepPurple,
             hintColor: Colors.deepPurple,
-            colorScheme: ColorScheme.light(primary: Colors.deepPurple),
+            colorScheme: const ColorScheme.light(primary: Colors.deepPurple),
             buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
           ),
           child: child!,
@@ -1593,28 +1621,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'fecha': DateTime.now().toString(),
               });
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Usuario bloqueado con éxito.'),
-                  duration: Duration(seconds: 2),
-                  backgroundColor: Colors.red,
-                ),
-              );
-
+              if(context.mounted){
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Usuario bloqueado con éxito.'),
+                    duration: Duration(seconds: 2),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
               Future.delayed(const Duration(seconds: 1), () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
+                  MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
                 );
               });
             } catch (error) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error al bloquear el usuario: $error'),
-                  duration: const Duration(seconds: 2),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              if(context.mounted){
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error al bloquear el usuario: $error'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           },
           child: const Text('Bloquear Usuario'),
@@ -1696,29 +1727,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'accion': 'desbloqueo',
                 'fecha': DateTime.now().toString(),
               });
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Usuario desbloqueado con éxito.'),
-                  duration: Duration(seconds: 2),
-                  backgroundColor: Colors.green,
-                ),
-              );
-
+              if(context.mounted){
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Usuario desbloqueado con éxito.'),
+                    duration: Duration(seconds: 2),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
               Future.delayed(const Duration(seconds: 1), () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
+                  MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
                 );
               });
             } catch (error) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error al desbloquear el usuario: $error'),
-                  duration: const Duration(seconds: 2),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              if(context.mounted){
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error al desbloquear el usuario: $error'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           },
           child: const Text('Desbloquear Usuario'),
@@ -1880,19 +1913,20 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'email': _emailAcudienteController.text,
               'status': 'activado',
             });
-
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Datos guardados con éxito.'),
-                duration: Duration(seconds: 2),
-              ),
-            );
+            if(context.mounted){
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Datos guardados con éxito.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
 
             // 🔥 REDIRECCIÓN A HomeAdministradorPage DESPUÉS DE GUARDAR
             Future.delayed(const Duration(seconds: 1), () {
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => HomeAdministradorPage()),
+                MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
               );
             });
 

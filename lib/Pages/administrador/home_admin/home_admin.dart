@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
 
@@ -62,6 +63,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                   // 🔹 Aplicar filtros desde el inicio
                   List<QueryDocumentSnapshot> filteredDocs = docs;
+
+                  // 🔹 Aplicar filtros normales (status, pago y búsqueda)
                   if (filterStatus != null) {
                     filteredDocs = filteredDocs.where((doc) => doc.get('status').toString().toLowerCase() == filterStatus!.toLowerCase()).toList();
                   }
@@ -79,7 +82,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       return nombre.contains(query) || apellido.contains(query) || identificacion.contains(query) || acudiente.contains(query) || celularAcudiente.contains(query);
                     }).toList();
                   }
-
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -162,6 +164,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     );
   }
 
+
   // Widget para construir tarjetas de estadísticas con efecto de selección
   Widget _buildStatCard(String title, int count, Color color, VoidCallback onTap, {bool isSelected = false}) {
     return InkWell(
@@ -237,6 +240,17 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   }
 
   Widget _buildUserTable(List<QueryDocumentSnapshot> docs) {
+    // 🔹 Obtener el UID del operador actual
+    String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
+
+    // 🔥 Filtrar los documentos "registrados" para que solo se muestren los asignados al operador actual o los que no han sido asignados
+    if (filterStatus == "registrado") {
+      docs = docs.where((doc) {
+        final assignedTo = doc.get('assignedTo') ?? ""; // Obtener el campo 'assignedTo'
+        return assignedTo.isEmpty || assignedTo == currentUserUid;
+      }).toList();
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: DataTable(
@@ -252,13 +266,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         ],
         rows: docs.map((doc) {
           return DataRow(
-            onSelectChanged: (bool? selected) {
+            onSelectChanged: (bool? selected) async {
               if (selected != null && selected) {
-                Navigator.pushNamed(
-                  context,
-                  'editar_registro_admin',
-                  arguments: doc,
-                );
+                String docId = doc.id;
+
+                // 🔹 Asignar el documento al operador actual
+                await _firebaseFirestore.collection('Ppl').doc(docId).update({
+                  'assignedTo': currentUserUid, // Guarda el UID del operador que tomó el documento
+                });
+
+                if(context.mounted){
+                  Navigator.pushNamed(
+                    context,
+                    'editar_registro_admin',
+                    arguments: doc,
+                  );
+                }
               }
             },
             cells: [
@@ -275,4 +298,5 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
+
 }
