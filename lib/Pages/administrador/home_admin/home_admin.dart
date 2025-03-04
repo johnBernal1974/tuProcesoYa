@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
 
 import '../../../src/colors/colors.dart';
@@ -56,10 +57,29 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                   final int countSuscritos = docs.where((doc) => doc.get('isPaid') == true).length;
                   final int countNoSuscritos = docs.where((doc) => doc.get('isPaid') == false).length;
-                  final int countRegistrado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'registrado').length;
+                  String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
+                  final int countRegistrado = docs.where((doc) {
+                    final assignedTo = doc.get('assignedTo') ?? "";
+                    return doc.get('status').toString().toLowerCase() == 'registrado' &&
+                        (assignedTo.isEmpty || assignedTo == currentUserUid);
+                  }).length;
+
+
                   final int countActivado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'activado').length;
                   final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
-                  final int countTotal = docs.length;
+                  final int countTotal = docs.where((doc) {
+                    final assignedTo = doc.get('assignedTo') ?? "";
+                    final status = doc.get('status').toString().toLowerCase();
+
+                    // 🔹 Si es "registrado", solo contar si está sin asignar o asignado al operador actual
+                    if (status == 'registrado') {
+                      return assignedTo.isEmpty || assignedTo == currentUserUid;
+                    }
+
+                    // 🔹 Si es otro estado (activado, bloqueado, etc.), incluirlo en el conteo
+                    return true;
+                  }).length;
+
 
                   // 🔹 Aplicar filtros desde el inicio
                   List<QueryDocumentSnapshot> filteredDocs = docs;
@@ -104,19 +124,19 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                             });
                           }, isSelected: filterStatus == "activado"),
 
-                          _buildStatCard("Suscritos", countSuscritos, Colors.blueAccent, () {
-                            setState(() {
-                              filterIsPaid = true;
-                              filterStatus = null;
-                            });
-                          }, isSelected: filterIsPaid == true),
-
-                          _buildStatCard("Sin Suscribir", countNoSuscritos, Colors.grey, () {
-                            setState(() {
-                              filterIsPaid = false;
-                              filterStatus = null;
-                            });
-                          }, isSelected: filterIsPaid == false),
+                          // _buildStatCard("Suscritos", countSuscritos, Colors.blueAccent, () {
+                          //   setState(() {
+                          //     filterIsPaid = true;
+                          //     filterStatus = null;
+                          //   });
+                          // }, isSelected: filterIsPaid == true),
+                          //
+                          // _buildStatCard("Sin Suscribir", countNoSuscritos, Colors.grey, () {
+                          //   setState(() {
+                          //     filterIsPaid = false;
+                          //     filterStatus = null;
+                          //   });
+                          // }, isSelected: filterIsPaid == false),
 
                           _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
                             setState(() {
@@ -162,6 +182,12 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         ),
       ),
     );
+  }
+
+  /// 📆 Función para manejar errores en la conversión de fechas
+  String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
+    if (fecha == null) return "Fecha no disponible";
+    return DateFormat(formato, 'es').format(fecha);
   }
 
 
@@ -211,7 +237,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     );
   }
 
-
   Widget _buildSearchField() {
     return TextField(
       controller: _searchController,
@@ -244,12 +269,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
 
     // 🔥 Filtrar los documentos "registrados" para que solo se muestren los asignados al operador actual o los que no han sido asignados
-    if (filterStatus == "registrado") {
+    if (filterStatus == "registrado" || (filterStatus == null && filterIsPaid == null)) {
       docs = docs.where((doc) {
         final assignedTo = doc.get('assignedTo') ?? ""; // Obtener el campo 'assignedTo'
-        return assignedTo.isEmpty || assignedTo == currentUserUid;
+        if (doc.get('status').toString().toLowerCase() == 'registrado') {
+          return assignedTo.isEmpty || assignedTo == currentUserUid;
+        }
+        return true; // Permite ver los demás documentos sin restricciones
       }).toList();
     }
+
+    // 🔹 Ordenar los documentos por fechaRegistro de más reciente a más antiguo
+    docs.sort((a, b) {
+      DateTime? fechaA = _convertirTimestampADateTime(a.get('fechaRegistro'));
+      DateTime? fechaB = _convertirTimestampADateTime(b.get('fechaRegistro'));
+      return (fechaB ?? DateTime(0)).compareTo(fechaA ?? DateTime(0)); // Orden descendente
+    });
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -261,21 +296,32 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
           DataColumn(label: Text('Apellido')),
           DataColumn(label: Text('Identificación')),
           DataColumn(label: Text('Acudiente')),
-          DataColumn(label: Text('Celular Acudiente')),
+          DataColumn(label: Text('Celular')),
           DataColumn(label: Text('Pago')),
+          DataColumn(label: Text('Registro')),
         ],
         rows: docs.map((doc) {
+          final String assignedTo = doc.get('assignedTo') ?? ""; // Obtener el campo 'assignedTo'
+          final bool isAssigned = assignedTo.isNotEmpty; // Verificar si está asignado
+
           return DataRow(
             onSelectChanged: (bool? selected) async {
               if (selected != null && selected) {
                 String docId = doc.id;
 
-                // 🔹 Asignar el documento al operador actual
-                await _firebaseFirestore.collection('Ppl').doc(docId).update({
-                  'assignedTo': currentUserUid, // Guarda el UID del operador que tomó el documento
-                });
+                if (!isAssigned) {
+                  // 🔹 Mostrar el AlertDialog si el usuario NO está asignado
+                  bool confirmarAsignacion = await _mostrarDialogoConfirmacion();
+                  if (!confirmarAsignacion) return; // Si cancela, no hace nada
 
-                if(context.mounted){
+                  // 🔹 Asignar el usuario al operador actual
+                  await _firebaseFirestore.collection('Ppl').doc(docId).update({
+                    'assignedTo': currentUserUid, // Guarda el UID del operador que tomó el documento
+                  });
+                }
+
+                // 🔹 Ir a la pantalla de edición
+                if (context.mounted) {
                   Navigator.pushNamed(
                     context,
                     'editar_registro_admin',
@@ -285,18 +331,66 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
               }
             },
             cells: [
-              DataCell(Icon(Icons.circle, color: _getColor(doc.get('status')))),
-              DataCell(Text(doc.get('nombre_ppl'))),
-              DataCell(Text(doc.get('apellido_ppl'))),
-              DataCell(Text(doc.get('numero_documento_ppl').toString())),
-              DataCell(Text("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}")),
-              DataCell(Text(doc.get('celular').toString())),
-              DataCell(Icon(doc.get('isPaid') ? Icons.check_circle : Icons.cancel, color: doc.get('isPaid') ? Colors.blue : Colors.grey)),
+              DataCell(
+                Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    border: isAssigned ? Border.all(color: negro, width: 1) : null, // 🔹 Borde si está asignado
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Icon(Icons.circle, color: _getColor(doc.get('status'))),
+                ),
+              ),
+              DataCell(Text(doc.get('nombre_ppl'), style: const TextStyle(fontSize: 14))),
+              DataCell(Text(doc.get('apellido_ppl'), style: const TextStyle(fontSize: 14))),
+              DataCell(Text(doc.get('numero_documento_ppl').toString(), style: const TextStyle(fontSize: 14))),
+              DataCell(Text("${doc.get('nombre_acudiente')}\n${doc.get('apellido_acudiente')}", style: const TextStyle(fontSize: 14))),
+              DataCell(Text(doc.get('celular').toString(), style: const TextStyle(fontSize: 14))),
+              DataCell(Icon(
+                doc.get('isPaid') ? Icons.check_circle : Icons.cancel,
+                color: doc.get('isPaid') ? Colors.blue : Colors.grey,
+              )),
+              DataCell(Text(
+                _formatFecha(_convertirTimestampADateTime(doc.get('fechaRegistro'))),
+                style: const TextStyle(fontSize: 12),
+              )),
             ],
           );
         }).toList(),
       ),
     );
   }
+
+  Future<bool> _mostrarDialogoConfirmacion() async {
+    return await showDialog(
+      context: context,
+      barrierDismissible: false, // No permitir cerrar tocando fuera
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: blancoCards,
+          title: const Text("Confirmar Asignación"),
+          content: const Text("Este usuario te será asignado. ¿Desea continuar?"),
+          actions: [
+            TextButton(
+              child: const Text("Cancelar"),
+              onPressed: () => Navigator.of(context).pop(false), // Cierra sin asignar
+            ),
+            ElevatedButton(
+              child: const Text("Asignar"),
+              onPressed: () => Navigator.of(context).pop(true), // Confirma asignación
+            ),
+          ],
+        );
+      },
+    ) ?? false; // En caso de error, devuelve `false` por defecto
+  }
+
+  DateTime? _convertirTimestampADateTime(dynamic timestamp) {
+    if (timestamp == null) return null;
+    if (timestamp is Timestamp) return timestamp.toDate(); // Si es Timestamp de Firestore
+    if (timestamp is String) return DateTime.tryParse(timestamp); // Si es String ISO 8601
+    return null; // Si no es válido
+  }
+
 
 }

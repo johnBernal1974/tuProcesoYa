@@ -105,21 +105,18 @@ class _RegistroPageState extends State<RegistroPage> {
                       alignment: Alignment.topRight,
                       child: Container(
                         margin: const EdgeInsets.only(top: 8),
-                        child: Row(
+                        child: const Row(
                           mainAxisAlignment:MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("¡Información Importante!", style: TextStyle(
+                            Text("¡Información Importante!", style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 24
                             ),),
-                            Image.asset(
-                              'assets/images/logo_tu_proceso_ya.png',
-                              width: 100,
-                              height: 100,
-                            ),
+
                           ],
                         ),
                       ),
                     ),
+                    const SizedBox(height: 15),
                     RichText(
                       textAlign: TextAlign.justify,
                       text: const TextSpan(
@@ -189,12 +186,6 @@ class _RegistroPageState extends State<RegistroPage> {
                     ),
                     _buildTextFormField(controller: numeroDocumentoPplController, label: 'Número de Documento'),
                     const SizedBox(height: 15),
-                    const Divider(height: 2, color: primary),
-                    const SizedBox(height: 15),
-                    const Text("Lugar de reclusión", style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 15),
-                    //seleccionarCentroReclusion(),
-
                     _buildTextFormField(controller: tdController, label: 'TD', keyboardType: TextInputType.number),
                     _buildTextFormField(controller: nuiController, label: 'NUI', keyboardType: TextInputType.number),
                     _buildTextFormField(controller: patioController, label: 'Patio'),
@@ -323,6 +314,7 @@ class _RegistroPageState extends State<RegistroPage> {
             isNotificatedActivated: false,
             isPaid: false,
             assignedTo: "",
+            fechaRegistro: DateTime.now(),
           );
 
           print('Guardando usuario en Firestore...');

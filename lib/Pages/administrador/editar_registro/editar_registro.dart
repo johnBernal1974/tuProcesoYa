@@ -1117,14 +1117,35 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   void _initCalculoCondena() async {
     try {
-      await _calculoCondenaController.calcularTiempo(widget.doc.id);
+      final fechaCapturaRaw = widget.doc.get('fecha_captura'); // 🔹 Puede ser Timestamp o String
+      DateTime? fechaCaptura = _convertirFecha(fechaCapturaRaw); // ✅ Usa la nueva función segura
+
+      if (fechaCaptura == null) {
+        debugPrint("❌ Error: No se pudo convertir la fecha de captura");
+        return;
+      }
+
+      debugPrint("📌 Fecha de captura convertida correctamente: $fechaCaptura");
+
+      await _calculoCondenaController.calcularTiempo(widget.doc.id); // 🔥 Solo pasamos `id`
+
+
       mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
       diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
       mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
       diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
       porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0;
+
+      debugPrint("🔹 Cálculo de condena completado:");
+      debugPrint("   - Meses ejecutados: $mesesEjecutado");
+      debugPrint("   - Días ejecutados: $diasEjecutadoExactos");
+      debugPrint("   - Meses restantes: $mesesRestante");
+      debugPrint("   - Días restantes: $diasRestanteExactos");
+      debugPrint("   - Porcentaje ejecutado: $porcentajeEjecutado%");
+
+      setState(() {}); // 🔹 Forzar actualización de UI
     } catch (e) {
-      // Maneja la excepción
+      debugPrint("❌ Error en _initCalculoCondena: $e");
     }
   }
 
@@ -1134,7 +1155,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _numeroDocumentoController.text = widget.doc.get('numero_documento_ppl').toString();
     _tipoDocumento = widget.doc.get('tipo_documento_ppl') ?? "";
     _radicadoController.text = widget.doc.get('radicado') ?? "";
-    _tiempoCondenaController.text = widget.doc.get('tiempo_condena').toString();
+    _tiempoCondenaController.text = widget.doc.get('tiempo_condena')?.toString() ?? "";
+
+    // 🔍 Verifica si tiempo_condena se obtiene correctamente
+    debugPrint("📌 Tiempo de condena obtenido: ${_tiempoCondenaController.text}");
+
     _fechaDeCapturaController.text = widget.doc.get('fecha_captura') ?? "";
     _tdController.text = widget.doc.get('td') ?? "";
     _nuiController.text = widget.doc.get('nui') ?? "";
@@ -1145,6 +1170,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _celularAcudienteController.text = widget.doc.get('celular') ?? "";
     _emailAcudienteController.text = widget.doc.get('email') ?? "";
   }
+
 
   Widget datosEjecucionCondena() {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -1785,7 +1811,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   Widget historialAccionUsuario() {
     return StreamBuilder<QuerySnapshot>(
-      stream: widget.doc.reference.collection('historial_acciones').orderBy('fecha', descending: true).snapshots(),
+      stream: widget.doc.reference
+          .collection('historial_acciones')
+          .orderBy('fecha', descending: true)
+          .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -1800,9 +1829,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           children: snapshot.data!.docs.map((doc) {
             String admin = doc['admin'] ?? "Desconocido";
             String accion = doc['accion'] ?? "Ninguna";
-            String fechaString = doc['fecha'] ?? "";
-            DateTime? fecha = _parseFecha(fechaString); // Convierte String a DateTime
-            String fechaFormateada = _formatFecha(fecha); // Formatea la fecha
+            dynamic fechaRaw = doc['fecha']; // 🔥 Puede ser Timestamp o String
+
+            DateTime? fecha = _convertirFecha(fechaRaw); // ✅ Usa la nueva función
+            String fechaFormateada = _formatFecha(fecha);
 
             Color color = accion == "bloqueo" ? Colors.red : Colors.green;
             IconData icono = accion == "bloqueo" ? Icons.lock : Icons.lock_open;
@@ -1818,14 +1848,24 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  /// 📆 Convierte un String a DateTime
-  DateTime? _parseFecha(String fechaString) {
-    try {
-      return DateTime.parse(fechaString);
-    } catch (e) {
-      return null;
+
+  /// 📆 Convierte un String o Timestamp a DateTime
+  DateTime? _convertirFecha(dynamic fechaRaw) {
+    if (fechaRaw == null) return null;
+
+    if (fechaRaw is Timestamp) {
+      return fechaRaw.toDate(); // ✅ Convierte Timestamp a DateTime
+    } else if (fechaRaw is String) {
+      try {
+        return DateTime.parse(fechaRaw); // ✅ Intenta convertir String a DateTime
+      } catch (e) {
+        debugPrint("❌ Error al convertir String a DateTime: $e");
+        return null;
+      }
     }
+    return null; // ❌ Si el tipo no es compatible, retorna null
   }
+
 
   /// 📆 Función para manejar errores en la conversión de fechas
   String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {

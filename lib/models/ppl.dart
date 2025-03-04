@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 // Método para decodificar JSON a Ppl
 Ppl pplFromJson(String str) => Ppl.fromJson(json.decode(str));
 
@@ -35,6 +37,7 @@ class Ppl {
   final bool isNotificatedActivated;
   final bool isPaid;
   final String assignedTo;
+  final DateTime? fechaRegistro;
 
   // Constructor
   Ppl({
@@ -66,6 +69,7 @@ class Ppl {
     required this.isNotificatedActivated,
     required this.isPaid,
     required this.assignedTo,
+    required this.fechaRegistro,
   });
 
   // Factory para crear una instancia de Ppl desde JSON
@@ -93,11 +97,26 @@ class Ppl {
     td: json["td"] ?? '',
     nui: json["nui"] ?? '',
     patio: json["patio"] ?? '',
-    fechaCaptura: json["fecha_captura"] != null ? DateTime.parse(json["fecha_captura"]) : null,
+    fechaCaptura: json["fecha_captura"] != null
+        ? (json["fecha_captura"] is String
+        ? DateTime.tryParse(json["fecha_captura"]) // Si es String, intentar parsear
+        : (json["fecha_captura"] is Timestamp
+        ? json["fecha_captura"].toDate() // Si es Timestamp, convertir a DateTime
+        : null)) // Si no es ni String ni Timestamp, devolver null
+        : null,
+
     status: json["status"] ?? '',
     isNotificatedActivated: json["isNotificatedActivated"] ?? false,
     isPaid: json["isPaid"] ?? false,
     assignedTo: json["assignedTo"] ?? "",
+    fechaRegistro: json["fechaRegistro"] != null
+        ? (json["fechaRegistro"] is String
+        ? DateTime.tryParse(json["fechaRegistro"]) // Si es String, intentar parsear
+        : (json["fechaRegistro"] is Timestamp
+        ? json["fechaRegistro"].toDate() // Si es Timestamp, convertir a DateTime
+        : null)) // Si no es ni String ni Timestamp, devolver null
+        : null,
+
   );
 
   // Método para convertir una instancia de Ppl a JSON
@@ -130,5 +149,6 @@ class Ppl {
     "isNotificatedActivated": isNotificatedActivated,
     "isPaid": isPaid,
     "assignedTo": assignedTo,
+    "fechaRegistro": fechaRegistro,
   };
 }
