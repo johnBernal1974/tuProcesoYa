@@ -386,12 +386,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    estadoUsuarioWidget(widget.doc["status"]),
-                    const SizedBox(height: 10),
                     estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
                     const SizedBox(height: 20),
                     const Text(
-                      "Historial de Bloqueo/Desbloqueo",
+                      "Historial Acciones Administrativas",
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     const SizedBox(height: 10),
@@ -406,8 +404,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-  // 🔹 Bloquea el documento para que solo este operador pueda editarlo
-  // 🔹 Asigna el documento al operador actual para que solo él pueda verlo
+
+  // 🔹 Asigna el documento al operador actual para que solo él pueda verlo y editarlo
   Future<void> _asignarDocumento() async {
     String currentUserUid = FirebaseAuth.instance.currentUser!.uid;
 
@@ -1834,19 +1832,51 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             DateTime? fecha = _convertirFecha(fechaRaw); // ✅ Usa la nueva función
             String fechaFormateada = _formatFecha(fecha);
 
-            Color color = accion == "bloqueo" ? Colors.red : Colors.green;
-            IconData icono = accion == "bloqueo" ? Icons.lock : Icons.lock_open;
+            // 🔹 Definir color e icono según la acción
+            Color color;
+            IconData icono;
+            String textoAccion;
+
+            if (accion == "bloqueo") {
+              color = Colors.red;
+              icono = Icons.lock;
+              textoAccion = "Bloqueado por: ";
+            } else if (accion == "desbloqueo") {
+              color = Colors.blue;
+              icono = Icons.lock_open;
+              textoAccion = "Desbloqueado por: ";
+            } else if (accion == "activado") {
+              color = Colors.green;
+              icono = Icons.check_circle;
+              textoAccion = "Activado por: ";
+            } else if (accion == "actualización") {
+              color = Colors.orange;
+              icono = Icons.edit_note_outlined; // 🔹 Icono de edición para representar cambios
+              textoAccion = "Actualizado por: ";
+            } else {
+              color = Colors.grey;
+              icono = Icons.info;
+              textoAccion = "Acción realizada por: ";
+            }
+
 
             return ListTile(
               leading: Icon(icono, color: color),
-              title: Text("$accion realizado por $admin", style: const TextStyle(fontSize: 12)),
-              subtitle: Text("Fecha: $fechaFormateada", style: const TextStyle(fontSize: 12)),
+              title: Text(
+                "$textoAccion $admin",
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                "Fecha: $fechaFormateada",
+                style: const TextStyle(fontSize: 12),
+              ),
             );
           }).toList(),
         );
       },
     );
   }
+
 
 
   /// 📆 Convierte un String o Timestamp a DateTime
@@ -1886,6 +1916,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
           onPressed: () async {
+            bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
+            if (!confirmar) return; // Si el usuario cancela, no hace nada
+
             if (!_formKey.currentState!.validate()) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -1927,57 +1960,133 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
             SystemChannels.textInput.invokeMethod('TextInput.hide');
 
-            await widget.doc.reference.update({
-              'nombre_ppl': _nombreController.text,
-              'apellido_ppl': _apellidoController.text,
-              'numero_documento_ppl': _numeroDocumentoController.text,
-              'tipo_documento_ppl': _tipoDocumento,
-              'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
-              'regional': selectedRegional ?? widget.doc['regional'],
-              'ciudad': selectedCiudad ?? widget.doc['ciudad'],
-              'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
-              'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'],
-              'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
-              'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'],
-              'delito': selectedDelito ?? widget.doc['delito'],
-              'radicado': _radicadoController.text,
-              'tiempo_condena': tiempoCondena,
-              'fecha_captura': _fechaDeCapturaController.text,
-              'td': _tdController.text,
-              'nui': _nuiController.text,
-              'patio': _patioController.text,
-              'nombre_acudiente': _nombreAcudienteController.text,
-              'apellido_acudiente': _apellidosAcudienteController.text,
-              'parentesco_representante': _parentescoAcudienteController.text,
-              'celular': _celularAcudienteController.text,
-              'email': _emailAcudienteController.text,
-              'status': 'activado',
-            });
-            if(context.mounted){
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Datos guardados con éxito.'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+            try {
+              // 🔹 Obtener datos del admin actual
+              User? user = FirebaseAuth.instance.currentUser;
+              String adminName = "Desconocido";
+              String adminId = user?.uid ?? "Desconocido";
+
+              DocumentSnapshot adminDoc = await FirebaseFirestore.instance.collection('admin').doc(adminId).get();
+              if (adminDoc.exists) {
+                adminName = "${adminDoc['name']} ${adminDoc['apellidos']}";
+              }
+
+              // 🔥 Verificar si ya existe una acción de activado en el historial
+              QuerySnapshot historialSnapshot = await widget.doc.reference
+                  .collection('historial_acciones')
+                  .where('accion', isEqualTo: 'activado')
+                  .limit(1)
+                  .get();
+
+              bool yaActivado = historialSnapshot.docs.isNotEmpty;
+
+              // 🔹 Actualizar el documento
+              await widget.doc.reference.update({
+                'nombre_ppl': _nombreController.text,
+                'apellido_ppl': _apellidoController.text,
+                'numero_documento_ppl': _numeroDocumentoController.text,
+                'tipo_documento_ppl': _tipoDocumento,
+                'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
+                'regional': selectedRegional ?? widget.doc['regional'],
+                'ciudad': selectedCiudad ?? widget.doc['ciudad'],
+                'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
+                'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'],
+                'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
+                'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'],
+                'delito': selectedDelito ?? widget.doc['delito'],
+                'radicado': _radicadoController.text,
+                'tiempo_condena': tiempoCondena,
+                'fecha_captura': _fechaDeCapturaController.text,
+                'td': _tdController.text,
+                'nui': _nuiController.text,
+                'patio': _patioController.text,
+                'nombre_acudiente': _nombreAcudienteController.text,
+                'apellido_acudiente': _apellidosAcudienteController.text,
+                'parentesco_representante': _parentescoAcudienteController.text,
+                'celular': _celularAcudienteController.text,
+                'email': _emailAcudienteController.text,
+                'status': 'activado',
+              });
+
+              // 🔥 Registrar en el historial solo si es la primera activación
+              if (!yaActivado) {
+                await widget.doc.reference.collection('historial_acciones').add({
+                  'admin': adminName,
+                  'accion': 'activado',
+                  'fecha': DateTime.now().toString(),
+                });
+              } else {
+                // 🔥 Si ya fue activado antes, registrar como actualización
+                await widget.doc.reference.collection('historial_acciones').add({
+                  'admin': adminName,
+                  'accion': 'actualización',
+                  'fecha': DateTime.now().toString(),
+                });
+              }
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Datos guardados con éxito.'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              }
+
+              // 🔹 Redireccionar después de guardar
+              Future.delayed(const Duration(seconds: 1), () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
+                );
+              });
+
+              validarYEnviarMensaje();
+            } catch (error) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error al guardar: $error'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
-
-            // 🔥 REDIRECCIÓN A HomeAdministradorPage DESPUÉS DE GUARDAR
-            Future.delayed(const Duration(seconds: 1), () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
-              );
-            });
-
-            validarYEnviarMensaje();
           },
-
           child: const Text('Guardar Cambios'),
         ),
       ),
     );
   }
+
+  /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
+  Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {
+    return await showDialog(
+      context: context,
+      barrierDismissible: false, // No permitir cerrar tocando fuera
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: blancoCards,
+          title: const Text("Confirmación"),
+          content: const Text("¿Está seguro de que desea guardar los cambios?"),
+          actions: [
+            TextButton(
+              child: const Text("Cancelar"),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            ElevatedButton(
+              child: const Text("Guardar"),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    ) ?? false; // En caso de error, devuelve `false` por defecto
+  }
+
+
+
 
   Widget tipoDocumentoPpl(){
     return DropdownButtonFormField(
@@ -2140,32 +2249,44 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   Widget estadoNotificacionWidget(bool isNotificatedActivated) {
     Color color = isNotificatedActivated ? Colors.green : Colors.red;
-    IconData icono = isNotificatedActivated ? Icons.check_circle : Icons.error;
+    IconData icono = isNotificatedActivated ? Icons.notifications_active_outlined : Icons.error;
     String mensaje = isNotificatedActivated
         ? "Ya se notificó al usuario de la activación de la cuenta"
         : "El usuario aún no ha sido notificado de la activación";
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 0.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icono, color: color, size: 20),
-          const SizedBox(width: 8), // Espacio entre icono y texto
-          Expanded( // Permite que el texto se ajuste dentro del espacio disponible
-            child: Text(
-              mensaje,
-              style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-              overflow: TextOverflow.ellipsis, // Evita desbordamientos
-              maxLines: 1, // Mantiene el texto en una sola línea
-              softWrap: false, // Evita saltos de línea
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey, width: 1), // 🔹 Borde gris de 1px
+      ),
+      padding: const EdgeInsets.all(10), // 🔹 Padding de 10px alrededor
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 0.0),
+        child: Column(
+          children: [
+            estadoUsuarioWidget(widget.doc["status"]),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icono, color: color, size: 20),
+                const SizedBox(width: 8), // Espacio entre icono y texto
+                Expanded( // Permite que el texto se ajuste dentro del espacio disponible
+                  child: Text(
+                    mensaje,
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis, // Evita desbordamientos
+                    maxLines: 1, // Mantiene el texto en una sola línea
+                    softWrap: false, // Evita saltos de línea
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
