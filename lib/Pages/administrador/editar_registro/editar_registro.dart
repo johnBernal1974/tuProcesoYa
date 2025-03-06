@@ -167,53 +167,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  // Future<void> _fetchJuzgadoCondenoPorCiudad() async {
-  //   try {
-  //     // Obtener la colección 'juzgado_condeno'
-  //     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-  //         .collection('juzgado_condeno')
-  //         .get();
-  //
-  //     // Crear una lista para almacenar las "regionales" y sus "juzgados"
-  //     List<Map<String, dynamic>> fetchedJuzgadoCondeno = [];
-  //
-  //     // Iterar sobre los documentos de la colección 'juzgado_condeno'
-  //     for (var doc in querySnapshot.docs) {
-  //       // Obtener el nombre de la "regional" desde el campo 'name'
-  //       String juzgadoCondenoName = doc['name'] ?? 'Nombre no disponible';
-  //
-  //       // Acceder a la subcolección 'juzgados'
-  //       QuerySnapshot juzgadosSnapshot = await doc.reference
-  //           .collection('juzgados')
-  //           .get();
-  //       // Crear una lista con los juzgados usando el campo 'nombre' de cada documento
-  //       List<String> juzgados = juzgadosSnapshot.docs.map<String>((centerDoc) {
-  //         // Devuelve el campo 'nombre' convertido a String o, si es null, el id convertido a String
-  //         return (centerDoc['nombre'] ?? centerDoc.id).toString();
-  //       }).toList();
-  //
-  //
-  //       // Armar el mapa con la información de la "regional" y sus "juzgados"
-  //       Map<String, dynamic> regionalData = {
-  //         'id': doc.id,                 // ID del documento de la "regional"
-  //         'nombre': juzgadoCondenoName,   // Nombre obtenido
-  //         'juzgados': juzgados,           // Lista de nombres de los juzgados
-  //       };
-  //       // Agregar la información a la lista final
-  //       fetchedJuzgadoCondeno.add(regionalData);
-  //     }
-  //
-  //     // Actualizar el estado con las regionales y sus juzgados
-  //     setState(() {
-  //       juzgadoQueCondeno = fetchedJuzgadoCondeno;
-  //     });
-  //   } catch (e) {
-  //     if (kDebugMode) {
-  //       print('Error al cargar las ciudades: $e');
-  //     }
-  //   }
-  // }
-
   Future<void> _fetchTodosJuzgadosConocimiento() async {
     if (juzgadosConocimiento.isNotEmpty) return; // Si ya se cargaron, no volver a hacer la petición
 
@@ -410,13 +363,72 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     String currentUserUid = FirebaseAuth.instance.currentUser!.uid;
 
     try {
-      await widget.doc.reference.update({'assignedTo': currentUserUid});
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al asignar el documento: $e");
+      // 🔹 Obtener datos del usuario desde Firestore
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance.collection('admin').doc(currentUserUid).get();
+
+      if (!userDoc.exists || userDoc.data() == null) {
+        print("❌ No se encontró información del usuario en Firestore.");
+        return;
       }
+
+      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+      String nombreAdmin = userData['name'] ?? "Desconocido";
+      String apellidoAdmin = userData['apellidos'] ?? "Desconocido";
+      String nombreCompleto = "$nombreAdmin $apellidoAdmin";
+      String userRole = userData['rol']?.toLowerCase() ?? "";
+
+      // 🔥 Validar si el usuario tiene permiso para asignar documentos
+      List<String> rolesPermitidos = ["operador 1", "operador 2", "operador 3"];
+      if (!rolesPermitidos.contains(userRole)) {
+        print("🚫 El usuario $nombreCompleto con rol '$userRole' no tiene permisos para asignar documentos.");
+        return;
+      }
+      print("✅ Usuario $nombreCompleto tiene permisos para asignar documentos.");
+
+      // 🔍 Verificar el estado del documento antes de asignarlo
+      DocumentSnapshot documentoSnapshot = widget.doc;
+      if (!documentoSnapshot.exists || documentoSnapshot.data() == null) {
+        print("❌ No se encontró el documento.");
+        return;
+      }
+
+      Map<String, dynamic> documentoData = documentoSnapshot.data() as Map<String, dynamic>;
+      String statusDocumento = documentoData['status']?.toLowerCase() ?? "";
+
+      if (statusDocumento != "registrado") {
+        print("🚫 El documento no está en estado 'registrado'. No se realizará la asignación.");
+        return;
+      }
+
+      // 🔍 Verificar si el documento ya ha sido asignado antes
+      QuerySnapshot historialSnapshot = await widget.doc.reference
+          .collection('historial_acciones')
+          .where('accion', isEqualTo: 'asignación')
+          .where('admin', isEqualTo: nombreCompleto) // Verificamos si este usuario ya asignó
+          .limit(1)
+          .get();
+
+      if (historialSnapshot.docs.isNotEmpty) {
+        print("🔄 El documento ya fue asignado previamente por $nombreCompleto. No se guardará otra asignación.");
+        return;
+      }
+
+      // 🔹 Guardar asignación en historial con el nombre completo
+      await widget.doc.reference.collection('historial_acciones').add({
+        'accion': 'asignación',
+        'asignado_a': nombreCompleto, // 🔹 También en "asignado_a"
+        'fecha': DateTime.now().toString(),
+      });
+
+      print("✅ Documento asignado a $nombreCompleto correctamente.");
+    } catch (e) {
+      print("❌ Error al asignar el documento: $e");
     }
   }
+
+
+
+
 
 
 // 🔹 Libera el documento cuando se cierra la pantalla- temporalmente desactivado
@@ -896,26 +908,32 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   alignment: Alignment.topLeft,
                   child: Material(
                     elevation: 4.0,
-                    child: ListView.builder(
-                      padding: EdgeInsets.zero,
-                      shrinkWrap: true,
-                      itemCount: options.length,
-                      itemBuilder: (context, index) {
-                        final Map<String, String> option = options.elementAt(index);
-                        return ListTile(
-                          title: Text(option['nombre']!),
-                          subtitle: Text("Ciudad: ${option['ciudad']!}"),
-                          onTap: () {
-                            onSelected(option);
-                            setState(() {
-                              selectedJuzgadoNombre = option['nombre'];
-                              selectedCiudad = option['ciudad'];
-                              selectedJuzgadoConocimientoEmail = option['correo'];
-                            });
-                            debugPrint("📌 Juzgado seleccionado: ${option['nombre']}");
-                          },
-                        );
-                      },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200], // 🔹 Cambia este color según lo que necesites
+                        borderRadius: BorderRadius.circular(10), // Opcional: Bordes redondeados
+                      ),
+                      child: ListView.builder(
+                        padding: EdgeInsets.zero,
+                        shrinkWrap: true,
+                        itemCount: options.length,
+                        itemBuilder: (context, index) {
+                          final Map<String, String> option = options.elementAt(index);
+                          return ListTile(
+                            title: Text(option['nombre']!),
+                            subtitle: Text("Ciudad: ${option['ciudad']!}"),
+                            onTap: () {
+                              onSelected(option);
+                              setState(() {
+                                selectedJuzgadoNombre = option['nombre'];
+                                selectedCiudad = option['ciudad'];
+                                selectedJuzgadoConocimientoEmail = option['correo'];
+                              });
+                              debugPrint("📌 Juzgado seleccionado: ${option['nombre']}");
+                            },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 );
@@ -1825,14 +1843,19 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: snapshot.data!.docs.map((doc) {
-            String admin = doc['admin'] ?? "Desconocido";
-            String accion = doc['accion'] ?? "Ninguna";
-            dynamic fechaRaw = doc['fecha']; // 🔥 Puede ser Timestamp o String
+            Map<String, dynamic> docData = doc.data() as Map<String, dynamic>;
 
-            DateTime? fecha = _convertirFecha(fechaRaw); // ✅ Usa la nueva función
+            String admin = docData['admin'] ?? "Desconocido";
+            String accion = docData['accion'] ?? "Ninguna";
+
+            // ✅ Safe null check for 'assignedTo'
+            String? assignedTo = docData.containsKey('assignedTo') ? docData['assignedTo'] : null;
+
+            dynamic fechaRaw = docData['fecha']; // 🔥 Puede ser Timestamp o String
+            DateTime? fecha = _convertirFecha(fechaRaw);
             String fechaFormateada = _formatFecha(fecha);
 
-            // 🔹 Definir color e icono según la acción
+            // 🔹 Define color and icon based on action
             Color color;
             IconData icono;
             String textoAccion;
@@ -1851,19 +1874,24 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               textoAccion = "Activado por: ";
             } else if (accion == "actualización") {
               color = Colors.orange;
-              icono = Icons.edit_note_outlined; // 🔹 Icono de edición para representar cambios
+              icono = Icons.edit_note_outlined;
               textoAccion = "Actualizado por: ";
+            } else if (accion == "asignación") {
+              color = Colors.purple;
+              icono = Icons.assignment_ind;
+              textoAccion = "Asignado a: ";
             } else {
               color = Colors.grey;
               icono = Icons.info;
               textoAccion = "Acción realizada por: ";
             }
 
-
             return ListTile(
               leading: Icon(icono, color: color),
               title: Text(
-                "$textoAccion $admin",
+                (accion == "asignación" && assignedTo != null)
+                    ? "$textoAccion $assignedTo" // ✅ Uses `assignedTo`
+                    : "$textoAccion $admin",
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
@@ -1876,6 +1904,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
+
+
 
 
 

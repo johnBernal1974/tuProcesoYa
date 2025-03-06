@@ -1,0 +1,39 @@
+[33m28b2206[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m creacion nueva pagina solicitudes derecho peticion general configuracion inicial
+[33mc74ecd5[m Asigancion de la nueva pagina de admim general en el menu lateral
+[33m6c6250c[m Pagina de home-admin para master y demas configurada
+[33m3c7df4a[m Inclusion de activo en historial de acciones de editar registro
+[33ma0600d7[m Pagina home admin, completo filtrado de registros y asignacion a operadores, Diferenciamiento de Regsitrados asignados y sin asignar. Pendiente guardado en bd el nombre del admin que activó
+[33m6c097d7[m Primer fase se asigna al operador el registrado al cual le de click. Solo filtra los Registrados asignados y los que aun no estan asignados. Falta colocar el conteo de la suma de asignados y no asignados y diferenciar ambos documentos. Falta actualizar el admin que activo y la fecha del mismo
+[33mec1f860[m Se crean los botones de bloquear y desbloquear de los usuarios, se crea historial de esas acciones, se configura por rol de admin quin puede o no desbloquear un usuario
+[33md4332db[m Incluision de tarjetas de conteo de Ispayed, mejora en interfaz de home admin
+[33m5d09ebf[m Editar registro ok.  Al guardar datos emvia al homeAdmin
+[33m1454294[m Se retiro centro de reclucion del registro, se corrigió snackbar en boton guardar si faltan datos en el formulario, tanto de register como en editar register del amin
+[33m60facc4[m Asignacion Solicitudes pasante 1, configuracion interfaz mobil solicitudes de derechos de peticion
+[33m3041760[m Filtrado de cantidad de Diligenciados en pasante 1
+[33mb7d8dca[m Primera fase de los filtros de la pagina de solicitudes de derechos de peticion, donde cada pasante 1 al dar click en un documento se le es asignado, los demas ya no lo podran ver ni seleccionar. Siguiente fase perndiente - quitar el filtro a los demas roles
+[33ma544e8b[m Configuracion de los roles en el menu, en la pagina de soliitudes derecho peticion y en atender derecho de peticion
+[33m96ca277[m Mejora en el formulario de registro, se introduce el datepicker y se cambia la manera de buscar los centros de reclusion en el register
+[33me5ca03d[m[33m ([m[1;32mpagosUser[m[33m)[m añadido nuevo icono de aplicacion, inclusion boton de cerrar sesion en pagina de estamos validando
+[33m88a4d9d[m Se configura la variable para validar el pago de la suscripcion, se crea funcionalidad para adjuntar el pantallazo del correo enviado en derecho de peticion.
+[33m0855a18[m commit basico
+[33m56209c0[m Correccion en padina solicitudes_derechos_peticion (preguntas y respuestas)
+[33m51b7e39[m Inclusion de filtrado de las solicitudes de derecho de peticion del admin, quedo al 100$, se creo la pagina de registro de operadores 100%, se creo la pagina de control de operadores
+[33m9f6b86b[m Envio de correos con archivos adjuntos ( solo un archivo) pendiente el envio de varios archivos
+[33mca547a4[m Inclusion de marcas de status de derecho de peticion admin y adicion de admin que diligencia y revisa
+[33mea22ae4[m Finalizacion pagina atender derecho peticion- Cracion de pagina de derechos peticion enviados por correo al 100%
+[33m570ee6e[m Mejora en el envio de solicitud de derecho de peticion, inclusion del status en cada solicitud de derecho de peticion en el admin
+[33mc2c9082[m basico
+[33m7a42dbd[m comiit basico
+[33mfd38419[m Configuracion full vista previa documento atender derecho
+[33m0ca1c24[m adicion de preguntas y respuestas en el atender derecho peticion - mejora en la solicitud de derecho peticion
+[33mfd0b8ea[m Mejoras en el menu para que no parpadee, ingreso de instrucciones por categoria y subcategoria, ingreso y configuracion de documentos adjuntos, para ser vistos desde el amin
+[33m573e5ae[m Respuesta a sugerencias por parte del administracion 100%
+[33m1f1c8ae[m Terminacion buzon sugerencias del administrador
+[33mbd88cab[m[33m ([m[1;32mpaginaServicios[m[33m)[m Inclusion de buzon e sugerencias, mejora en pagina de servicios
+[33m84b58ad[m commit basico
+[33m30325bb[m[33m ([m[1;32mmejoraeditRegister[m[33m)[m Inclusion de cajones de informacion de totales de usuarios, cajon de busqueda en pagina de home del administrador
+[33m2645589[m commit basico
+[33mc73f141[m Ajuste primer drop, regionales y dentros de reclusion
+[33m4afe771[m editar registro al 90%, mejora error datos nulos
+[33m3c0c0e5[m pagina de edicion admin al 50%
+[33mc1a3a32[m primer commit

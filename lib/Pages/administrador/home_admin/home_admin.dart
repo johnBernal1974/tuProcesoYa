@@ -332,15 +332,37 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
             },
             cells: [
               DataCell(
-                Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    border: isAssigned ? Border.all(color: negro, width: 1) : null, // 🔹 Borde si está asignado
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: Icon(Icons.circle, color: _getColor(doc.get('status'))),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Icon(Icons.circle, color: _getColor(doc.get('status'))),
+                    ),
+                    if (isAssigned && doc.get('status').toString().toLowerCase() == "registrado") ...[ // 🔹 Verifica si el documento está asignado y en estado "registrado"
+                      const SizedBox(width: 8), // Espaciado entre el círculo y el rectángulo
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green, // Fondo verde
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          "Asignado",
+                          style: TextStyle(
+                            color: Colors.white, // Texto blanco
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
+
               DataCell(Text(doc.get('nombre_ppl'), style: const TextStyle(fontSize: 14))),
               DataCell(Text(doc.get('apellido_ppl'), style: const TextStyle(fontSize: 14))),
               DataCell(Text(doc.get('numero_documento_ppl').toString(), style: const TextStyle(fontSize: 14))),
