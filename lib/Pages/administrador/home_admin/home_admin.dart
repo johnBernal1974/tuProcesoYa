@@ -49,133 +49,131 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
           child: Container(
             width: MediaQuery.of(context).size.width >= 1000 ? 1500 : double.infinity,
             padding: const EdgeInsets.all(10),
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firebaseFirestore.collection('Ppl').snapshots(),
+            child: FutureBuilder<DocumentSnapshot>(
+              future: _firebaseFirestore.collection('admin').doc(FirebaseAuth.instance.currentUser?.uid ?? "").get(),
               builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final docs = snapshot.data!.docs;
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-                  final int countSuscritos = docs.where((doc) => doc.get('isPaid') == true).length;
-                  final int countNoSuscritos = docs.where((doc) => doc.get('isPaid') == false).length;
-                  String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
-                  final int countRegistrado = docs.where((doc) {
-                    final assignedTo = doc.get('assignedTo') ?? "";
-                    return doc.get('status').toString().toLowerCase() == 'registrado' &&
-                        (assignedTo.isEmpty || assignedTo == currentUserUid);
-                  }).length;
+                // 🔥 Obtener el rol del usuario actual
+                String userRole = snapshot.data!.exists && snapshot.data!.data() != null
+                    ? snapshot.data!.get('rol').toString().toLowerCase()
+                    : "";
+                List<String> rolesOperadores = ["operador 1", "operador 2", "operador 3"];
+                bool esOperador = rolesOperadores.contains(userRole);
+                String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
 
+                return StreamBuilder<QuerySnapshot>(
+                  stream: _firebaseFirestore.collection('Ppl').snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      final docs = snapshot.data!.docs;
 
-                  final int countActivado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'activado').length;
-                  final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
-                  final int countTotal = docs.where((doc) {
-                    final assignedTo = doc.get('assignedTo') ?? "";
-                    final status = doc.get('status').toString().toLowerCase();
+                      final int countRegistrado = docs.where((doc) {
+                        final assignedTo = doc.get('assignedTo') ?? "";
+                        final status = doc.get('status').toString().toLowerCase();
 
-                    // 🔹 Si es "registrado", solo contar si está sin asignar o asignado al operador actual
-                    if (status == 'registrado') {
-                      return assignedTo.isEmpty || assignedTo == currentUserUid;
-                    }
+                        if (status == 'registrado') {
+                          return esOperador ? (assignedTo.isEmpty || assignedTo == currentUserUid) : true;
+                        }
+                        return false;
+                      }).length;
 
-                    // 🔹 Si es otro estado (activado, bloqueado, etc.), incluirlo en el conteo
-                    return true;
-                  }).length;
+                      final int countActivado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'activado').length;
+                      final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
+                      final int countTotal = docs.where((doc) {
+                        final status = doc.get('status').toString().toLowerCase();
+                        if (esOperador) {
+                          final assignedTo = doc.get('assignedTo') ?? "";
+                          if (status == 'registrado') {
+                            return assignedTo.isEmpty || assignedTo == currentUserUid;
+                          }
+                        }
+                        return true; // Si no es operador, cuenta TODOS los documentos sin filtrar
+                      }).length;
 
+                      // 🔹 Aplicar filtros
+                      List<QueryDocumentSnapshot> filteredDocs = docs;
 
-                  // 🔹 Aplicar filtros desde el inicio
-                  List<QueryDocumentSnapshot> filteredDocs = docs;
+                      if (filterStatus != null) {
+                        filteredDocs = filteredDocs.where((doc) => doc.get('status').toString().toLowerCase() == filterStatus!.toLowerCase()).toList();
+                      }
+                      if (filterIsPaid != null) {
+                        filteredDocs = filteredDocs.where((doc) => doc.get('isPaid') == filterIsPaid).toList();
+                      }
+                      if (searchQuery.trim().isNotEmpty) {
+                        final query = searchQuery.toLowerCase();
+                        filteredDocs = filteredDocs.where((doc) {
+                          final nombre = doc.get('nombre_ppl').toString().toLowerCase();
+                          final apellido = doc.get('apellido_ppl').toString().toLowerCase();
+                          final identificacion = doc.get('numero_documento_ppl').toString().toLowerCase();
+                          final acudiente = ("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}").toLowerCase();
+                          final celularAcudiente = doc.get('celular').toString().toLowerCase();
+                          return nombre.contains(query) || apellido.contains(query) || identificacion.contains(query) || acudiente.contains(query) || celularAcudiente.contains(query);
+                        }).toList();
+                      }
 
-                  // 🔹 Aplicar filtros normales (status, pago y búsqueda)
-                  if (filterStatus != null) {
-                    filteredDocs = filteredDocs.where((doc) => doc.get('status').toString().toLowerCase() == filterStatus!.toLowerCase()).toList();
-                  }
-                  if (filterIsPaid != null) {
-                    filteredDocs = filteredDocs.where((doc) => doc.get('isPaid') == filterIsPaid).toList();
-                  }
-                  if (searchQuery.trim().isNotEmpty) {
-                    final query = searchQuery.toLowerCase();
-                    filteredDocs = filteredDocs.where((doc) {
-                      final nombre = doc.get('nombre_ppl').toString().toLowerCase();
-                      final apellido = doc.get('apellido_ppl').toString().toLowerCase();
-                      final identificacion = doc.get('numero_documento_ppl').toString().toLowerCase();
-                      final acudiente = ("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}").toLowerCase();
-                      final celularAcudiente = doc.get('celular').toString().toLowerCase();
-                      return nombre.contains(query) || apellido.contains(query) || identificacion.contains(query) || acudiente.contains(query) || celularAcudiente.contains(query);
-                    }).toList();
-                  }
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Wrap(
-                        alignment: WrapAlignment.spaceEvenly,
-                        spacing: 20,
-                        runSpacing: 20,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          _buildStatCard("Registrados", countRegistrado, primary, () {
-                            setState(() {
-                              filterStatus = "registrado";
-                              filterIsPaid = null;
-                            });
-                          }, isSelected: filterStatus == "registrado"),
+                          Wrap(
+                            alignment: WrapAlignment.spaceEvenly,
+                            spacing: 20,
+                            runSpacing: 20,
+                            children: [
+                              _buildStatCard("Registrados", countRegistrado, primary, () {
+                                setState(() {
+                                  filterStatus = "registrado";
+                                  filterIsPaid = null;
+                                });
+                              }, isSelected: filterStatus == "registrado"),
 
-                          _buildStatCard("Usuarios Activados", countActivado, Colors.green, () {
-                            setState(() {
-                              filterStatus = "activado";
-                              filterIsPaid = null;
-                            });
-                          }, isSelected: filterStatus == "activado"),
+                              _buildStatCard("Usuarios Activados", countActivado, Colors.green, () {
+                                setState(() {
+                                  filterStatus = "activado";
+                                  filterIsPaid = null;
+                                });
+                              }, isSelected: filterStatus == "activado"),
 
-                          // _buildStatCard("Suscritos", countSuscritos, Colors.blueAccent, () {
-                          //   setState(() {
-                          //     filterIsPaid = true;
-                          //     filterStatus = null;
-                          //   });
-                          // }, isSelected: filterIsPaid == true),
-                          //
-                          // _buildStatCard("Sin Suscribir", countNoSuscritos, Colors.grey, () {
-                          //   setState(() {
-                          //     filterIsPaid = false;
-                          //     filterStatus = null;
-                          //   });
-                          // }, isSelected: filterIsPaid == false),
+                              _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
+                                setState(() {
+                                  filterStatus = "bloqueado";
+                                  filterIsPaid = null;
+                                });
+                              }, isSelected: filterStatus == "bloqueado"),
 
-                          _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
-                            setState(() {
-                              filterStatus = "bloqueado";
-                              filterIsPaid = null;
-                            });
-                          }, isSelected: filterStatus == "bloqueado"),
-
-                          _buildStatCard("Total Usuarios", countTotal, Colors.amber, () {
-                            setState(() {
-                              filterStatus = null;
-                              filterIsPaid = null;
-                            });
-                          }, isSelected: filterStatus == null && filterIsPaid == null),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      _buildSearchField(),
-                      const SizedBox(height: 20),
-                      const Divider(height: 2, color: Colors.grey),
-                      const SizedBox(height: 10),
-
-                      if (filteredDocs.isEmpty)
-                        const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(16.0),
-                            child: Text(
-                              "No hay documentos disponibles.",
-                              style: TextStyle(fontSize: 16, color: Colors.grey),
-                            ),
+                              _buildStatCard("Total Usuarios", countTotal, Colors.amber, () {
+                                setState(() {
+                                  filterStatus = null;
+                                  filterIsPaid = null;
+                                });
+                              }, isSelected: filterStatus == null && filterIsPaid == null),
+                            ],
                           ),
-                        )
-                      else
-                        _buildUserTable(filteredDocs),
-                    ],
-                  );
-                } else {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                          const SizedBox(height: 20),
+                          _buildSearchField(),
+                          const SizedBox(height: 20),
+                          const Divider(height: 2, color: Colors.grey),
+                          const SizedBox(height: 10),
+
+                          if (filteredDocs.isEmpty)
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Text(
+                                  "No hay documentos disponibles.",
+                                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                                ),
+                              ),
+                            )
+                          else
+                            _buildUserTable(filteredDocs),
+                        ],
+                      );
+                    } else {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                  },
+                );
               },
             ),
           ),
@@ -183,6 +181,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
+
 
   /// 📆 Función para manejar errores en la conversión de fechas
   String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
@@ -265,121 +264,130 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   }
 
   Widget _buildUserTable(List<QueryDocumentSnapshot> docs) {
-    // 🔹 Obtener el UID del operador actual
     String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
 
-    // 🔥 Filtrar los documentos "registrados" para que solo se muestren los asignados al operador actual o los que no han sido asignados
-    if (filterStatus == "registrado" || (filterStatus == null && filterIsPaid == null)) {
-      docs = docs.where((doc) {
-        final assignedTo = doc.get('assignedTo') ?? ""; // Obtener el campo 'assignedTo'
-        if (doc.get('status').toString().toLowerCase() == 'registrado') {
-          return assignedTo.isEmpty || assignedTo == currentUserUid;
+    return FutureBuilder<String>(
+      future: _obtenerRolActual(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator()); // Muestra un loader mientras se obtiene el rol
         }
-        return true; // Permite ver los demás documentos sin restricciones
-      }).toList();
-    }
 
-    // 🔹 Ordenar los documentos por fechaRegistro de más reciente a más antiguo
-    docs.sort((a, b) {
-      DateTime? fechaA = _convertirTimestampADateTime(a.get('fechaRegistro'));
-      DateTime? fechaB = _convertirTimestampADateTime(b.get('fechaRegistro'));
-      return (fechaB ?? DateTime(0)).compareTo(fechaA ?? DateTime(0)); // Orden descendente
-    });
+        String userRole = snapshot.data!;
+        List<String> rolesConFiltro = ["operador 1", "operador 2", "operador 3"];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: DataTable(
-        showCheckboxColumn: false,
-        columns: const [
-          DataColumn(label: Text('Estado')),
-          DataColumn(label: Text('Nombre')),
-          DataColumn(label: Text('Apellido')),
-          DataColumn(label: Text('Identificación')),
-          DataColumn(label: Text('Acudiente')),
-          DataColumn(label: Text('Celular')),
-          DataColumn(label: Text('Pago')),
-          DataColumn(label: Text('Registro')),
-        ],
-        rows: docs.map((doc) {
-          final String assignedTo = doc.get('assignedTo') ?? ""; // Obtener el campo 'assignedTo'
-          final bool isAssigned = assignedTo.isNotEmpty; // Verificar si está asignado
+        // 🔥 Aplicar filtros solo si el usuario es operador 1, 2 o 3
+        if (rolesConFiltro.contains(userRole)) {
+          docs = docs.where((doc) {
+            final assignedTo = doc.get('assignedTo') ?? "";
+            if (doc.get('status').toString().toLowerCase() == 'registrado') {
+              return assignedTo.isEmpty || assignedTo == currentUserUid;
+            }
+            return true;
+          }).toList();
+        }
 
-          return DataRow(
-            onSelectChanged: (bool? selected) async {
-              if (selected != null && selected) {
-                String docId = doc.id;
+        // 🔹 Ordenar los documentos por fechaRegistro de más reciente a más antiguo
+        docs.sort((a, b) {
+          DateTime? fechaA = _convertirTimestampADateTime(a.get('fechaRegistro'));
+          DateTime? fechaB = _convertirTimestampADateTime(b.get('fechaRegistro'));
+          return (fechaB ?? DateTime(0)).compareTo(fechaA ?? DateTime(0));
+        });
 
-                if (!isAssigned) {
-                  // 🔹 Mostrar el AlertDialog si el usuario NO está asignado
-                  bool confirmarAsignacion = await _mostrarDialogoConfirmacion();
-                  if (!confirmarAsignacion) return; // Si cancela, no hace nada
-
-                  // 🔹 Asignar el usuario al operador actual
-                  await _firebaseFirestore.collection('Ppl').doc(docId).update({
-                    'assignedTo': currentUserUid, // Guarda el UID del operador que tomó el documento
-                  });
-                }
-
-                // 🔹 Ir a la pantalla de edición
-                if (context.mounted) {
-                  Navigator.pushNamed(
-                    context,
-                    'editar_registro_admin',
-                    arguments: doc,
-                  );
-                }
-              }
-            },
-            cells: [
-              DataCell(
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(5),
-                      ),
-                      child: Icon(Icons.circle, color: _getColor(doc.get('status'))),
-                    ),
-                    if (isAssigned && doc.get('status').toString().toLowerCase() == "registrado") ...[ // 🔹 Verifica si el documento está asignado y en estado "registrado"
-                      const SizedBox(width: 8), // Espaciado entre el círculo y el rectángulo
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.green, // Fondo verde
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Text(
-                          "Asignado",
-                          style: TextStyle(
-                            color: Colors.white, // Texto blanco
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-
-              DataCell(Text(doc.get('nombre_ppl'), style: const TextStyle(fontSize: 14))),
-              DataCell(Text(doc.get('apellido_ppl'), style: const TextStyle(fontSize: 14))),
-              DataCell(Text(doc.get('numero_documento_ppl').toString(), style: const TextStyle(fontSize: 14))),
-              DataCell(Text("${doc.get('nombre_acudiente')}\n${doc.get('apellido_acudiente')}", style: const TextStyle(fontSize: 14))),
-              DataCell(Text(doc.get('celular').toString(), style: const TextStyle(fontSize: 14))),
-              DataCell(Icon(
-                doc.get('isPaid') ? Icons.check_circle : Icons.cancel,
-                color: doc.get('isPaid') ? Colors.blue : Colors.grey,
-              )),
-              DataCell(Text(
-                _formatFecha(_convertirTimestampADateTime(doc.get('fechaRegistro'))),
-                style: const TextStyle(fontSize: 12),
-              )),
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: DataTable(
+            showCheckboxColumn: false,
+            columns: const [
+              DataColumn(label: Text('Estado')),
+              DataColumn(label: Text('Nombre')),
+              DataColumn(label: Text('Apellido')),
+              DataColumn(label: Text('Identificación')),
+              DataColumn(label: Text('Acudiente')),
+              DataColumn(label: Text('Celular')),
+              DataColumn(label: Text('Pago')),
+              DataColumn(label: Text('Registro')),
             ],
-          );
-        }).toList(),
-      ),
+            rows: docs.map((doc) {
+              final String assignedTo = doc.get('assignedTo') ?? "";
+              final bool isAssigned = assignedTo.isNotEmpty;
+
+              return DataRow(
+                onSelectChanged: (bool? selected) async {
+                  if (selected != null && selected) {
+                    String docId = doc.id;
+
+                    if (!isAssigned) {
+                      bool confirmarAsignacion = await _mostrarDialogoConfirmacion();
+                      if (!confirmarAsignacion) return;
+
+                      await _firebaseFirestore.collection('Ppl').doc(docId).update({
+                        'assignedTo': currentUserUid,
+                      });
+                    }
+
+                    if (context.mounted) {
+                      Navigator.pushNamed(
+                        context,
+                        'editar_registro_admin',
+                        arguments: doc,
+                      );
+                    }
+                  }
+                },
+                cells: [
+                  DataCell(
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Icon(Icons.circle, color: _getColor(doc.get('status'))),
+                        ),
+                        const SizedBox(width: 8), // Espaciado entre el círculo y la etiqueta
+
+                        if (doc.get('status').toString().toLowerCase() == "registrado") ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isAssigned ? primary : Colors.red, // Verde si está asignado, rojo si no
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              isAssigned ? "Asignado" : "No asignado", // Texto según estado
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+
+                  DataCell(Text(doc.get('nombre_ppl'), style: const TextStyle(fontSize: 14))),
+                  DataCell(Text(doc.get('apellido_ppl'), style: const TextStyle(fontSize: 14))),
+                  DataCell(Text(doc.get('numero_documento_ppl').toString(), style: const TextStyle(fontSize: 14))),
+                  DataCell(Text("${doc.get('nombre_acudiente')}\n${doc.get('apellido_acudiente')}", style: const TextStyle(fontSize: 14))),
+                  DataCell(Text(doc.get('celular').toString(), style: const TextStyle(fontSize: 14))),
+                  DataCell(Icon(
+                    doc.get('isPaid') ? Icons.check_circle : Icons.cancel,
+                    color: doc.get('isPaid') ? Colors.blue : Colors.grey,
+                  )),
+                  DataCell(Text(
+                    _formatFecha(_convertirTimestampADateTime(doc.get('fechaRegistro'))),
+                    style: const TextStyle(fontSize: 12),
+                  )),
+                ],
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
@@ -412,6 +420,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     if (timestamp is Timestamp) return timestamp.toDate(); // Si es Timestamp de Firestore
     if (timestamp is String) return DateTime.tryParse(timestamp); // Si es String ISO 8601
     return null; // Si no es válido
+  }
+  Future<String> _obtenerRolActual() async {
+    String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
+
+    if (currentUserUid.isEmpty) return ""; // Si no hay usuario autenticado, devolver vacío
+
+    try {
+      DocumentSnapshot adminDoc = await FirebaseFirestore.instance.collection('admin').doc(currentUserUid).get();
+      if (adminDoc.exists) {
+        return adminDoc.get('rol')?.toLowerCase() ?? "";
+      }
+    } catch (e) {
+      print("Error obteniendo el rol: $e");
+    }
+
+    return ""; // Si hay un error, devolver vacío
   }
 
 
