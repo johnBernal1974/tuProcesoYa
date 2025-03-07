@@ -377,10 +377,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       String nombreCompleto = "$nombreAdmin $apellidoAdmin";
       String userRole = userData['rol']?.toLowerCase() ?? "";
 
-      // 🔥 Validar si el usuario tiene permiso para asignar documentos
+      // 🔥 Solo los operadores pueden asignar documentos
       List<String> rolesPermitidos = ["operador 1", "operador 2", "operador 3"];
       if (!rolesPermitidos.contains(userRole)) {
-        print("🚫 El usuario $nombreCompleto con rol '$userRole' no tiene permisos para asignar documentos.");
+        print("🚫 El usuario $nombreCompleto con rol '$userRole' NO tiene permisos para asignar documentos.");
         return;
       }
       print("✅ Usuario $nombreCompleto tiene permisos para asignar documentos.");
@@ -394,29 +394,29 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
       Map<String, dynamic> documentoData = documentoSnapshot.data() as Map<String, dynamic>;
       String statusDocumento = documentoData['status']?.toLowerCase() ?? "";
+      String assignedTo = documentoData['assignedTo'] ?? "";
+
+      // 🔴 🚨 Nueva validación: si ya está asignado, no permitir otra asignación
+      if (assignedTo.isNotEmpty) {
+        print("⚠️ El documento ya fue asignado previamente a otro usuario ($assignedTo). No se puede asignar nuevamente.");
+        return;
+      }
 
       if (statusDocumento != "registrado") {
         print("🚫 El documento no está en estado 'registrado'. No se realizará la asignación.");
         return;
       }
 
-      // 🔍 Verificar si el documento ya ha sido asignado antes
-      QuerySnapshot historialSnapshot = await widget.doc.reference
-          .collection('historial_acciones')
-          .where('accion', isEqualTo: 'asignación')
-          .where('admin', isEqualTo: nombreCompleto) // Verificamos si este usuario ya asignó
-          .limit(1)
-          .get();
-
-      if (historialSnapshot.docs.isNotEmpty) {
-        print("🔄 El documento ya fue asignado previamente por $nombreCompleto. No se guardará otra asignación.");
-        return;
-      }
+      // 🔹 Actualizar el campo `assignedTo` con el ID del operador
+      await widget.doc.reference.update({
+        'assignedTo': currentUserUid,
+      });
 
       // 🔹 Guardar asignación en historial con el nombre completo
       await widget.doc.reference.collection('historial_acciones').add({
         'accion': 'asignación',
         'asignado_a': nombreCompleto, // 🔹 También en "asignado_a"
+        'admin_id': currentUserUid, // 🔥 Guardar ID del admin para referencia
         'fecha': DateTime.now().toString(),
       });
 
@@ -425,10 +425,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       print("❌ Error al asignar el documento: $e");
     }
   }
-
-
-
-
 
 
 // 🔹 Libera el documento cuando se cierra la pantalla- temporalmente desactivado
@@ -1845,7 +1841,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           children: snapshot.data!.docs.map((doc) {
             Map<String, dynamic> docData = doc.data() as Map<String, dynamic>;
 
-            String admin = docData['admin'] ?? "Desconocido";
+            // 🔥 Corrección aquí
+            String admin = docData['admin'] ?? docData['asignado_a'] ?? "Desconocido";
             String accion = docData['accion'] ?? "Ninguna";
 
             // ✅ Safe null check for 'assignedTo'
@@ -1890,8 +1887,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               leading: Icon(icono, color: color),
               title: Text(
                 (accion == "asignación" && assignedTo != null)
-                    ? "$textoAccion $assignedTo" // ✅ Uses `assignedTo`
-                    : "$textoAccion $admin",
+                    ? "$textoAccion $assignedTo" // ✅ Usa `assignedTo` si es una asignación
+                    : "$textoAccion $admin", // ✅ Usa `admin` o `asignado_a`
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
@@ -1904,6 +1901,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
+
 
   /// 📆 Convierte un String o Timestamp a DateTime
   DateTime? _convertirFecha(dynamic fechaRaw) {
