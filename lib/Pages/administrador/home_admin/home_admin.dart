@@ -21,6 +21,14 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   String searchQuery = "";
   final TextEditingController _searchController = TextEditingController();
 
+  // para barra de busqueda de operadoresa asignados
+  bool mostrarFiltroAdmin = false; // Indica si se muestra el campo de búsqueda de admin
+  String searchAdminQuery = ""; // Almacena el texto ingresado en el filtro de admin
+  TextEditingController _adminSearchController = TextEditingController(); // Controlador para la búsqueda por admin
+  Map<String, String> adminNamesMap = {}; // 🔥 Mapa de ID de admin -> Nombre de admin
+  bool isLoadingAdmins = true; // 🔥 Control de carga
+
+
   Color _getColor(String estado) {
     switch (estado.toLowerCase()) {
       case 'registrado':
@@ -39,6 +47,31 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         return Colors.grey;
     }
   }
+
+
+  void _activarFiltroAdmin() async {
+    if (!mostrarFiltroAdmin) { // Solo cargar si se está activando el filtro
+      if (adminNamesMap.isEmpty) {
+        setState(() {
+          isLoadingAdmins = true; // 🔥 Mostrar indicador de carga
+        });
+
+        await _fetchAdminNames(); // 🔥 Cargar admins desde Firestore
+
+        setState(() {
+          isLoadingAdmins = false; // 🔥 Indicar que ya cargaron
+        });
+      }
+    }
+
+    setState(() {
+      mostrarFiltroAdmin = !mostrarFiltroAdmin; // 🔥 Alternar visibilidad del filtro
+      filterStatus = null; // 🔥 Establecer filtro en "Total Usuarios"
+    });
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +126,15 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                       // 🔹 Aplicar filtros
                       List<QueryDocumentSnapshot> filteredDocs = docs;
+
+                      if (searchAdminQuery.trim().isNotEmpty && !isLoadingAdmins) {
+                        filteredDocs = filteredDocs.where((doc) {
+                          final assignedAdminId = doc.get('assignedTo')?.toString() ?? "";
+                          final assignedAdminName = adminNamesMap[assignedAdminId]?.toLowerCase() ?? ""; // 🔥 Obtener el nombre del admin
+                          return assignedAdminName.contains(searchAdminQuery);
+                        }).toList();
+                      }
+
 
                       if (filterStatus != null) {
                         filteredDocs = filteredDocs.where((doc) => doc.get('status').toString().toLowerCase() == filterStatus!.toLowerCase()).toList();
@@ -182,13 +224,37 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     );
   }
 
+  Future<void> _fetchAdminNames() async {
+    if (adminNamesMap.isNotEmpty) return; // 🔥 Evita recargar si ya están en memoria
+
+    setState(() => isLoadingAdmins = true);
+
+    try {
+      QuerySnapshot adminSnapshot = await FirebaseFirestore.instance.collection('admin').get();
+      Map<String, String> fetchedAdminNames = {};
+
+      for (var doc in adminSnapshot.docs) {
+        fetchedAdminNames[doc.id] = "${doc.get('name')} ${doc.get('apellidos')}";
+      }
+
+      setState(() {
+        adminNamesMap = fetchedAdminNames;
+        isLoadingAdmins = false;
+      });
+
+      debugPrint("✅ Admins cargados: ${adminNamesMap.length}");
+    } catch (e) {
+      debugPrint("❌ Error al cargar los admins: $e");
+      setState(() => isLoadingAdmins = false);
+    }
+  }
+
 
   /// 📆 Función para manejar errores en la conversión de fechas
   String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
     if (fecha == null) return "Fecha no disponible";
     return DateFormat(formato, 'es').format(fecha);
   }
-
 
   // Widget para construir tarjetas de estadísticas con efecto de selección
   Widget _buildStatCard(String title, int count, Color color, VoidCallback onTap, {bool isSelected = false}) {
@@ -237,29 +303,96 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   }
 
   Widget _buildSearchField() {
-    return TextField(
-      controller: _searchController,
-      onChanged: (value) {
-        setState(() {
-          searchQuery = value;
-        });
+    return FutureBuilder<DocumentSnapshot>(
+      future: _firebaseFirestore.collection('admin').doc(FirebaseAuth.instance.currentUser?.uid ?? "").get(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox(); // Mientras carga, no muestra nada
+
+        // 🔹 Obtener el rol del usuario autenticado
+        String userRole = snapshot.data!.exists && snapshot.data!.data() != null
+            ? snapshot.data!.get('rol').toString().toLowerCase()
+            : "";
+        List<String> rolesOperadores = ["operador 1", "operador 2", "operador 3"];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 🔹 Barra de búsqueda normal (para todos los roles)
+            TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value.toLowerCase();
+                });
+              },
+              decoration: InputDecoration(
+                labelText: "Buscar registros",
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: searchQuery.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() {
+                      searchQuery = "";
+                    });
+                  },
+                )
+                    : null,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // 🔥 Si NO es operador, mostrar el botón para buscar por admin asignado
+            if (!rolesOperadores.contains(userRole))
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.filter_alt_outlined),
+                  label: const Text("Filtrar por Operadores"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: _activarFiltroAdmin, // 🔥 Carga admins solo al presionar el botón
+                ),
+              ),
+
+
+            // 🔥 Si se activa el filtro de admin, mostrar la nueva barra de búsqueda
+            if (!rolesOperadores.contains(userRole) && mostrarFiltroAdmin)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: TextField(
+                  controller: _adminSearchController,
+                  onChanged: (value) {
+                    setState(() {
+                      searchAdminQuery = value.toLowerCase();
+                    });
+                  },
+                  decoration: InputDecoration(
+                    labelText: "Buscar por operador",
+                    prefixIcon: const Icon(Icons.person_search),
+                    suffixIcon: searchAdminQuery.isNotEmpty
+                        ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _adminSearchController.clear();
+                        setState(() {
+                          searchAdminQuery = "";
+                        });
+                      },
+                    )
+                        : null,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+              ),
+          ],
+        );
       },
-      decoration: InputDecoration(
-        labelText: "Buscar registros",
-        prefixIcon: const Icon(Icons.search),
-        suffixIcon: searchQuery.isNotEmpty
-            ? IconButton(
-          icon: const Icon(Icons.clear),
-          onPressed: () {
-            _searchController.clear();
-            setState(() {
-              searchQuery = "";
-            });
-          },
-        )
-            : null,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      ),
     );
   }
 
@@ -437,6 +570,5 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
     return ""; // Si hay un error, devolver vacío
   }
-
 
 }
