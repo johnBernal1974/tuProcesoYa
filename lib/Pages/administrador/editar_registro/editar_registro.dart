@@ -1905,10 +1905,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
-
-
-
   /// 📆 Convierte un String o Timestamp a DateTime
   DateTime? _convertirFecha(dynamic fechaRaw) {
     if (fechaRaw == null) return null;
@@ -1970,7 +1966,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             if ((selectedCiudad ?? widget.doc['ciudad']) == null) camposFaltantes.add("Ciudad");
             if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) camposFaltantes.add("Juzgado de Ejecución de Penas");
             if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) camposFaltantes.add("Juzgado que Condenó");
-            if ((selectedDelito ?? widget.doc['delito']) == null) camposFaltantes.add("Delito");
+            if (selectedDelito == null || selectedDelito!.trim().isEmpty) {
+              camposFaltantes.add("Delito");
+            }
+
 
             int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
             if (tiempoCondena == 0) {
