@@ -396,14 +396,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       String statusDocumento = documentoData['status']?.toLowerCase() ?? "";
       String assignedTo = documentoData['assignedTo'] ?? "";
 
-      // 🔴 🚨 Nueva validación: si ya está asignado, no permitir otra asignación
-      if (assignedTo.isNotEmpty) {
-        print("⚠️ El documento ya fue asignado previamente a otro usuario ($assignedTo). No se puede asignar nuevamente.");
+      if (statusDocumento != "registrado") {
+        print("🚫 El documento no está en estado 'registrado'. No se realizará la asignación.");
         return;
       }
 
-      if (statusDocumento != "registrado") {
-        print("🚫 El documento no está en estado 'registrado'. No se realizará la asignación.");
+      if (assignedTo.isNotEmpty) {
+        if (assignedTo == currentUserUid) {
+          print("🔹 El documento ya está asignado a este usuario. No se creará otra acción de asignación.");
+        } else {
+          print("⚠️ El documento ya fue asignado a otro usuario ($assignedTo). No se puede asignar nuevamente.");
+        }
         return;
       }
 
@@ -415,8 +418,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       // 🔹 Guardar asignación en historial con el nombre completo
       await widget.doc.reference.collection('historial_acciones').add({
         'accion': 'asignación',
-        'asignado_a': nombreCompleto, // 🔹 También en "asignado_a"
-        'admin_id': currentUserUid, // 🔥 Guardar ID del admin para referencia
+        'asignado_a': nombreCompleto,
+        'admin_id': currentUserUid,
         'fecha': DateTime.now().toString(),
       });
 
@@ -425,6 +428,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       print("❌ Error al asignar el documento: $e");
     }
   }
+
+
 
 
 // 🔹 Libera el documento cuando se cierra la pantalla- temporalmente desactivado

@@ -48,7 +48,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     }
   }
 
-
   void _activarFiltroAdmin() async {
     if (!mostrarFiltroAdmin) { // Solo cargar si se está activando el filtro
       if (adminNamesMap.isEmpty) {
@@ -69,8 +68,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       filterStatus = null; // 🔥 Establecer filtro en "Total Usuarios"
     });
   }
-
-
 
 
   @override
@@ -137,6 +134,30 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       }).toList();
                     }
 
+                    if (filterIsPaid != null) {
+                      filteredDocs = filteredDocs.where((doc) => doc.get('isPaid') == filterIsPaid).toList();
+                    }
+
+                    if (searchQuery.trim().isNotEmpty) {
+                      final query = searchQuery.toLowerCase();
+                      filteredDocs = filteredDocs.where((doc) {
+                        final nombre = doc.get('nombre_ppl').toString().toLowerCase();
+                        final apellido = doc.get('apellido_ppl').toString().toLowerCase();
+                        final identificacion = doc.get('numero_documento_ppl').toString().toLowerCase();
+                        final acudiente = ("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}").toLowerCase();
+                        final celularAcudiente = doc.get('celular').toString().toLowerCase();
+                        return nombre.contains(query) || apellido.contains(query) || identificacion.contains(query) || acudiente.contains(query) || celularAcudiente.contains(query);
+                      }).toList();
+                    }
+
+                    if (searchAdminQuery.trim().isNotEmpty && !isLoadingAdmins) {
+                      filteredDocs = filteredDocs.where((doc) {
+                        final assignedAdminId = doc.get('assignedTo')?.toString() ?? "";
+                        final assignedAdminName = adminNamesMap[assignedAdminId]?.toLowerCase() ?? "";
+                        return assignedAdminName.contains(searchAdminQuery);
+                      }).toList();
+                    }
+
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -175,9 +196,25 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        _buildUserTable(filteredDocs),
+                        _buildSearchField(),
+                        const SizedBox(height: 20),
+
+                        // 🔥 Mostrar mensaje si no hay documentos después del filtro
+                        filteredDocs.isEmpty
+                            ? Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Text(
+                              "No hay ${filterStatus == 'registrado' ? 'nuevos usuarios registrados' : filterStatus == 'activado' ? 'usuarios activados' : filterStatus == 'bloqueado' ? 'usuarios bloqueados' : 'documentos'} disponibles.",
+                              style: const TextStyle(fontSize: 28, color: Colors.grey),
+                            ),
+
+                          ),
+                        )
+                            : _buildUserTable(filteredDocs),
                       ],
                     );
+
                   },
                 );
               },
@@ -265,6 +302,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
+
+
   // Barra de busqueda por rol
   Widget _buildSearchField() {
     return FutureBuilder<DocumentSnapshot>(
@@ -449,10 +488,23 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         return DataRow(
                           onSelectChanged: (bool? selected) async {
                             if (selected != null && selected) {
+                              final String assignedTo = doc.get('assignedTo') ?? "";
+
+                              if (assignedTo.isEmpty) {
+                                // 🔹 Si el documento NO está asignado, pedir confirmación
+                                bool confirmar = await _mostrarDialogoConfirmacion();
+                                if (!confirmar) {
+                                  print("🚫 Edición cancelada por el usuario.");
+                                  return; // Si no confirma, no hace nada
+                                }
+                              }
+
+                              // 🔹 Si ya estaba asignado, o si confirmó, navegar a la pantalla de edición
                               String docId = doc.id;
                               Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
                             }
                           },
+
                           cells: [
                             DataCell(
                               Row(
@@ -464,7 +516,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     ),
                                     child: Icon(Icons.circle, color: _getColor(status)),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 8), // Espaciado entre el círculo y la etiqueta
 
                                   // 🔹 Mostrar rectángulo solo si el estado es "registrado"
                                   if (status == "registrado") ...[
