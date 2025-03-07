@@ -1969,7 +1969,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             if ((selectedCiudad ?? widget.doc['ciudad']) == null) camposFaltantes.add("Ciudad");
             if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) camposFaltantes.add("Juzgado de Ejecución de Penas");
             if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) camposFaltantes.add("Juzgado que Condenó");
-            if (selectedDelito == null || selectedDelito!.trim().isEmpty) {
+            if ((selectedDelito == null || selectedDelito!.trim().isEmpty) && (widget.doc['delito'] == null || widget.doc['delito'].toString().trim().isEmpty)) {
               camposFaltantes.add("Delito");
             }
 
