@@ -706,14 +706,7 @@ class _RegistroPageState extends State<RegistroPage> {
               TextFormField(
                 controller: passwordController,
                 obscureText: _obscurePassword,
-                decoration: InputDecoration(
-                  labelText: 'Crear una Contraseña',
-                  floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba
-                  border: _defaultBorder(),
-                  enabledBorder: _defaultBorder(),
-                  focusedBorder: _focusedBorder(),
-                  errorBorder: _errorBorder(),
-                  focusedErrorBorder: _errorBorder(),
+                decoration: _buildInputDecoration('Crear una Contraseña').copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -742,14 +735,7 @@ class _RegistroPageState extends State<RegistroPage> {
               TextFormField(
                 controller: passwordConfirmarController,
                 obscureText: _obscureConfirmPassword,
-                decoration: InputDecoration(
-                  labelText: 'Confirmar Contraseña',
-                  floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba
-                  border: _defaultBorder(),
-                  enabledBorder: _defaultBorder(),
-                  focusedBorder: _focusedBorder(),
-                  errorBorder: _errorBorder(),
-                  focusedErrorBorder: _errorBorder(),
+                decoration: _buildInputDecoration('Confirmar Contraseña').copyWith(
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
@@ -782,6 +768,7 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
+
 
 
 
