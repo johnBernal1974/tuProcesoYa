@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,7 +27,6 @@ class _RegistroPageState extends State<RegistroPage> {
   int _currentPage = 0;
   int currentPageIndex = 0;
   List<Map<String, Object>> centrosReclusionTodos = [];
-  bool _mostrarDropdowns = false;
   late Future<bool> _centrosFuture;
 
 
@@ -44,7 +44,6 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController tdPplController = TextEditingController();
   final TextEditingController nuiPplController = TextEditingController();
   final TextEditingController patioPplController = TextEditingController();
-  TextEditingController _centroReclusionController = TextEditingController(); // Controlador del campo de texto
   String? selectedRegional; // Regional seleccionada
   String? selectedCentro; // Centro de reclusión seleccionado
 
@@ -58,16 +57,6 @@ class _RegistroPageState extends State<RegistroPage> {
   String? patio;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-
-
-  void _nextPage() {
-    if (_currentPage < 3) {
-      setState(() {
-        _currentPage++;
-      });
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
-    }
-  }
 
   void _prevPage() {
     if (_currentPage > 0) {
@@ -84,10 +73,8 @@ class _RegistroPageState extends State<RegistroPage> {
     _centrosFuture = _fetchTodosCentrosReclusion(); // ✅ Carga solo una vez
   }
 
-
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
     return Scaffold(
       backgroundColor: blanco,
       appBar: AppBar(
@@ -587,7 +574,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, height: 1),
               ),
               const SizedBox(height: 20),
-        
+
               // 🔥 Alerta de información
               const Row(
                 children: [
@@ -603,30 +590,19 @@ class _RegistroPageState extends State<RegistroPage> {
                 ],
               ),
               const SizedBox(height: 20),
-        
+
               // 🔹 Correo Electrónico
               TextFormField(
                 controller: emailController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Correo Electrónico',
-                  floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder( // 🔥 Borde gris por defecto
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder( // 🔥 Borde azul cuando está seleccionado
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: primary, width: 2),
-                  ),
-                  errorBorder: OutlineInputBorder( // 🔥 Borde rojo cuando hay error
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
-                  ),
+                  floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba SIEMPRE
+                  border: _defaultBorder(),
+                  enabledBorder: _defaultBorder(),
+                  focusedBorder: _focusedBorder(),
+                  errorBorder: _errorBorder(),
+                  focusedErrorBorder: _errorBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -639,30 +615,19 @@ class _RegistroPageState extends State<RegistroPage> {
                 },
               ),
               const SizedBox(height: 15),
-        
+
               // 🔹 Confirmar Correo Electrónico
               TextFormField(
                 controller: emailConfirmarController,
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Confirmar Correo Electrónico',
-                  floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder( // 🔥 Borde gris por defecto
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder( // 🔥 Borde azul cuando está seleccionado
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: primary, width: 2),
-                  ),
-                  errorBorder: OutlineInputBorder( // 🔥 Borde rojo cuando hay error
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
-                  ),
+                  floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba SIEMPRE
+                  border: _defaultBorder(),
+                  enabledBorder: _defaultBorder(),
+                  focusedBorder: _focusedBorder(),
+                  errorBorder: _errorBorder(),
+                  focusedErrorBorder: _errorBorder(),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -681,6 +646,29 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
+
+// 🔹 Métodos para definir los bordes
+  OutlineInputBorder _defaultBorder() {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Colors.grey, width: 1),
+    );
+  }
+
+  OutlineInputBorder _focusedBorder() {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: primary, width: 2),
+    );
+  }
+
+  OutlineInputBorder _errorBorder() {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(10),
+      borderSide: const BorderSide(color: Colors.red, width: 2),
+    );
+  }
+
 
   Widget _buildCuentapasawordForm() {
     return Form(
@@ -721,22 +709,11 @@ class _RegistroPageState extends State<RegistroPage> {
                 decoration: InputDecoration(
                   labelText: 'Crear una Contraseña',
                   floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: primary, width: 2),
-                  ),
-                  errorBorder: OutlineInputBorder( // 🔥 Borde rojo cuando hay error
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
-                  ),
+                  border: _defaultBorder(),
+                  enabledBorder: _defaultBorder(),
+                  focusedBorder: _focusedBorder(),
+                  errorBorder: _errorBorder(),
+                  focusedErrorBorder: _errorBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscurePassword ? Icons.visibility_off : Icons.visibility,
@@ -768,22 +745,11 @@ class _RegistroPageState extends State<RegistroPage> {
                 decoration: InputDecoration(
                   labelText: 'Confirmar Contraseña',
                   floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: primary, width: 2),
-                  ),
-                  errorBorder: OutlineInputBorder( // 🔥 Borde rojo cuando hay error
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.red, width: 1.5),
-                  ),
+                  border: _defaultBorder(),
+                  enabledBorder: _defaultBorder(),
+                  focusedBorder: _focusedBorder(),
+                  errorBorder: _errorBorder(),
+                  focusedErrorBorder: _errorBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
@@ -816,6 +782,8 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
+
+
 
   void _submitForm() async {
     final String password = passwordController.text.trim();
@@ -895,7 +863,6 @@ class _RegistroPageState extends State<RegistroPage> {
 
     // 🔥 **Si todas las validaciones pasan, intenta registrar al usuario**
     try {
-      print('✅ Iniciando el proceso de registro...');
 
       // 🔹 Muestra un indicador de carga
       showDialog(
@@ -915,60 +882,78 @@ class _RegistroPageState extends State<RegistroPage> {
 
       // 🔹 Obtiene el UID del usuario registrado
       String userId = userCredential.user!.uid;
-      print('✅ Usuario registrado con UID: $userId');
-
       // 🔹 Crea un mapa con los datos del usuario
       Map<String, dynamic> userData = {
         "id": userId,
-        "nombreAcudiente": nombreAcudienteController.text.trim(),
-        "apellidoAcudiente": apellidoAcudienteController.text.trim(),
-        "parentescoRepresentante": parentesco ?? "",
+        "nombre_acudiente": nombreAcudienteController.text.trim(),
+        "apellido_acudiente": apellidoAcudienteController.text.trim(),
+        "parentesco_representante": parentesco ?? "",
         "celular": celularController.text.trim(),
         "email": email,
-        "nombrePpl": nombrePplController.text.trim(),
-        "apellidoPpl": apellidoPplController.text.trim(),
-        "tipoDocumentoPpl": tipoDocumento ?? "",
-        "numeroDocumentoPpl": numeroDocumentoPplController.text.trim(),
+        "nombre_ppl": nombrePplController.text.trim(),
+        "apellido_ppl": apellidoPplController.text.trim(),
+        "tipo_documento_ppl": tipoDocumento ?? "",
+        "numero_documento_ppl": numeroDocumentoPplController.text.trim(),
         "regional": selectedRegional ?? "",
-        "centroReclusion": selectedCentro ?? "",
+        "centro_reclusion": selectedCentro ?? "",
+        "juzgado_ejecucion_penas": "",
+        "juzgado_ejecucion_penas_email": "",
+        "juzgado_que_condeno": "",
+        "juzgado_que_condeno_email": "",
+        "ciudad": "",
+        "delito": "",
         "td": tdPplController.text.trim(),
         "nui": nuiPplController.text.trim(),
         "patio": patioPplController.text.trim(),
+        "radicado": "",
+        "tiempo_condena": 0,
         "status": "registrado",
         "isNotificatedActivated": false,
         "isPaid": false,
         "assignedTo": "",
         "fechaRegistro": DateTime.now(),
+        "fecha_captura": null,
       };
 
       // 🔹 Guarda los datos en Firestore
       await FirebaseFirestore.instance.collection("Ppl").doc(userId).set(userData);
-      print('✅ Datos guardados en Firestore correctamente.');
-
       // 🔹 Cierra el indicador de carga
-      Navigator.of(context).pop();
+      if(context.mounted){
+        Navigator.of(context).pop();
 
-      // 🔹 Muestra un mensaje de éxito
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Registro completado con éxito."),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+        // 🔹 Muestra un mensaje de éxito
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Registro completado con éxito."),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
 
-      // 🔹 Redirige a la página de confirmación
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => EstamosValidandoPage()), // 🚀 Ajusta con tu página de validación
-      );
+      if(context.mounted){
+        // 🔹 Redirige a la página de confirmación
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => EstamosValidandoPage()), // 🚀 Ajusta con tu página de validación
+        );
+      }
 
     } on FirebaseAuthException catch (e) {
-      Navigator.of(context).pop(); // Cierra el indicador de carga
-      print('❌ Error en FirebaseAuth: ${e.code}');
+      if(context.mounted){
+        Navigator.of(context).pop(); // Cierra el indicador de carga
+        if (kDebugMode) {
+          print('❌ Error en FirebaseAuth: ${e.code}');
+        }
+      }
       _mostrarMensaje(_traducirErrorFirebase(e.code));
     } catch (e) {
-      Navigator.of(context).pop(); // Cierra el indicador de carga
-      print('❌ Error en el proceso de registro: $e');
+      if(context.mounted){
+        Navigator.of(context).pop(); // Cierra el indicador de carga
+      }
+
+      if (kDebugMode) {
+        print('❌ Error en el proceso de registro: $e');
+      }
       _mostrarMensaje('Error al registrar el usuario: $e');
     }
   }
@@ -1238,8 +1223,6 @@ class _RegistroPageState extends State<RegistroPage> {
   }
 
   Future<bool> _fetchTodosCentrosReclusion() async {
-    print("Ejecutando _fetchTodosCentrosReclusion 🚀");
-
     try {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collectionGroup('centros_reclusion')
@@ -1255,12 +1238,12 @@ class _RegistroPageState extends State<RegistroPage> {
           'regional': regionalId,
         };
       }).toList();
-
-      // 🔥 Ver los datos cargados en la consola antes de actualizar el estado
-      print("✅ Centros de reclusión obtenidos: ${fetchedTodosCentros.length}");
-      for (var centro in fetchedTodosCentros) {
-        print("🔹 Centro: ${centro['nombre']} - Regional: ${centro['regional']}");
-      }
+      //
+      // for (var centro in fetchedTodosCentros) {
+      //   if (kDebugMode) {
+      //     print("🔹 Centros obtenidos");
+      //   }
+      // }
 
       // 🔥 Solo actualiza el estado si los datos han cambiado
       if (centrosReclusionTodos.isEmpty || fetchedTodosCentros.length != centrosReclusionTodos.length) {
@@ -1268,11 +1251,11 @@ class _RegistroPageState extends State<RegistroPage> {
           centrosReclusionTodos = fetchedTodosCentros;
         });
       }
-
-      print("✅ Centros de reclusión cargados correctamente en la UI.");
       return true;
     } catch (e) {
-      print("❌ Error al obtener centros de reclusión: $e");
+      if (kDebugMode) {
+        print("❌ Error al obtener centros de reclusión: $e");
+      }
       return false;
     }
   }
@@ -1364,7 +1347,5 @@ class _RegistroPageState extends State<RegistroPage> {
       },
     );
   }
-
-
 
 }
