@@ -94,7 +94,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
 
   /// opciones de documento de identidad
-  final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte'];
+  final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte', 'Tarjeta de Identidad'];
 
   @override
   void initState() {

@@ -250,7 +250,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     }
   }
 
-
   /// 📆 Función para manejar errores en la conversión de fechas
   String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
     if (fecha == null) return "Fecha no disponible";
@@ -302,7 +301,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
-
 
   // Barra de busqueda por rol
   Widget _buildSearchField() {
@@ -488,6 +486,16 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         return DataRow(
                           onSelectChanged: (bool? selected) async {
                             if (selected != null && selected) {
+                              // 🔹 Obtener el rol del usuario actual
+                              String userRole = await _obtenerRolActual();
+
+                              // 🔹 Si el usuario NO es operador, lo deja avanzar sin mostrar la confirmación
+                              if (userRole != "operador") {
+                                Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
+                                return;
+                              }
+
+                              // 🔹 Si es operador, sigue con la validación de asignación
                               final String assignedTo = doc.get('assignedTo') ?? "";
 
                               if (assignedTo.isEmpty) {
@@ -500,7 +508,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               }
 
                               // 🔹 Si ya estaba asignado, o si confirmó, navegar a la pantalla de edición
-                              String docId = doc.id;
                               Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
                             }
                           },
@@ -516,7 +523,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     ),
                                     child: Icon(Icons.circle, color: _getColor(status)),
                                   ),
-                                  const SizedBox(width: 8), // Espaciado entre el círculo y la etiqueta
+                                  const SizedBox(width: 8),
 
                                   // 🔹 Mostrar rectángulo solo si el estado es "registrado"
                                   if (status == "registrado") ...[
@@ -551,6 +558,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                             DataCell(Text(_formatFecha(_convertirTimestampADateTime(doc.get('fechaRegistro'))))),
                           ],
                         );
+
                       }).toList(),
                     ),
                   ),
@@ -604,6 +612,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     if (timestamp is String) return DateTime.tryParse(timestamp); // Si es String ISO 8601
     return null; // Si no es válido
   }
+
   Future<String> _obtenerRolActual() async {
     String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
 
