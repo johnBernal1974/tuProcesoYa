@@ -770,8 +770,6 @@ class _RegistroPageState extends State<RegistroPage> {
   }
 
 
-
-
   void _submitForm() async {
     final String password = passwordController.text.trim();
     final String passwordConfirm = passwordConfirmarController.text.trim();
@@ -918,10 +916,10 @@ class _RegistroPageState extends State<RegistroPage> {
         );
       }
 
-      if(context.mounted){
-        // 🔹 Redirige a la página de confirmación
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => EstamosValidandoPage()), // 🚀 Ajusta con tu página de validación
+      if (context.mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
+              (Route<dynamic> route) => false, // 🔥 Elimina todas las páginas previas
         );
       }
 
