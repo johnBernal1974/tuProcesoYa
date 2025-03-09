@@ -19,7 +19,10 @@ class RegistroPage extends StatefulWidget {
 class _RegistroPageState extends State<RegistroPage> {
   final PageController _pageController = PageController();
   final _formKeyAcudiente = GlobalKey<FormState>();
-  final _formKeyPPL = GlobalKey<FormState>();
+  final _formKeyCelularAcudiente = GlobalKey<FormState>();
+  final _formKeyParentescoAcudiente = GlobalKey<FormState>();
+  final _formKeyNombresPPL = GlobalKey<FormState>();
+  final _formKeyDocumentoPPL = GlobalKey<FormState>();
   final _formKeyLegalPPL = GlobalKey<FormState>();
   final _formKeyInfoTdPPL = GlobalKey<FormState>();
   final _formKeyCorreo = GlobalKey<FormState>();
@@ -79,7 +82,7 @@ class _RegistroPageState extends State<RegistroPage> {
       backgroundColor: blanco,
       appBar: AppBar(
         backgroundColor: primary,
-        title: Text('Registro - Paso ${_currentPage + 1} de 7', style: const TextStyle(color: Colors.white)),
+        title: Text('Registro - Paso ${_currentPage + 1} de 10', style: const TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
       body: Center(
@@ -88,7 +91,7 @@ class _RegistroPageState extends State<RegistroPage> {
           padding: const EdgeInsets.all(10.0), // Agrega espacio alrededor del contenido
           child: Column(
             children: [
-              LinearProgressIndicator(value: (_currentPage + 1) / 7, backgroundColor: Colors.grey.shade300),
+              LinearProgressIndicator(value: (_currentPage + 1) /10, backgroundColor: Colors.grey.shade300),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -96,7 +99,10 @@ class _RegistroPageState extends State<RegistroPage> {
                   children: [
                     _buildIntroduccion(),
                     _buildAcudienteForm(),
-                    _buildPplForm(),
+                    _buildCelularAcudienteForm(),
+                    _buildParentescoAcudienteForm(),
+                    _buildNombresPplForm(),
+                    _buildDocumentoPplForm(),
                     _buildPplCentroReclusionLegalForm(),
                     _buildPplInfoTDLegalForm(),
                     _buildCuentaCorreoForm(),
@@ -132,10 +138,10 @@ class _RegistroPageState extends State<RegistroPage> {
                         foregroundColor: Colors.white, // 🔥 Color del texto
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                       ),
-                      onPressed: _currentPage == 6 ? _submitForm : _validarYContinuar,
+                      onPressed: _currentPage == 9 ? _submitForm : _validarYContinuar,
                       child: Row(
                         children: [
-                          Text(_currentPage == 6 ? 'Finalizar' : 'Siguiente'),
+                          Text(_currentPage == 9 ? 'Finalizar' : 'Siguiente'),
                           const SizedBox(width: 5), // Espacio entre texto e icono
                           const Icon(Icons.keyboard_double_arrow_right, size: 20), // 🔹 Flecha doble después del texto
                         ],
@@ -166,10 +172,10 @@ class _RegistroPageState extends State<RegistroPage> {
                 width: isLargeScreen ? 100 : 100,
                 height: isLargeScreen ? 100 : 100,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 15),
               const Text("¡Vamos a guiarte en el proceso de registro en nuestra plataforma!", style: TextStyle(
                   fontWeight: FontWeight.w900, fontSize: 20, color: negro, height: 1.2)),
-              const SizedBox(height: 40),
+              const SizedBox(height: 30),
       
               RichText(
                 textAlign: TextAlign.justify,
@@ -177,11 +183,11 @@ class _RegistroPageState extends State<RegistroPage> {
                   style: TextStyle(fontSize: 15, height: 1.2, color: Colors.black),
                   children: [
                     TextSpan(text: "Por favor, asegúrate de ingresar todos los datos de manera "),
-                    TextSpan(text: "completa", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: negro)),
+                    TextSpan(text: "completa", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: negro)),
                     TextSpan(text: ", "),
-                    TextSpan(text: "correcta", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    TextSpan(text: "correcta", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     TextSpan(text: " y "),
-                    TextSpan(text: "veraz", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    TextSpan(text: "veraz", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     TextSpan(text: ". La precisión de la información es fundamental para que la plataforma pueda gestionar de manera efectiva las diligencias necesarias para la persona privada de la libertad (PPL). Cualquier error en los datos puede afectar los procesos y retrasar la asistencia que necesitas. ¡Tu colaboración es clave para un servicio ágil y eficiente!"),
                   ],
                 ),
@@ -199,6 +205,7 @@ class _RegistroPageState extends State<RegistroPage> {
   Widget _buildAcudienteForm() {
     return Form(
       key: _formKeyAcudiente, // Asociamos el formulario con la clave
+      //autovalidateMode: AutovalidateMode.onUserInteraction,
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(10.0),
@@ -206,7 +213,7 @@ class _RegistroPageState extends State<RegistroPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 30),
-              const Text("Paso 1. Acudiente", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text("Acudiente", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               RichText(
                 textAlign: TextAlign.justify,
@@ -232,6 +239,7 @@ class _RegistroPageState extends State<RegistroPage> {
         
               // 🔹 Nombres
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: nombreAcudienteController,
                 keyboardType: TextInputType.text,
                 textCapitalization: TextCapitalization.words,
@@ -247,6 +255,7 @@ class _RegistroPageState extends State<RegistroPage> {
         
               // 🔹 Apellidos
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: apellidoAcudienteController,
                 keyboardType: TextInputType.text,
                 textCapitalization: TextCapitalization.words,
@@ -259,7 +268,26 @@ class _RegistroPageState extends State<RegistroPage> {
                 },
               ),
               const SizedBox(height: 15),
-        
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCelularAcudienteForm() {
+    return Form(
+      key: _formKeyCelularAcudiente,
+      //autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 30),
+              const Text(" Celular del Acudiente", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
               // 🔹 Advertencia del celular
               const Row(
                 children: [
@@ -271,10 +299,10 @@ class _RegistroPageState extends State<RegistroPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 15),
-        
+              const SizedBox(height: 30),
               // 🔹 Celular
               TextFormField(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: celularController,
                 keyboardType: TextInputType.phone,
                 decoration: _buildInputDecoration('Celular').copyWith(
@@ -283,23 +311,56 @@ class _RegistroPageState extends State<RegistroPage> {
                 maxLength: 10,
                 validator: _validarCelular,
               ),
-        
               const SizedBox(height: 15),
-        
-              // 🔹 Parentesco del acudiente
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildParentescoAcudienteForm() {
+    return Form(
+      key: _formKeyParentescoAcudiente,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 30),
+              const Text("Parentesco del Acudiente",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 15),
+              const Text("¿Qué eres de la persona privada de la libertad?",
+                  style: TextStyle(fontSize: 14)),
+              const SizedBox(height: 15),
+
+              // 🔹 Parentesco del acudiente (Dropdown con título arriba)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0),
                 child: DropdownButtonFormField<String>(
                   dropdownColor: blancoCards,
                   value: parentesco,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Parentesco del acudiente',
-                    border: OutlineInputBorder(),
+                    floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Siempre muestra el título arriba
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
                     enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: primary, width: 2),
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: primary, width: 2),
+                    ),
+                    errorBorder: OutlineInputBorder( // 🔥 Borde rojo cuando hay error
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.red, width: 1.5),
                     ),
                   ),
                   onChanged: (value) {
@@ -329,9 +390,10 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-  Widget _buildPplForm() {
+  Widget _buildNombresPplForm() {
     return Form(
-      key: _formKeyPPL, // 🔥 Asignamos una clave de formulario para validar
+      key: _formKeyNombresPPL, // 🔥 Asignamos una clave de formulario para validar
+      //autovalidateMode: AutovalidateMode.onUserInteraction,
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -341,10 +403,39 @@ class _RegistroPageState extends State<RegistroPage> {
               const Text("Información de la persona privada de la libertad",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 20),
+              Row(
+                children: [
+                  const Icon(Icons.person_pin_rounded, color: Colors.amber, size: 40),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: RichText(
+                      text:const TextSpan(
+                        style: TextStyle(fontSize: 12, color: Colors.black),
+                        children: [
+                          TextSpan(text: "Por favor ingresa los "),
+                          TextSpan(
+                            text: "nombres",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          TextSpan(text: " y "),
+                          TextSpan(
+                            text: "apellidos completos",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          TextSpan(text: " como aparecen en el documento de identidad."),
+                        ],
+                      ),
+                    ),
+
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
         
               // 🔹 Nombres
               TextFormField(
                 controller: nombrePplController,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: TextInputType.text,
                 textCapitalization: TextCapitalization.words,
                 decoration: _buildInputDecoration('Nombres'),
@@ -360,6 +451,7 @@ class _RegistroPageState extends State<RegistroPage> {
               // 🔹 Apellidos
               TextFormField(
                 controller: apellidoPplController,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: TextInputType.text,
                 textCapitalization: TextCapitalization.words,
                 decoration: _buildInputDecoration('Apellidos'),
@@ -371,44 +463,93 @@ class _RegistroPageState extends State<RegistroPage> {
                 },
               ),
               const SizedBox(height: 15),
-        
-              // 🔹 Número de Documento (Validación: 8 o 10 dígitos)
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDocumentoPplForm() {
+    return Form(
+      key: _formKeyDocumentoPPL,
+      //autovalidateMode: AutovalidateMode.onUserInteraction, // 🔥 Valida en tiempo real
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Documento de la persona privada de la libertad",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+
+              Row(
+                children: [
+                  const Icon(Icons.badge, color: Colors.amber, size: 40),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: RichText(
+                      text: const TextSpan(
+                        style: TextStyle(fontSize: 12, color: Colors.black),
+                        children: [
+                          TextSpan(text: "Por favor ingresa el "),
+                          TextSpan(
+                            text: "número de documento",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          TextSpan(text: " y selecciona el "),
+                          TextSpan(
+                            text: "tipo de documento",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          TextSpan(text: " correspondiente."),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              // 🔹 Número de Documento
               TextFormField(
                 controller: numeroDocumentoPplController,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
                 keyboardType: TextInputType.number,
                 decoration: _buildInputDecoration('Número de Documento').copyWith(
                   counterText: "", // 🔥 Oculta el contador de caracteres
                 ),
-                maxLength: 10, // 🔥 Límite de caracteres (máximo 10)
+                maxLength: 10,
                 validator: _validarNumeroDocumento,
               ),
-              const SizedBox(height: 15),
-        
+              const SizedBox(height: 25),
+
               // 🔹 Tipo de Documento (Dropdown)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: DropdownButtonFormField<String>(
-                  dropdownColor: blancoCards,
-                  value: tipoDocumento,
-                  decoration: _buildInputDecoration('Tipo de Documento'),
-                  onChanged: (value) {
-                    setState(() {
-                      tipoDocumento = value;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor selecciona un tipo de documento';
-                    }
-                    return null;
-                  },
-                  items: tipoDocumentoOptions.map((option) {
-                    return DropdownMenuItem<String>(
-                      value: option,
-                      child: Text(option),
-                    );
-                  }).toList(),
-                ),
+              DropdownButtonFormField<String>(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                dropdownColor: blancoCards,
+                value: tipoDocumento,
+                decoration: _buildInputDecoration('Tipo de Documento'),
+                onChanged: (value) {
+                  setState(() {
+                    tipoDocumento = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor selecciona un tipo de documento';
+                  }
+                  return null;
+                },
+                items: tipoDocumentoOptions.map((option) {
+                  return DropdownMenuItem<String>(
+                    value: option,
+                    child: Text(option),
+                  );
+                }).toList(),
               ),
               const SizedBox(height: 15),
             ],
@@ -420,7 +561,8 @@ class _RegistroPageState extends State<RegistroPage> {
 
   Widget _buildPplCentroReclusionLegalForm() {
     return Form(
-      key: _formKeyLegalPPL, // 🔥 Clave de validación del formulario
+      key: _formKeyLegalPPL,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(10.0),
@@ -433,9 +575,22 @@ class _RegistroPageState extends State<RegistroPage> {
               ),
               const SizedBox(height: 20),
 
-              const Text(
-                "Escribe el nombre de la ciudad para ver las opciones. Luego, haz clic en una para seleccionarla.",
-                style: TextStyle(fontSize: 12),
+              RichText(
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 12, color: Colors.black),
+                  children: [
+                    TextSpan(text: "Escribe el "),
+                    TextSpan(
+                      text: "nombre de la ciudad",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    TextSpan(text: " donde está recluido para ver las opciones. Luego, haz clic en una para "),
+                    TextSpan(
+                      text: "seleccionarla.",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -457,28 +612,117 @@ class _RegistroPageState extends State<RegistroPage> {
                   if (snapshot.hasError || snapshot.data == false) {
                     return const Text("⚠ Error al cargar los centros de reclusión.");
                   }
-                  // ✅ Se muestra solo cuando los datos están listos con validación
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      seleccionarCentroReclusion(),
-                      const SizedBox(height: 10),
-                      // 🔥 Validación: Verifica que se haya seleccionado un centro antes de enviar el formulario
-                      if (selectedCentro == null || selectedCentro!.isEmpty)
-                        const Text(
-                          "⚠ Debes seleccionar un centro de reclusión.",
-                          style: TextStyle(color: Colors.red, fontSize: 12),
+                      // 🔥 Texto que muestra el centro seleccionado
+                      if (selectedCentro != null && selectedCentro!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: Text(
+                            "Centro de reclusión seleccionado: $selectedCentro",
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green),
+                          ),
                         ),
+
+                      _seleccionarCentroReclusion(),
+                      const SizedBox(height: 10),
                     ],
                   );
                 },
               ),
-
               const SizedBox(height: 20),
             ],
           ),
         ),
       ),
+    );
+  }
+
+
+// 🔥 Nueva versión del campo de búsqueda con el letrero siempre visible
+  Widget _seleccionarCentroReclusion() {
+    return Autocomplete<Map<String, String>>(
+      optionsBuilder: (TextEditingValue textEditingValue) {
+        if (textEditingValue.text.isEmpty) {
+          return const Iterable<Map<String, String>>.empty();
+        }
+        return centrosReclusionTodos
+            .map((option) => option.map((key, value) => MapEntry(key, value.toString())))
+            .where((option) => option['nombre']!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+      },
+      displayStringForOption: (option) => option['nombre']!,
+      onSelected: (option) {
+        setState(() {
+          selectedCentro = option['id'];
+          selectedRegional = option['regional'];
+        });
+      },
+      fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+        return TextField(
+          controller: textEditingController,
+          focusNode: focusNode,
+          style: const TextStyle(fontSize: 14), // 🔥 Reduce el tamaño de la letra
+          textAlignVertical: TextAlignVertical.center,
+          decoration: InputDecoration(
+            labelText: "Centro de reclusión",
+            floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba SIEMPRE
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.grey, width: 1),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: primary, width: 2),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.grey, width: 1),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: const BorderSide(color: Colors.red, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+          ),
+        );
+      },
+      optionsViewBuilder: (context, onSelected, options) {
+        return Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            color: blancoCards, // 🔥 Fondo blanco para las opciones
+            elevation: 8,
+            borderRadius: BorderRadius.circular(8),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9, // Ajusta el ancho
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: options.length,
+                itemBuilder: (context, index) {
+                  final option = options.elementAt(index);
+                  return ListTile(
+                    title: Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      child: Text(
+                        option['nombre']!,
+                        style: const TextStyle(fontSize: 14), // 🔥 Tamaño de la letra mejorado
+                      ),
+                    ),
+                    onTap: () => onSelected(option),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -557,7 +801,7 @@ class _RegistroPageState extends State<RegistroPage> {
   Widget _buildCuentaCorreoForm() {
     return Form(
       key: _formKeyCorreo,
-      autovalidateMode: AutovalidateMode.onUserInteraction, // 🔥 Muestra errores en tiempo real
+      autovalidateMode: AutovalidateMode.onUserInteraction, // 🔥 Valida en tiempo real
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -592,52 +836,42 @@ class _RegistroPageState extends State<RegistroPage> {
               const SizedBox(height: 20),
 
               // 🔹 Correo Electrónico
-              TextFormField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Correo Electrónico',
-                  floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba SIEMPRE
-                  border: _defaultBorder(),
-                  enabledBorder: _defaultBorder(),
-                  focusedBorder: _focusedBorder(),
-                  errorBorder: _errorBorder(),
-                  focusedErrorBorder: _errorBorder(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: TextFormField(
+                  controller: emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: _buildInputDecoration('Correo Electrónico'),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Por favor ingresa un correo electrónico';
+                    }
+                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                      return 'Por favor ingresa un correo electrónico válido';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Por favor ingresa un correo electrónico';
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Por favor ingresa un correo electrónico válido';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 15),
 
               // 🔹 Confirmar Correo Electrónico
-              TextFormField(
-                controller: emailConfirmarController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Confirmar Correo Electrónico',
-                  floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el título arriba SIEMPRE
-                  border: _defaultBorder(),
-                  enabledBorder: _defaultBorder(),
-                  focusedBorder: _focusedBorder(),
-                  errorBorder: _errorBorder(),
-                  focusedErrorBorder: _errorBorder(),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: TextFormField(
+                  controller: emailConfirmarController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: _buildInputDecoration('Confirmar Correo Electrónico'),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Por favor confirma tu correo electrónico';
+                    }
+                    if (value != emailController.text) {
+                      return 'Los correos electrónicos no coinciden';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Por favor confirma tu correo electrónico';
-                  }
-                  if (value != emailController.text) {
-                    return 'Los correos electrónicos no coinciden';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
             ],
@@ -646,6 +880,7 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
+
 
 // 🔹 Métodos para definir los bordes
   OutlineInputBorder _defaultBorder() {
@@ -984,11 +1219,22 @@ class _RegistroPageState extends State<RegistroPage> {
       return;
     }
 
-    // Validación de PPL en la página 2
-    if (_currentPage == 2 && !_formKeyPPL.currentState!.validate()) {
+    // Validación celular
+    if (_currentPage == 2 && !_formKeyCelularAcudiente.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Por favor completa todos los datos del PPL antes de continuar."),
+          content: Text("Por favor ingresa el número del celular antes de continuar."),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    // Validación parentesco
+    if (_currentPage == 3 && !_formKeyParentescoAcudiente.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Por favor selecciona un parentesco antes de continuar."),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
@@ -996,8 +1242,86 @@ class _RegistroPageState extends State<RegistroPage> {
       return;
     }
 
+    // Validación nombres ppl
+    if (_currentPage == 4 && !_formKeyNombresPPL.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Por favor ingresa los datos completos antes de continuar."),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Validación documento ppl
+    if (_currentPage == 5) {
+      final String documento = numeroDocumentoPplController.text.trim();
+      final String? tipoDoc = tipoDocumento;
+
+      if (!_formKeyDocumentoPPL.currentState!.validate()) {
+        setState(() {}); // 🔥 Refresca la pantalla para mostrar los errores
+        return;
+      }
+
+      // 🔹 Validar si ambos campos están vacíos
+      if (documento.isEmpty && (tipoDoc == null || tipoDoc.isEmpty)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor ingresa el número de documento y selecciona el tipo de documento."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // 🔹 Validar si solo el número de documento está vacío
+      if (documento.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor ingresa el número de documento."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // 🔹 Validar si solo el tipo de documento no está seleccionado
+      if (tipoDoc == null || tipoDoc.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona el tipo de documento."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // 🔹 Validar formato del número de documento (Debe ser de 8 o 10 dígitos)
+      if (!RegExp(r'^\d{8}$|^\d{10}$').hasMatch(documento)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("El número de documento debe tener 8 o 10 dígitos."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+    }
+
     // 🔥 Nueva Validación: Centro de Reclusión en la página 3
-    if (_currentPage == 3) {
+    if (_currentPage == 6) {
+
+      if (!_formKeyLegalPPL.currentState!.validate()) {
+        setState(() {}); // 🔥 Refresca la pantalla para mostrar los errores
+        return;
+      }
+
+
       if (!_formKeyLegalPPL.currentState!.validate()) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1020,19 +1344,74 @@ class _RegistroPageState extends State<RegistroPage> {
         return;
       }
     }
-    // Validación de identificacion interna en la página 4
-    if (_currentPage == 4 && !_formKeyInfoTdPPL.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor completa todos los datos antes de continuar."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+    if (_currentPage == 7) {
+      final String td = tdPplController.text.trim();
+      final String nui = nuiPplController.text.trim();
+      final String patio = patioPplController.text.trim();
+
+      if (!_formKeyInfoTdPPL.currentState!.validate()) {
+        setState(() {}); // 🔥 Refresca la pantalla para mostrar los errores
+        return;
+      }
+
+      void mostrarSnackBar(String mensaje) {
+        ScaffoldMessenger.of(context).removeCurrentSnackBar(); // 🔥 Elimina SnackBars previos
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(mensaje),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // 🔹 Si todos los campos están vacíos
+      if (td.isEmpty && nui.isEmpty && patio.isEmpty) {
+        setState(() {}); // 🔥 Refresca la pantalla para que aparezcan los errores
+        mostrarSnackBar("Por favor completa todos los datos antes de continuar.");
+        return;
+      }
+
+      // 🔹 Validar si solo el TD está vacío
+      if (td.isEmpty) {
+        setState(() {});
+        mostrarSnackBar("Por favor ingresa el TD.");
+        return;
+      }
+
+      // 🔹 Validar si solo el NUI está vacío
+      if (nui.isEmpty) {
+        setState(() {});
+        mostrarSnackBar("Por favor ingresa el NUI.");
+        return;
+      }
+
+      // 🔹 Validar si solo el Patio está vacío
+      if (patio.isEmpty) {
+        setState(() {});
+        mostrarSnackBar("Por favor ingresa el Patio.");
+        return;
+      }
+
+      // 🔹 Validar formato de TD (Debe ser solo números)
+      if (!RegExp(r'^[0-9]+$').hasMatch(td)) {
+        setState(() {});
+        mostrarSnackBar("El TD solo puede contener números.");
+        return;
+      }
+
+      // 🔹 Validar formato de NUI (Debe ser solo números)
+      if (!RegExp(r'^[0-9]+$').hasMatch(nui)) {
+        setState(() {});
+        mostrarSnackBar("El NUI solo puede contener números.");
+        return;
+      }
+
+      // ✅ Si todo está correcto, permite continuar
     }
-    // Validación de email en la página 5
-    if (_currentPage == 5) {
+
+    // Validación de email en la página 8
+    if (_currentPage == 8) {
       final String email = emailController.text.trim();
       final String emailConfirmacion = emailConfirmarController.text.trim();
       final RegExp emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -1080,84 +1459,8 @@ class _RegistroPageState extends State<RegistroPage> {
       }
     }
 
-    if (_currentPage == 6) { // Página donde está el formulario de contraseña
-      final String password = passwordController.text.trim();
-      final String passwordConfirm = passwordConfirmarController.text.trim();
-
-      // 🔹 Si ambos campos están vacíos
-      if (password.isEmpty && passwordConfirm.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor crea una contraseña y la confirmación."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // 🔹 Si solo la contraseña está vacía
-      if (password.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor crea una contraseña."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // 🔹 Si solo la confirmación está vacía
-      if (passwordConfirm.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor confirma la contraseña."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // 🔹 Si la contraseña tiene menos de 6 caracteres
-      if (password.length < 6) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("La contraseña debe tener al menos 6 caracteres."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // 🔹 Si la confirmación tiene menos de 6 caracteres
-      if (passwordConfirm.length < 6) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("La confirmación debe tener al menos 6 caracteres."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // 🔹 Verifica si las contraseñas coinciden
-      if (password != passwordConfirm) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Las contraseñas no coinciden."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-    }
     // Avanzar solo si todas las validaciones se cumplen
-    if (_currentPage < 7) { // Ajusta el número máximo de páginas si es necesario
+    if (_currentPage < 11) { // Ajusta el número máximo de páginas si es necesario
       setState(() {
         _currentPage++;
       });
