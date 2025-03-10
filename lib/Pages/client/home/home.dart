@@ -1,8 +1,8 @@
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
-
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
 import '../../../providers/auth_provider.dart';
@@ -66,7 +66,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -103,47 +102,57 @@ class _HomePageState extends State<HomePage> {
           style: const TextStyle(fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 20),
-
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildCondenaCard('Tiempo de\nCondena\ntranscurrida', mesesEjecutado, diasEjecutadoExactos),
-            const SizedBox(width: 10),
-            _buildCondenaCard('Tiempo de\nCondena\nrestante', mesesRestante, diasRestanteExactos),
-          ],
-        ),
-
-        const SizedBox(height: 10),
         Text(
-          'Porcentaje de condena ejecutado: ${porcentajeEjecutado.toStringAsFixed(1)}%',
-          style: const TextStyle(fontSize: 16),
+          "NUI: ${_ppl?.nui ?? "No disponible"}     TD: ${_ppl?.td ?? "No disponible"}",
+          style: const TextStyle(fontSize: 14, color: Colors.black),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 20),
-        Column(
-          children: [
-            _buildBenefitCard(
-              title: 'Permiso Administrativo de 72 horas',
-              condition: porcentajeEjecutado >= 33.33,
-              remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-            ),
-            _buildBenefitCard(
-              title: 'Prisión Domiciliaria',
-              condition: porcentajeEjecutado >= 50,
-              remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-            ),
-            _buildBenefitCard(
-              title: 'Libertad Condicional',
-              condition: porcentajeEjecutado >= 60,
-              remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-            ),
-            _buildBenefitCard(
-              title: 'Extinción de la Pena',
-              condition: porcentajeEjecutado >= 100,
-              remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-            ),
-          ],
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white, // Fondo blanco para contraste
+            borderRadius: BorderRadius.circular(8), // Bordes suavemente redondeados
+            border: Border.all(color: Colors.grey, width: 1), // Línea gris delgada
+          ),
+          padding: const EdgeInsets.all(12), // Espaciado interno
+          child: Column(
+            children: [
+              const Text(
+                "Datos de la condena",
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
+              const Divider(color: Colors.grey), // Línea divisoria interna
+              _buildCondenaInfo(),
+            ],
+          ),
         ),
+
+        const SizedBox(height: 30),
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white, // Fondo blanco
+            borderRadius: BorderRadius.circular(8), // Bordes suavemente redondeados
+            border: Border.all(color: Colors.grey, width: 1), // Línea gris delgada
+          ),
+          padding: const EdgeInsets.all(12), // Espaciado interno
+          child: Column(
+            children: [
+              const Text(
+                "Beneficios obtenidos",
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                ),
+              ),
+              const Divider(color: Colors.grey), // Línea divisoria interna
+              _buildBeneficiosList(),
+            ],
+          ),
+        ),
+
         const SizedBox(height: 50),
       ],
     );
@@ -207,7 +216,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// **Modificación en _buildCondenaCard()**
+  // para isPid false
   Widget _buildCondenaCard(String title, int meses, int dias, {bool oculto = false}) {
     return Card(
       shape: RoundedRectangleBorder(
@@ -251,7 +260,123 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // para isPaid true
+  Widget _buildBeneficiosList() {
+    return Column(
+      children: [
+        _buildBeneficioFila(
+          'Permiso Administrativo de 72h',
+          33.33,
+          'salir del centro de reclusión por un periodo de 72 horas.',
+        ),
+        const Divider(color: gris),
+        _buildBeneficioFila(
+          'Prisión Domiciliaria',
+          50,
+          'cumplir el resto de la condena en su domicilio bajo vigilancia.',
+        ),
+        const Divider(color: gris),
+        _buildBeneficioFila(
+          'Libertad Condicional',
+          60,
+          'obtener la libertad bajo ciertas condiciones y supervisión.',
+        ),
+        const Divider(color: gris),
+        _buildBeneficioFila(
+          'Extinción de la Pena',
+          100,
+          'obtener su libertad definitiva.',
+        ),
+      ],
+    );
+  }
 
+  // para idPaid true
+  Widget _buildBeneficioFila(String titulo, double porcentajeRequerido, String accion) {
+    bool cumple = porcentajeEjecutado >= porcentajeRequerido;
+    int diasFaltantes = ((porcentajeRequerido - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0), // Espaciado entre filas
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                cumple ? Icons.check_circle : Icons.warning, // ✅ Si cumple, ⚠️ si no cumple
+                color: cumple ? Colors.green : Colors.red,
+                size: 20,
+              ),
+              const SizedBox(width: 8), // Espacio entre el ícono y el texto
+              Expanded(
+                child: Text(
+                  titulo,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: cumple ? Colors.green : Colors.red, // Verde si cumple, rojo si no
+                  ),
+                ),
+              ),
+              if (!cumple) // Muestra "Restan: X días" solo si aún no cumple
+                Text(
+                  "Restan: $diasFaltantes días",
+                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+            ],
+          ),
+          const SizedBox(height: 4), // Espacio antes del mensaje dinámico
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  cumple
+                      ? "Ya se puede solicitar para $accion"
+                      : "No se ha cumplido el tiempo establecido para obtener este beneficio.",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: cumple ? Colors.black : Colors.grey, // Negro si cumple, gris si no
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (cumple) // 🔥 Si cumple, mostrar el botón
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Align(
+                alignment: Alignment.centerRight, // Alineado a la izquierda
+                child: SizedBox(
+                  height: 25,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green, // Fondo verde 🌿
+                      foregroundColor: Colors.white, // Texto en blanco
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6), // Bordes redondeados suaves 🟢
+                      ),
+                    ),
+                    onPressed: () {
+                      // Aquí puedes agregar la función para manejar la solicitud
+                      print("Se ha solicitado el beneficio de $titulo");
+                    },
+                    child: const Text("Solicitar"),
+                  ),
+                ),
+              ),
+            ),
+
+        ],
+      ),
+    );
+  }
+
+
+  //para isPaid en false
   Widget _buildPorcentajeCard(double porcentaje, {bool oculto = false}) {
     return Card(
       shape: RoundedRectangleBorder(
@@ -295,6 +420,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // para isPaid en false
   Widget _buildBeneficioCard(String titulo, String valor, {bool oculto = false}) {
     return Card(
       shape: RoundedRectangleBorder(
@@ -325,71 +451,13 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 8),
             Text(
-              oculto ? '... Cumplido' : valor,
+              oculto ? '... ??' : valor,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: oculto ? Colors.grey.shade500 : Colors.black87, // Diferenciación de colores
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBenefitCard({required String title, required bool condition, required int remainingTime}) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: condition ? Colors.green : Colors.red, width: 1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      elevation: 3,
-      color: condition ? Colors.green : Colors.red.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Icon(
-              condition ? Icons.notifications : Icons.access_time, // Cambia a reloj si la tarjeta es roja
-              color: condition ? Colors.white : Colors.black, // Negro si la tarjeta es roja
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: condition
-                          ? 'Se ha completado el tiempo establecido para acceder al beneficio de '
-                          : 'Aún no se puede acceder a ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: condition ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    TextSpan(
-                      text: title, // Texto en negrilla
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold, // Negrilla
-                        color: condition ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    if (!condition) // Solo agregar este texto si la condición es falsa
-                      TextSpan(
-                        text: '. Faltan $remainingTime días para completar el tiempo establecido.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: condition ? Colors.white : Colors.black,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-
           ],
         ),
       ),
@@ -449,4 +517,34 @@ class _HomePageState extends State<HomePage> {
       print("No hay datos");
     }
   }
+  Widget _buildCondenaInfo() {
+    return Column(
+      children: [
+        _buildDatoFila("Condena transcurrida", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
+        _buildDatoFila("Tiempo redimido", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
+        _buildDatoFila("Condena restante", "$mesesRestante meses, $diasRestanteExactos días"),
+        _buildDatoFila("Porcentaje ejecutado", "${porcentajeEjecutado.toStringAsFixed(1)}%"),
+      ],
+    );
+  }
+
+  /// 🔹 Cada dato en una fila independiente
+  Widget _buildDatoFila(String titulo, String valor) {
+    return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Título a la izquierda, valor a la derecha
+        children: [
+          Text(
+            titulo,
+            style: const TextStyle(fontSize: 11),
+          ),
+          Text(
+            valor,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
+          ),
+        ],
+      );
+
+  }
+
+
 }
