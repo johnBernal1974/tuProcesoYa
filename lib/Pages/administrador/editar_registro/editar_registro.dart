@@ -170,62 +170,71 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   /// 🔹 Contenido principal (Información del PPL y Acudiente)
   Widget _buildMainContent() {
-    return ListView(
-      children: [
-        const Text(
-          'Información del PPL',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-        ),
-        Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
-        const SizedBox(height: 20),
-        datosEjecucionCondena(),
-        const SizedBox(height: 20),
-        nombrePpl(),
-        const SizedBox(height: 15),
-        apellidoPpl(),
-        const SizedBox(height: 15),
-        tipoDocumentoPpl(),
-        const SizedBox(height: 15),
-        numeroDocumentoPpl(),
-        const SizedBox(height: 15),
-        seleccionarCentroReclusion(),
-        const SizedBox(height: 15),
-        seleccionarJuzgadoEjecucionPenas(),
-        const SizedBox(height: 15),
-        seleccionarJuzgadoQueCondeno(),
-        const SizedBox(height: 15),
-        seleccionarDelito(),
-        const SizedBox(height: 15),
-        fechaCapturaPpl(),
-        const SizedBox(height: 15),
-        radicadoPpl(),
-        const SizedBox(height: 15),
-        condenaPpl(),
-        const SizedBox(height: 15),
-        tdPpl(),
-        const SizedBox(height: 15),
-        nuiPpl(),
-        const SizedBox(height: 15),
-        patioPpl(),
-        const SizedBox(height: 30),
+    return FutureBuilder<double>(
+      future: calcularTotalRedenciones(widget.doc.id), // 🔥 Calcula los días redimidos
+      builder: (context, snapshot) {
+        double totalRedimido = snapshot.data ?? 0.0; // 🟢 Si no hay datos, usa 0.0
 
-        // 🔹 Información del Acudiente
-        const Text(
-          'Información del Acudiente',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-        ),
-        const SizedBox(height: 15),
-        nombreAcudiente(),
-        const SizedBox(height: 15),
-        apellidosAcudiente(),
-        const SizedBox(height: 15),
-        parentescoAcudiente(),
-        const SizedBox(height: 15),
-        celularAcudiente(),
-        const SizedBox(height: 15),
-        emailAcudiente(),
-        const SizedBox(height: 50),
-      ],
+        return ListView(
+          children: [
+            const Text(
+              'Información del PPL',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            ),
+            Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
+            const SizedBox(height: 20),
+
+            datosEjecucionCondena(totalRedimido), // 🔥 Pasa el total de días redimidos
+
+            const SizedBox(height: 20),
+            nombrePpl(),
+            const SizedBox(height: 15),
+            apellidoPpl(),
+            const SizedBox(height: 15),
+            tipoDocumentoPpl(),
+            const SizedBox(height: 15),
+            numeroDocumentoPpl(),
+            const SizedBox(height: 15),
+            seleccionarCentroReclusion(),
+            const SizedBox(height: 15),
+            seleccionarJuzgadoEjecucionPenas(),
+            const SizedBox(height: 15),
+            seleccionarJuzgadoQueCondeno(),
+            const SizedBox(height: 15),
+            seleccionarDelito(),
+            const SizedBox(height: 15),
+            fechaCapturaPpl(),
+            const SizedBox(height: 15),
+            radicadoPpl(),
+            const SizedBox(height: 15),
+            condenaPpl(),
+            const SizedBox(height: 15),
+            tdPpl(),
+            const SizedBox(height: 15),
+            nuiPpl(),
+            const SizedBox(height: 15),
+            patioPpl(),
+            const SizedBox(height: 30),
+
+            // 🔹 Información del Acudiente
+            const Text(
+              'Información del Acudiente',
+              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            ),
+            const SizedBox(height: 15),
+            nombreAcudiente(),
+            const SizedBox(height: 15),
+            apellidosAcudiente(),
+            const SizedBox(height: 15),
+            parentescoAcudiente(),
+            const SizedBox(height: 15),
+            celularAcudiente(),
+            const SizedBox(height: 15),
+            emailAcudiente(),
+            const SizedBox(height: 50),
+          ],
+        );
+      },
     );
   }
 
@@ -283,7 +292,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
 
   //para seleccionar fecha redenciones
   /// 🔥 Mostrar un DatePicker para seleccionar la fecha de redención
@@ -428,8 +436,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  await _guardarRedencion(widget.doc.id); // 🛑 Esperar a que guarde la redención
-                  await calcularTotalRedenciones(widget.doc.id); // 🔥 Calcular total después de guardar
+                  await _guardarRedencion(widget.doc.id); // 🔥 Se ejecuta pero no retorna nada
+
+                  await calcularTotalRedenciones(widget.doc.id); // 🔥 Se ejecuta y obtiene el total de días redimidos
+
+                 _initCalculoCondena(); // 🔥 Se recalcula la condena con los valores actualizados
+
+                  setState(() {}); // 🔄 Forzar la actualización de la UI
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green, // Botón en verde
@@ -442,12 +455,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               ),
             ),
 
-        ],
+
+          ],
         ),
       ),
     );
   }
-  Future<void> calcularTotalRedenciones(String pplId) async {
+
+  Future<double> calcularTotalRedenciones(String pplId) async {
+    double totalDias = 0.0;
+
     try {
       QuerySnapshot redencionesSnapshot = await FirebaseFirestore.instance
           .collection('Ppl')
@@ -455,14 +472,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           .collection('redenciones')
           .get();
 
-      double totalDiasRedimidos = redencionesSnapshot.docs.fold(0, (total, doc) {
-        return total + (doc['dias_redimidos'] as num).toDouble();
-      });
+      for (var doc in redencionesSnapshot.docs) {
+        totalDias += (doc['dias_redimidos'] as num).toDouble();
+      }
 
-      print("📌 Total de días redimidos: $totalDiasRedimidos");
+      print("📌 Total días redimidos: $totalDias"); // 🔥 Mostrar en consola
     } catch (e) {
-      print("❌ Error al calcular la suma de redenciones: $e");
+      print("❌ Error calculando redenciones: $e");
     }
+
+    return totalDias;
   }
 
   Future<void> _fetchTodosCentrosReclusion() async {
@@ -1352,8 +1371,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   void _initCalculoCondena() async {
     try {
-      final fechaCapturaRaw = widget.doc.get('fecha_captura'); // 🔹 Puede ser Timestamp o String
-      DateTime? fechaCaptura = _convertirFecha(fechaCapturaRaw); // ✅ Usa la nueva función segura
+      final fechaCapturaRaw = widget.doc.get('fecha_captura');
+      DateTime? fechaCaptura = _convertirFecha(fechaCapturaRaw);
 
       if (fechaCaptura == null) {
         debugPrint("❌ Error: No se pudo convertir la fecha de captura");
@@ -1362,23 +1381,24 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
       debugPrint("📌 Fecha de captura convertida correctamente: $fechaCaptura");
 
-      await _calculoCondenaController.calcularTiempo(widget.doc.id); // 🔥 Solo pasamos `id`
+      // 🔥 Llamar directamente al cálculo sin necesidad de obtener días redimidos aquí
+      await _calculoCondenaController.calcularTiempo(widget.doc.id);
 
+      // 🔥 Actualizar los valores obtenidos del controlador
+      setState(() {
+        mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
+        diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
+        mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
+        diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
+        porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0;
+      });
 
-      mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
-      diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
-      mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
-      diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
-      porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0;
-
-      debugPrint("🔹 Cálculo de condena completado:");
+      debugPrint("✅ Cálculo de condena con redenciones actualizado:");
       debugPrint("   - Meses ejecutados: $mesesEjecutado");
       debugPrint("   - Días ejecutados: $diasEjecutadoExactos");
       debugPrint("   - Meses restantes: $mesesRestante");
       debugPrint("   - Días restantes: $diasRestanteExactos");
-      debugPrint("   - Porcentaje ejecutado: $porcentajeEjecutado%");
-
-      setState(() {}); // 🔹 Forzar actualización de UI
+      debugPrint("   - Porcentaje ejecutado: ${porcentajeEjecutado.toStringAsFixed(1)}%");
     } catch (e) {
       debugPrint("❌ Error en _initCalculoCondena: $e");
     }
@@ -1406,14 +1426,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _emailAcudienteController.text = widget.doc.get('email') ?? "";
   }
 
-  Widget datosEjecucionCondena() {
+  Widget datosEjecucionCondena(double totalDiasRedimidos) {
     double screenWidth = MediaQuery.of(context).size.width;
-    // Cajón para "Condena transcurrida"
+
+    // 🔷 Tarjeta para "Condena transcurrida"
     Widget boxCondenaTranscurrida = Container(
       width: 150,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        border: Border.all(color: primary,width: 3),
+        border: Border.all(color: primary, width: 3),
         borderRadius: BorderRadius.circular(8),
         color: Colors.white,
       ),
@@ -1423,9 +1444,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           Text(
             'Condena\ntranscurrida',
             style: TextStyle(
-              fontSize: screenWidth > 600 ? 14 : 12,
-              color: negroLetras,
-              height: 1
+                fontSize: screenWidth > 600 ? 14 : 12,
+                color: negroLetras,
+                height: 1
             ),
             textAlign: TextAlign.center,
           ),
@@ -1447,12 +1468,88 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
 
-    // Cajón para "Condena restante"
+    // 🟢 Tarjeta para "Tiempo de Redención"
+    Widget boxTiempoRedencion = Container(
+      width: 150,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary, width: 3),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            'Tiempo\nredimido',
+            style: TextStyle(
+                fontSize: screenWidth > 600 ? 14 : 12,
+                color: negroLetras,
+                height: 1
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            '${totalDiasRedimidos.toStringAsFixed(1)} días', // 🔹 Muestra los días redimidos
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 14 : 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // 🔶 Nueva Tarjeta para "Condena Total Cumplida"
+    int totalDiasCumplidos = (mesesEjecutado * 30 + diasEjecutadoExactos + totalDiasRedimidos).toInt();
+    int totalMesesCumplidos = totalDiasCumplidos ~/ 30;
+    int diasCumplidosExactos = totalDiasCumplidos % 30;
+
+    Widget boxCondenaTotalCumplida = Container(
+      width: 150,
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary, width: 3),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            'Condena total\ncumplida',
+            style: TextStyle(
+                fontSize: screenWidth > 600 ? 14 : 12,
+                color: negroLetras,
+                height: 1
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 5),
+          Text(
+            totalMesesCumplidos == 1
+                ? diasCumplidosExactos == 1
+                ? '$totalMesesCumplidos mes : $diasCumplidosExactos día'
+                : '$totalMesesCumplidos mes : $diasCumplidosExactos días'
+                : diasCumplidosExactos == 1
+                ? '$totalMesesCumplidos meses : $diasCumplidosExactos día'
+                : '$totalMesesCumplidos meses : $diasCumplidosExactos días',
+            style: TextStyle(
+              fontSize: screenWidth > 600 ? 14 : 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+
+    // 🟠 Tarjeta para "Condena restante"
     Widget boxCondenaRestante = Container(
       width: 150,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        border: Border.all(color: primary,width: 3),
+        border: Border.all(color: primary, width: 3),
         borderRadius: BorderRadius.circular(8),
         color: Colors.white,
       ),
@@ -1462,9 +1559,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           Text(
             'Condena\nrestante',
             style: TextStyle(
-              fontSize: screenWidth > 600 ? 14 : 12,
-              color: negroLetras,
-              height: 1
+                fontSize: screenWidth > 600 ? 14 : 12,
+                color: negroLetras,
+                height: 1
             ),
             textAlign: TextAlign.center,
           ),
@@ -1490,12 +1587,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
 
-    // Cajón para "Porcentaje ejecutado"
+    // 🔵 Tarjeta para "Porcentaje ejecutado"
     Widget boxPorcentajeEjecutado = Container(
       width: 150,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        border: Border.all(color: primary,width: 3),
+        border: Border.all(color: primary, width: 3),
         borderRadius: BorderRadius.circular(8),
         color: Colors.white,
       ),
@@ -1505,9 +1602,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           Text(
             'Porcentaje\nejecutado: ',
             style: TextStyle(
-              fontSize: screenWidth > 600 ? 14 : 12,
-              color: negroLetras,
-              height: 1
+                fontSize: screenWidth > 600 ? 14 : 12,
+                color: negroLetras,
+                height: 1
             ),
           ),
           const SizedBox(height: 6),
@@ -1521,17 +1618,21 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ],
       ),
     );
-    // Utiliza un Wrap para que los cajones se organicen en filas en dispositivos móviles
+
+    // 🔥 Ajustamos el diseño con `Wrap`
     return Wrap(
-      spacing: 10,  // Espacio horizontal entre cajones
-      runSpacing: 10,  // Espacio vertical entre filas
+      spacing: 10,
+      runSpacing: 10,
       children: [
         boxCondenaTranscurrida,
+        boxTiempoRedencion,
+        boxCondenaTotalCumplida, // 🔹 Nueva tarjeta agregada
         boxCondenaRestante,
         boxPorcentajeEjecutado,
       ],
     );
   }
+
 
   Widget nombrePpl() {
     return textFormField(
