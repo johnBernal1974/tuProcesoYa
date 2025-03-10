@@ -285,6 +285,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
                 ),
                 const SizedBox(height: 10),
                 TextField(
+                  textCapitalization:TextCapitalization.sentences,
                   controller: _controllers[index],
                   maxLines: 10,
                   decoration: InputDecoration(
@@ -303,7 +304,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         adjuntarDocumento(),
         const SizedBox(height: 30),
         ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+          style: ElevatedButton.styleFrom(backgroundColor: primary),
           onPressed: () {
             _guardarSolicitudConValoresActualizados();
           },

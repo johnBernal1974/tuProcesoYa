@@ -53,9 +53,8 @@ class _MisDatosPageState extends State<MisDatosPage> {
       pageTitle: 'Mis Datos',
       content: SingleChildScrollView(
           child: Center(
-            child: Container(
-              width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
-              padding: const EdgeInsets.all(10),
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width >= 1000 ? 500 : double.infinity,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -79,142 +78,155 @@ class _MisDatosPageState extends State<MisDatosPage> {
                   ),),
                   const SizedBox(height: 15),
                   Row(
-                    //mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Nombre:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.nombrePpl, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600 )),
+                      const Text('Nombre:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.nombrePpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600 )),
                     ],
                   ),
                   Row(
-                    //mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Apellido:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.apellidoPpl, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600, color: Colors.black)),
+                      const Text('Apellido:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.apellidoPpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600, color: Colors.black)),
                     ],
                   ),
                   Row(
-                    //mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Tipo Documento:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.tipoDocumentoPpl, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      const Text('Tipo Documento:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.tipoDocumentoPpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   Row(
-                    //mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Número Documento:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.numeroDocumentoPpl, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      const Text('Número Documento:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.numeroDocumentoPpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 15),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Centro Reclusión:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.centroReclusion, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600, height: 1.1)),
+                      Text(_ppl!.centroReclusion, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600, height: 1.1)),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Juzgado Ejecución Penas:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.juzgadoEjecucionPenas, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600, height: 1.1)),
+                      Text(_ppl!.juzgadoEjecucionPenas, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600, height: 1.1)),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Juzgado Que Condenó:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.juzgadoQueCondeno, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600, height: 1.1)),
+                      Text(_ppl!.juzgadoQueCondeno, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600, height: 1.1)),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Delito:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.delito, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text(_ppl!.delito, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  const Divider(color: Colors.grey),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Radicado:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.radicado, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text(_ppl!.radicado, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  const SizedBox(height: 10),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text('${_ppl!.tiempoCondena} meses', style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text('${_ppl!.tiempoCondena} meses', style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('TD:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.td, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text(_ppl!.td, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('NUI:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.nui, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text(_ppl!.nui, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Patio:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.patio, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      Text(_ppl!.patio, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Fecha Captura:  ', style: TextStyle(fontSize: 13, color: negro)),
                       Text(
-                        DateFormat('yyyy-MM-dd').format(_ppl!.fechaCaptura!),
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                      )
-                      ,
+                        DateFormat("d 'de' MMMM 'de' yyyy", 'es_ES').format(_ppl!.fechaCaptura!),
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 15),
+                  const SizedBox(height: 25),
                   const Text("Datos del Acudiente", style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      color: Colors.black
-                  ),),
+                      color: Colors.black,
+                    fontSize: 20
+                  )),
                   const SizedBox(height: 5),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Nombre:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.nombreAcudiente, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600 )),
+                      const Text('Nombre:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.nombreAcudiente, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600 )),
                     ],
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Apellido:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.apellidoAcudiente, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600 )),
+                      const Text('Apellido:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.apellidoAcudiente, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600 )),
                     ],
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Parentesco:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.parentescoRepresentante, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      const Text('Parentesco:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.parentescoRepresentante, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Celular:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.celular, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      const Text('Celular:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.celular, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Email:  ', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.email, style: const TextStyle(fontSize: 16, fontWeight:FontWeight.w600)),
+                      const Text('Email:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.email, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
                   const SizedBox(height: 25)

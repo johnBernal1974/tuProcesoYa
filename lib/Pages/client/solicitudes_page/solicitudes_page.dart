@@ -55,8 +55,8 @@ class _SolicitudesdeServicioPageState extends State<SolicitudesdeServicioPage> {
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     color: negro,
-                    fontSize: 20,
-                    height: 1.2,
+                    fontSize: 24,
+                    height: 1,
                   ),
                 ),
 
@@ -80,14 +80,14 @@ class _SolicitudesdeServicioPageState extends State<SolicitudesdeServicioPage> {
                       child: Card(
                         shape: RoundedRectangleBorder(
                           side: BorderSide(color: Theme.of(context).primaryColor, width: 1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(25),
                         ),
                         elevation: 1,
                         child: Container(
                           width: screenWidth * 0.9, // ancho fijo
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(25),
                             border: Border.all(width: 1.5),
                           ),
                           child: Padding(

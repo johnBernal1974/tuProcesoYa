@@ -117,45 +117,57 @@ class _RegistroPageState extends State<RegistroPage> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(10.0),
+                padding: const EdgeInsets.all(5.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     if (_currentPage > 0)
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: gris, // 🔥 Color de fondo
-                          foregroundColor: Colors.white, // 🔥 Color del texto
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        ),
-                        onPressed: _prevPage,
-                        child: const Row(
-                          children: [
-                            Icon(Icons.keyboard_double_arrow_left, size: 20), // 🔹 Flecha doble antes del texto
-                            SizedBox(width: 5), // Espacio entre icono y texto
-                            Text('Anterior', style: TextStyle(fontSize: 12)),
-                          ],
+                      SizedBox(
+                        height: 25, // 🔥 Reducimos la altura del botón
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: gris, // 🔥 Color de fondo
+                            foregroundColor: Colors.white, // 🔥 Color del texto
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 🔥 Menos padding
+                            minimumSize: const Size(50, 25), // 🔥 Tamaño mínimo más pequeño
+                          ),
+                          onPressed: _prevPage,
+                          child: const Row(
+                            children: [
+                              Icon(Icons.keyboard_double_arrow_left, size: 16), // 🔹 Icono más pequeño
+                              SizedBox(width: 3), // 🔥 Menos espacio
+                              Text('Anterior', style: TextStyle(fontSize: 10)), // 🔹 Texto más pequeño
+                            ],
+                          ),
                         ),
                       ),
 
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primary, // 🔥 Color de fondo
-                        foregroundColor: Colors.white, // 🔥 Color del texto
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      ),
-                      onPressed: _currentPage == 12 ? _submitForm : _validarYContinuar,
-                      child: Row(
-                        children: [
-                          Text(_currentPage == 12 ? 'Finalizar' : 'Siguiente', style: const TextStyle(fontSize: 12)),
-                          const SizedBox(width: 5), // Espacio entre texto e icono
-                          const Icon(Icons.keyboard_double_arrow_right, size: 17), // 🔹 Flecha doble después del texto
-                        ],
+                    SizedBox(
+                      height: 25,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primary, // 🔥 Color de fondo
+                          foregroundColor: Colors.white, // 🔥 Color del texto
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 🔥 Menos padding
+                          minimumSize: const Size(50, 25), // 🔥 Tamaño mínimo más pequeño
+                        ),
+                        onPressed: _currentPage == 12 ? _submitForm : _validarYContinuar,
+                        child: Row(
+                          children: [
+                            Text(
+                              _currentPage == 12 ? 'Finalizar' : 'Siguiente',
+                              style: const TextStyle(fontSize: 10), // 🔹 Texto más pequeño
+                            ),
+                            const SizedBox(width: 3), // 🔥 Menos espacio
+                            const Icon(Icons.keyboard_double_arrow_right, size: 16), // 🔹 Icono más pequeño
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               )
+
             ],
           ),
         ),
@@ -248,7 +260,6 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-
   Widget _buildAcudienteForm() {
     return Form(
       key: _formKeyAcudiente, // Asociamos el formulario con la clave
@@ -297,8 +308,6 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
-
-
 
   Widget _buildCelularAcudienteForm() {
     return Form(
@@ -627,12 +636,21 @@ class _RegistroPageState extends State<RegistroPage> {
                       if (selectedCentro != null && selectedCentro!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          child: Text(
-                            "Centro de reclusión seleccionado: $selectedCentro",
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.green),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                "Centro de reclusión seleccionado:",
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                              ),
+                              Text(
+                                "$selectedCentro",
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black),
+                              ),
+                            ],
                           ),
                         ),
-
+                      const SizedBox(height: 30),
                       _seleccionarCentroReclusion(),
                       const SizedBox(height: 10),
                     ],
@@ -646,7 +664,6 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
-
 
 // 🔥 Nueva versión del campo de búsqueda con el letrero siempre visible
   Widget _seleccionarCentroReclusion() {
@@ -855,29 +872,14 @@ class _RegistroPageState extends State<RegistroPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Genial, información completa",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              "¡Ahora vamos\na crear tu cuenta!",
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, height: 1),
+              "¡Ahora vamos a crear tu cuenta!",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, height: 1),
             ),
             const SizedBox(height: 20),
-
-            // 🔥 Alerta de información
-            const Row(
-              children: [
-                Icon(Icons.mark_email_read, color: Colors.amber, size: 40),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    "Por favor ingresa un correo electrónico válido, que esté activo y al cual tengas acceso, ya que allí "
-                        "se te estará enviando toda la información relacionada con el PPL.",
-                    style: TextStyle(fontSize: 12),
-                  ),
-                ),
-              ],
+            const Text(
+              "Por favor ingresa un correo electrónico válido, que esté activo y al cual tengas acceso, ya que allí "
+                  "se te estará enviando toda la información relacionada con el PPL.",
+              style: TextStyle(fontSize: 12),
             ),
             const SizedBox(height: 20),
 
@@ -922,31 +924,6 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-
-
-// 🔹 Métodos para definir los bordes
-  OutlineInputBorder _defaultBorder() {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Colors.grey, width: 1),
-    );
-  }
-
-  OutlineInputBorder _focusedBorder() {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: primary, width: 2),
-    );
-  }
-
-  OutlineInputBorder _errorBorder() {
-    return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(10),
-      borderSide: const BorderSide(color: Colors.red, width: 2),
-    );
-  }
-
-
   Widget _buildCuentapasawordForm() {
     return Form(
       key: _formKeyPassword,
@@ -962,23 +939,20 @@ class _RegistroPageState extends State<RegistroPage> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, height: 1),
               ),
               const SizedBox(height: 20),
-
-              // 🔹 Mensaje de seguridad
-              const Row(
-                children: [
-                  Icon(Icons.lock, color: Colors.amber, size: 40),
-                  SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      "Ten en cuenta que la contraseña que vas a crear debe tener mínimo 6 caracteres. "
-                          "Por la seguridad de tus datos, no la compartas con nadie.",
-                      style: TextStyle(fontSize: 12),
+              RichText(
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 12, color: Colors.black),
+                  children: [
+                    TextSpan(text: "Ten en cuenta que la contraseña que vas a crear debe tener "),
+                    TextSpan(
+                      text: "mínimo 6 caracteres",
+                      style: TextStyle(fontWeight: FontWeight.bold), // 🔥 Negrita
                     ),
-                  ),
-                ],
+                    TextSpan(text: ". Por la seguridad de tus datos, no la compartas con nadie."),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
-
               // 🔹 Contraseña
               TextFormField(
                 controller: passwordController,
@@ -1045,7 +1019,6 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
-
 
   void _submitForm() async {
     final String password = passwordController.text.trim();

@@ -30,40 +30,21 @@ class _LoginPageState extends State<LoginPage> {
         backgroundColor: primary,
         iconTheme: const IconThemeData(color: negro, size: 30),
         title: const Text(
-          "Inicio de sesión",
+          "Bienvenido",
           style: TextStyle(color: Colors.white),
         ),
       ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
-        child: Center( // Centra el contenido en el eje horizontal
-          child: Container(
+        child: Container(
             constraints: const BoxConstraints(maxWidth: 600), // Limita el ancho máximo
             padding: const EdgeInsets.all(16.0), // Agrega espacio alrededor del contenido
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.start, // 🔹 Asegura que los elementos estén en la parte superior
               crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // LOGO - en la parte superior derecha
-                Align(
-                  alignment: Alignment.topRight, // Esto coloca el logo en la parte superior derecha
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    child: Image.asset(
-                      'assets/images/logo_tu_proceso_ya.png',
-                      width: 100,
-                      height: 100,
-                    ),
-                  ),
-                ),
 
-                // TEXTO DESCRIPTIVO
-                const Text(
-                  'Si tu cuenta ya ha sido activada con anticipación, ingresa tus credenciales para ingresar',
-                  style: TextStyle(fontSize: 14, color: Colors.black),
-                ),
-                const SizedBox(height: 10),
-
-                // TÍTULO
                 Text(
                   "Iniciar Sesión",
                   style: TextStyle(
@@ -230,8 +211,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
-      ),
-    );
+      );
   }
 
 

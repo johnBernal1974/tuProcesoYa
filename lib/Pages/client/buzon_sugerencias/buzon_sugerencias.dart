@@ -103,9 +103,8 @@ class _BuzonSugerenciasPageState extends State<BuzonSugerenciasPage> {
       pageTitle: 'Buzón de Sugerencias',
       content: SingleChildScrollView(
         child: Center(
-          child: Container(
+          child: SizedBox(
             width: screenWidth >= 1000 ? 1000 : double.infinity,
-            padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -125,12 +124,12 @@ class _BuzonSugerenciasPageState extends State<BuzonSugerenciasPage> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.info, color: Colors.red, size: 20),
+                    Icon(Icons.info, color: Colors.red, size: 40),
                     SizedBox(width: 8),
                     Flexible(
                       child: Text(
-                        '¡Recuerda que este espacio es solo para sugerencias y NO para solicitar servicios.',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                        'Recuerda que este espacio está destinado únicamente para sugerencias y no para la solicitud de servicios.',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, height: 1),
                         softWrap: true,
                       ),
                     ),

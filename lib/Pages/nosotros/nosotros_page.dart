@@ -17,16 +17,15 @@ class _NosotrosPageState extends State<NosotrosPage> {
       pageTitle: 'Nosotros',
       content: SingleChildScrollView(
         child: Center(
-          child: Container(
+          child: SizedBox(
             width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
-            padding: const EdgeInsets.all(10),
             child: Align(
               alignment: Alignment.topCenter,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 25),
-                  Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 80), // Logo
+                  Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40), // Logo
                   const SizedBox(height: 20),
                   const Text(
                     'Bienvenido a Tu Proceso Ya, una plataforma comprometida con la justicia social y la defensa de los derechos humanos. Nuestra misión es facilitar el acceso a servicios legales esenciales para personas privadas de la libertad, que a menudo enfrentan barreras económicas y burocráticas para ejercer sus derechos.',

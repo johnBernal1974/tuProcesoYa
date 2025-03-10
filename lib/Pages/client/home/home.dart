@@ -30,8 +30,8 @@ class _HomePageState extends State<HomePage> {
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
-
   bool _isPaid = false;
+  bool _isLoading = true; // 🔹 Nuevo estado para evitar mostrar la UI antes de validar
 
 
 
@@ -57,11 +57,13 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadData() async {
     final pplProvider = PplProvider();
     final pplData = await pplProvider.getById(_uid);
-    setState(() {
-      _ppl = pplData;
-      _isPaid = pplData?.isPaid ?? false; // Suponiendo que el modelo tiene isPaid
-      print("_isPaid actualizado a: $_isPaid"); // Depuración
-    });
+    if (mounted) {
+      setState(() {
+        _ppl = pplData;
+        _isPaid = pplData?.isPaid ?? false;
+        _isLoading = false; // 🔹 Solo cuando termine de cargar
+      });
+    }
   }
 
 
@@ -69,10 +71,11 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return MainLayout(
       pageTitle: 'Página Principal',
-      content: SingleChildScrollView(
-        child: Container(
+      content: _isLoading
+          ? const Center(child: CircularProgressIndicator()) // 🔹 No carga la UI hasta tener datos
+          : SingleChildScrollView(
+        child: SizedBox(
           width: MediaQuery.of(context).size.width >= 1000 ? 800 : double.infinity,
-          padding: const EdgeInsets.all(10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -89,6 +92,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
 
   /// Contenido si el usuario **ha pagado**
   Widget _buildPaidContent() {

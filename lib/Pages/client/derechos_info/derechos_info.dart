@@ -10,7 +10,6 @@ class DerechosInfoPage extends StatelessWidget {
     return MainLayout(
       pageTitle: 'Derecho Penitenciario',
       content: SingleChildScrollView(
-        padding: const EdgeInsets.all(6.0),
         child: Center(
           child: SizedBox(
             // Limita el ancho máximo para una mejor legibilidad en pantallas grandes.
