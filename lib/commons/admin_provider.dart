@@ -10,47 +10,39 @@ class AdminProvider {
   String? adminApellido;
   String? adminFullName;
   String? rol;
-  bool isLoading = false;
+  bool _isLoading = false;
 
-  // Método para verificar si el usuario es admin
+  /// 🔹 Retorna si el usuario actual es admin
   Future<bool> isUserAdmin(String uid) async {
     try {
-      DocumentSnapshot adminDoc = await FirebaseFirestore.instance
-          .collection('admin')
-          .doc(uid)
-          .get();
+      DocumentSnapshot adminDoc =
+      await FirebaseFirestore.instance.collection('admin').doc(uid).get();
 
       if (adminDoc.exists) {
-        // Actualizamos el rol desde el nodo 'rol'
         rol = adminDoc['rol'] ?? 'user';
+        return true;
       }
-      return adminDoc.exists;
+      return false;
     } catch (e) {
       print("❌ Error verificando admin: $e");
       return false;
     }
   }
 
-  // Método para cargar el nombre y apellido del admin
+  /// 🔹 Carga los datos del administrador autenticado
   Future<void> loadAdminData() async {
-    if ((adminName != null && adminApellido != null && rol != null) || isLoading) return;
-    isLoading = true;
+    if (_isLoading || (adminName != null && adminApellido != null && rol != null)) return;
 
+    _isLoading = true;
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-        adminName = '';
-        adminApellido = '';
-        adminFullName = '';
-        rol = '';
-        isLoading = false;
+        reset();
         return;
       }
 
-      DocumentSnapshot adminDoc = await FirebaseFirestore.instance
-          .collection('admin')
-          .doc(user.uid)
-          .get();
+      DocumentSnapshot adminDoc =
+      await FirebaseFirestore.instance.collection('admin').doc(user.uid).get();
 
       if (adminDoc.exists) {
         adminName = adminDoc['name'] ?? '';
@@ -58,23 +50,16 @@ class AdminProvider {
         adminFullName = "$adminName $adminApellido".trim();
         rol = adminDoc['rol'] ?? '';
       } else {
-        adminName = '';
-        adminApellido = '';
-        adminFullName = '';
-        rol = '';
+        reset();
       }
     } catch (e) {
       print("❌ Error cargando datos del admin: $e");
-      adminName = '';
-      adminApellido = '';
-      adminFullName = '';
-      rol = '';
+      reset();
     }
-
-    isLoading = false;
+    _isLoading = false;
   }
 
-  // Método para resetear los datos cuando se cierre sesión
+  /// 🔹 Limpia la información cuando se cierra sesión
   void reset() {
     adminName = null;
     adminApellido = null;
