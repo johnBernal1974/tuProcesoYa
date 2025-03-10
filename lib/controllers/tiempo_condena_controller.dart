@@ -11,6 +11,10 @@ class CalculoCondenaController with ChangeNotifier {
   int? diasEjecutadoExactos;
   double? porcentajeEjecutado;
 
+  double _totalDiasRedimidos = 0.0; // 🔥 Variable privada para almacenar días redimidos
+
+  double get totalDiasRedimidos => _totalDiasRedimidos; // 🔥 Getter para acceder a los días redimidos
+
   final PplProvider _pplProvider;
 
   CalculoCondenaController(this._pplProvider);
@@ -31,11 +35,11 @@ class CalculoCondenaController with ChangeNotifier {
       }
 
       // 🔥 Obtener los días redimidos
-      double diasRedimidos = await calcularTotalRedenciones(id);
-      debugPrint("📌 Días redimidos: $diasRedimidos");
+      await calcularTotalRedenciones(id);
+      debugPrint("📌 Días redimidos: $_totalDiasRedimidos");
 
       // 🔥 Aplicar los días redimidos a la condena total
-      int condenaTotalDias = (tiempoCondena! * 30) - diasRedimidos.toInt();
+      int condenaTotalDias = (tiempoCondena! * 30) - _totalDiasRedimidos.toInt();
       if (condenaTotalDias < 0) condenaTotalDias = 0; // Evitar valores negativos
 
       DateTime fechaActual = DateTime.now();
@@ -63,8 +67,9 @@ class CalculoCondenaController with ChangeNotifier {
       debugPrint("❌ Error en calcularTiempo: $e");
     }
   }
+
   /// 🔥 Método para obtener la suma total de días redimidos
-  Future<double> calcularTotalRedenciones(String pplId) async {
+  Future<void> calcularTotalRedenciones(String pplId) async {
     try {
       QuerySnapshot redencionesSnapshot = await FirebaseFirestore.instance
           .collection('Ppl')
@@ -72,16 +77,17 @@ class CalculoCondenaController with ChangeNotifier {
           .collection('redenciones')
           .get();
 
-      double totalDiasRedimidos = 0.0;
+      _totalDiasRedimidos = 0.0; // Reiniciar antes de sumar
+
       for (var doc in redencionesSnapshot.docs) {
-        totalDiasRedimidos += (doc['dias_redimidos'] as num).toDouble();
+        _totalDiasRedimidos += (doc['dias_redimidos'] as num).toDouble();
       }
 
-      debugPrint("📌 Total de días redimidos para PPL $pplId: $totalDiasRedimidos días");
-      return totalDiasRedimidos;
+      debugPrint("📌 Total de días redimidos para PPL $pplId: $_totalDiasRedimidos días");
+      notifyListeners(); // 🔥 Notificar cambios
     } catch (e) {
       debugPrint("❌ Error obteniendo los días redimidos: $e");
-      return 0.0; // Retornar 0 si hay error
+      _totalDiasRedimidos = 0.0;
     }
   }
 }

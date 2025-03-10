@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
+import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/ppl_provider.dart';
@@ -32,13 +33,14 @@ class _HomePageState extends State<HomePage> {
   int tiempoCondena =0;
   bool _isPaid = false;
   bool _isLoading = true; // 🔹 Nuevo estado para evitar mostrar la UI antes de validar
-
-
+  double totalDiasRedimidos = 0;
+  late CalculoCondenaController _calculoCondenaController;
 
   @override
   void initState() {
     super.initState();
     _myAuthProvider = MyAuthProvider();
+    _calculoCondenaController = CalculoCondenaController(PplProvider()); // 🔥 Instanciar el controlador
     _loadUid();
   }
 
@@ -48,23 +50,58 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _uid = user.uid;
       });
-      await _loadData();
-      calcularTiempo(_myAuthProvider.getUser()!.uid);
 
+      await _loadData(); // 🔥 Cargar datos generales del usuario
+
+      // 🔥 Calcular la condena directamente con el controlador
+      await _calculoCondenaController.calcularTiempo(_uid);
     }
   }
+
+
 
   Future<void> _loadData() async {
     final pplProvider = PplProvider();
     final pplData = await pplProvider.getById(_uid);
+
     if (mounted) {
       setState(() {
         _ppl = pplData;
         _isPaid = pplData?.isPaid ?? false;
-        _isLoading = false; // 🔹 Solo cuando termine de cargar
+        _isLoading = false;
       });
+
+      // 🔥 Usar el controlador en lugar de calcular aquí
+      await _calculoCondenaController.calcularTiempo(_uid);
+      setState(() {}); // 🔹 Asegurar que la UI se actualice con los nuevos valores
     }
   }
+
+  Future<double> calcularTotalRedenciones(String pplId) async {
+    double totalDiasRedimidos = 0;
+
+    try {
+      QuerySnapshot redencionesSnapshot = await FirebaseFirestore.instance
+          .collection('Ppl')
+          .doc(pplId)
+          .collection('redenciones')
+          .get();
+
+      for (var doc in redencionesSnapshot.docs) {
+        double dias = (doc['dias_redimidos'] ?? 0).toDouble();
+        totalDiasRedimidos += dias;
+      }
+
+      debugPrint("🔹 Total días redimidos: $totalDiasRedimidos");
+    } catch (e) {
+      debugPrint("❌ Error al calcular total de redenciones: $e");
+    }
+
+    return totalDiasRedimidos;
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -464,87 +501,82 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Future<void> calcularTiempo(String id) async {
+  Future<void> calcularTiempo(String id, double diasRedimidos) async {
     final pplData = await _pplProvider.getById(id);
     if (pplData != null) {
       final fechaCaptura = pplData.fechaCaptura;
       tiempoCondena = pplData.tiempoCondena;
       final fechaActual = DateTime.now();
-      final fechaFinCondena = fechaCaptura?.add(Duration(days: tiempoCondena * 30));
+
+      // 🔹 Restamos los días redimidos a la condena
+      final tiempoCondenaReducida = tiempoCondena! * 30 - diasRedimidos.toInt();
+      final fechaFinCondena = fechaCaptura?.add(Duration(days: tiempoCondenaReducida));
 
       final diferenciaRestante = fechaFinCondena?.difference(fechaActual);
       final diferenciaEjecutado = fechaActual.difference(fechaCaptura!);
 
       setState(() {
-        mesesRestante = (diferenciaRestante!.inDays ~/ 30)!;
+        mesesRestante = (diferenciaRestante!.inDays ~/ 30);
         diasRestanteExactos = diferenciaRestante.inDays % 30;
 
         mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
         diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
+        porcentajeEjecutado = ((diferenciaEjecutado.inDays + diasRedimidos) / (tiempoCondena! * 30)) * 100;
       });
 
-      // Validaciones para beneficios
-      porcentajeEjecutado = (diferenciaEjecutado.inDays / (tiempoCondena * 30)) * 100;
       print("Porcentaje de condena ejecutado: $porcentajeEjecutado%");
-
-      if (porcentajeEjecutado >= 33.33) {
-        print("Se aplica el beneficio de permiso administrativo de 72 horas");
-      } else {
-        print("No se aplica el beneficio de permiso administrativo de 72 horas");
-      }
-
-      if (porcentajeEjecutado >= 50) {
-        print("Se aplica el beneficio de prisión domiciliaria");
-      } else {
-        print("No se aplica el beneficio de prisión domiciliaria");
-      }
-
-      if (porcentajeEjecutado >= 60) {
-        print("Se aplica el beneficio de libertad condicional");
-      } else {
-        print("No se aplica el beneficio de libertad condicional");
-      }
-
-      if (porcentajeEjecutado >= 100) {
-        print("Se aplica el beneficio de extinción de la pena");
-      } else {
-        print("No se aplica el beneficio de extinción de la pena");
-      }
-
-      print("Tiempo restante: $mesesRestante meses y $diasRestanteExactos días");
-      print("Tiempo ejecutado: $mesesEjecutado meses y $diasEjecutadoExactos días");
     } else {
       print("No hay datos");
     }
   }
+
+
   Widget _buildCondenaInfo() {
+    // 🔥 Validamos que no haya valores nulos antes de usarlos
+    int mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
+    int diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
+    double totalDiasRedimidos = _calculoCondenaController.totalDiasRedimidos ?? 0;
+    int mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
+    int diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
+    double porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
+
+    int totalDiasCumplidos = diasEjecutadoExactos + totalDiasRedimidos.toInt();
+    int mesesAdicionales = totalDiasCumplidos ~/ 30;
+    int diasRestantes = totalDiasCumplidos % 30;
+    int mesesCumplidos = mesesEjecutado + mesesAdicionales;
+
     return Column(
       children: [
         _buildDatoFila("Condena transcurrida", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
-        _buildDatoFila("Tiempo redimido", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
+        _buildDatoFila("Tiempo redimido", "$totalDiasRedimidos días"),
+        _buildDatoFila("Condena total cumplida", "$mesesCumplidos meses, $diasRestantes días"),
         _buildDatoFila("Condena restante", "$mesesRestante meses, $diasRestanteExactos días"),
         _buildDatoFila("Porcentaje ejecutado", "${porcentajeEjecutado.toStringAsFixed(1)}%"),
       ],
     );
   }
 
-  /// 🔹 Cada dato en una fila independiente
+
+
+
+  /// 🔹 Cada dato en una fila independiente con mejor alineación
   Widget _buildDatoFila(String titulo, String valor) {
-    return Row(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4), // 🔹 Espaciado entre filas
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween, // Título a la izquierda, valor a la derecha
         children: [
           Text(
             titulo,
-            style: const TextStyle(fontSize: 11),
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
           ),
           Text(
             valor,
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.black87),
           ),
         ],
-      );
-
+      ),
+    );
   }
-
 
 }

@@ -102,9 +102,16 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Número Documento:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.numeroDocumentoPpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
+                      Expanded( // 🔥 Evita que el número se corte
+                        child: Text(
+                          _ppl!.numeroDocumentoPpl,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                          textAlign: TextAlign.end, // 🔥 Asegura que el número esté alineado a la derecha
+                        ),
+                      ),
                     ],
                   ),
+
                   const SizedBox(height: 15),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
