@@ -61,8 +61,7 @@ class _HomePageState extends State<HomePage> {
 
 
   Future<void> _loadData() async {
-    final pplProvider = PplProvider();
-    final pplData = await pplProvider.getById(_uid);
+    final pplData = await _pplProvider.getById(_uid);
 
     if (mounted) {
       setState(() {
@@ -71,11 +70,19 @@ class _HomePageState extends State<HomePage> {
         _isLoading = false;
       });
 
-      // 🔥 Usar el controlador en lugar de calcular aquí
+      // 🔥 Calcular tiempo y actualizar valores en setState
       await _calculoCondenaController.calcularTiempo(_uid);
-      setState(() {}); // 🔹 Asegurar que la UI se actualice con los nuevos valores
+      setState(() {
+        porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado!;
+        tiempoCondena = _calculoCondenaController.tiempoCondena!;
+      });
+
+      print("✅ Datos actualizados:");
+      print("   - porcentajeEjecutado: $porcentajeEjecutado%");
+      print("   - tiempoCondena: $tiempoCondena meses");
     }
   }
+
 
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDiasRedimidos = 0;
@@ -299,6 +306,10 @@ class _HomePageState extends State<HomePage> {
 
   // para isPaid true
   Widget _buildBeneficiosList() {
+    print("🔍 Construyendo Beneficios - Valores actuales:");
+    print("   - porcentajeEjecutado: $porcentajeEjecutado%");
+    print("   - tiempoCondena: $tiempoCondena meses");
+
     return Column(
       children: [
         _buildBeneficioFila(
@@ -328,42 +339,48 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+
   // para idPaid true
   Widget _buildBeneficioFila(String titulo, double porcentajeRequerido, String accion) {
-    bool cumple = porcentajeEjecutado >= porcentajeRequerido;
-    int diasFaltantes = ((porcentajeRequerido - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil();
+    double porcentaje = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
+    int tiempo = _calculoCondenaController.tiempoCondena ?? 0;
+
+    bool cumple = porcentaje >= porcentajeRequerido;
+    int diasFaltantes = ((porcentajeRequerido - porcentaje) / 100 * tiempo * 30).ceil();
+
+    print("🔍 Beneficio: $titulo - porcentaje: $porcentaje% - Condena: $tiempo meses");
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0), // Espaciado entre filas
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(
-                cumple ? Icons.check_circle : Icons.warning, // ✅ Si cumple, ⚠️ si no cumple
+                cumple ? Icons.check_circle : Icons.warning,
                 color: cumple ? Colors.green : Colors.red,
                 size: 20,
               ),
-              const SizedBox(width: 8), // Espacio entre el ícono y el texto
+              const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   titulo,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: cumple ? Colors.green : Colors.red, // Verde si cumple, rojo si no
+                    color: cumple ? Colors.green : Colors.red,
                   ),
                 ),
               ),
-              if (!cumple) // Muestra "Restan: X días" solo si aún no cumple
+              if (!cumple)
                 Text(
                   "Restan: $diasFaltantes días",
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                 ),
             ],
           ),
-          const SizedBox(height: 4), // Espacio antes del mensaje dinámico
+          const SizedBox(height: 4),
           Row(
             children: [
               Expanded(
@@ -374,31 +391,30 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: cumple ? Colors.black : Colors.grey, // Negro si cumple, gris si no
+                    color: cumple ? Colors.black : Colors.grey,
                   ),
                 ),
               ),
             ],
           ),
-          if (cumple) // 🔥 Si cumple, mostrar el botón
+          if (cumple)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Align(
-                alignment: Alignment.centerRight, // Alineado a la izquierda
+                alignment: Alignment.centerRight,
                 child: SizedBox(
                   height: 25,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green, // Fondo verde 🌿
-                      foregroundColor: Colors.white, // Texto en blanco
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                       textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6), // Bordes redondeados suaves 🟢
+                        borderRadius: BorderRadius.circular(6),
                       ),
                     ),
                     onPressed: () {
-                      // Aquí puedes agregar la función para manejar la solicitud
                       print("Se ha solicitado el beneficio de $titulo");
                     },
                     child: const Text("Solicitar"),
@@ -406,11 +422,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-
         ],
       ),
     );
   }
+
 
 
   //para isPaid en false
@@ -539,6 +555,7 @@ class _HomePageState extends State<HomePage> {
     int mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
     int diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
     double porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
+    int tiempoCondena = _calculoCondenaController.tiempoCondena ?? 0; // 🔹 Condena total
 
     int totalDiasCumplidos = diasEjecutadoExactos + totalDiasRedimidos.toInt();
     int mesesAdicionales = totalDiasCumplidos ~/ 30;
@@ -547,6 +564,29 @@ class _HomePageState extends State<HomePage> {
 
     return Column(
       children: [
+        // 🔥 Fila con fondo resaltado para "Condenado a"
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          margin: const EdgeInsets.only(bottom: 8), // Espacio con el resto
+          decoration: BoxDecoration(
+            color: Colors.deepPurple.shade50, // 🔹 Color de fondo resaltado
+            borderRadius: BorderRadius.circular(6), // Bordes redondeados
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Condenado a",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                "$tiempoCondena meses",
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+        ),
+
         _buildDatoFila("Condena transcurrida", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
         _buildDatoFila("Tiempo redimido", "$totalDiasRedimidos días"),
         _buildDatoFila("Condena total cumplida", "$mesesCumplidos meses, $diasRestantes días"),
@@ -555,6 +595,7 @@ class _HomePageState extends State<HomePage> {
       ],
     );
   }
+
 
 
 
