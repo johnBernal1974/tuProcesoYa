@@ -186,6 +186,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.event_note_outlined, 'solicitudes_page'),
+        _buildDrawerTile(context, "Mis redenciones", Icons.event_note_outlined, 'mis_redenciones'),
         _buildDrawerTile(context, "Quienes somos", Icons.info, 'nosotros'),
         _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
       ]);

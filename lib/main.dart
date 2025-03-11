@@ -22,6 +22,7 @@ import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/home/home.dart';
 import 'Pages/client/mis_datos/mis_datos.dart';
+import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/register/register.dart';
 import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
 import 'Pages/client/solicitudes_page/solicitudes_page.dart';
@@ -98,6 +99,7 @@ class MyApp extends StatelessWidget {
         'solicitudes_derecho_peticion_admin': (context) => const SolicitudesDerechoPeticionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
+        'mis_redenciones': (context) => const HistorialRedencionesPage(),
 
       },
         onGenerateRoute: (settings) {

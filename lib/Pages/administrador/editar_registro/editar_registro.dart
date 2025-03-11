@@ -149,7 +149,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               children: [
                 // 🔹 Sección principal (flex: 3)
                 Expanded(
-                  flex: 3,
+                  flex: 4,
                   child: _buildMainContent(),
                 ),
 
@@ -370,6 +370,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min, // Evita que el Column ocupe toda la altura
           children: [
+            // 🔥 Botón para ver redenciones
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => _mostrarHistorialRedenciones(context),
+                icon: const Icon(Icons.history, color: Colors.blue),
+                label: const Text("Ver Redenciones", style: TextStyle(color: Colors.blue)),
+              ),
+            ),
+
             const Text(
               "Registrar Redención",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -377,90 +387,269 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             const SizedBox(height: 20),
 
             // 📅 Selección de fecha de redención
+            // 📅 Selección de fecha de redención
             TextField(
               controller: _fechaController,
               readOnly: true,
               decoration: InputDecoration(
                 labelText: "Fecha de Redención",
-                floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el label siempre visible
-                suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey), // 🔹 Icono gris
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6), // 🔹 Bordes menos curvos
-                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Línea gris
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Borde gris
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Borde gris en estado normal
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: primary), // 🔹 Borde gris en estado activo
                 ),
               ),
               onTap: () => _selectFechaRedencion(context),
             ),
             const SizedBox(height: 15),
 
-            // ⏳ Cantidad de días redimidos
+// ⏳ Cantidad de días redimidos
             TextField(
               controller: _diasController,
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 labelText: "Cantidad de Días Redimidos",
-                floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Mantiene el label siempre visible
+                floatingLabelBehavior: FloatingLabelBehavior.always,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6), // 🔹 Bordes menos curvos
-                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Línea gris
+                  borderRadius: BorderRadius.circular(6),
+                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Borde gris
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Borde gris en estado normal
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Colors.grey),
+                  borderSide: const BorderSide(color: primary), // 🔹 Borde gris en estado activo
                 ),
               ),
             ),
-            const SizedBox(height: 20),
 
-            // 👤 Administrador que registra
-            Text(
-              "Registrado por: ${_adminProvider.adminFullName ?? 'Cargando...'}",
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 20), // 🔥 Añadir espaciado en vez de Spacer
+            const SizedBox(height: 20),
 
             // 📌 Botón para guardar la redención
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  await _guardarRedencion(widget.doc.id); // 🔥 Se ejecuta pero no retorna nada
-
-                  await calcularTotalRedenciones(widget.doc.id); // 🔥 Se ejecuta y obtiene el total de días redimidos
-
-                 _initCalculoCondena(); // 🔥 Se recalcula la condena con los valores actualizados
-
-                  setState(() {}); // 🔄 Forzar la actualización de la UI
+                  await _guardarRedencion(widget.doc.id);
+                  await calcularTotalRedenciones(widget.doc.id);
+                  _initCalculoCondena();
+                  setState(() {});
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green, // Botón en verde
+                  backgroundColor: Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text(
-                  "Guardar Redención",
-                  style: TextStyle(fontSize: 16, color: Colors.white),
-                ),
+                child: const Text("Guardar Redención", style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
             ),
-
-
           ],
         ),
       ),
     );
   }
+
+  /// 🔥 Mostrar la pantalla superpuesta con el historial de redenciones
+  void _mostrarHistorialRedenciones(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Container(
+            color: blancoCards,
+            width: MediaQuery.of(context).size.width * 0.6, // 🔥 Usa el 90% del ancho de la pantalla
+            padding: const EdgeInsets.all(16),
+            height: MediaQuery.of(context).size.height * 0.8, // 🔹 Ocupa el 80% de la altura
+            child: Column(
+              children: [
+                // 🔥 Encabezado
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      "Historial de Redenciones",
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context), // 🔹 Cerrar el modal
+                    ),
+                  ],
+                ),
+                const Divider(),
+
+                // 🔥 Tabla de redenciones con desplazamiento
+                Expanded(
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _obtenerRedenciones(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "No tienes redenciones registradas.",
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        );
+                      }
+
+                      // 🔹 Calcular sumatoria
+                      double totalDiasRedimidos = snapshot.data!
+                          .map((r) => r['dias_redimidos'] as double)
+                          .fold(0, (prev, curr) => prev + curr);
+
+                      return SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          columnSpacing: 50, // 🔥 Ajusta el espacio entre columnas
+                          headingRowColor:
+                          MaterialStateColor.resolveWith((states) => Colors.grey.shade300),
+                          columns: const [
+                            DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(
+                              label: Align(
+                                alignment: Alignment.centerRight,
+                                child: Text('Días Redimidos', style: TextStyle(fontWeight: FontWeight.bold)),
+                              ),
+                              numeric: true,
+                            ),
+                            DataColumn(label: Text('Cargó redención', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Fecha actualización', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: [
+                            // 🔹 Redenciones
+                            ...snapshot.data!.map(
+                                  (redencion) => DataRow(cells: [
+                                DataCell(Text(
+                                  DateFormat('d MMM yyyy').format(redencion['fecha']),
+                                  style: const TextStyle(fontSize: 13),
+                                )),
+                                DataCell(
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      redencion['dias_redimidos'].toString(),
+                                      style: const TextStyle(fontSize: 13),
+                                    ),
+                                  ),
+                                ),
+                                DataCell(Text("${redencion['admin_nombre']} ${redencion['admin_apellido']}",
+                                    style: const TextStyle(fontSize: 13))),
+                                    DataCell(
+                                      Text(
+                                        redencion['fecha_actualizacion'] != null
+                                            ? DateFormat("d 'de' MMMM 'de' y - HH:mm", 'es')
+                                            .format(redencion['fecha_actualizacion'])
+                                            : "No disponible",
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                    ),
+
+                                  ]),
+                            ),
+
+                            // 🔹 Fila de sumatoria al final
+                            DataRow(
+                              color: MaterialStateColor.resolveWith((states) => Colors.grey.shade200),
+                              cells: [
+                                const DataCell(Text("Total", style: TextStyle(fontWeight: FontWeight.bold))),
+                                DataCell(
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: Text(
+                                      totalDiasRedimidos.toStringAsFixed(1),
+                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ),
+                                const DataCell(Text("")),
+                                const DataCell(Text("")),
+                              ],
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+
+  /// 🔥 Método para obtener redenciones desde Firebase
+  Future<List<Map<String, dynamic>>> _obtenerRedenciones() async {
+    try {
+      QuerySnapshot redencionesSnapshot = await FirebaseFirestore.instance
+          .collection('Ppl')
+          .doc(widget.doc.id) // 🔹 Asegurar que el ID es correcto
+          .collection('redenciones')
+          .orderBy('fecha_redencion', descending: true) // 🔥 Ordenar en Firestore
+          .get();
+
+      List<Map<String, dynamic>> redenciones = redencionesSnapshot.docs.map((doc) {
+        String fechaStr = doc['fecha_redencion'] ?? "";
+        DateTime fecha;
+        DateTime? fechaActualizacion;
+
+        try {
+          fecha = DateFormat('d/M/yyyy').parse(fechaStr);
+        } catch (e) {
+          debugPrint("❌ Error al parsear fecha_redencion: $fechaStr - $e");
+          fecha = DateTime(2000, 1, 1);
+        }
+
+        // 🔹 Verificar `fecha_actualizacion` (Timestamp o String)
+        if (doc['fecha_actualizacion'] != null) {
+          if (doc['fecha_actualizacion'] is Timestamp) {
+            fechaActualizacion = (doc['fecha_actualizacion'] as Timestamp).toDate();
+          } else if (doc['fecha_actualizacion'] is String) {
+            try {
+              fechaActualizacion = DateTime.parse(doc['fecha_actualizacion']);
+            } catch (e) {
+              debugPrint("❌ Error al parsear fecha_actualizacion: ${doc['fecha_actualizacion']} - $e");
+            }
+          }
+        }
+
+        return {
+          'dias_redimidos': (doc['dias_redimidos'] ?? 0).toDouble(), // 🔹 Asegurar que sea un double
+          'fecha': fecha,
+          'admin_nombre': doc['admin_nombre'] ?? "Desconocido",
+          'admin_apellido': doc['admin_apellido'] ?? "",
+          'fecha_actualizacion': fechaActualizacion, // 🔥 Ahora incluye la fecha de actualización
+        };
+      }).toList();
+
+      // 🔹 Validar que esté ordenado correctamente (por si Firestore falla)
+      redenciones.sort((a, b) => b['fecha'].compareTo(a['fecha']));
+
+      return redenciones;
+    } catch (e) {
+      debugPrint("❌ Error al obtener redenciones: $e");
+      return [];
+    }
+  }
+
+
+
 
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDias = 0.0;
