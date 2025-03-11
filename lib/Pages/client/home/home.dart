@@ -596,10 +596,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-
-
-
   /// 🔹 Cada dato en una fila independiente con mejor alineación
   Widget _buildDatoFila(String titulo, String valor) {
     return Padding(

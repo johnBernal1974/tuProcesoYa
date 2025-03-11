@@ -20,6 +20,7 @@ import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
+import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 import 'Pages/client/home/home.dart';
 import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
@@ -100,6 +101,7 @@ class MyApp extends StatelessWidget {
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'mis_redenciones': (context) => const HistorialRedencionesPage(),
+        'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
 
       },
         onGenerateRoute: (settings) {
