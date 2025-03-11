@@ -375,11 +375,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               alignment: Alignment.centerRight,
               child: TextButton.icon(
                 onPressed: () => _mostrarHistorialRedenciones(context),
-                icon: const Icon(Icons.history, color: Colors.blue),
-                label: const Text("Ver Redenciones", style: TextStyle(color: Colors.blue)),
+                icon: const Icon(Icons.remove_red_eye, color: Colors.black87),
+                label: const Text("Ver Redenciones", style: TextStyle(color: negro)),
               ),
             ),
-
+            const SizedBox(height: 15),
             const Text(
               "Registrar Redención",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -468,28 +468,33 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Container(
             color: blancoCards,
-            width: MediaQuery.of(context).size.width * 0.6, // 🔥 Usa el 90% del ancho de la pantalla
-            padding: const EdgeInsets.all(16),
-            height: MediaQuery.of(context).size.height * 0.8, // 🔹 Ocupa el 80% de la altura
+            width: MediaQuery.of(context).size.width * 0.8, // 🔥 Usa el 80% del ancho de la pantalla
+            height: MediaQuery.of(context).size.height * 1, // 🔹 Ocupa el 80% de la altura
             child: Column(
               children: [
                 // 🔥 Encabezado
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "Historial de Redenciones",
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Container(
+                  color: blancoCards,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Historial de Redenciones",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(context), // 🔹 Cerrar el modal
+                        ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(context), // 🔹 Cerrar el modal
-                    ),
-                  ],
+                  ),
                 ),
                 const Divider(),
 
-                // 🔥 Tabla de redenciones con desplazamiento
+                // 🔥 Contenedor con desplazamiento
                 Expanded(
                   child: FutureBuilder<List<Map<String, dynamic>>>(
                     future: _obtenerRedenciones(),
@@ -512,74 +517,75 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                           .fold(0, (prev, curr) => prev + curr);
 
                       return SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          columnSpacing: 50, // 🔥 Ajusta el espacio entre columnas
-                          headingRowColor:
-                          MaterialStateColor.resolveWith((states) => Colors.grey.shade300),
-                          columns: const [
-                            DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(
-                              label: Align(
-                                alignment: Alignment.centerRight,
-                                child: Text('Días Redimidos', style: TextStyle(fontWeight: FontWeight.bold)),
-                              ),
-                              numeric: true,
-                            ),
-                            DataColumn(label: Text('Cargó redención', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Fecha actualización', style: TextStyle(fontWeight: FontWeight.bold))),
-                          ],
-                          rows: [
-                            // 🔹 Redenciones
-                            ...snapshot.data!.map(
-                                  (redencion) => DataRow(cells: [
-                                DataCell(Text(
-                                  DateFormat('d MMM yyyy').format(redencion['fecha']),
-                                  style: const TextStyle(fontSize: 13),
-                                )),
-                                DataCell(
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      redencion['dias_redimidos'].toString(),
-                                      style: const TextStyle(fontSize: 13),
-                                    ),
-                                  ),
+                        scrollDirection: Axis.vertical, // 🔥 Scroll vertical para ver toda la tabla
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal, // 🔥 Scroll horizontal si la tabla es ancha
+                          child: DataTable(
+                            columnSpacing: 50, // 🔥 Ajusta el espacio entre columnas
+                            headingRowColor: MaterialStateColor.resolveWith((states) => Colors.grey.shade300),
+                            columns: const [
+                              DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(
+                                label: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: Text('Días Redimidos', style: TextStyle(fontWeight: FontWeight.bold)),
                                 ),
-                                DataCell(Text("${redencion['admin_nombre']} ${redencion['admin_apellido']}",
-                                    style: const TextStyle(fontSize: 13))),
-                                    DataCell(
-                                      Text(
-                                        redencion['fecha_actualizacion'] != null
-                                            ? DateFormat("d 'de' MMMM 'de' y - HH:mm", 'es')
-                                            .format(redencion['fecha_actualizacion'])
-                                            : "No disponible",
+                                numeric: true,
+                              ),
+                              DataColumn(label: Text('Cargó redención', style: TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('Fecha actualización', style: TextStyle(fontWeight: FontWeight.bold))),
+                            ],
+                            rows: [
+                              // 🔹 Redenciones
+                              ...snapshot.data!.map(
+                                    (redencion) => DataRow(cells: [
+                                  DataCell(Text(
+                                    DateFormat("d 'de' MMMM 'de' y").format(redencion['fecha']),
+                                    style: const TextStyle(fontSize: 13),
+                                  )),
+                                  DataCell(
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        redencion['dias_redimidos'].toString(),
                                         style: const TextStyle(fontSize: 13),
                                       ),
                                     ),
-
-                                  ]),
-                            ),
-
-                            // 🔹 Fila de sumatoria al final
-                            DataRow(
-                              color: MaterialStateColor.resolveWith((states) => Colors.grey.shade200),
-                              cells: [
-                                const DataCell(Text("Total", style: TextStyle(fontWeight: FontWeight.bold))),
-                                DataCell(
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: Text(
-                                      totalDiasRedimidos.toStringAsFixed(1),
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  DataCell(Text("${redencion['admin_nombre']} ${redencion['admin_apellido']}",
+                                      style: const TextStyle(fontSize: 13))),
+                                  DataCell(
+                                    Text(
+                                      redencion['fecha_actualizacion'] != null
+                                          ? DateFormat("d 'de' MMMM 'de' y - HH:mm", 'es')
+                                          .format(redencion['fecha_actualizacion'])
+                                          : "No disponible",
+                                      style: const TextStyle(fontSize: 13),
                                     ),
                                   ),
-                                ),
-                                const DataCell(Text("")),
-                                const DataCell(Text("")),
-                              ],
-                            ),
-                          ],
+                                ]),
+                              ),
+
+                              // 🔹 Fila de sumatoria al final
+                              DataRow(
+                                color: MaterialStateColor.resolveWith((states) => Colors.grey.shade200),
+                                cells: [
+                                  const DataCell(Text("Total", style: TextStyle(fontWeight: FontWeight.bold))),
+                                  DataCell(
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        totalDiasRedimidos.toStringAsFixed(1),
+                                        style: const TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  ),
+                                  const DataCell(Text("")), // Espacio vacío
+                                  const DataCell(Text("")), // Espacio vacío
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       );
                     },
@@ -592,6 +598,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
+
 
 
   /// 🔥 Método para obtener redenciones desde Firebase
