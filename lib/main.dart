@@ -53,9 +53,9 @@ void main() async {
   ]);
 
   if (kIsWeb) {
-    envVars = await loadEnv(); // 🔥 Cargar env.json en Web y almacenarlo en envVars
+    await loadEnv(); // Carga env.json en Web
   } else {
-    await dotenv.load(fileName: ".env"); // 🔥 Cargar .env en otras plataformas
+    await dotenv.load(fileName: ".env"); // Carga .env en móviles
   }
 
   // Inicializa Firebase
@@ -79,6 +79,7 @@ Future<Map<String, dynamic>> loadEnv() async {
     return {};
   }
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
