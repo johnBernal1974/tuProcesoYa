@@ -1,7 +1,11 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:tuprocesoya/Pages/administrador/solicitudes_derechos_peticion/solicitudes_derechos_peticion_admin.dart';
 import 'package:tuprocesoya/Pages/client/derecho_de_peticion_solicitud/derecho_de_peticion_solicitud.dart';
 import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
@@ -34,15 +38,25 @@ import 'Pages/forgot_password/forgot_password.dart';
 import 'Pages/login/login.dart';
 import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'dart:html' as html; // 🌐 Solo para Web
+import 'package:http/http.dart' as http;
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
+Map<String, dynamic> envVars = {}; // 🔹 Variable global para almacenar las variables de entorno
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Asegura que la inicialización esté completa antes de correr la app
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+
+  if (kIsWeb) {
+    envVars = await loadEnv(); // 🔥 Cargar env.json en Web y almacenarlo en envVars
+  } else {
+    await dotenv.load(fileName: ".env"); // 🔥 Cargar .env en otras plataformas
+  }
 
   // Inicializa Firebase
   await Firebase.initializeApp(
@@ -52,6 +66,18 @@ void main() async {
   runApp(const MyApp());
 
   // Luego corre la aplicación
+}
+// 🌐 Método para cargar el .env en Flutter Web
+Future<Map<String, dynamic>> loadEnv() async {
+  try {
+    final String response = await rootBundle.loadString('assets/config/env.json');
+    final Map<String, dynamic> data = jsonDecode(response);
+    print("✅ env.json cargado correctamente");
+    return data;
+  } catch (e) {
+    print("❌ Error cargando env.json: $e");
+    return {};
+  }
 }
 
 class MyApp extends StatelessWidget {
