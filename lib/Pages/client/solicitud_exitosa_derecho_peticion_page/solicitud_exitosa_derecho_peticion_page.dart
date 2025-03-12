@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
 import '../../../commons/main_layaout.dart';
-import '../home/home.dart';
+import '../historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 
 class SolicitudExitosaDerechoPeticionPage extends StatelessWidget {
   final String numeroSeguimiento;
@@ -108,7 +108,7 @@ class SolicitudExitosaDerechoPeticionPage extends StatelessWidget {
                     onPressed: () {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (context) => const HomePage()),
+                        MaterialPageRoute(builder: (context) => const HistorialSolicitudesDerechosPeticionPage()),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -116,7 +116,7 @@ class SolicitudExitosaDerechoPeticionPage extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
                       textStyle: const TextStyle(fontSize: 16),
                     ),
-                    child: const Text("Volver al inicio", style: TextStyle(
+                    child: const Text("Ver el historial", style: TextStyle(
                       color: blanco
                     ),),
                   ),

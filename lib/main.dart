@@ -35,6 +35,7 @@ import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 
+final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Asegura que la inicialización esté completa antes de correr la app
@@ -59,6 +60,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navKey, // 👈 Aquí se asigna la clave de navegación
       title: 'Tu Proceso Ya',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

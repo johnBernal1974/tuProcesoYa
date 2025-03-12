@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/main_layaout.dart';
+import '../../../main.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../src/colors/colors.dart';
 
@@ -46,7 +48,9 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
         .where('idUser', isEqualTo: _userId)
         .orderBy('fecha', descending: true)
         .snapshots();
+
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -76,14 +80,36 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
               final solicitud = solicitudes[index];
               final data = solicitud.data() as Map<String, dynamic>;
 
-              return _buildSolicitudCard(data); // 🔥 Aquí reemplazamos el Card
+              // 🔹 Depuración detallada
+              debugPrint("📄 Documento Firestore completo: ${data.toString()}");
+              debugPrint("📂 Valor crudo de 'archivos' desde Firestore: ${data['archivos']}");
+
+              // 🔹 Convertir a lista de Strings
+              List<String> archivos = [];
+
+              if (data.containsKey('archivos') && data['archivos'] != null) {
+                if (data['archivos'] is List) {
+                  archivos = (data['archivos'] as List).whereType<String>().toList();
+                } else {
+                  debugPrint("⚠️ El campo 'archivos' no es una lista.");
+                }
+              } else {
+                debugPrint("⚠️ El campo 'archivos' no existe en el documento o es null.");
+              }
+
+              debugPrint("📂 Archivos procesados después de conversión: $archivos");
+
+              // ✅ Pasamos ahora los archivos a _buildSolicitudCard
+              return _buildSolicitudCard(data, archivos);
             },
           );
         },
       ),
     );
   }
-  Widget _buildSolicitudCard(Map<String, dynamic> data) {
+
+
+  Widget _buildSolicitudCard(Map<String, dynamic> data, List<String> archivos) {
     return Card(
       color: blanco,
       surfaceTintColor: blanco,
@@ -91,7 +117,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
       ),
-      elevation: 2, // Ligera sombra para no perder diseño
+      elevation: 2,
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         title: Column(
@@ -115,20 +141,19 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
               children: [
                 _buildDatoFila("Subcategoría", data['subcategoria'] ?? "Desconocida"),
                 Container(
-                  padding: const EdgeInsets.all(8), // Espaciado interno
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.purple[50], // Fondo lila claro
-                    borderRadius: BorderRadius.circular(5), // Bordes redondeados
+                    color: Colors.purple[50],
+                    borderRadius: BorderRadius.circular(5),
                   ),
                   child: _buildDatoFila("Estado", data['status'] ?? "Desconocido"),
                 ),
-
                 const Divider(),
                 const Text("📜 Preguntas y respuestas:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 _buildPreguntasRespuestas(data['preguntas_respuestas']),
                 const Divider(),
                 const Text("📎 Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                _buildArchivosAdjuntos(data['archivos']),
+                _buildArchivosAdjuntos(archivos), // ✅ Ahora se pasa la lista de archivos correctamente
               ],
             ),
           ),
@@ -136,6 +161,9 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
       ),
     );
   }
+
+
+
 
   Widget _buildDatoFila(String titulo, String valor) {
     return Padding(
@@ -186,32 +214,52 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     );
   }
 
-  Widget _buildArchivosAdjuntos(List<dynamic>? archivos) {
-    if (archivos == null || archivos.isEmpty) {
-      return const Text("No adjuntaste ningún archivo en esta solicitud.", style: TextStyle(
-        fontSize: 12, color: Colors.red
-      ),);
+
+  Widget _buildArchivosAdjuntos(List<String> archivos) {
+    debugPrint("📂 Archivos recibidos: $archivos"); // 🐛 Debugging
+
+    if (archivos.isEmpty) {
+      return const Text(
+        "No adjuntaste ningún archivo en esta solicitud.",
+        style: TextStyle(fontSize: 12, color: Colors.red),
+      );
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Archivos adjuntos:",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        const Text(
+          "Archivos adjuntos:",
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+        ),
         const SizedBox(height: 8),
         Wrap(
           spacing: 10,
           runSpacing: 10,
           children: archivos.map((url) {
+            bool esPDF = url.toLowerCase().endsWith('.pdf');
+
             return GestureDetector(
               onTap: () {
-                // Abrir la imagen en pantalla completa o hacer algo con ella
+                if (esPDF) {
+                  _abrirEnNavegador(url);
+                } else {
+                  _mostrarImagenAmpliada(url);
+                }
               },
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
+                child: esPDF
+                    ? Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.grey[300],
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 40),
+                )
+                    : Image.network(
                   url,
-                  width: 100, // Tamaño miniatura
+                  width: 100,
                   height: 100,
                   fit: BoxFit.cover,
                   loadingBuilder: (context, child, loadingProgress) {
@@ -238,6 +286,31 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
           }).toList(),
         ),
       ],
+    );
+  }
+
+  /// 🔹 Método para abrir PDFs en una nueva pestaña
+  void _abrirEnNavegador(String url) async {
+    if (await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint("❌ No se pudo abrir el PDF: $url");
+    }
+  }
+
+  /// 🔹 Método para mostrar imagen en pantalla completa
+  void _mostrarImagenAmpliada(String url) {
+    showDialog(
+      context: navKey.currentContext!, // ✅ Ahora `navKey` está definido
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: InteractiveViewer(
+            child: Image.network(url),
+          ),
+        ),
+      ),
     );
   }
 
