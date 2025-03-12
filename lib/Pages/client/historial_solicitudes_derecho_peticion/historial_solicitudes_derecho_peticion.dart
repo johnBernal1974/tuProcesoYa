@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/main_layaout.dart';
-import '../../../main.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../src/colors/colors.dart';
 
@@ -11,7 +10,8 @@ class HistorialSolicitudesDerechosPeticionPage extends StatefulWidget {
   const HistorialSolicitudesDerechosPeticionPage({super.key});
 
   @override
-  State<HistorialSolicitudesDerechosPeticionPage> createState() => _HistorialSolicitudesDerechosPeticionPageState();
+  State<HistorialSolicitudesDerechosPeticionPage> createState() =>
+      _HistorialSolicitudesDerechosPeticionPageState();
 }
 
 class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSolicitudesDerechosPeticionPage> {
@@ -31,26 +31,19 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
       setState(() {
         _userId = user.uid;
       });
-      print("🔹 Usuario actual: $_userId");
     }
   }
 
   Stream<QuerySnapshot> _fetchSolicitudes() {
     if (_userId == null) {
-      print("❌ _userId es null, devolviendo un Stream vacío.");
       return const Stream.empty();
     }
-
-    print("🔹 Buscando solicitudes para usuario: $_userId");
-
     return FirebaseFirestore.instance
         .collection('derechos_peticion_solicitados')
         .where('idUser', isEqualTo: _userId)
         .orderBy('fecha', descending: true)
         .snapshots();
-
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -63,16 +56,13 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            print("❌ Error en StreamBuilder: ${snapshot.error}");
             return const Center(child: Text("Error al cargar los datos"));
           }
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            print("🔸 No hay solicitudes en Firestore.");
             return const Center(child: Text("No hay solicitudes registradas."));
           }
 
           final solicitudes = snapshot.data!.docs;
-          print("📌 Cantidad de solicitudes: ${solicitudes.length}");
 
           return ListView.builder(
             itemCount: solicitudes.length,
@@ -80,26 +70,14 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
               final solicitud = solicitudes[index];
               final data = solicitud.data() as Map<String, dynamic>;
 
-              // 🔹 Depuración detallada
-              debugPrint("📄 Documento Firestore completo: ${data.toString()}");
-              debugPrint("📂 Valor crudo de 'archivos' desde Firestore: ${data['archivos']}");
-
-              // 🔹 Convertir a lista de Strings
+              // Convertir la lista de archivos desde Firestore
               List<String> archivos = [];
-
               if (data.containsKey('archivos') && data['archivos'] != null) {
                 if (data['archivos'] is List) {
                   archivos = (data['archivos'] as List).whereType<String>().toList();
-                } else {
-                  debugPrint("⚠️ El campo 'archivos' no es una lista.");
                 }
-              } else {
-                debugPrint("⚠️ El campo 'archivos' no existe en el documento o es null.");
               }
 
-              debugPrint("📂 Archivos procesados después de conversión: $archivos");
-
-              // ✅ Pasamos ahora los archivos a _buildSolicitudCard
               return _buildSolicitudCard(data, archivos);
             },
           );
@@ -108,12 +86,18 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     );
   }
 
-
   Widget _buildSolicitudCard(Map<String, dynamic> data, List<String> archivos) {
+    List<Map<String, String>> archivosAdjuntos = archivos.map((archivo) {
+      return {
+        "nombre": obtenerNombreArchivo(archivo),
+        "contenido": archivo,
+      };
+    }).toList();
+
     return Card(
       color: blanco,
       surfaceTintColor: blanco,
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
       ),
@@ -153,7 +137,9 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                 _buildPreguntasRespuestas(data['preguntas_respuestas']),
                 const Divider(),
                 const Text("📎 Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                _buildArchivosAdjuntos(archivos), // ✅ Ahora se pasa la lista de archivos correctamente
+                archivosAdjuntos.isNotEmpty
+                    ? ArchivoViewerWeb(archivos: archivos)
+                    : const Text("El usuario no compartió ningún archivo"),
               ],
             ),
           ),
@@ -162,14 +148,11 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     );
   }
 
-
-
-
   Widget _buildDatoFila(String titulo, String valor) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4), // Espaciado entre filas
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // Alineación en los extremos
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             titulo,
@@ -192,7 +175,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: preguntasRespuestas.asMap().entries.map((entry) {
-        final int index = entry.key + 1; // Para numerar desde 1
+        final int index = entry.key + 1;
         final Map<String, dynamic> preguntaRespuesta = entry.value;
         final String pregunta = preguntaRespuesta['pregunta'] ?? "Pregunta desconocida";
         final String respuesta = preguntaRespuesta['respuesta'] ?? "Sin respuesta";
@@ -206,7 +189,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
               Text("Respuesta: $respuesta",
                   style: const TextStyle(color: Colors.black87, fontSize: 11)),
-              const Divider(), // Línea divisoria entre preguntas
+              const Divider(),
             ],
           ),
         );
@@ -214,104 +197,9 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     );
   }
 
-
-  Widget _buildArchivosAdjuntos(List<String> archivos) {
-    debugPrint("📂 Archivos recibidos: $archivos"); // 🐛 Debugging
-
-    if (archivos.isEmpty) {
-      return const Text(
-        "No adjuntaste ningún archivo en esta solicitud.",
-        style: TextStyle(fontSize: 12, color: Colors.red),
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Archivos adjuntos:",
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: archivos.map((url) {
-            bool esPDF = url.toLowerCase().endsWith('.pdf');
-
-            return GestureDetector(
-              onTap: () {
-                if (esPDF) {
-                  _abrirEnNavegador(url);
-                } else {
-                  _mostrarImagenAmpliada(url);
-                }
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: esPDF
-                    ? Container(
-                  width: 100,
-                  height: 100,
-                  color: Colors.grey[300],
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 40),
-                )
-                    : Image.network(
-                  url,
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.cover,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return Container(
-                      width: 100,
-                      height: 100,
-                      alignment: Alignment.center,
-                      child: const CircularProgressIndicator(),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: 100,
-                      height: 100,
-                      color: Colors.grey[300],
-                      alignment: Alignment.center,
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    );
-                  },
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
+  String obtenerNombreArchivo(String url) {
+    String decodedUrl = Uri.decodeFull(url);
+    List<String> partes = decodedUrl.split('/');
+    return partes.last.split('?').first;
   }
-
-  /// 🔹 Método para abrir PDFs en una nueva pestaña
-  void _abrirEnNavegador(String url) async {
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-    } else {
-      debugPrint("❌ No se pudo abrir el PDF: $url");
-    }
-  }
-
-  /// 🔹 Método para mostrar imagen en pantalla completa
-  void _mostrarImagenAmpliada(String url) {
-    showDialog(
-      context: navKey.currentContext!, // ✅ Ahora `navKey` está definido
-      builder: (context) => Dialog(
-        backgroundColor: Colors.black,
-        child: GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: InteractiveViewer(
-            child: Image.network(url),
-          ),
-        ),
-      ),
-    );
-  }
-
 }

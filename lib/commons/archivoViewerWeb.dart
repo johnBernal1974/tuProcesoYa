@@ -1,4 +1,3 @@
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,11 +10,25 @@ class ArchivoViewerWeb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Detectamos el ancho de la pantalla
+    double screenWidth = MediaQuery.of(context).size.width;
+    int crossAxisCount = 6; // Default para PC
+
+    if (screenWidth < 1200) {
+      crossAxisCount = 4; // Tablets grandes
+    }
+    if (screenWidth < 800) {
+      crossAxisCount = 3; // Tablets pequeñas
+    }
+    if (screenWidth < 500) {
+      crossAxisCount = 2; // Móviles
+    }
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 6,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount, // Se ajusta dinámicamente
         crossAxisSpacing: 6,
         mainAxisSpacing: 6,
         childAspectRatio: 1,
@@ -28,16 +41,17 @@ class ArchivoViewerWeb extends StatelessWidget {
           return RegExp(r'\.(jpg|jpeg|png|gif|webp)$', caseSensitive: false)
               .hasMatch(url.split('?').first);
         }
-        // Verifica si es PDF
+
         bool esPDF(String url) {
           return url.split('?').first.toLowerCase().endsWith('.pdf');
         }
+
         if (esImagen(archivo)) {
           return _buildImageThumbnail(context, archivo);
         } else if (esPDF(archivo)) {
           return _buildPDFButton(context, archivo);
         } else {
-          return const ListTile(title: Text('Formato no compatible'));
+          return _buildUnsupportedFile();
         }
       },
     );
@@ -84,18 +98,11 @@ class ArchivoViewerWeb extends StatelessWidget {
     );
   }
 
-
   String obtenerNombreArchivo(String url) {
-    // Decodifica la URL para que %2F se convierta en "/"
     String decodedUrl = Uri.decodeFull(url);
-    // Separa por "/" y toma la última parte
     List<String> partes = decodedUrl.split('/');
-    // El nombre real del archivo es la última parte después de la última "/"
-    return partes.last.split('?').first; // Quita cualquier parámetro después de "?"
+    return partes.last.split('?').first;
   }
-
-
-
 
   /// 📄 Botón para abrir el PDF en el navegador
   Widget _buildPDFButton(BuildContext context, String url) {
@@ -167,5 +174,3 @@ class ArchivoViewerWeb extends StatelessWidget {
     );
   }
 }
-
-

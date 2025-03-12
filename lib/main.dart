@@ -16,6 +16,7 @@ import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/administrador/operadores_page/operadores_page.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
+import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
@@ -36,7 +37,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Asegura que la inicialización esté completa antes de correr la app
   SystemChrome.setPreferredOrientations([
@@ -60,7 +60,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navKey, // 👈 Aquí se asigna la clave de navegación
+      navigatorKey: navKey,
       title: 'Tu Proceso Ya',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -104,6 +104,7 @@ class MyApp extends StatelessWidget {
         'operadores_page': (context) => const OperadoresPage(),
         'mis_redenciones': (context) => const HistorialRedencionesPage(),
         'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
+        'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
 
       },
         onGenerateRoute: (settings) {

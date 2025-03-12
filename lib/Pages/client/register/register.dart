@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
+import '../../administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import '../estamos_validando/estamos_validando.dart';
 
 class RegistroPage extends StatefulWidget {
@@ -19,6 +20,7 @@ class RegistroPage extends StatefulWidget {
 class _RegistroPageState extends State<RegistroPage> {
   final PageController _pageController = PageController();
   final _formKeyAcudiente = GlobalKey<FormState>();
+  final _formKeyTerminosYCondiciones = GlobalKey<FormState>();
   final _formKeyCelularAcudiente = GlobalKey<FormState>();
   final _formKeyParentescoAcudiente = GlobalKey<FormState>();
   final _formKeyNombresPPL = GlobalKey<FormState>();
@@ -62,6 +64,7 @@ class _RegistroPageState extends State<RegistroPage> {
   String? patio;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _aceptaTerminos = false; // Estado para el checkbox
 
   void _prevPage() {
     if (_currentPage > 0) {
@@ -178,6 +181,7 @@ class _RegistroPageState extends State<RegistroPage> {
   Widget _buildIntroduccion() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth > 600;
+
     return SingleChildScrollView(
       child: Padding(
         padding: const EdgeInsets.all(10.0),
@@ -191,34 +195,129 @@ class _RegistroPageState extends State<RegistroPage> {
                 height: isLargeScreen ? 100 : 100,
               ),
               const SizedBox(height: 15),
-              const Text("¡Vamos a guiarte en el proceso de registro en nuestra plataforma!", style: TextStyle(
-                  fontWeight: FontWeight.w900, fontSize: 20, color: negro, height: 1.2)),
+              const Text(
+                "¡Vamos a guiarte en el proceso de registro en nuestra plataforma!",
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 16,
+                  color: Colors.black,
+                  height: 1.2,
+                ),
+              ),
               const SizedBox(height: 30),
-      
               RichText(
                 textAlign: TextAlign.justify,
                 text: const TextSpan(
                   style: TextStyle(fontSize: 15, height: 1.2, color: Colors.black),
                   children: [
                     TextSpan(text: "Por favor, asegúrate de ingresar todos los datos de manera "),
-                    TextSpan(text: "completa", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: negro)),
+                    TextSpan(text: "completa", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.black)),
                     TextSpan(text: ", "),
                     TextSpan(text: "correcta", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                     TextSpan(text: " y "),
                     TextSpan(text: "veraz", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    TextSpan(text: ". La precisión de la información es fundamental para que la plataforma pueda gestionar de manera efectiva las diligencias necesarias para la persona privada de la libertad (PPL). Cualquier error en los datos puede afectar los procesos y retrasar la asistencia que necesitas. ¡Tu colaboración es clave para un servicio ágil y eficiente!"),
+                    TextSpan(text: ". La precisión de la información es fundamental para que la plataforma pueda gestionar de manera efectiva las diligencias necesarias para la persona privada de la libertad (PPL)."),
                   ],
                 ),
               ),
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.red), // ⚠️ Icono de advertencia
+                 const SizedBox(width: 8), // Espacio entre el icono y el texto
+                  Expanded( // Permite que el texto se ajuste sin desbordar
+                    child: RichText(
+                      text: const TextSpan(
+                        style: TextStyle(color: Colors.black, height: 1.1), // Estilo base
+                        children: [
+                          TextSpan(text: "Es "),
+                          TextSpan(
+                            text: "de suma importancia",
+                            style: TextStyle(fontWeight: FontWeight.bold), // 🟡 Negrita para énfasis
+                          ),
+                          TextSpan(text: " que leas los términos y condiciones de nuestro servicio."),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // 🟢 Formulario para validar términos y condiciones
+              Form(
+                key: _formKeyTerminosYCondiciones,
+                child: FormField<bool>(
+                  initialValue: _aceptaTerminos,
+                  validator: (value) {
+                    if (value != true) {
+                      return "Debes aceptar los Términos y Condiciones para continuar.";
+                    }
+                    return null;
+                  },
+                  builder: (formFieldState) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CheckboxListTile(
+                          title: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const TerminosCondicionesPage()), // Página de términos
+                              );
+                            },
+                            child: const Text(
+                              "He leído y acepto los Términos y Condiciones",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                decoration: TextDecoration.underline,
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                          value: _aceptaTerminos,
+                          onChanged: (bool? value) {
+                            setState(() {
+                              _aceptaTerminos = value ?? false;
+                              formFieldState.didChange(value); // Actualiza el estado del FormField
+                            });
+                          },
+                          controlAffinity: ListTileControlAffinity.leading,
+                        ),
+                        if (formFieldState.hasError) // Muestra error si no se marca
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16.0),
+                            child: Text(
+                              formFieldState.errorText!,
+                              style: const TextStyle(color: Colors.red, fontSize: 12),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+
               const SizedBox(height: 40),
-              const Text("¡Gracias por contar con nostros!", style: TextStyle(
-                  fontWeight: FontWeight.w900, fontSize: 18, color: negro, height: 1.2)),
+              const Text(
+                "¡Gracias por contar con nosotros!",
+                style: TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 18,
+                  color: Colors.black,
+                  height: 1.2,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
   }
+
 
   Widget _buildIntroAcudienteForm() {
     return SingleChildScrollView(
@@ -1222,7 +1321,19 @@ class _RegistroPageState extends State<RegistroPage> {
 
   /// 🔥 **Método para validar y continuar a la siguiente página**
   void _validarYContinuar() {
-    // Validación de Acudiente en la página 1
+
+
+    if (_currentPage == 0 && !_formKeyTerminosYCondiciones.currentState!.validate()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Debes aceptar los Términos y Condiciones antes de continuar."),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
     if (_currentPage == 2 && !_formKeyAcudiente.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

@@ -75,40 +75,31 @@ class _SideBarState extends State<SideBar> {
 
   @override
   Widget build(BuildContext context) {
-    // Obtén el valor de _isAdmin (ya obtenido en _checkIfAdmin)
     bool? isAdmin = _isAdmin;
-    // Obtén el rol del admin desde tu AdminProvider
     String? rol = AdminProvider().rol;
 
-    // Construye la lista de ítems del Drawer usando el rol
     List<Widget> drawerItems = _buildDrawerItems(context, isAdmin, rol);
+
     return Drawer(
       elevation: 1,
       child: Container(
         color: violetaOscuro,
-        child: Stack( // 👈 Usa Stack para posicionar el logout abajo
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                const SizedBox(height: 40),
-                _buildDrawerHeader(_isAdmin),
-                const Divider(height: 1, color: grisMedio),
-                ..._buildDrawerItems(context, _isAdmin, AdminProvider().rol),
-                const SizedBox(height: 60), // Espacio extra para el botón
-              ],
-            ),
-            Positioned(
-              bottom: 20,
-              left: 0,
-              right: 0,
-              child: _buildLogoutTile(context), // 🔥 Se mantiene en la parte inferior
-            ),
+            const SizedBox(height: 40),
+            _buildDrawerHeader(_isAdmin),
+            const Divider(height: 1, color: grisMedio),
+            ...drawerItems,
+            const Divider(height: 1, color: Colors.white70), // 🔹 Línea divisoria
+            _buildLogoutTile(context), // 🔥 Botón de Cerrar Sesión colocado aquí
+            const SizedBox(height: 20), // 🔹 Espacio final para evitar recortes visuales
           ],
         ),
       ),
     );
   }
+
 
   Future<void> _fetchPendingSuggestions() async {
     final querySnapshot = await FirebaseFirestore.instance
@@ -184,10 +175,15 @@ class _SideBarState extends State<SideBar> {
       items.addAll([
         _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
-        _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar, 'solicitudes_page'),
-        _buildDrawerTile(context, "Mis redenciones", Icons.filter_9_plus_outlined, 'mis_redenciones'),
         _buildDrawerTile(context, "Historial solicitudes derecho peticion", Icons.history_edu_outlined, 'historial_solicitudes_derechos_peticion'),
+        _buildDrawerTile(context, "Mis redenciones", Icons.filter_9_plus_outlined, 'mis_redenciones'),
+        const Divider(),
+        Container(
+          margin: const EdgeInsets.only(left: 15),
+            child: const Text("Información general", style: TextStyle(color: blanco),)),
+        _buildDrawerTile(context, "Términos y condiciones", Icons.account_balance_outlined, 'terminos_y_condiciones'),
+        _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
         _buildDrawerTile(context, "Quienes somos", Icons.info, 'nosotros'),
         _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
       ]);
