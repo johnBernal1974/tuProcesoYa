@@ -176,18 +176,37 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar, 'solicitudes_page'),
-        _buildDrawerTile(context, "Historial solicitudes derecho peticion", Icons.history_edu_outlined, 'historial_solicitudes_derechos_peticion'),
-        _buildDrawerTile(context, "Mis redenciones", Icons.filter_9_plus_outlined, 'mis_redenciones'),
-        const Divider(),
-        Container(
-          margin: const EdgeInsets.only(left: 15),
-            child: const Text("Información general", style: TextStyle(color: blanco),)),
-        _buildDrawerTile(context, "Términos y condiciones", Icons.account_balance_outlined, 'terminos_y_condiciones'),
-        _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
-        _buildDrawerTile(context, "Quienes somos", Icons.info, 'nosotros'),
+
+
+        ExpansionTile(
+          leading: const Icon(Icons.history, color: Colors.white),
+          title: const Text("Historiales", style: TextStyle(color: Colors.white, fontSize: 14)),
+          iconColor: Colors.white, // 🔥 Color del icono cuando se expande
+          collapsedIconColor: Colors.white, // 🔥 Color cuando está colapsado
+          children: [
+            _buildDrawerTile(context, "Solicitudes derecho peticion", Icons.history_edu_outlined, 'historial_solicitudes_derechos_peticion'),
+            _buildDrawerTile(context, "Redenciones", Icons.filter_9_plus_outlined, 'mis_redenciones'),
+          ],
+        ),
+
+        // 🔥 Submenú "Información general"
+        ExpansionTile(
+          leading: const Icon(Icons.info_outline, color: Colors.white),
+          title: const Text("Información general", style: TextStyle(color: Colors.white, fontSize: 14)),
+          iconColor: Colors.white, // 🔥 Color del icono cuando se expande
+          collapsedIconColor: Colors.white, // 🔥 Color cuando está colapsado
+          children: [
+            _buildDrawerTile(context, "Términos y condiciones", Icons.account_balance_outlined, 'terminos_y_condiciones'),
+            _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
+            _buildDrawerTile(context, "Quiénes somos", Icons.info, 'nosotros'),
+          ],
+        ),
+
+
         _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
       ]);
     }
+
 
     items.add(const SizedBox(height: 60)); // Espacio extra al final
     return items;
