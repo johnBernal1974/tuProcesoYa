@@ -627,6 +627,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
+
   Widget _buildSolicitudTexto() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

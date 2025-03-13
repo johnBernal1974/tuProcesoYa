@@ -2446,9 +2446,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   Widget botonGuardar() {
     return SizedBox(
-      width: 200,
+      width: 120,
       child: Align(
-        alignment: Alignment.centerLeft,
+        alignment: Alignment.center,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
             foregroundColor: Colors.white,
@@ -2456,27 +2456,29 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
           onPressed: () async {
+            String adminFullName = await obtenerNombreAdmin();
             bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
             if (!confirmar) return; // Si el usuario cancela, no hace nada
 
+            // Primero, validar los campos de texto en el formulario
             if (!_formKey.currentState!.validate()) {
-              if(context.mounted){
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: Colors.red,
-                    content: Text(
-                      'No se puede guardar hasta que estén todos los campos llenos',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    duration: Duration(seconds: 2),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  backgroundColor: Colors.red,
+                  content: Text(
+                    'No se puede guardar hasta que todos los campos estén llenos',
+                    style: TextStyle(color: Colors.white),
                   ),
-                );
-              }
+                  duration: Duration(seconds: 2),
+                ),
+              );
               return;
             }
 
+            // Lista de campos faltantes
             List<String> camposFaltantes = [];
 
+            // 🔹 Validaciones
             if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
             if ((selectedRegional ?? widget.doc['regional']) == null) camposFaltantes.add("Regional");
             if ((selectedCiudad ?? widget.doc['ciudad']) == null) camposFaltantes.add("Ciudad");
@@ -2486,11 +2488,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               camposFaltantes.add("Delito");
             }
 
-
-            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
-            if (tiempoCondena == 0) {
-              camposFaltantes.add("Condena en meses");
-            }
+            if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
+            if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
+            if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
 
             if (camposFaltantes.isNotEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -2503,41 +2503,49 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               return;
             }
 
+            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
+
+            // 🔹 Obtener los correos del centro de reclusión
+            Map<String, String> correosCentro = {
+              'correo_direccion': '',
+              'correo_juridica': '',
+              'correo_principal': '',
+              'correo_sanidad': '',
+            };
+
+            String centroFinal = selectedCentro ?? widget.doc['centro_reclusion'];
+            if (centroFinal.isNotEmpty) {
+              var centroEncontrado = centrosReclusionTodos.firstWhere(
+                    (centro) => centro['id'] == centroFinal,
+                orElse: () => <String, Object>{},
+              );
+
+              if (centroEncontrado.isNotEmpty && centroEncontrado.containsKey('correos')) {
+                var correosMap = centroEncontrado['correos'] as Map<String, dynamic>;
+                correosCentro = {
+                  'correo_direccion': correosMap['correo_direccion']?.toString() ?? '',
+                  'correo_juridica': correosMap['correo_juridica']?.toString() ?? '',
+                  'correo_principal': correosMap['correo_principal']?.toString() ?? '',
+                  'correo_sanidad': correosMap['correo_sanidad']?.toString() ?? '',
+                };
+              }
+            }
+
+            // Ocultar teclado
             SystemChannels.textInput.invokeMethod('TextInput.hide');
 
             try {
-              // 🔹 Obtener datos del admin actual
-              User? user = FirebaseAuth.instance.currentUser;
-              String adminName = "Desconocido";
-              String adminId = user?.uid ?? "Desconocido";
-
-              DocumentSnapshot adminDoc = await FirebaseFirestore.instance.collection('admin').doc(adminId).get();
-              if (adminDoc.exists) {
-                adminName = "${adminDoc['name']} ${adminDoc['apellidos']}";
-              }
-
-              // 🔥 Verificar si ya existe una acción de activado en el historial
-              QuerySnapshot historialSnapshot = await widget.doc.reference
-                  .collection('historial_acciones')
-                  .where('accion', isEqualTo: 'activado')
-                  .limit(1)
-                  .get();
-
-              bool yaActivado = historialSnapshot.docs.isNotEmpty;
-
-              // 🔹 Actualizar el documento
+              // 🔹 Guardar en Firestore
               await widget.doc.reference.update({
                 'nombre_ppl': _nombreController.text,
                 'apellido_ppl': _apellidoController.text,
                 'numero_documento_ppl': _numeroDocumentoController.text,
                 'tipo_documento_ppl': _tipoDocumento,
-                'centro_reclusion': selectedCentro ?? widget.doc['centro_reclusion'],
+                'centro_reclusion': centroFinal,
                 'regional': selectedRegional ?? widget.doc['regional'],
                 'ciudad': selectedCiudad ?? widget.doc['ciudad'],
                 'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
-                'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'],
                 'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
-                'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'],
                 'delito': selectedDelito ?? widget.doc['delito'],
                 'radicado': _radicadoController.text,
                 'tiempo_condena': tiempoCondena,
@@ -2553,26 +2561,20 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'status': 'activado',
               });
 
-              // 🔥 Registrar en el historial solo si es la primera activación
-              if (!yaActivado) {
-                await widget.doc.reference.collection('historial_acciones').add({
-                  'admin': adminName,
-                  'accion': 'activado',
-                  'fecha': DateTime.now().toString(),
-                });
-              } else {
-                // 🔥 Si ya fue activado antes, registrar como actualización
-                await widget.doc.reference.collection('historial_acciones').add({
-                  'admin': adminName,
-                  'accion': 'actualización',
-                  'fecha': DateTime.now().toString(),
-                });
-              }
+              // Guardar correos en la subcolección de Firestore
+              await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
+
+              // 🔥 Registrar la actualización en el historial
+              await widget.doc.reference.collection('historial_acciones').add({
+                'admin': adminFullName, // Aquí puedes obtener el nombre del admin si lo necesitas
+                'accion': 'actualización',
+                'fecha': DateTime.now().toString(),
+              });
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Datos guardados con éxito.'),
+                    content: Text('Datos guardados con éxito. Correos actualizados.'),
                     duration: Duration(seconds: 2),
                   ),
                 );
@@ -2586,20 +2588,28 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 );
               });
 
+              // Mostrar diálogo de confirmación de guardado
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Se guardo la información de manera exitosa'),
+                  duration: Duration(seconds: 2),
+                  backgroundColor: Colors.green,
+                ),
+              );
+
+              // Enviar mensaje de WhatsApp
               validarYEnviarMensaje();
             } catch (error) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al guardar: $error'),
-                    duration: const Duration(seconds: 2),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Error al guardar: $error'),
+                  duration: const Duration(seconds: 2),
+                  backgroundColor: Colors.red,
+                ),
+              );
             }
           },
-          child: const Text('Guardar Cambios', style: TextStyle(fontSize: 12)),
+          child: const Text('Guardar Cambios'),
         ),
       ),
     );
@@ -2629,6 +2639,22 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     ) ?? false; // En caso de error, devuelve `false` por defecto
   }
+
+
+  Future<String> obtenerNombreAdmin() async {
+    AdminProvider adminProvider = AdminProvider();
+
+    // Si ya tiene datos cargados, los devuelve directamente
+    if (adminProvider.adminFullName != null && adminProvider.adminFullName!.isNotEmpty) {
+      return adminProvider.adminFullName!;
+    }
+
+    // Cargar datos si no están disponibles
+    await adminProvider.loadAdminData();
+
+    return adminProvider.adminFullName ?? "Desconocido";
+  }
+
 
   Widget tipoDocumentoPpl(){
     return DropdownButtonFormField(
