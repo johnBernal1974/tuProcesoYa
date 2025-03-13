@@ -440,19 +440,29 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () async {
+                onPressed: widget.doc["status"] == "bloqueado"
+                    ? null // 🔹 Desactiva el botón si el usuario está bloqueado
+                    : () async {
                   await _guardarRedencion(widget.doc.id);
                   await calcularTotalRedenciones(widget.doc.id);
                   _initCalculoCondena();
                   setState(() {});
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: widget.doc["status"] == "bloqueado"
+                      ? Colors.grey // 🔹 Cambia el color del botón cuando está deshabilitado
+                      : Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text("Guardar Redención", style: TextStyle(fontSize: 16, color: Colors.white)),
+                child: Text(
+                  "Guardar Redención",
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: widget.doc["status"] == "bloqueado" ? Colors.black54 : Colors.white,
+                  ),
+                ),
               ),
-            ),
+            )
           ],
         ),
       ),
@@ -2446,7 +2456,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   Widget botonGuardar() {
     return SizedBox(
-      width: 120,
+      width: 180,
       child: Align(
         alignment: Alignment.center,
         child: ElevatedButton(
@@ -2564,10 +2574,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               // Guardar correos en la subcolección de Firestore
               await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
 
+              String accion = widget.doc['status'] == 'registrado' ? 'activado' : 'actualización';
               // 🔥 Registrar la actualización en el historial
+              // Guardar la acción en historial
               await widget.doc.reference.collection('historial_acciones').add({
-                'admin': adminFullName, // Aquí puedes obtener el nombre del admin si lo necesitas
-                'accion': 'actualización',
+                'admin': adminFullName,
+                'accion': accion,
                 'fecha': DateTime.now().toString(),
               });
 

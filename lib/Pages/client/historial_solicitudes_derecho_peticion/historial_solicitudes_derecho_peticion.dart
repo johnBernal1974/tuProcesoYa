@@ -49,39 +49,44 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
   Widget build(BuildContext context) {
     return MainLayout(
       pageTitle: 'Historial derechos de petición',
-      content: StreamBuilder<QuerySnapshot>(
-        stream: _fetchSolicitudes(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return const Center(child: Text("Error al cargar los datos"));
-          }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("No hay solicitudes registradas."));
-          }
-
-          final solicitudes = snapshot.data!.docs;
-
-          return ListView.builder(
-            itemCount: solicitudes.length,
-            itemBuilder: (context, index) {
-              final solicitud = solicitudes[index];
-              final data = solicitud.data() as Map<String, dynamic>;
-
-              // Convertir la lista de archivos desde Firestore
-              List<String> archivos = [];
-              if (data.containsKey('archivos') && data['archivos'] != null) {
-                if (data['archivos'] is List) {
-                  archivos = (data['archivos'] as List).whereType<String>().toList();
-                }
+      content: Center(
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width >= 1000 ? 600 : double.infinity,
+          child: StreamBuilder<QuerySnapshot>(
+            stream: _fetchSolicitudes(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snapshot.hasError) {
+                return const Center(child: Text("Error al cargar los datos"));
+              }
+              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                return const Center(child: Text("No hay solicitudes registradas."));
               }
 
-              return _buildSolicitudCard(data, archivos);
+              final solicitudes = snapshot.data!.docs;
+
+              return ListView.builder(
+                itemCount: solicitudes.length,
+                itemBuilder: (context, index) {
+                  final solicitud = solicitudes[index];
+                  final data = solicitud.data() as Map<String, dynamic>;
+
+                  // Convertir la lista de archivos desde Firestore
+                  List<String> archivos = [];
+                  if (data.containsKey('archivos') && data['archivos'] != null) {
+                    if (data['archivos'] is List) {
+                      archivos = (data['archivos'] as List).whereType<String>().toList();
+                    }
+                  }
+
+                  return _buildSolicitudCard(data, archivos);
+                },
+              );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }
