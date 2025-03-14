@@ -318,9 +318,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   /// Inicia el pago de la suscripción
   void _pagarSuscripcion() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    String userId = user.uid; // 🔥 ID del usuario autenticado
     if (_subscriptionValue == null) return;
 
-    String referencia = "suscripcion_${_uuid.v4()}";
+    String referencia = "suscripcion_${userId}_${_uuid.v4()}"; // 🔥 Incluir ID en la referencia
     int montoCentavos = _subscriptionValue! * 100;
 
     String? checkoutUrl = await _wompiService.generarUrlCheckout(
@@ -339,37 +343,32 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
+
   /// Inicia el pago de recarga de saldo
   void iniciarPagoRecarga() async {
-    if (_valorPago == null) {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            "⚠️ Debes ingresar o seleccionar un monto antes de pagar.",
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          backgroundColor: Colors.red, // Fondo rojo para indicar error
-          duration: Duration(seconds: 2), // Se muestra por 2 segundos
-        ),
-      );
-      return;
-    }
-    if (_valorPago! < 20000) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "⚠️ La recarga mínima es de \$20.000.",
-            style: TextStyle(color: Colors.white, fontSize: 16),
-          ),
-          backgroundColor: Colors.red, // Fondo rojo para indicar error
-          duration: Duration(seconds: 2), // Se muestra por 2 segundos
+          content: Text("⚠️ Debes iniciar sesión antes de pagar."),
+          backgroundColor: Colors.red,
         ),
       );
       return;
     }
 
+    String userId = user.uid; // 🔥 ID del usuario autenticado en Firebase
+    if (_valorPago == null || _valorPago! < 20000) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("⚠️ Ingresa un monto mayor o igual a \$20.000."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
-    String referencia = "recarga_${_uuid.v4()}";
+    String referencia = "recarga_${userId}_${_uuid.v4()}"; // 🔥 Incluir ID del usuario en la referencia
     int montoCentavos = _valorPago! * 100;
 
     String? checkoutUrl = await _wompiService.generarUrlCheckout(
@@ -387,5 +386,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
       print("⚠️ No se generó la URL de pago.");
     }
   }
+
 
 }
