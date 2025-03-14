@@ -83,7 +83,7 @@ class _SideBarState extends State<SideBar> {
     return Drawer(
       elevation: 1,
       child: Container(
-        color: violetaOscuro,
+        color: blanco,
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
@@ -117,7 +117,7 @@ class _SideBarState extends State<SideBar> {
   Widget _buildDrawerHeader(bool? isAdmin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-      decoration: const BoxDecoration(color: blancoCards),
+      decoration: const BoxDecoration(color: blanco),
       child: Column(
         children: [
           Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
@@ -174,38 +174,68 @@ class _SideBarState extends State<SideBar> {
     } else {
       // Menú para usuarios que no son admin.
       items.addAll([
-        _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
-        _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
+        _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home'),
+        _buildDrawerTile(context, "Tus datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar, 'solicitudes_page'),
-        _buildDrawerTile(context, "Cargar saldo", Icons.payments_rounded, 'checkout_wompi'),
-        _buildDrawerTile(context, "Mis transacciones", Icons.payments_rounded, 'mis_transacciones'),
+
+
 
 
         ExpansionTile(
-          leading: const Icon(Icons.history, color: Colors.white),
-          title: const Text("Historiales", style: TextStyle(color: Colors.white, fontSize: 14)),
-          iconColor: Colors.white, // 🔥 Color del icono cuando se expande
-          collapsedIconColor: Colors.white, // 🔥 Color cuando está colapsado
+          leading: const Icon(Icons.attach_money, color: Colors.black, size: 20),
+          title: const Text("Recargas", style: TextStyle(color: Colors.black, fontSize: 13)),
+          iconColor: Colors.black, // 🔥 Color del icono cuando se expande
+          collapsedIconColor: Colors.black, // 🔥 Color cuando está colapsado
           children: [
-            _buildDrawerTile(context, "Solicitudes derecho peticion", Icons.history_edu_outlined, 'historial_solicitudes_derechos_peticion'),
-            _buildDrawerTile(context, "Redenciones", Icons.filter_9_plus_outlined, 'mis_redenciones'),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(context, "Recargar cuenta", Icons.monetization_on_outlined, 'checkout_wompi'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(context, "Tus transacciones", Icons.payments_rounded, 'mis_transacciones'),
+            ),
+          ],
+        ),
+
+        ExpansionTile(
+          leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
+          title: const Text("Historiales", style: TextStyle(color: Colors.black, fontSize: 13)),
+          iconColor: Colors.black, // 🔥 Color del icono cuando se expande
+          collapsedIconColor: Colors.black, // 🔥 Color cuando está colapsado
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(context, "Tus Solicitudes derecho peticion", Icons.history_edu_outlined, 'historial_solicitudes_derechos_peticion'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(context, "Tus Redenciones", Icons.filter_9_plus_outlined, 'mis_redenciones'),
+            ),
           ],
         ),
 
         // 🔥 Submenú "Información general"
         ExpansionTile(
-          leading: const Icon(Icons.info_outline, color: Colors.white),
-          title: const Text("Información general", style: TextStyle(color: Colors.white, fontSize: 14)),
-          iconColor: Colors.white, // 🔥 Color del icono cuando se expande
-          collapsedIconColor: Colors.white, // 🔥 Color cuando está colapsado
+          leading: const Icon(Icons.info_outline, color: Colors.black, size: 20),
+          title: const Text("Información general", style: TextStyle(color: Colors.black, fontSize: 13)),
+          iconColor: Colors.black,
+          collapsedIconColor: Colors.black,
           children: [
-            _buildDrawerTile(context, "Términos y condiciones", Icons.account_balance_outlined, 'terminos_y_condiciones'),
-            _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
-            _buildDrawerTile(context, "Quiénes somos", Icons.info, 'nosotros'),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(context, "Términos y condiciones", Icons.account_balance_outlined, 'terminos_y_condiciones'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              child: _buildDrawerTile(context, "Quiénes somos", Icons.info, 'nosotros'),
+            ),
           ],
         ),
-
-
         _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
       ]);
     }
@@ -233,7 +263,7 @@ class _SideBarState extends State<SideBar> {
           leading: Stack(
             clipBehavior: Clip.none,
             children: [
-              Icon(icon, color: Colors.white),
+              Icon(icon, color: primary, size: 20),
               if (showBadge)
                 Positioned(
                   right: -2,
@@ -251,7 +281,7 @@ class _SideBarState extends State<SideBar> {
           ),
           title: Text(
             title,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: const TextStyle(color: Colors.black, fontSize: 13),
           ),
         );
       },
@@ -358,11 +388,11 @@ class DrawerListTitle extends StatelessWidget {
       onTap: press,
       leading: Icon(
         icon,
-        color: iconColor ?? Colors.white,
+        color: iconColor ?? primary,
       ),
       title: Text(
         title,
-        style: const TextStyle(color: Colors.white, fontSize: 14),
+        style: const TextStyle(color: negro, fontSize: 13),
       ),
     );
   }

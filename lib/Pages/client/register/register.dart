@@ -242,7 +242,6 @@ class _RegistroPageState extends State<RegistroPage> {
                   ),
                 ],
               ),
-
               const SizedBox(height: 20),
 
               // 🟢 Formulario para validar términos y condiciones
@@ -1247,6 +1246,7 @@ class _RegistroPageState extends State<RegistroPage> {
         "assignedTo": "",
         "fechaRegistro": DateTime.now(),
         "fecha_captura": null,
+        "saldo": 0,
       };
 
       // 🔹 Guarda los datos en Firestore

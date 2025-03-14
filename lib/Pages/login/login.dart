@@ -39,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Center(
           child: Container(
               constraints: const BoxConstraints(maxWidth: 600), // Limita el ancho máximo
-              padding: const EdgeInsets.all(16.0), // Agrega espacio alrededor del contenido
+              padding: const EdgeInsets.all(20.0), // Agrega espacio alrededor del contenido
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center, // 🔹 Asegura que los elementos estén en la parte superior
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -68,11 +68,11 @@ class _LoginPageState extends State<LoginPage> {
                             labelText: "Correo Electrónico",
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: primary, width: 2),
+                              borderSide: const BorderSide(color: gris, width: 1),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: primary, width: 2),
+                              borderSide: const BorderSide(color: gris, width: 1),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -100,11 +100,11 @@ class _LoginPageState extends State<LoginPage> {
                             labelText: "Contraseña",
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: primary, width: 2),
+                              borderSide: const BorderSide(color: gris, width: 1),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
-                              borderSide: const BorderSide(color: primary, width: 2),
+                              borderSide: const BorderSide(color: gris, width: 1),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -132,11 +132,10 @@ class _LoginPageState extends State<LoginPage> {
                             return null;
                           },
                         ),
-                        const SizedBox(height: 20),
-
+                        const SizedBox(height: 50),
                         // BOTÓN DE LOGIN
                         SizedBox(
-                          width: double.infinity,
+                          width: 300,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),

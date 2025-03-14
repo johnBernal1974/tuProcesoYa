@@ -24,7 +24,6 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void initState() {
     super.initState();
-    print("🟢 initState() de MainLayout ejecutado");
     _checkIfUserIsAdmin();
   }
 
@@ -48,7 +47,6 @@ class _MainLayoutState extends State<MainLayout> {
 
   @override
   Widget build(BuildContext context) {
-    //print("🔵 build() de MainLayout ejecutado");
     final user = FirebaseAuth.instance.currentUser;
     double width = MediaQuery.of(context).size.width;
     bool isTablet = width >= 600 && width < 1200;
