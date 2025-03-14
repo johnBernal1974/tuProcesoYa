@@ -143,6 +143,7 @@ class _SideBarState extends State<SideBar> {
           _buildDrawerTile(context, "Solicitudes derechos petición", Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
           _buildDrawerTile(context, "Registrar Operadores", Icons.app_registration, 'registrar_operadores'),
           _buildDrawerTile(context, "Operadores", Icons.account_box, 'operadores_page'),
+          _buildDrawerTile(context, "Transacciones", Icons.account_box, 'admin_transacciones'),
         ]);
       }else if(rol == "master"){
           items.addAll([
@@ -177,6 +178,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar, 'solicitudes_page'),
         _buildDrawerTile(context, "Cargar saldo", Icons.payments_rounded, 'checkout_wompi'),
+        _buildDrawerTile(context, "Mis transacciones", Icons.payments_rounded, 'mis_transacciones'),
 
 
         ExpansionTile(

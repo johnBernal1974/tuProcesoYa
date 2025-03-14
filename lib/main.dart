@@ -16,6 +16,7 @@ import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_petic
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
+import 'Pages/administrador/historial_transacciones/historial_transacciones.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/administrador/operadores_page/operadores_page.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
@@ -29,6 +30,7 @@ import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitude
 import 'Pages/client/home/home.dart';
 import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
+import 'Pages/client/mis_transacciones/mis_transacciones.dart';
 import 'Pages/client/register/register.dart';
 import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
 import 'Pages/client/solicitudes_page/solicitudes_page.dart';
@@ -132,6 +134,8 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
         'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
         'checkout_wompi': (context) => CheckoutPage(),
+        'mis_transacciones': (context) => const MisTransaccionesPage(),
+        'admin_transacciones': (context) => const AdminTransaccionesPage(),
 
       },
         onGenerateRoute: (settings) {
