@@ -39,6 +39,7 @@ import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/forgot_password/forgot_password.dart';
 import 'Pages/login/login.dart';
 import 'commons/wompi/checkout_page.dart';
+import 'firebase_config.dart';
 import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -53,11 +54,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  if (kIsWeb) {
-    await loadEnv(); // Carga env.json en Web
-  } else {
-    await dotenv.load(fileName: ".env"); // Carga .env en móviles
-  }
+  await loadFirebaseConfig(); // 🔥 Cargar `firebaseConfig` antes de Firebase
 
   // Inicializa Firebase
   await Firebase.initializeApp(
