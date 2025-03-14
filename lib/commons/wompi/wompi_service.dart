@@ -25,7 +25,6 @@ class WompiService {
       "amount-in-cents": monto.toString(),
       "reference": referencia,
       "signature:integrity": firma,
-      "redirect-url": "https://tudominio.com/pago-exitoso",
     }).toString();
 
     return url;

@@ -329,7 +329,7 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: [
         _buildBeneficioFila(
-          'Permiso Administrativo de 72h',
+          'Permiso de 72h',
           33.33,
           'salir del centro de reclusión por un periodo de 72 horas.',
         ),

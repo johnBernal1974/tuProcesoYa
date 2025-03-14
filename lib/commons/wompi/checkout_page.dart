@@ -47,7 +47,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         pageTitle:"Pagar suscripción",
         content: SingleChildScrollView(
             child: Padding(
-              padding: const EdgeInsets.all(20.0),
+              padding: const EdgeInsets.all(5.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 // Mantiene el logo a la izquierda
@@ -55,7 +55,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   // Logo alineado a la izquierda
                   Image.asset(
                     'assets/images/logo_tu_proceso_ya_transparente.png',
-                    height: 40,
+                    height: 30,
                   ),
                   const SizedBox(height: 50),
 
@@ -124,7 +124,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       pageTitle:"Recargar cuenta",
       content: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(10.0),
+            padding: const EdgeInsets.all(5.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               // Mantiene el logo alineado a la izquierda
@@ -132,9 +132,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 // Logo alineado a la izquierda
                 Image.asset(
                   'assets/images/logo_tu_proceso_ya_transparente.png',
-                  height: 40,
+                  height: 30,
                 ),
-                const SizedBox(height: 80),
+                const SizedBox(height: 30),
 
                 // Centrar todo el contenido debajo del logo
                 Center(
@@ -145,46 +145,49 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       const Text(
                         "Ingresa el monto a recargar",
                         style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                            fontSize: 14, fontWeight: FontWeight.bold),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 15),
 
                       // Campo de entrada del monto
-                      TextField(
-                        controller: _controller,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                        decoration: InputDecoration(
-                          prefixText: "\$ ",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.grey), // Borde gris por defecto
+                      SizedBox(
+                        width: 180,
+                        height: 45,
+                        child: TextField(
+                          controller: _controller,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          decoration: InputDecoration(
+                            prefixText: "\$ ",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Colors.grey), // Borde gris por defecto
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: Colors.grey), // Borde gris cuando NO está enfocado
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: primary, width: 2), // Borde azul cuando está enfocado
+                            ),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: Colors.grey), // Borde gris cuando NO está enfocado
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: const BorderSide(color: primary, width: 2), // Borde azul cuando está enfocado
-                          ),
+                          onChanged: _actualizarValor,
                         ),
-                        onChanged: _actualizarValor,
                       ),
 
-
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 20),
 
                       // Botones rápidos para seleccionar monto
                       const Text("O selecciona un monto rápido:",
-                          style: TextStyle(fontSize: 16)),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 10),
                       Wrap(
                         spacing: 10,
-                        children: [30000, 40000, 50000, 100000].map((monto) {
+                        children: [60000, 100000, 150000].map((monto) {
                           return ElevatedButton(
                             onPressed: () {
                               _seleccionarMonto(monto);
@@ -193,9 +196,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white, // Fondo blanco
                               foregroundColor: Colors.black, // Texto negro
-                              side: const BorderSide(color: Colors.grey, width: 2), // Borde gris
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Espaciado
-                              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), // Tamaño del texto
+                              side: const BorderSide(color: Colors.grey, width: 1), // Borde gris
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), // Espaciado
+                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), // Tamaño del texto
                             ),
                             child: Text("\$${_formatter.format(monto)}"),
                           );
@@ -321,10 +324,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    String userId = user.uid; // 🔥 ID del usuario autenticado
+    String userId = user.uid;
     if (_subscriptionValue == null) return;
 
-    String referencia = "suscripcion_${userId}_${_uuid.v4()}"; // 🔥 Incluir ID en la referencia
+    String referencia = "suscripcion_${userId}_${_uuid.v4()}";
     int montoCentavos = _subscriptionValue! * 100;
 
     String? checkoutUrl = await _wompiService.generarUrlCheckout(
@@ -335,12 +338,31 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (checkoutUrl != null) {
       if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
         await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
+
+        // 🔥 Monitorea Firestore para detectar cambios en el pago
+        _monitorearTransaccion(referencia);
       } else {
         print("❌ No se pudo abrir la URL de pago.");
       }
     } else {
       print("⚠️ No se generó la URL de pago.");
     }
+  }
+
+  void _monitorearTransaccion(String referencia) {
+    FirebaseFirestore.instance
+        .collection("recargas") // O usa "transacciones", si tu colección tiene otro nombre
+        .where("reference", isEqualTo: referencia)
+        .snapshots()
+        .listen((event) {
+      if (event.docs.isNotEmpty) {
+        var transaction = event.docs.first;
+        if (transaction["status"] == "APPROVED") {
+          print("✅ Transacción aprobada, redirigiendo al Home...");
+          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+        }
+      }
+    });
   }
 
 
@@ -357,7 +379,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
-    String userId = user.uid; // 🔥 ID del usuario autenticado en Firebase
+    String userId = user.uid;
     if (_valorPago == null || _valorPago! < 20000) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -368,7 +390,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       return;
     }
 
-    String referencia = "recarga_${userId}_${_uuid.v4()}"; // 🔥 Incluir ID del usuario en la referencia
+    String referencia = "recarga_${userId}_${_uuid.v4()}"; // 🔥 Referencia única
     int montoCentavos = _valorPago! * 100;
 
     String? checkoutUrl = await _wompiService.generarUrlCheckout(
@@ -379,6 +401,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (checkoutUrl != null) {
       if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
         await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
+
+        // 🔥 Monitorea Firestore para detectar el estado de la transacción
+        _monitorearTransaccion(referencia);
       } else {
         print("❌ No se pudo abrir la URL de pago.");
       }
@@ -386,6 +411,4 @@ class _CheckoutPageState extends State<CheckoutPage> {
       print("⚠️ No se generó la URL de pago.");
     }
   }
-
-
 }
