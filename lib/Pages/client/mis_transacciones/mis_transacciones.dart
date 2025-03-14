@@ -17,6 +17,7 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late String _userId;
+  int? _saldo; // 🔹 Guarda el saldo del usuario
 
   @override
   void initState() {
@@ -30,13 +31,25 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
       setState(() {
         _userId = user.uid;
       });
-      print("🔹 User ID cargado: $_userId"); // 🔥 Verifica que se esté cargando
+      _fetchSaldo(); // 🔥 Carga el saldo una vez que se tiene el userId
     } else {
       print("⚠️ No hay usuario autenticado.");
     }
   }
 
-  /// Traduce el estado de pago a español
+  /// **🔹 Obtiene el saldo del usuario desde Firestore**
+  Future<void> _fetchSaldo() async {
+    if (_userId.isEmpty) return;
+
+    final userDoc = await _firestore.collection("Ppl").doc(_userId).get();
+    if (userDoc.exists) {
+      setState(() {
+        _saldo = userDoc.data()?["saldo"] ?? 0;
+      });
+    }
+  }
+
+  /// **🔹 Traduce el estado de pago a español**
   String _traducirEstado(String status) {
     switch (status) {
       case "APPROVED":
@@ -52,7 +65,7 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
     }
   }
 
-  /// Obtiene el concepto de la referencia
+  /// **🔹 Obtiene el concepto de la referencia**
   String _obtenerConcepto(String reference) {
     return reference.startsWith("suscripcion") ? "Suscripción" : "Recarga";
   }
@@ -71,74 +84,126 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
         child: SizedBox(
           width: MediaQuery.of(context).size.width >= 1000 ? 800 : double.infinity,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _userId.isNotEmpty
-                  ? _firestore
-                  .collection("recargas")
-                  .where("userId", isEqualTo: _userId)
-                  .orderBy("createdAt", descending: true)
-                  .snapshots()
-                  : null, // 🔥 Evita que la consulta falle si _userId es null
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("No tienes transacciones registradas."));
-                }
-
-                return ListView.builder(
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    var transaction = snapshot.data!.docs[index];
-                    var fecha = (transaction["createdAt"] as Timestamp).toDate();
-                    var formattedDate = DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO').format(fecha);
-                    var formattedAmount = "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"])}";
-                    var estado = _traducirEstado(transaction["status"]);
-                    var concepto = _obtenerConcepto(transaction["reference"]);
-                    var transactionId = transaction["transactionId"] ?? "ID no disponible";
-
-                    return Card(
-                      color: blanco,
-                      surfaceTintColor: blanco,
-                      margin: const EdgeInsets.symmetric(vertical: 8),
-                      child: ListTile(
-                        leading: Icon(
-                          concepto == "Suscripción" ? Icons.subscriptions : Icons.account_balance_wallet,
-                          color: concepto == "Suscripción" ? Colors.blue : Colors.green,
-                          size: 20,
-                        ),
-                        title: Text(
-                          formattedAmount,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "$concepto - $formattedDate",
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            Text(
-                              "ID: $transactionId", // 🔥 Se muestra el ID de la transacción
-                              style: const TextStyle(fontSize: 10, color: Colors.grey), // 🔥 Pequeño y gris
-                            ),
-                          ],
-                        ),
-                        trailing: Text(
-                          estado,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: estado == "Aprobado" ? Colors.green : Colors.red,
-                          ),
-                        ),
+            padding: const EdgeInsets.all(0.0),
+            child: Column(
+              children: [
+                // 🔥 SECCIÓN DEL SALDO ACTUAL 🔥
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  margin: const EdgeInsets.only(bottom: 15),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: gris, width: 2),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        "Saldo Actual",
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
                       ),
-                    );
-                  },
-                );
-              },
+                      Text(
+                        _saldo != null
+                            ? "\$${NumberFormat("#,###", "es_CO").format(_saldo)}"
+                            : "Cargando...",
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 🔥 LISTA DE TRANSACCIONES 🔥
+                Expanded(
+                  child: StreamBuilder<QuerySnapshot>(
+                    stream: _userId.isNotEmpty
+                        ? _firestore
+                        .collection("recargas")
+                        .where("userId", isEqualTo: _userId)
+                        .orderBy("createdAt", descending: true)
+                        .snapshots()
+                        : null, // 🔥 Evita que la consulta falle si _userId es null
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Center(child: Text("No tienes transacciones registradas."));
+                      }
+
+                      return ListView.builder(
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          var transaction = snapshot.data!.docs[index];
+                          var fecha = (transaction["createdAt"] as Timestamp).toDate();
+                          var formattedDate =
+                          DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO').format(fecha);
+                          var formattedAmount =
+                              "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"])}";
+                          var estado = _traducirEstado(transaction["status"]);
+                          var concepto = _obtenerConcepto(transaction["reference"]);
+                          var transactionId = transaction["transactionId"] ?? "ID no disponible";
+                          var paymentMethod = transaction["paymentMethod"] ?? "ID no disponible";
+
+                          return Card(
+                            color: blanco,
+                            surfaceTintColor: blanco,
+                            margin: const EdgeInsets.symmetric(vertical: 8),
+                            child: ListTile(
+                              title: Text(
+                                formattedAmount,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                              ),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        '$concepto - ',
+                                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        formattedDate,
+                                        style: const TextStyle(fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Text(
+                                        "Método de pago: ", // 🔥 Se muestra el ID de la transacción
+                                        style: TextStyle(fontSize: 10, color: Colors.grey),
+                                      ),
+                                      Text(
+                                        "$paymentMethod", // 🔥 Se muestra el ID de la transacción
+                                        style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  Text(
+                                    "ID: $transactionId", // 🔥 Se muestra el ID de la transacción
+                                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              trailing: Text(
+                                estado,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: estado == "Aprobado" ? Colors.green : Colors.red,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),

@@ -45,79 +45,76 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (_isPaid == false) {
       return MainLayout(
         pageTitle:"Pagar suscripción",
-        content: SizedBox(
-            width: MediaQuery.of(context).size.width >= 1000 ? 600 : double.infinity,
-            child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    // Mantiene el logo a la izquierda
-                    children: [
-                      // Logo alineado a la izquierda
-                      Image.asset(
-                        'assets/images/logo_tu_proceso_ya_transparente.png',
-                        height: 40,
-                      ),
-                      const SizedBox(height: 50),
+        content: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                // Mantiene el logo a la izquierda
+                children: [
+                  // Logo alineado a la izquierda
+                  Image.asset(
+                    'assets/images/logo_tu_proceso_ya_transparente.png',
+                    height: 40,
+                  ),
+                  const SizedBox(height: 50),
 
-                      // Centrar todo el contenido excepto el logo
-                      Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                  // Centrar todo el contenido excepto el logo
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      // Asegura que el contenido esté centrado
+                      children: [
+                        const Text(
+                          "Gracias por confiar en nosotros, para obtener todos los beneficios de nuestra plataforma debes hacer el pago de la suscripción.",
+                          style: TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center, // Texto centrado
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Valor de la suscripción centrado
+                        _subscriptionValue != null
+                            ? Column(
                           crossAxisAlignment: CrossAxisAlignment.center,
-                          // Asegura que el contenido esté centrado
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Text(
-                              "Gracias por confiar en nosotros, para obtener todos los beneficios de nuestra plataforma debes hacer el pago de la suscripción.",
-                              style: TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.bold),
-                              textAlign: TextAlign.center, // Texto centrado
+                              "Valor de la suscripción",
+                              style: TextStyle(fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey),
                             ),
-                            const SizedBox(height: 20),
-
-                            // Valor de la suscripción centrado
-                            _subscriptionValue != null
-                                ? Column(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Text(
-                                  "Valor de la suscripción",
-                                  style: TextStyle(fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey),
-                                ),
-                                Text(
-                                  "\$${_formatter.format(_subscriptionValue)}",
-                                  style: const TextStyle(fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black),
-                                ),
-                              ],
-                            )
-                                : const CircularProgressIndicator(),
-
-                            const SizedBox(height: 30),
-
-                            // Botón de pago centrado
-                            ElevatedButton(
-                              onPressed: _pagarSuscripcion,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 40, vertical: 15),
-                                textStyle: const TextStyle(
-                                    fontSize: 18, fontWeight: FontWeight.bold),
-                              ),
-                              child: const Text("Pagar Suscripción"),
+                            Text(
+                              "\$${_formatter.format(_subscriptionValue)}",
+                              style: const TextStyle(fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black),
                             ),
                           ],
+                        )
+                            : const CircularProgressIndicator(),
+
+                        const SizedBox(height: 30),
+
+                        // Botón de pago centrado
+                        ElevatedButton(
+                          onPressed: _pagarSuscripcion,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 40, vertical: 15),
+                            textStyle: const TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          child: const Text("Pagar Suscripción"),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
+            ),
           ),
       );
     }
@@ -125,124 +122,121 @@ class _CheckoutPageState extends State<CheckoutPage> {
     // Si isPaid es true, mostrar el campo de recarga
     return MainLayout(
       pageTitle:"Recargar cuenta",
-      content: SizedBox(
-          width: MediaQuery.of(context).size.width >= 1000 ? 600 : double.infinity,
-          child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  // Mantiene el logo alineado a la izquierda
-                  children: [
-                    // Logo alineado a la izquierda
-                    Image.asset(
-                      'assets/images/logo_tu_proceso_ya_transparente.png',
-                      height: 40,
-                    ),
-                    const SizedBox(height: 80),
+      content: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              // Mantiene el logo alineado a la izquierda
+              children: [
+                // Logo alineado a la izquierda
+                Image.asset(
+                  'assets/images/logo_tu_proceso_ya_transparente.png',
+                  height: 40,
+                ),
+                const SizedBox(height: 80),
 
-                    // Centrar todo el contenido debajo del logo
-                    Center(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        // Asegura que el contenido esté centrado
-                        children: [
-                          const Text(
-                            "Ingresa el monto a recargar",
-                            style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
+                // Centrar todo el contenido debajo del logo
+                Center(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    // Asegura que el contenido esté centrado
+                    children: [
+                      const Text(
+                        "Ingresa el monto a recargar",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 15),
+
+                      // Campo de entrada del monto
+                      TextField(
+                        controller: _controller,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          prefixText: "\$ ",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.grey), // Borde gris por defecto
                           ),
-                          const SizedBox(height: 15),
-
-                          // Campo de entrada del monto
-                          TextField(
-                            controller: _controller,
-                            keyboardType: TextInputType.number,
-                            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                            decoration: InputDecoration(
-                              prefixText: "\$ ",
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: Colors.grey), // Borde gris por defecto
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: Colors.grey), // Borde gris cuando NO está enfocado
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                                borderSide: const BorderSide(color: primary, width: 2), // Borde azul cuando está enfocado
-                              ),
-                            ),
-                            onChanged: _actualizarValor,
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: Colors.grey), // Borde gris cuando NO está enfocado
                           ),
-
-
-                          const SizedBox(height: 40),
-
-                          // Botones rápidos para seleccionar monto
-                          const Text("O selecciona un monto rápido:",
-                              style: TextStyle(fontSize: 16)),
-                          const SizedBox(height: 10),
-                          Wrap(
-                            spacing: 10,
-                            children: [30000, 40000, 50000, 100000].map((monto) {
-                              return ElevatedButton(
-                                onPressed: () {
-                                  _seleccionarMonto(monto);
-                                  _controller.clear();
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white, // Fondo blanco
-                                  foregroundColor: Colors.black, // Texto negro
-                                  side: const BorderSide(color: Colors.grey, width: 2), // Borde gris
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Espaciado
-                                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), // Tamaño del texto
-                                ),
-                                child: Text("\$${_formatter.format(monto)}"),
-                              );
-
-                            }).toList(),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: const BorderSide(color: primary, width: 2), // Borde azul cuando está enfocado
                           ),
+                        ),
+                        onChanged: _actualizarValor,
+                      ),
 
-                          const SizedBox(height: 30),
 
-                          // Mostrar el monto seleccionado
-                          _valorPago != null
-                              ? Column(
-                            children: [
-                              const Text("Valor a recargar:", style: TextStyle(fontSize: 20,
-                                  fontWeight: FontWeight.bold, color: Colors.grey)),
+                      const SizedBox(height: 40),
 
-                              Text("\$${_formatter.format(_valorPago)}",
-                                style: const TextStyle(fontSize: 24,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.black),
-                              ),
-                            ],
-                          )
-                              : const SizedBox(),
-
-                          const SizedBox(height: 30),
-
-                          // Botón de pagar
-                          ElevatedButton(
+                      // Botones rápidos para seleccionar monto
+                      const Text("O selecciona un monto rápido:",
+                          style: TextStyle(fontSize: 16)),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 10,
+                        children: [30000, 40000, 50000, 100000].map((monto) {
+                          return ElevatedButton(
+                            onPressed: () {
+                              _seleccionarMonto(monto);
+                              _controller.clear();
+                            },
                             style: ElevatedButton.styleFrom(
-                                backgroundColor: primary
+                              backgroundColor: Colors.white, // Fondo blanco
+                              foregroundColor: Colors.black, // Texto negro
+                              side: const BorderSide(color: Colors.grey, width: 2), // Borde gris
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Espaciado
+                              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold), // Tamaño del texto
                             ),
-                            onPressed: iniciarPagoRecarga,
-                            child: const Text("Pagar ahora", style: TextStyle(color: blanco)),
+                            child: Text("\$${_formatter.format(monto)}"),
+                          );
+
+                        }).toList(),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // Mostrar el monto seleccionado
+                      _valorPago != null
+                          ? Column(
+                        children: [
+                          const Text("Valor a recargar:", style: TextStyle(fontSize: 20,
+                              fontWeight: FontWeight.bold, color: Colors.grey)),
+
+                          Text("\$${_formatter.format(_valorPago)}",
+                            style: const TextStyle(fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.black),
                           ),
                         ],
+                      )
+                          : const SizedBox(),
+
+                      const SizedBox(height: 30),
+
+                      // Botón de pagar
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: primary
+                        ),
+                        onPressed: iniciarPagoRecarga,
+                        child: const Text("Pagar ahora", style: TextStyle(color: blanco)),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
+          ),
         ),
     );
   }
