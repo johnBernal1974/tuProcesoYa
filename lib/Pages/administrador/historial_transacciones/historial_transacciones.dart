@@ -76,8 +76,8 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: gris, width: 3)
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: gris, width: 3)
                       ),
                       child: Column(
                         children: [
@@ -214,93 +214,51 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
     var userId = transaction["userId"];
     var transaccionId = transaction["transactionId"];
 
-    // 🔥 Obtiene el estado actual de la tarjeta (por defecto cerrada)
-    bool isExpanded = _expandedCards[transaccionId] ?? false;
-
-    return Card(
-      color: blanco,
+    return Container(
+      width: double.infinity, // 🔥 Hace que la tarjeta ocupe todo el ancho disponible
       margin: const EdgeInsets.symmetric(vertical: 8),
-      child: Column(
-        children: [
-          ListTile(
-            title: Text(formattedAmount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text("$formattedDate - $paymentMethod", style: const TextStyle(fontSize: 12)),
-                // 🔥 Muestra directamente el nombre si ya está almacenado en el mapa
-                Text(
-                  "ID: $userId - ${_userNames[userId] ?? 'Cargando...'}",
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-              ],
-            ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  estado,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: estado == "Aprobado" ? Colors.green : Colors.red,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(isExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.grey),
-                  onPressed: () {
-                    setState(() {
-                      _expandedCards[transaccionId] = !isExpanded;
-                      // 🔥 Si el nombre del usuario aún no se ha cargado, obtenerlo
-                      if (!_userNames.containsKey(userId)) {
-                        _fetchUserName(userId);
-                      }
-                    });
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // 🔥 Sección Expandible 🔥
-          if (isExpanded)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Divider(color: Colors.grey),
-                  _buildDetailRow("Nombre:", _userNames[userId] ?? "Cargando..."),
-                  _buildDetailRow("ID de transacción:", transaccionId),
-                  const SizedBox(height: 10),
-                ],
+      child: Card(
+        color: blanco,
+        surfaceTintColor: blanco,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8), // Opcional: Redondea las esquinas
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(formattedAmount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const SizedBox(height: 5),
+              Text("$formattedDate - $paymentMethod", style: const TextStyle(fontSize: 12)),
+              FutureBuilder<String>(
+                future: _getUserName(userId),
+                builder: (context, snapshot) {
+                  return Text(
+                    "Usuario: ${snapshot.data ?? "Cargando..."}",
+                    style: const TextStyle(fontSize: 12, color: Colors.black),
+                  );
+                },
               ),
-            ),
-        ],
+              Text("ID: $userId", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              const SizedBox(height: 5),
+              Text("No. Transacción: $transaccionId", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              const SizedBox(height: 5),
+              Text(
+                estado,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  color: estado == "Aprobado" ? Colors.green : Colors.red,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  /// **🔹 Obtiene el nombre del usuario desde Firestore una sola vez**
-  void _fetchUserName(String userId) async {
-    try {
-      var userDoc = await FirebaseFirestore.instance.collection("Ppl").doc(userId).get();
-      if (userDoc.exists) {
-        var nombre = "${userDoc["nombre_ppl"]} ${userDoc["apellido_ppl"]}";
-        setState(() {
-          _userNames[userId] = nombre; // 🔥 Almacena el nombre en el mapa
-        });
-      } else {
-        setState(() {
-          _userNames[userId] = "Usuario desconocido";
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _userNames[userId] = "Error al cargar";
-      });
-    }
-  }
 
 
   /// **🔹 Obtiene el nombre del usuario desde Firestore**
@@ -333,27 +291,27 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
   }
 }
 
-  /// 🔹 Widget reutilizable para mostrar filas de detalles
-  Widget _buildDetailRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-        Expanded(
-          child: Text(value, style: const TextStyle(fontSize: 12), textAlign: TextAlign.right, overflow: TextOverflow.ellipsis),
-        ),
-      ],
-    );
-  }
+/// 🔹 Widget reutilizable para mostrar filas de detalles
+Widget _buildDetailRow(String label, String value) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+      Expanded(
+        child: Text(value, style: const TextStyle(fontSize: 12), textAlign: TextAlign.right, overflow: TextOverflow.ellipsis),
+      ),
+    ],
+  );
+}
 
-  String _traducirEstado(String status) {
-    switch (status) {
-      case "APPROVED":
-        return "Aprobado";
-      case "DECLINED":
-        return "Rechazado";
-      default:
-        return "Pendiente";
-    }
+String _traducirEstado(String status) {
+  switch (status) {
+    case "APPROVED":
+      return "Aprobado";
+    case "DECLINED":
+      return "Rechazado";
+    default:
+      return "Pendiente";
   }
+}
 
