@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
+import '../../../commons/wompi/checkout_page.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
 import '../../../providers/auth_provider.dart';
@@ -249,13 +250,28 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(height: 40),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: primary
+            backgroundColor: primary, // Color de fondo del botón
           ),
-          onPressed: () {
-            // Acción para realizar el pago
+          onPressed: () async {
+            // Navegar a la pantalla CheckoutWompi y permitir volver
+            final result = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => CheckoutPage()),
+            );
+
+            // Verificar si el usuario regresó con algún resultado
+            if (result != null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Regresaste de CheckoutWompi: $result"),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            }
           },
           child: const Text('Realizar pago', style: TextStyle(color: blanco)),
         ),
+
       ],
     );
   }

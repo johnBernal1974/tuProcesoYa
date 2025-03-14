@@ -176,6 +176,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Home", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Mis datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar, 'solicitudes_page'),
+        _buildDrawerTile(context, "Cargar saldo", Icons.payments_rounded, 'checkout_wompi'),
 
 
         ExpansionTile(
@@ -274,7 +275,7 @@ class _SideBarState extends State<SideBar> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                Navigator.pushNamed(context, 'pago_suscripcion');
+                Navigator.pushNamed(context, 'checkout_wompi');
               },
               child: const Text("Realizar pago"),
             ),

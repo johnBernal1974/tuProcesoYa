@@ -36,10 +36,9 @@ import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/forgot_password/forgot_password.dart';
 import 'Pages/login/login.dart';
+import 'commons/wompi/checkout_page.dart';
 import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'dart:html' as html; // 🌐 Solo para Web
-import 'package:http/http.dart' as http;
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -132,6 +131,7 @@ class MyApp extends StatelessWidget {
         'mis_redenciones': (context) => const HistorialRedencionesPage(),
         'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
         'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
+        'checkout_wompi': (context) => CheckoutPage(),
 
       },
         onGenerateRoute: (settings) {
