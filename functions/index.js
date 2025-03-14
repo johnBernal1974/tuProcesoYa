@@ -110,12 +110,10 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
     console.log(`✅ Transacción guardada en "recargas": ${transactionId}`);
 
     // 📌 Si es una suscripción, activar isPaid
+    // 📌 Si es una suscripción, activar isPaid
     if (tipoTransaccion === "suscripcion") {
       await userRef.update({
-        isPaid: status === "APPROVED",
-        transactionId: transactionId,
-        paymentStatus: status,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        isPaid: status === "APPROVED" // 🔥 Solo actualiza isPaid, eliminando los otros campos
       });
       console.log(`✅ Suscripción actualizada para ${userId}: ${status}`);
     }
@@ -126,14 +124,12 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
       const nuevoSaldo = saldoActual + amount;
 
       await userRef.update({
-        saldo: nuevoSaldo,
-        transactionId: transactionId,
-        paymentStatus: status,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        saldo: nuevoSaldo // 🔥 Solo actualiza el saldo
       });
 
       console.log(`✅ Recarga completada para ${userId}: Nuevo saldo ${nuevoSaldo}`);
     }
+
 
     return res.status(200).json({ message: "Estado de pago actualizado con éxito y guardado en recargas" });
 
