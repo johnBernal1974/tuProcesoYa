@@ -12,6 +12,8 @@ import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
@@ -42,6 +44,7 @@ import 'commons/wompi/checkout_page.dart';
 import 'firebase_config.dart';
 import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -55,6 +58,8 @@ void main() async {
   ]);
 
   await loadFirebaseConfig(); // 🔥 Cargar `firebaseConfig` antes de Firebase
+
+  WebViewPlatform.instance = WebWebViewPlatform();
 
   // Inicializa Firebase
   await Firebase.initializeApp(

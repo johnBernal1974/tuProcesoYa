@@ -44,7 +44,7 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
     final userDoc = await _firestore.collection("Ppl").doc(_userId).get();
     if (userDoc.exists) {
       setState(() {
-        _saldo = userDoc.data()?["saldo"] ?? 0;
+        _saldo = userDoc.data()?['saldo'] ?? 0;
       });
     }
   }
@@ -139,8 +139,7 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
                           var fecha = (transaction["createdAt"] as Timestamp).toDate();
                           var formattedDate =
                           DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO').format(fecha);
-                          var formattedAmount =
-                              "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"])}";
+                          var amount = transaction["amount"] as num;
                           var estado = _traducirEstado(transaction["status"]);
                           var concepto = _obtenerConcepto(transaction["reference"]);
                           var transactionId = transaction["transactionId"] ?? "ID no disponible";
@@ -152,8 +151,14 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             child: ListTile(
                               title: Text(
-                                formattedAmount,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                "\$${NumberFormat("#,###", "es_CO").format(amount)}",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: estado == "Rechazado" ? Colors.red : Colors.black,
+                                  decoration:
+                                  estado == "Rechazado" ? TextDecoration.lineThrough : null,
+                                ),
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -171,20 +176,8 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
                                       ),
                                     ],
                                   ),
-                                  Row(
-                                    children: [
-                                      const Text(
-                                        "Método de pago: ", // 🔥 Se muestra el ID de la transacción
-                                        style: TextStyle(fontSize: 10, color: Colors.grey),
-                                      ),
-                                      Text(
-                                        "$paymentMethod", // 🔥 Se muestra el ID de la transacción
-                                        style: const TextStyle(fontSize: 10, color: Colors.black, fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
-                                  ),
                                   Text(
-                                    "ID: $transactionId", // 🔥 Se muestra el ID de la transacción
+                                    "ID: $transactionId",
                                     style: const TextStyle(fontSize: 10, color: Colors.grey),
                                   ),
                                 ],

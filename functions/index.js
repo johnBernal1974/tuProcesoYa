@@ -109,27 +109,25 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
 
     console.log(`✅ Transacción guardada en "recargas": ${transactionId}`);
 
-    // 📌 Si es una suscripción, activar isPaid
-    // 📌 Si es una suscripción, activar isPaid
-    if (tipoTransaccion === "suscripcion") {
+    // 📌 Si es una suscripción, activar isPaid solo si está aprobada
+    if (tipoTransaccion === "suscripcion" && status === "APPROVED") {
       await userRef.update({
-        isPaid: status === "APPROVED" // 🔥 Solo actualiza isPaid, eliminando los otros campos
+        isPaid: true
       });
-      console.log(`✅ Suscripción actualizada para ${userId}: ${status}`);
+      console.log(`✅ Suscripción aprobada para ${userId}`);
     }
 
-    // 📌 Si es una recarga, sumar el saldo
-    if (tipoTransaccion === "recarga") {
+    // 📌 Si es una recarga y está aprobada, sumar el saldo
+    if (tipoTransaccion === "recarga" && status === "APPROVED") {
       const saldoActual = userDoc.data().saldo || 0;
       const nuevoSaldo = saldoActual + amount;
 
       await userRef.update({
-        saldo: nuevoSaldo // 🔥 Solo actualiza el saldo
+        saldo: nuevoSaldo
       });
 
-      console.log(`✅ Recarga completada para ${userId}: Nuevo saldo ${nuevoSaldo}`);
+      console.log(`✅ Recarga aprobada para ${userId}: Nuevo saldo ${nuevoSaldo}`);
     }
-
 
     return res.status(200).json({ message: "Estado de pago actualizado con éxito y guardado en recargas" });
 
@@ -138,6 +136,7 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
     return res.status(500).json({ error: "Error procesando el webhook", details: error.message });
   }
 });
+
 
 
 

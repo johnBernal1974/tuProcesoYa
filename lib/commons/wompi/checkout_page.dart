@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
+import 'package:tuprocesoya/commons/wompi/wompi_inappwebview.dart';
 import 'package:tuprocesoya/commons/wompi/wompi_service.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -209,30 +210,42 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       const SizedBox(height: 30),
 
                       // Mostrar el monto seleccionado
-                      _valorPago != null
-                          ? Column(
-                        children: [
-                          const Text("Valor a recargar:", style: TextStyle(fontSize: 20,
-                              fontWeight: FontWeight.bold, color: Colors.grey)),
-
-                          Text("\$${_formatter.format(_valorPago)}",
-                            style: const TextStyle(fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.black),
+                      Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: gris)
                           ),
-                        ],
-                      )
-                          : const SizedBox(),
-
-                      const SizedBox(height: 30),
-
-                      // Botón de pagar
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: primary
+                          child: Column(
+                            children: [
+                              if (_valorPago != null)
+                                Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      "Valor a recargar:",
+                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey),
+                                    ),
+                                    Text(
+                                      "\$${_formatter.format(_valorPago)}",
+                                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.black),
+                                    ),
+                                  ],
+                                ),
+                              const SizedBox(height: 20),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: primary,
+                                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                                ),
+                                onPressed: iniciarPagoRecarga,
+                                child: const Text("Pagar ahora", style: TextStyle(color: blanco, fontSize: 16)),
+                              ),
+                            ],
+                          ),
                         ),
-                        onPressed: iniciarPagoRecarga,
-                        child: const Text("Pagar ahora", style: TextStyle(color: blanco)),
                       ),
                     ],
                   ),
@@ -369,28 +382,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
   /// Inicia el pago de recarga de saldo
   void iniciarPagoRecarga() async {
     User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("⚠️ Debes iniciar sesión antes de pagar."),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    if (user == null) return;
 
     String userId = user.uid;
+
     if (_valorPago == null || _valorPago! < 20000) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("⚠️ Ingresa un monto mayor o igual a \$20.000."),
+          content: Text("⚠️ Debes ingresar una recarga mínima de \$20.000."),
           backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
         ),
       );
       return;
     }
 
-    String referencia = "recarga_${userId}_${_uuid.v4()}"; // 🔥 Referencia única
+    String referencia = "recarga_${userId}_${_uuid.v4()}";
     int montoCentavos = _valorPago! * 100;
 
     String? checkoutUrl = await _wompiService.generarUrlCheckout(
@@ -399,16 +406,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
 
     if (checkoutUrl != null) {
-      if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
-        await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
-
-        // 🔥 Monitorea Firestore para detectar el estado de la transacción
-        _monitorearTransaccion(referencia);
-      } else {
-        print("❌ No se pudo abrir la URL de pago.");
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WompiWebView(url: checkoutUrl, referencia: referencia),
+          ),
+        );
       }
-    } else {
-      print("⚠️ No se generó la URL de pago.");
     }
   }
 }
