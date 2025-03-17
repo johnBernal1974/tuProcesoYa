@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
-import 'package:tuprocesoya/commons/wompi/wompi_inappwebview.dart';
+import 'package:tuprocesoya/commons/wompi/webview.dart';
 import 'package:tuprocesoya/commons/wompi/wompi_service.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -349,34 +349,20 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
 
     if (checkoutUrl != null) {
-      if (await canLaunchUrl(Uri.parse(checkoutUrl))) {
-        await launchUrl(Uri.parse(checkoutUrl), mode: LaunchMode.externalApplication);
-
-        // 🔥 Monitorea Firestore para detectar cambios en el pago
-        _monitorearTransaccion(referencia);
-      } else {
-        print("❌ No se pudo abrir la URL de pago.");
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => WompiWebView(url: checkoutUrl, referencia: referencia),
+          ),
+        );
       }
     } else {
       print("⚠️ No se generó la URL de pago.");
     }
   }
 
-  void _monitorearTransaccion(String referencia) {
-    FirebaseFirestore.instance
-        .collection("recargas") // O usa "transacciones", si tu colección tiene otro nombre
-        .where("reference", isEqualTo: referencia)
-        .snapshots()
-        .listen((event) {
-      if (event.docs.isNotEmpty) {
-        var transaction = event.docs.first;
-        if (transaction["status"] == "APPROVED") {
-          print("✅ Transacción aprobada, redirigiendo al Home...");
-          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-        }
-      }
-    });
-  }
+
 
 
   /// Inicia el pago de recarga de saldo
@@ -415,5 +401,22 @@ class _CheckoutPageState extends State<CheckoutPage> {
         );
       }
     }
+  }
+
+
+  void _monitorearTransaccion(String referencia) {
+    FirebaseFirestore.instance
+        .collection("recargas") // O usa "transacciones", si tu colección tiene otro nombre
+        .where("reference", isEqualTo: referencia)
+        .snapshots()
+        .listen((event) {
+      if (event.docs.isNotEmpty) {
+        var transaction = event.docs.first;
+        if (transaction["status"] == "APPROVED") {
+          print("✅ Transacción aprobada, redirigiendo al Home...");
+          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+        }
+      }
+    });
   }
 }

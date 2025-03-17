@@ -36,6 +36,8 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true; // 🔹 Nuevo estado para evitar mostrar la UI antes de validar
   double totalDiasRedimidos = 0;
   late CalculoCondenaController _calculoCondenaController;
+  bool _isTrial = false;
+  int _diasRestantesPrueba = 0;
 
   @override
   void initState() {
@@ -68,7 +70,6 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _ppl = pplData;
         _isPaid = pplData?.isPaid ?? false;
-        _isLoading = false;
       });
 
       // 🔥 Calcular tiempo y actualizar valores en setState
@@ -78,9 +79,19 @@ class _HomePageState extends State<HomePage> {
         tiempoCondena = _calculoCondenaController.tiempoCondena!;
       });
 
+      // 🔥 Obtener la fecha de registro y verificar prueba gratuita
+      dynamic fechaRegistroRaw = pplData?.fechaRegistro ?? Timestamp.now();
+      Timestamp fechaRegistro = fechaRegistroRaw is Timestamp ? fechaRegistroRaw : Timestamp.fromDate(fechaRegistroRaw);
+      await _calcularTiempoDePrueba(fechaRegistro);
+
+      setState(() {
+        _isLoading = false;
+      });
+
       print("✅ Datos actualizados:");
       print("   - porcentajeEjecutado: $porcentajeEjecutado%");
       print("   - tiempoCondena: $tiempoCondena meses");
+      print("   - isTrial: $_isTrial (Días restantes: $_diasRestantesPrueba)");
     }
   }
 
@@ -109,6 +120,20 @@ class _HomePageState extends State<HomePage> {
   }
 
 
+  Future<void> _calcularTiempoDePrueba(Timestamp fechaRegistro) async {
+    final configDoc = await FirebaseFirestore.instance.collection('configuraciones').doc('global').get();
+    int tiempoDePrueba = configDoc.exists ? configDoc['tiempoDePrueba'] ?? 7 : 7;
+
+    DateTime fechaActual = DateTime.now();
+    DateTime fechaRegistroDate = fechaRegistro.toDate();
+    int diasPasados = fechaActual.difference(fechaRegistroDate).inDays;
+
+    setState(() {
+      _isTrial = diasPasados < tiempoDePrueba;
+      _diasRestantesPrueba = tiempoDePrueba - diasPasados;
+      _isLoading = false;
+    });
+  }
 
 
   @override
@@ -129,7 +154,24 @@ class _HomePageState extends State<HomePage> {
                 style: const TextStyle(fontSize: 12),
               ),
               const SizedBox(height: 10),
-              _isPaid ? _buildPaidContent() : _buildUnpaidContent(),
+              if (_isTrial && !_isPaid)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.yellow.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.orange, width: 1),
+                    ),
+                    padding: const EdgeInsets.all(8),
+                    child: Text(
+                      "🌟 Estás en periodo de prueba. Te quedan $_diasRestantesPrueba días para disfrutar de todas las funciones.",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+              _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
             ],
           ),
         ),
