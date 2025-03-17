@@ -2,10 +2,8 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:tuprocesoya/Pages/administrador/solicitudes_derechos_peticion/solicitudes_derechos_peticion_admin.dart';
 import 'package:tuprocesoya/Pages/client/derecho_de_peticion_solicitud/derecho_de_peticion_solicitud.dart';
 import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
