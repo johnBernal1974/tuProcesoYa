@@ -562,7 +562,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
   Widget _buildCondenaInfo() {
     // 🔥 Validamos que no haya valores nulos antes de usarlos
     int mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
@@ -583,10 +582,10 @@ class _HomePageState extends State<HomePage> {
         // 🔥 Fila con fondo resaltado para "Condenado a"
         Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          margin: const EdgeInsets.only(bottom: 8), // Espacio con el resto
+          margin: const EdgeInsets.only(bottom: 8),
           decoration: BoxDecoration(
-            color: Colors.deepPurple.shade50, // 🔹 Color de fondo resaltado
-            borderRadius: BorderRadius.circular(6), // Bordes redondeados
+            color: Colors.deepPurple.shade50,
+            borderRadius: BorderRadius.circular(6),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -605,12 +604,89 @@ class _HomePageState extends State<HomePage> {
 
         _buildDatoFila("Condena transcurrida", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
         _buildDatoFila("Tiempo redimido", "$totalDiasRedimidos días"),
-        _buildDatoFila("Condena total cumplida", "$mesesCumplidos meses, $diasRestantes días"),
-        _buildDatoFila("Condena restante", "$mesesRestante meses, $diasRestanteExactos días"),
+
+
+        // 🔥 Animación para "Condena total cumplida"
+        _buildAnimatedDato("Condena\nTotal Cumplida", mesesCumplidos, diasRestantes, Colors.green.shade200),
+
+        // 🔥 Animación para "Condena restante"
+        _buildAnimatedDato("Condena\nRestante", mesesRestante, diasRestanteExactos, Colors.purple.shade100),
+        const SizedBox(height: 10),
         _buildDatoFila("Porcentaje ejecutado", "${porcentajeEjecutado.toStringAsFixed(1)}%"),
       ],
     );
   }
+
+  /// **Widget para animar los valores de la condena y su elevación**
+  Widget _buildAnimatedDato(String title, int meses, int dias, Color bgColor) {
+    return TweenAnimationBuilder(
+      duration: const Duration(seconds: 3),
+      tween: IntTween(begin: 0, end: meses),
+      builder: (context, int mesesAnim, child) {
+        return TweenAnimationBuilder(
+          duration: const Duration(seconds: 3),
+          tween: IntTween(begin: 0, end: dias),
+          builder: (context, int diasAnim, child) {
+            return TweenAnimationBuilder(
+              duration: const Duration(seconds: 3),
+              tween: Tween<double>(begin: 0, end: 1), // 🔥 Opacidad del borde
+              builder: (context, double borderOpacity, child) {
+                return TweenAnimationBuilder(
+                  duration: const Duration(seconds: 3),
+                  tween: Tween<double>(begin: 6, end: 20), // 🔥 Elevación mucho más alta
+                  builder: (context, double elevation, child) {
+                    return Container(
+                      margin: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: bgColor,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(borderOpacity), // 🔥 Se dibuja el borde con animación
+                          width: 1,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.4),
+                            blurRadius: elevation,
+                            offset: Offset(0, elevation / 2), // 🔥 Sombra con mayor elevación
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            title,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, height: 1.1, color: negro),
+                          ),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Text(
+                                "$mesesAnim meses",
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                              ),
+                              Text(
+                                "$diasAnim días",
+                                style: const TextStyle(fontSize: 11, height: 1.1),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+
 
   /// 🔹 Cada dato en una fila independiente con mejor alineación
   Widget _buildDatoFila(String titulo, String valor) {
