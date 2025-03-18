@@ -155,23 +155,81 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 10),
               if (_isTrial && !_isPaid)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.yellow.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange, width: 1),
-                    ),
-                    padding: const EdgeInsets.all(8),
-                    child: Text(
-                      "🌟 Estás en periodo de prueba. Te quedan $_diasRestantesPrueba días para disfrutar de todas las funciones.",
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                    ),
+                SizedBox(
+                  child: Stack(
+                    clipBehavior: Clip.none, // 🔥 Permite que la imagen sobresalga de la tarjeta
+                    children: [
+                      // 🔹 Tarjeta principal
+                      Card(
+                        surfaceTintColor: blanco,
+                        elevation: 6,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        color: Colors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.all(10), // 🔥 Mayor espaciado interno
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center, // 🔹 Centra el contenido
+                            children: [
+                              const SizedBox(height: 10), // 🔥 Espacio para la imagen encima
+                              const Text(
+                                "¡ Felicidades !",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: primary,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const Text(
+                                "Disfruta de tu regalo de bienvenida.",
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Aún tienes $_diasRestantesPrueba días para explorar todas las funciones.",
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: gris),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      // 🔹 Imagen flotante sobre la tarjeta
+                      Positioned(
+                        top: -25, // 🔥 Eleva la imagen sobre la tarjeta
+                        right: -250, // 🔥 Ajusta la posición más a la derecha
+                        left: 20, // 🔥 Asegura que esté centrada
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white, // 🔥 Fondo blanco para destacar
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 6,
+                                offset: const Offset(2, 4),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(6), // 🔥 Espaciado interno
+                          child: Image.asset(
+                            "assets/images/regalo.png",
+                            height: 50, // 🔥 Tamaño de la imagen ajustado
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
+
+
               _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
+
+              const SizedBox(height: 20)
             ],
           ),
         ),
@@ -184,6 +242,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildPaidContent() {
     return Column(
       children: [
+        const SizedBox(height: 20),
         Text(
           "${_ppl?.nombrePpl ?? ""} ${_ppl?.apellidoPpl ?? ""}",
           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -197,7 +256,7 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(height: 20),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white, // Fondo blanco para contraste
+            color: blancoCards, // Fondo blanco para contraste
             borderRadius: BorderRadius.circular(8), // Bordes suavemente redondeados
             border: Border.all(color: Colors.grey, width: 1), // Línea gris delgada
           ),
@@ -397,7 +456,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // para idPaid true
   Widget _buildBeneficioFila(String titulo, double porcentajeRequerido, String accion) {
     double porcentaje = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
@@ -484,8 +542,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-
 
   //para isPaid en false
   Widget _buildPorcentajeCard(double porcentaje, {bool oculto = false}) {
@@ -652,7 +708,7 @@ class _HomePageState extends State<HomePage> {
         _buildAnimatedDato("Condena\nTotal Cumplida", mesesCumplidos, diasRestantes, Colors.green.shade200),
 
         // 🔥 Animación para "Condena restante"
-        _buildAnimatedDato("Condena\nRestante", mesesRestante, diasRestanteExactos, Colors.purple.shade100),
+        _buildAnimatedDato("Condena\nRestante", mesesRestante, diasRestanteExactos, Colors.purple.shade200),
         const SizedBox(height: 10),
         _buildDatoFila("Porcentaje ejecutado", "${porcentajeEjecutado.toStringAsFixed(1)}%"),
       ],
@@ -684,8 +740,8 @@ class _HomePageState extends State<HomePage> {
                         color: bgColor,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: Colors.black.withOpacity(borderOpacity), // 🔥 Se dibuja el borde con animación
-                          width: 1,
+                          color: Colors.white.withOpacity(borderOpacity), // 🔥 Se dibuja el borde con animación
+                          width: 5,
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -727,8 +783,6 @@ class _HomePageState extends State<HomePage> {
       },
     );
   }
-
-
 
   /// 🔹 Cada dato en una fila independiente con mejor alineación
   Widget _buildDatoFila(String titulo, String valor) {

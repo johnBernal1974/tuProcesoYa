@@ -19,6 +19,7 @@ class _SideBarState extends State<SideBar> {
   bool? _isAdmin;
   bool _isLoading = true;
   final ValueNotifier<bool> _isPaid = ValueNotifier<bool>(false);
+  bool _isTrial = false;
 
   @override
   void initState() {
@@ -35,8 +36,24 @@ class _SideBarState extends State<SideBar> {
 
     final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
     if (userDoc.exists) {
+      final Timestamp? fechaRegistro = userDoc.data()?['fechaRegistro'];
       _isPaid.value = userDoc.data()?['isPaid'] ?? false;
+      await _validateTrialPeriod(fechaRegistro);
     }
+  }
+  Future<void> _validateTrialPeriod(Timestamp? fechaRegistro) async {
+    if (fechaRegistro == null) return;
+
+    final configDoc = await FirebaseFirestore.instance.collection('configuraciones').doc('general').get();
+    final int tiempoDePrueba = configDoc.data()?['tiempoDePrueba'] ?? 7; // 🔹 Default 7 días
+
+    final DateTime fechaRegistroDT = fechaRegistro.toDate();
+    final DateTime fechaActual = DateTime.now();
+    final int diasTranscurridos = fechaActual.difference(fechaRegistroDT).inDays;
+
+    setState(() {
+      _isTrial = diasTranscurridos < tiempoDePrueba;
+    });
   }
 
   Future<void> _checkIfAdmin() async {
@@ -252,10 +269,12 @@ class _SideBarState extends State<SideBar> {
       builder: (context, isPaid, child) {
         return ListTile(
           onTap: () {
-            if (!isPaid && _isAdmin! == false) {
+            // 🔥 Validación: Solo muestra la alerta si el usuario NO está en período de prueba y NO ha pagado.
+            if (!isPaid && !_isTrial) {
               _showPaymentDialog(context);
               return;
             }
+
             if (ModalRoute.of(context)?.settings.name != route) {
               Navigator.pushNamed(context, route);
             }
@@ -287,6 +306,7 @@ class _SideBarState extends State<SideBar> {
       },
     );
   }
+
 
 
   void _showPaymentDialog(BuildContext context) {

@@ -50,7 +50,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
       return Container();
     }
     return MainLayout(
-      pageTitle: 'Mis Datos',
+      pageTitle: 'Tus Datos',
       content: SingleChildScrollView(
           child: Center(
             child: SizedBox(
@@ -81,38 +81,32 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Nombre:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.nombrePpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600 )),
+                      Text(_ppl!.nombrePpl, style: const TextStyle(fontSize: 15, fontWeight:FontWeight.w900 )),
                     ],
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       const Text('Apellido:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.apellidoPpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600, color: Colors.black)),
+                      Text(_ppl!.apellidoPpl, style: const TextStyle(fontSize: 15, fontWeight:FontWeight.w900)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Tipo Documento:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.tipoDocumentoPpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Número Documento:', style: TextStyle(fontSize: 13, color: negro)),
-                      Expanded( // 🔥 Evita que el número se corte
-                        child: Text(
-                          _ppl!.numeroDocumentoPpl,
-                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                          textAlign: TextAlign.end, // 🔥 Asegura que el número esté alineado a la derecha
-                        ),
-                      ),
+                      Text(_ppl!.numeroDocumentoPpl, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-
-                  const SizedBox(height: 15),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -148,52 +142,59 @@ class _MisDatosPageState extends State<MisDatosPage> {
                       Text(_ppl!.delito, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  const Divider(color: Colors.grey),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Radicado:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.radicado, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 13, color: negro)),
+                      const Divider(color: Colors.grey),
+                      const Text('Tiempo Condena:', style: TextStyle(fontSize: 13, color: negro)),
                       Text('${_ppl!.tiempoCondena} meses', style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('TD:  ', style: TextStyle(fontSize: 13, color: negro)),
+                      const Divider(color: Colors.grey),
+                      const Text('TD (tarjeta decadactilar No):', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.td, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('NUI:  ', style: TextStyle(fontSize: 13, color: negro)),
+                      const Divider(color: Colors.grey),
+                      const Text('NUI (Número único de identificación):', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.nui, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Patio:  ', style: TextStyle(fontSize: 13, color: negro)),
+                      const Divider(color: Colors.grey),
+                      const Text('Patio:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.patio, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Fecha Captura:  ', style: TextStyle(fontSize: 13, color: negro)),
+                      const Divider(color: Colors.grey),
+                      const Text('Fecha Captura:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(
                         DateFormat("d 'de' MMMM 'de' yyyy", 'es_ES').format(_ppl!.fechaCaptura!),
                         style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                       ),
+                      const Divider(color: Colors.grey),
                     ],
                   ),
+
                   const SizedBox(height: 25),
                   const Text("Datos del Acudiente", style: TextStyle(
                       fontWeight: FontWeight.w900,
@@ -215,23 +216,26 @@ class _MisDatosPageState extends State<MisDatosPage> {
                       Text(_ppl!.apellidoAcudiente, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600 )),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Parentesco:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.parentescoRepresentante, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Celular:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.celular, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const Divider(color: Colors.grey),
                       const Text('Email:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.email, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
