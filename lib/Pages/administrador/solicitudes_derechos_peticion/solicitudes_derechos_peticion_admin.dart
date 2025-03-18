@@ -75,17 +75,50 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
                     var filteredDocs = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
-                      final asignadoA = data['asignadoA'];
-                      bool unassigned = asignadoA == null || asignadoA.toString().trim().isEmpty;
-                      bool assignedToMe = currentUserUid != null && asignadoA.toString().trim() == currentUserUid;
+                      final asignadoA = data['asignadoA']?.toString().trim();
+                      final asignadoA_P2 = data['asignadoA_P2']?.toString().trim();
+                      bool unassigned = asignadoA == null || asignadoA.isEmpty;
+                      bool assignedToMe = currentUserUid != null && asignadoA == currentUserUid;
+                      bool assignedToMeP2 = currentUserUid != null && asignadoA_P2 == currentUserUid;
 
+                      // 🔹 Master y Coordinadores: Ven TODO según el estado seleccionado
                       if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
-                        // 🔹 Estos roles ven TODO sin importar asignaciones
                         return data["status"] == _filtroEstado;
                       }
 
-                      return (unassigned || assignedToMe) && (data["status"] == _filtroEstado);
+                      // 🔹 Pasante 1: Ve "Solicitados" y "Diligenciados" asignados a él o sin asignación
+                      if (rol == "pasante 1") {
+                        if (_filtroEstado == "Solicitado") return unassigned || assignedToMe;
+                        if (_filtroEstado == "Diligenciado") return assignedToMe;
+                      }
+
+                      // 🔹 Pasante 2: Ve "Diligenciados" asignados a él y los no asignados, además de "Revisados" y "Enviados"
+                      if (rol == "pasante 2") {
+                        if (_filtroEstado == "Diligenciado") return assignedToMeP2 || unassigned;
+                        if (_filtroEstado == "Revisado") return data["status"] == "Revisado" && assignedToMeP2;
+                        if (_filtroEstado == "Enviado") return data["status"] == "Enviado";
+                      }
+
+                      return false;
                     }).toList();
+
+// 🔹 Si no hay documentos en el estado seleccionado, mostramos el mensaje de advertencia
+                    if (filteredDocs.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.warning, color: Colors.red, size: 24),
+                            const SizedBox(height: 8),
+                            Text(
+                              "No hay documentos en estado $_filtroEstado.",
+                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
 
                     if (filteredDocs.isEmpty) {
                       return Center(
@@ -131,42 +164,59 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
         var docs = snapshot.data!.docs;
         String? currentUserUid = FirebaseAuth.instance.currentUser?.uid;
-        bool isMobile = MediaQuery.of(context).size.width < 600; // Detecta si es móvil
+        bool isMobile = MediaQuery.of(context).size.width < 600;
 
         // 🔹 Contar "Solicitados"
-        int countSolicitado;
-        if (role == "pasante 1") {
-          countSolicitado = docs.where((d) {
-            if (d['status'] != 'Solicitado') return false;
-            var asignadoA = d['asignadoA'];
-            bool unassigned = asignadoA == null || asignadoA.toString().trim().isEmpty;
-            bool assignedToMe = currentUserUid != null && asignadoA.toString().trim() == currentUserUid;
-            return unassigned || assignedToMe;
-          }).length;
-        } else if (role == "pasante 2") {
-          countSolicitado = 0;
-        } else {
-          countSolicitado = docs.where((d) => d['status'] == 'Solicitado').length;
-        }
+        // 🔹 Contar "Solicitados"
+        int countSolicitado = docs.where((d) {
+          final data = d.data() as Map<String, dynamic>;
+          final asignadoA = data['asignadoA']?.toString().trim();
+          bool unassigned = asignadoA == null || asignadoA.isEmpty;
+          bool assignedToMe = currentUserUid != null && asignadoA == currentUserUid;
 
-        // 🔹 Contar "Diligenciados"
-        int countDiligenciado = 0;
-        if (role == "pasante 1") {
-          countDiligenciado = docs.where((d) {
-            final data = d.data() as Map<String, dynamic>;
-            if (data['status'] != 'Diligenciado') return false;
-            var asignadoA = data['asignadoA']?.toString().trim();
-            return asignadoA == currentUserUid;
-          }).length;
-        } else {
-          countDiligenciado = docs.where((d) {
-            final data = d.data() as Map<String, dynamic>;
-            return data['status'] == 'Diligenciado';
-          }).length;
-        }
+          if (rol == "pasante 1") {
+            return data["status"] == "Solicitado" && (unassigned || assignedToMe);
+          }
+          if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
+            return data["status"] == "Solicitado";
+          }
+          return false;
+        }).length;
 
-        int countRevisado = docs.where((d) => d['status'] == 'Revisado').length;
+// 🔹 Contar "Diligenciados"
+        int countDiligenciado = docs.where((d) {
+          final data = d.data() as Map<String, dynamic>;
+          final asignadoA_P2 = data['asignadoA_P2']?.toString().trim();
+          bool unassigned = asignadoA_P2 == null || asignadoA_P2.isEmpty;
+          bool assignedToMeP2 = currentUserUid != null && asignadoA_P2 == currentUserUid;
+
+          if (rol == "pasante 2") {
+            return data["status"] == "Diligenciado" && (assignedToMeP2 || unassigned);
+          }
+          if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
+            return data["status"] == "Diligenciado";
+          }
+          return false;
+        }).length;
+
+// 🔹 Contar "Revisados" (Solo los ve quien está en asignadoA_P2)
+        int countRevisado = docs.where((d) {
+          final data = d.data() as Map<String, dynamic>;
+          final asignadoA_P2 = data['asignadoA_P2']?.toString().trim();
+          bool assignedToMeP2 = currentUserUid != null && asignadoA_P2 == currentUserUid;
+
+          if (rol == "pasante 2") {
+            return data["status"] == "Revisado" && assignedToMeP2;
+          }
+          if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
+            return data["status"] == "Revisado";
+          }
+          return false;
+        }).length;
+
+// 🔹 Contar "Enviados" (Todos los pasantes 2 lo pueden ver)
         int countEnviado = docs.where((d) => d['status'] == 'Enviado').length;
+
 
         List<Widget> cards = [];
 
@@ -193,7 +243,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                 alignment: WrapAlignment.center,
                 children: cards.map((card) {
                   return SizedBox(
-                    width: constraints.maxWidth / 2 - 12, // Divide el ancho en 2 columnas
+                    width: constraints.maxWidth / 2 - 12,
                     child: card,
                   );
                 }).toList(),
@@ -203,7 +253,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: cards.map((card) {
                   return SizedBox(
-                    width: 180, // Ancho fijo en PC
+                    width: 180,
                     child: card,
                   );
                 }).toList(),
@@ -215,12 +265,12 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
     );
   }
 
-  // 🔥 Widget para cada tarjeta de estado
+
   Widget _buildEstadoCard(String estado, int count, Color color) {
     return GestureDetector(
       onTap: () {
         setState(() {
-          _filtroEstado = estado;
+          _filtroEstado = estado; // 🔹 Se actualiza el estado para mostrar solo los documentos relacionados
         });
       },
       child: Card(
@@ -240,6 +290,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
       ),
     );
   }
+
+
 
   // 🔥 Widget para cada solicitud
   Widget _buildSolicitudCard(Map<String, dynamic> data, String idDocumento, String userRole) {
@@ -370,6 +422,11 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                     _buildAsignacionInfo("Asignado para diligenciar", asignadoA, fechaAsignado),
                     const SizedBox(height: 10),
                     _buildAsignacionInfo("Asignado para revisar", asignadoA_P2, fechaAsignadoP2),
+                    const SizedBox(height: 10),
+                    _buildFechaRevision("Revisado", fechaRevisado),
+                    const SizedBox(height: 10),
+                    _buildFechaEnvio("Enviado", fechaEnviado)
+
                   ],
                 )
               else
@@ -572,8 +629,6 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
       ),
     ];
   }
-
-
 
   /// 🔹 Construir información de asignación (Pasante 1 y Pasante 2)
   Widget _buildAsignacionInfo(String titulo, String? asignado, Timestamp? fecha) {

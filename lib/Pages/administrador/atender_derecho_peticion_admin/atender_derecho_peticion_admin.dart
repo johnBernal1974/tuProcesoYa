@@ -405,9 +405,14 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
           const SizedBox(height: 30),
           const Divider(color: gris),
-          if ((((widget.status == "Diligenciado" || widget.status == "Revisado" || widget.status == "Enviado") && rol != "pasante 1")) ||
-              ((widget.status == "Solicitado") && (rol == "pasante 1")))
-          Column(
+          if (((widget.status == "Diligenciado" ||
+                  widget.status == "Revisado" ||
+                  widget.status == "Enviado") &&
+                  rol != "pasante 1") || (widget.status == "Solicitado" && rol == "pasante 1")
+              || (rol == "master" || rol == "masterFull" || rol == "coordinador 1"
+                  || rol == "coordinador 2"))
+
+            Column(
             children: [
               Text(
                 "Espacio de diligenciamiento",
@@ -426,8 +431,12 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ],
           ),
 
-          if ((((widget.status == "Diligenciado" || widget.status == "Revisado" || widget.status == "Enviado") && rol != "pasante 1")) ||
-              ((widget.status == "Solicitado") && (rol == "pasante 1")))
+          if (((widget.status == "Diligenciado" ||
+              widget.status == "Revisado" ||
+              widget.status == "Enviado") &&
+              rol != "pasante 1") || (widget.status == "Solicitado" && rol == "pasante 1")
+              || (rol == "master" || rol == "masterFull" || rol == "coordinador 1"
+                  || rol == "coordinador 2"))
 
             ElevatedButton(
               style: ElevatedButton.styleFrom(
