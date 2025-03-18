@@ -405,66 +405,72 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
           const SizedBox(height: 30),
           const Divider(color: gris),
-          Text(
-            "Espacio de diligenciamiento",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: MediaQuery.of(context).size.width < 600 ? 20 : 28, // Reduce el tamaño en móviles
-            ),
-          ),
-
-          const SizedBox(height: 30),
-          ingresarConsideraciones(),
-          const SizedBox(height: 30),
-          ingresarFundamentosDeDerecho(),
-          const SizedBox(height: 30),
-          ingresarPeticionConcreta(),
-          const SizedBox(height: 30),
-          Wrap(
+          if ((((widget.status == "Diligenciado" || widget.status == "Revisado" || widget.status == "Enviado") && rol != "pasante 1")) ||
+              ((widget.status == "Solicitado") && (rol == "pasante 1")))
+          Column(
             children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                  backgroundColor: Colors.white, // Fondo blanco
-                  foregroundColor: Colors.black, // Letra en negro
+              Text(
+                "Espacio de diligenciamiento",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: MediaQuery.of(context).size.width < 600 ? 20 : 28, // Reduce el tamaño en móviles
                 ),
-                onPressed: () {
-                  setState(() {
-                    _guardarDatosEnVariables();
-                  });
-                },
-                child: const Text("Cargar vista previa"),
               ),
-              const SizedBox(width: 50),
-              if(_mostrarBotonVistaPrevia)
-              Wrap(
-                children: [
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                      backgroundColor: Colors.white, // Fondo blanco
-                      foregroundColor: Colors.black, // Letra en negro
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        // Actualizar las variables con los valores de los controladores
-                        consideraciones = _consideracionesController.text.trim();
-                        fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
-                        peticionConcreta = _peticionConcretaController.text.trim();
-                        _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
-                      });
-
-                    },
-                    child: const Text("Vista previa"),
-                  ),
-                  const SizedBox(width: 30),
-
-                ],
-              ),
+              const SizedBox(height: 30),
+              ingresarConsideraciones(),
+              const SizedBox(height: 30),
+              ingresarFundamentosDeDerecho(),
+              const SizedBox(height: 30),
+              ingresarPeticionConcreta(),
+              const SizedBox(height: 30),
             ],
           ),
-          const SizedBox(height: 50),
+
+          if ((((widget.status == "Diligenciado" || widget.status == "Revisado" || widget.status == "Enviado") && rol != "pasante 1")) ||
+              ((widget.status == "Solicitado") && (rol == "pasante 1")))
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                backgroundColor: Colors.white, // Fondo blanco
+                foregroundColor: Colors.black, // Letra en negro
+              ),
+              onPressed: () {
+                setState(() {
+                  _guardarDatosEnVariables();
+                });
+              },
+              child: const Text("Guardar información"),
+            ),
+          const SizedBox(height: 10),
           // ✅ Solo muestra la vista previa si _mostrarVistaPrevia es true
+          if (_mostrarBotonVistaPrevia)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                    backgroundColor: Colors.white, // Fondo blanco
+                    foregroundColor: Colors.black, // Letra en negro
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      // Actualizar las variables con los valores de los controladores
+                      consideraciones = _consideracionesController.text.trim();
+                      fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
+                      peticionConcreta = _peticionConcretaController.text.trim();
+                      _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
+                    });
+                  },
+                  child: const Text("Vista previa"),
+                ),
+
+                // 🔹 Agregar espaciado SOLO cuando _mostrarVistaPrevia es true
+                if (_mostrarVistaPrevia) const SizedBox(height: 50),
+              ],
+            ),
+
           if (_mostrarVistaPrevia)
             vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
         ],
@@ -1579,6 +1585,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
   Future<void> enviarCorreo() async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/enviarCorreo/enviarCorreo");
+
     // 🔹 Crear la plantilla del derecho de petición
     var derechoPeticion = DerechoPeticionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
@@ -1623,13 +1630,17 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
 
+    // 🔹 Construir el asunto con el número de seguimiento
+    String asuntoCorreo = "Derecho de Petición - ${widget.numeroSeguimiento}";
+
     // 🔥 Enviar correo con adjuntos
     final body = jsonEncode({
       "destinatario": correoSeleccionado,
-      "asunto": "Derecho de Petición",
+      "asunto": asuntoCorreo,
       "mensaje": mensajeHtml,
       "archivos": archivosBase64,
     });
+
     final response = await http.post(
       url,
       headers: {"Content-Type": "application/json"},
@@ -1651,6 +1662,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
