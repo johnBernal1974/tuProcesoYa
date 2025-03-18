@@ -189,8 +189,8 @@ class _HomePageState extends State<HomePage> {
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                "Aún tienes $_diasRestantesPrueba días para explorar todas las funciones.",
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: gris),
+                                "Aún tienes $_diasRestantesPrueba días para explorar todas las funciones de nuestra aplicación.",
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: gris, height: 1.1),
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -756,18 +756,14 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           Text(
                             title,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, height: 1.1, color: negro),
+                            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, height: 1.1, color: negro),
                           ),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                "$mesesAnim meses",
+                                "$mesesAnim meses , $diasAnim días" ,
                                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
-                              ),
-                              Text(
-                                "$diasAnim días",
-                                style: const TextStyle(fontSize: 11, height: 1.1),
                               ),
                             ],
                           ),

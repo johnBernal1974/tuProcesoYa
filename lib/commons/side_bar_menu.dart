@@ -269,7 +269,15 @@ class _SideBarState extends State<SideBar> {
       builder: (context, isPaid, child) {
         return ListTile(
           onTap: () {
-            // 🔥 Validación: Solo muestra la alerta si el usuario NO está en período de prueba y NO ha pagado.
+            // ✅ Si el usuario es admin, no aplicar la restricción
+            if (_isAdmin == true) {
+              if (ModalRoute.of(context)?.settings.name != route) {
+                Navigator.pushNamed(context, route);
+              }
+              return;
+            }
+
+            // 🔥 Solo restringimos a usuarios NO admin
             if (!isPaid && !_isTrial) {
               _showPaymentDialog(context);
               return;
@@ -306,8 +314,6 @@ class _SideBarState extends State<SideBar> {
       },
     );
   }
-
-
 
   void _showPaymentDialog(BuildContext context) {
     showDialog(

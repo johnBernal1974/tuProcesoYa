@@ -95,8 +95,9 @@ class _OperadoresPageState extends State<OperadoresPage> {
                     width: cardWidth,
                     padding: const EdgeInsets.all(10),
                     child: ListView.builder(
-                      itemCount: _documents.length,
+                      itemCount: filteredDocs.isNotEmpty ? filteredDocs.length : 0,
                       itemBuilder: (context, index) {
+                        //if (index >= filteredDocs.length) return const SizedBox();
                         var doc = filteredDocs[index];
                         var data = doc.data() as Map<String, dynamic>;
                         String docId = doc.id;

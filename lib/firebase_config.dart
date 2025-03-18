@@ -10,7 +10,6 @@ Future<void> loadFirebaseConfig() async {
     // 🔹 Cargar `config.json`
     String configJson = await rootBundle.loadString("assets/config/config.json");
     firebaseConfig = jsonDecode(configJson);
-    print("✅ Firebase config cargado desde `config.json`: $firebaseConfig");
   } catch (e) {
     print("⚠️ No se encontró `config.json`, intentando cargar `.env`");
 

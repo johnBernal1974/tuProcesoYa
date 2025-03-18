@@ -243,9 +243,17 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
   // 🔥 Widget para cada solicitud
   Widget _buildSolicitudCard(Map<String, dynamic> data, String idDocumento, String userRole) {
-    bool isMobile = MediaQuery.of(context).size.width < 600; // Detectar si es móvil
+    bool isMobile = MediaQuery.of(context).size.width < 600;
 
-    // Extraer preguntas y respuestas
+    // 🔹 Obtener datos de asignación
+    String? asignadoA = data['asignadoA']?.toString().trim();
+    String? asignadoA_P2 = data['asignadoA_P2']?.toString().trim();
+    Timestamp? fechaAsignado = data['asignado_fecha'];
+    Timestamp? fechaAsignadoP2 = data['asignado_fecha_P2'];
+    Timestamp? fechaRevisado = data['fecha_revision'];
+    Timestamp? fechaEnviado = data['fechaEnvio'];
+
+    // 🔹 Extraer preguntas y respuestas
     List<Map<String, dynamic>> preguntasRespuestas = data.containsKey('preguntas_respuestas')
         ? List<Map<String, dynamic>>.from(data['preguntas_respuestas'])
         : [];
@@ -262,34 +270,20 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
           return;
         }
 
-        // 🔹 Obtener la solicitud más reciente de Firestore
-        DocumentSnapshot docSnap = await FirebaseFirestore.instance
-            .collection('derechos_peticion_solicitados')
-            .doc(idDocumento)
-            .get();
+        // 🔹 Obtener el rol desde AdminProvider
+        String? userRole = AdminProvider().rol;
 
-        if (!docSnap.exists) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Error: Documento no encontrado.")),
-          );
+        // 🔹 Definir roles restringidos para la asignación
+        List<String> rolesRestringidos = ["master", "masterFull", "coordinador 1", "coordinador 2"];
+
+        // 🔹 Si el usuario está en la lista restringida, solo puede abrir el documento
+        if (rolesRestringidos.contains(userRole)) {
+          _navegarAPagina(data, idDocumento, preguntas, respuestas);
           return;
         }
 
-        Map<String, dynamic>? latestData = docSnap.data() as Map<String, dynamic>?;
-
-        if (latestData == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Error al obtener datos.")),
-          );
-          return;
-        }
-
-        // 🔹 Verificar si la solicitud ya está asignada
-        String? asignadoA = latestData.containsKey('asignadoA') ? latestData['asignadoA']?.toString().trim() : null;
-
-        if (asignadoA == null || asignadoA.isEmpty) {
+        if (userRole == "pasante 1" && (asignadoA == null || asignadoA.isEmpty)) {
           try {
-            // 🔥 Asignar la solicitud al usuario actual
             await FirebaseFirestore.instance
                 .collection('derechos_peticion_solicitados')
                 .doc(idDocumento)
@@ -311,39 +305,46 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
             }
             return;
           }
-        } else {
-          if (asignadoA != user.uid) {
+        }
+        // 🔹 Si el usuario es pasante 2 y la solicitud no está asignada a ningún pasante 2, lo asignamos
+        if (userRole == "pasante 2" && (asignadoA_P2 == null || asignadoA_P2.isEmpty)) {
+          try {
+            await FirebaseFirestore.instance
+                .collection('derechos_peticion_solicitados')
+                .doc(idDocumento)
+                .update({
+              'asignadoA_P2': user.uid,
+              'asignado_fecha_P2': FieldValue.serverTimestamp(),
+            });
+
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Esta solicitud ya está asignada a otro usuario")),
+                const SnackBar(content: Text("Solicitud asignada a ti")),
+              );
+            }
+          } catch (error) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Error al asignar la solicitud: $error")),
               );
             }
             return;
           }
+        } else if (userRole == "pasante 2" && asignadoA_P2 != user.uid) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Esta solicitud ya está asignada a otro pasante 2")),
+            );
+          }
+          return;
         }
 
         // 🔹 Navegar a la siguiente pantalla después de la asignación
-        if (context.mounted) {
-          Navigator.pushNamed(
-            context,
-            obtenerRutaSegunStatus(latestData['status']),
-            arguments: {
-              'status': latestData['status'],
-              'idDocumento': idDocumento,
-              'numeroSeguimiento': latestData['numero_seguimiento'],
-              'categoria': latestData['categoria'],
-              'subcategoria': latestData['subcategoria'],
-              'fecha': latestData['fecha'].toDate().toString(),
-              'idUser': latestData['idUser'],
-              'archivos': latestData.containsKey('archivos') ? List<String>.from(latestData['archivos']) : [],
-              'preguntas': preguntas,
-              'respuestas': respuestas,
-            },
-          );
-        }
+        _navegarAPagina(data, idDocumento, preguntas, respuestas);
       },
       child: Card(
-        color: blancoCards,
+        color: blanco,
+        surfaceTintColor: blanco,
         elevation: 5,
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         child: Padding(
@@ -352,104 +353,47 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               isMobile
-                  ? Column( // 📱 En móviles, todo en columna
+                  ? Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("No. Seguimiento: ${data['numero_seguimiento']}",
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  Text(
-                    DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es').format(data['fecha'].toDate()),
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                  const SizedBox(height: 5),
-                  Text("Categoría: ${data['categoria']}",
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Icon(Icons.circle, size: 16, color: getColorEstado(data['status'])),
-                      const SizedBox(width: 5),
-                      Text(data['status'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ],
+                children: _buildSolicitudInfo(data),
               )
-                  : Column( // 💻 En PC, se mantiene la estructura original con todo
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("No. Seguimiento: ${data['numero_seguimiento']}",
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      Text(
-                        DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es').format(data['fecha'].toDate()),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text("Categoría: ${data['categoria']}",
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      Row(
-                        children: [
-                          Icon(Icons.circle, size: 16, color: getColorEstado(data['status'])),
-                          const SizedBox(width: 5),
-                          Text(data['status'], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
+                  : Column(
+                children: _buildSolicitudInfoDesktop(data),
               ),
               const SizedBox(height: 10),
-              if (data['asignado_fecha'] != null)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.green[50],
-                  ),
-                  child: MediaQuery.of(context).size.width < 600
-                      ? Column( // 📱 En móviles, mostrar en columna
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Asignado: ",
-                        style: TextStyle(fontSize: 12, color: gris, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        data.containsKey('asignadoA') &&
-                            data['asignadoA'] != null &&
-                            data['asignadoA'].toString().trim().isNotEmpty
-                            ? " ${data.containsKey('asignado_fecha') && data['asignado_fecha'] != null ? _formatFecha((data['asignado_fecha'] as Timestamp).toDate()) : "Fecha no disponible"}"
-                            : "No asignado",
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  )
-                      : Row( // 💻 En PC, mantener en una fila
-                    children: [
-                      const Text(
-                        "Asignado: ",
-                        style: TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        data.containsKey('asignadoA') &&
-                            data['asignadoA'] != null &&
-                            data['asignadoA'].toString().trim().isNotEmpty
-                            ? " ${data.containsKey('asignado_fecha') && data['asignado_fecha'] != null ? _formatFecha((data['asignado_fecha'] as Timestamp).toDate()) : "Fecha no disponible"}"
-                            : "No asignado",
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
+
+              // 🔹 En Móvil, mostrar todo en Column
+              if (isMobile)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildAsignacionInfo("Asignado para diligenciar", asignadoA, fechaAsignado),
+                    const SizedBox(height: 10),
+                    _buildAsignacionInfo("Asignado para revisar", asignadoA_P2, fechaAsignadoP2),
+                  ],
+                )
+              else
+                Column(
+                  children: [
+                    // 🔹 Primera Línea: Asignaciones
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: _buildAsignacionInfo("Asignado para diligenciar", asignadoA, fechaAsignado)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildAsignacionInfo("Asignado para revisar", asignadoA_P2, fechaAsignadoP2)),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: _buildFechaRevision("Revisado", fechaRevisado)),
+                        const SizedBox(width: 10),
+                        Expanded(child: _buildFechaEnvio("Enviado", fechaEnviado)),
+                      ],
+                    ),
+                  ],
                 ),
             ],
           ),
@@ -458,6 +402,221 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
     );
   }
 
+  /// 🔹 Navegar a la página correspondiente
+  void _navegarAPagina(Map<String, dynamic> latestData, String idDocumento, List<String> preguntas, List<String> respuestas) {
+    Navigator.pushNamed(
+      context,
+      obtenerRutaSegunStatus(latestData['status'] ?? "Pendiente"),
+      arguments: {
+        'status': latestData['status'] ?? "Pendiente",
+        'idDocumento': idDocumento,
+        'numeroSeguimiento': latestData['numero_seguimiento'] ?? "Sin número",
+        'categoria': latestData['categoria'] ?? "Sin categoría",
+        'subcategoria': latestData['subcategoria'] ?? "Sin subcategoría",
+        'fecha': latestData['fecha'] != null ? latestData['fecha'].toDate().toString() : "Fecha no disponible",
+        'idUser': latestData['idUser'] ?? "Desconocido",
+        'archivos': latestData.containsKey('archivos') ? List<String>.from(latestData['archivos']) : [],
+        'preguntas': preguntas,
+        'respuestas': respuestas,
+      },
+    );
+  }
+
+  Widget _buildFechaRevision(String? titulo, Timestamp? fecha) {
+    if (fecha == null) return const SizedBox(); // Si no hay fecha, no mostrar nada
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: primary.withOpacity(0.3),
+      ),
+      child: Row(
+        children: [
+          Text(
+            "$titulo: ",
+            style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            DateFormat("dd/MM/yyyy hh:mm a", 'es').format(fecha.toDate()), // 📅 Formatear fecha
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFechaEnvio(String? titulo, Timestamp? fecha) {
+    if (fecha == null) return const SizedBox(); // Si no hay fecha, no mostrar nada
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.green.withOpacity(0.3),
+      ),
+      child: Row(
+        children: [
+          Text(
+            "$titulo: ",
+            style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 2),
+          Text(
+            DateFormat("dd/MM/yyyy hh:mm a", 'es').format(fecha.toDate()), // 📅 Formatear fecha
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  /// 🔹 Construir información de la solicitud
+  List<Widget> _buildSolicitudInfo(Map<String, dynamic> data) {
+    return [
+      Text("No. Seguimiento: ${data['numero_seguimiento'] ?? 'Sin número'}",
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 5),
+      Text(
+        DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es').format(data['fecha']?.toDate() ?? DateTime.now()),
+        style: const TextStyle(fontSize: 12),
+      ),
+      const SizedBox(height: 5),
+      Text("Categoría: ${data['categoria'] ?? 'Sin categoría'}",
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      const SizedBox(height: 5),
+      Row(
+        children: [
+          Icon(Icons.circle, size: 16, color: getColorEstado(data['status'] ?? "Pendiente")),
+          const SizedBox(width: 5),
+          Text(data['status'] ?? "Pendiente", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    ];
+  }
+
+  List<Widget> _buildSolicitudInfoDesktop(Map<String, dynamic> data) {
+    return [
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    const Text("No. Seguimiento: ",
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    Expanded(
+                      child: Text(
+                        data['numero_seguimiento'] ?? 'Sin número',
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Row(
+                children: [
+                  Icon(Icons.circle, size: 16, color: getColorEstado(data['status'] ?? "Pendiente")),
+                  const SizedBox(width: 5),
+                  Text(data['status'] ?? "Pendiente",
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 5),
+
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    const Text("Fecha: ",
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    Expanded(
+                      child: Text(
+                        DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es')
+                            .format(data['fecha']?.toDate() ?? DateTime.now()),
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Text("Categoría: ",
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    Expanded(
+                      child: Text(
+                        data['categoria'] ?? 'Sin categoría',
+                        style: const TextStyle(fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ];
+  }
+
+
+
+  /// 🔹 Construir información de asignación (Pasante 1 y Pasante 2)
+  Widget _buildAsignacionInfo(String titulo, String? asignado, Timestamp? fecha) {
+    if (asignado == null || asignado.trim().isEmpty) return const SizedBox();
+
+    Color backgroundColor = _getAsignacionColor(titulo);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: backgroundColor,
+      ),
+      child: Row(
+        children: [
+          Text("$titulo: ", style: const TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.bold)),
+          const SizedBox(width: 2),
+          Text(
+            fecha != null ? DateFormat("dd/MM/yyyy hh:mm a", 'es').format(fecha.toDate()) : "Fecha no disponible",
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🔥 Función para asignar un color según el título de la asignación
+  Color _getAsignacionColor(String titulo) {
+    switch (titulo) {
+      case "Asignado para diligenciar":
+        return Colors.grey[100]!;  // Azul claro
+      case "Asignado para revisar":
+        return Colors.orange[50]!;
+      case "Revisado":
+        return Colors.purple[200]!;
+      case "Asignado Coordinador":
+        return Colors.purple[50]!; // Morado claro
+      case "Asignado Master":
+        return Colors.red[50]!; // Rojo claro
+      default:
+        return Colors.green[50]!; // Verde claro por defecto
+    }
+  }
 
   String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
     if (fecha == null) return "";
