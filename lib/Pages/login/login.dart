@@ -228,36 +228,57 @@ class _LoginPageState extends State<LoginPage> {
       final success = await _authProvider.login(email, password, context);
       if (success) {
         final userId = FirebaseAuth.instance.currentUser?.uid;
-        // Verifica si el usuario es administrador
-        final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
-        if (adminDoc.exists) {
-          // ✅ Cargar el nombre del admin antes de navegar
-          await AdminProvider().loadAdminData();
-          // El usuario es administrador
-          if (context.mounted) {
-            Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
+        if (userId != null) {
+          // 🔹 Verifica si el usuario es administrador
+          final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
+
+          if (adminDoc.exists) {
+            // ✅ Cargar datos del administrador (incluyendo su rol)
+            await AdminProvider().loadAdminData();
+            String role = AdminProvider().rol ?? "";
+            print("Rol obtenido en login: $role"); // 📌 Depuración
+
+            // 🔥 Si es pasante 1 o pasante 2, redirigir a SolicitudesDerechoPeticionAdminPage
+            if (role == "pasante 1" || role == "pasante 2") {
+              if (context.mounted) {
+                print("Redirigiendo a SolicitudesDerechoPeticionAdminPage...");
+                Navigator.pushNamedAndRemoveUntil(context, 'solicitudes_derecho_peticion_admin', (route) => false);
+              }
+              return;
+            }
+
+            // 🔹 Redirigir otros roles de admin a HomeAdministradorPage
+            if (context.mounted) {
+              print("Redirigiendo a HomeAdministradorPage...");
+              Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
+            }
+            return;
           }
-        } else {
-          // El usuario no es administrador, se consulta el documento del usuario
+
+          // 🔹 Si no es administrador, buscar en la colección 'Ppl'
           final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+
           if (userDoc.exists) {
             final data = userDoc.data() as Map<String, dynamic>;
-            final status = data['status'] ?? '';
+            final status = data['status']?.toString().trim() ?? "";
+            print("Estado del usuario en Ppl: $status"); // 📌 Depuración
+
             if (status == 'registrado') {
-              // Si el status es "registrado", ir a EstamosValidandoPage
               if (context.mounted) {
+                print("Redirigiendo a EstamosValidandoPage...");
                 Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (route) => false);
               }
             } else {
-              // De lo contrario, ir a HomePage
               if (context.mounted) {
+                print("Redirigiendo a HomePage...");
                 Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
               }
             }
           } else {
-            // Si no se encuentra el documento del usuario, por defecto ir a HomePage
+            // 🔹 Usuario no encontrado, redirigir a HomePage
             if (context.mounted) {
+              print("Usuario no encontrado, redirigiendo a HomePage...");
               Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
             }
           }
@@ -269,5 +290,6 @@ class _LoginPageState extends State<LoginPage> {
       });
     }
   }
+
 
 }

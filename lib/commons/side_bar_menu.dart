@@ -20,6 +20,7 @@ class _SideBarState extends State<SideBar> {
   bool _isLoading = true;
   final ValueNotifier<bool> _isPaid = ValueNotifier<bool>(false);
   bool _isTrial = false;
+  String rol = "";
 
   @override
   void initState() {
@@ -27,29 +28,34 @@ class _SideBarState extends State<SideBar> {
     _fetchPendingSuggestions();
     _checkIfAdmin();
     _loadData();
-
   }
 
   Future<void> _loadData() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) return;
 
-    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(
+        userId).get();
     if (userDoc.exists) {
       final Timestamp? fechaRegistro = userDoc.data()?['fechaRegistro'];
       _isPaid.value = userDoc.data()?['isPaid'] ?? false;
       await _validateTrialPeriod(fechaRegistro);
     }
   }
+
   Future<void> _validateTrialPeriod(Timestamp? fechaRegistro) async {
     if (fechaRegistro == null) return;
 
-    final configDoc = await FirebaseFirestore.instance.collection('configuraciones').doc('general').get();
-    final int tiempoDePrueba = configDoc.data()?['tiempoDePrueba'] ?? 7; // 🔹 Default 7 días
+    final configDoc = await FirebaseFirestore.instance.collection(
+        'configuraciones').doc('general').get();
+    final int tiempoDePrueba = configDoc.data()?['tiempoDePrueba'] ??
+        7; // 🔹 Default 7 días
 
     final DateTime fechaRegistroDT = fechaRegistro.toDate();
     final DateTime fechaActual = DateTime.now();
-    final int diasTranscurridos = fechaActual.difference(fechaRegistroDT).inDays;
+    final int diasTranscurridos = fechaActual
+        .difference(fechaRegistroDT)
+        .inDays;
 
     setState(() {
       _isTrial = diasTranscurridos < tiempoDePrueba;
@@ -59,43 +65,55 @@ class _SideBarState extends State<SideBar> {
   Future<void> _checkIfAdmin() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Revisa si ya tenemos el valor almacenado
-    if (prefs.containsKey('isAdmin')) {
+    // 🔹 Revisar si ya tenemos datos guardados
+    if (prefs.containsKey('isAdmin') && prefs.containsKey('rol')) {
       setState(() {
         _isAdmin = prefs.getBool('isAdmin');
-        _isLoading = false; // Termina la carga
+        rol = prefs.getString('rol') ?? ""; // 🔹 Cargar el rol guardado
+        _isLoading = false;
       });
       return;
     }
 
-    // Si no está en SharedPreferences, consulta Firestore
+    // 🔹 Si no hay datos guardados, buscar en Firestore
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       setState(() {
         _isAdmin = false;
+        rol = "";
         _isLoading = false;
       });
       return;
     }
 
-    final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
+    final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(
+        userId).get();
+
+    // 🔹 Cargar datos del usuario desde Firestore
+    await AdminProvider().loadAdminData();
+    String? nuevoRol = AdminProvider().rol;
+
+    // 🔹 Guardar en SharedPreferences para futuras aperturas
+    await prefs.setBool('isAdmin', adminDoc.exists);
+    await prefs.setString('rol', nuevoRol ?? "");
 
     if (mounted) {
       setState(() {
         _isAdmin = adminDoc.exists;
+        rol = nuevoRol!;
         _isLoading = false;
       });
-      await prefs.setBool('isAdmin', adminDoc.exists); // Guarda el valor
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
-    bool? isAdmin = _isAdmin;
-    String? rol = AdminProvider().rol;
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-    List<Widget> drawerItems = _buildDrawerItems(context, isAdmin, rol);
+    List<Widget> drawerItems = _buildDrawerItems(context, _isAdmin, rol);
 
     return Drawer(
       elevation: 1,
@@ -108,9 +126,9 @@ class _SideBarState extends State<SideBar> {
             _buildDrawerHeader(_isAdmin),
             const Divider(height: 1, color: grisMedio),
             ...drawerItems,
-            const Divider(height: 1, color: Colors.white70), // 🔹 Línea divisoria
-            _buildLogoutTile(context), // 🔥 Botón de Cerrar Sesión colocado aquí
-            const SizedBox(height: 20), // 🔹 Espacio final para evitar recortes visuales
+            const Divider(height: 1, color: Colors.white70),
+            _buildLogoutTile(context),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -137,14 +155,16 @@ class _SideBarState extends State<SideBar> {
       decoration: const BoxDecoration(color: blanco),
       child: Column(
         children: [
-          Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
+          Image.asset(
+              'assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
           if (isAdmin == true) const Text("Administrador"),
         ],
       ),
     );
   }
 
-  List<Widget> _buildDrawerItems(BuildContext context, bool? isAdmin, String? rol) {
+  List<Widget> _buildDrawerItems(BuildContext context, bool? isAdmin,
+      String? rol) {
     List<Widget> items = [
       const SizedBox(height: 50),
     ];
@@ -154,106 +174,157 @@ class _SideBarState extends State<SideBar> {
       if (rol == "masterFull") {
         // Para master y masterFull se muestran todos los ítems de admin.
         items.addAll([
-          _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home_admin'),
-          _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias_administrador', showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(context, "Configuraciones", Icons.settings, 'configuraciones_admin'),
-          _buildDrawerTile(context, "Solicitudes derechos petición", Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
-          _buildDrawerTile(context, "Registrar Operadores", Icons.app_registration, 'registrar_operadores'),
-          _buildDrawerTile(context, "Operadores", Icons.account_box, 'operadores_page'),
-          _buildDrawerTile(context, "Transacciones", Icons.account_box, 'admin_transacciones'),
+          _buildDrawerTile(
+              context, "Página principal", Icons.home_filled, 'home_admin'),
+          _buildDrawerTile(
+              context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
+              'buzon_sugerencias_administrador',
+              showBadge: _pendingSuggestions > 0),
+          _buildDrawerTile(context, "Configuraciones", Icons.settings,
+              'configuraciones_admin'),
+          _buildDrawerTile(context, "Solicitudes derechos petición",
+              Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(
+              context, "Registrar Operadores", Icons.app_registration,
+              'registrar_operadores'),
+          _buildDrawerTile(
+              context, "Operadores", Icons.account_box, 'operadores_page'),
+          _buildDrawerTile(context, "Transacciones", Icons.account_box,
+              'admin_transacciones'),
         ]);
-      }else if(rol == "master"){
-          items.addAll([
-          _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home_admin'),
-          _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias_administrador', showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(context, "Solicitudes derechos petición", Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
-          ]);
+      } else if (rol == "master") {
+        items.addAll([
+          _buildDrawerTile(
+              context, "Página principal", Icons.home_filled, 'home_admin'),
+          _buildDrawerTile(
+              context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
+              'buzon_sugerencias_administrador',
+              showBadge: _pendingSuggestions > 0),
+          _buildDrawerTile(context, "Solicitudes derechos petición",
+              Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
+        ]);
       }
 
       else if (rol == "coordinador 1" || rol == "coordinador 2") {
         // Para coordinadores se muestran un subconjunto de opciones.
         items.addAll([
-          _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home_admin'),
-          _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias_administrador', showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(context, "Solicitudes derechos petición", Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(
+              context, "Página principal", Icons.home_filled, 'home_admin'),
+          _buildDrawerTile(
+              context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
+              'buzon_sugerencias_administrador',
+              showBadge: _pendingSuggestions > 0),
+          _buildDrawerTile(context, "Solicitudes derechos petición",
+              Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
         ]);
       } else if (rol == "operador 1" || rol == "operador 2") {
         // Para operadores se muestran opciones básicas.
         items.addAll([
-          _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home_admin'),
+          _buildDrawerTile(
+              context, "Página principal", Icons.home_filled, 'home_admin'),
         ]);
-      } else if (rol == "pasante 1" || rol == "pasante 2" || rol == "pasante 3") {
+      } else
+      if (rol == "pasante 1" || rol == "pasante 2" || rol == "pasante 3") {
         // Para pasantes, se muestra solo la página principal.
         items.add(
-          _buildDrawerTile(context, "Solicitudes derechos petición", Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(context, "Solicitudes derechos petición",
+              Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
         );
       }
     } else {
       // Menú para usuarios que no son admin.
       items.addAll([
-        _buildDrawerTile(context, "Página principal", Icons.home_filled, 'home'),
+        _buildDrawerTile(
+            context, "Página principal", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Tus datos", Icons.person_pin, 'mis_datos'),
-        _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar, 'solicitudes_page'),
-
-
+        _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar,
+            'solicitudes_page'),
 
 
         ExpansionTile(
-          leading: const Icon(Icons.attach_money, color: Colors.black, size: 20),
-          title: const Text("Recargas", style: TextStyle(color: Colors.black, fontSize: 13)),
-          iconColor: Colors.black, // 🔥 Color del icono cuando se expande
-          collapsedIconColor: Colors.black, // 🔥 Color cuando está colapsado
+          leading: const Icon(
+              Icons.attach_money, color: Colors.black, size: 20),
+          title: const Text(
+              "Recargas", style: TextStyle(color: Colors.black, fontSize: 13)),
+          iconColor: Colors.black,
+          // 🔥 Color del icono cuando se expande
+          collapsedIconColor: Colors.black,
+          // 🔥 Color cuando está colapsado
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
-              child: _buildDrawerTile(context, "Recargar cuenta", Icons.monetization_on_outlined, 'checkout_wompi'),
+              padding: const EdgeInsets.only(left: 16.0),
+              // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(
+                  context, "Recargar cuenta", Icons.monetization_on_outlined,
+                  'checkout_wompi'),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
-              child: _buildDrawerTile(context, "Tus transacciones", Icons.payments_rounded, 'mis_transacciones'),
+              padding: const EdgeInsets.only(left: 16.0),
+              // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(
+                  context, "Tus transacciones", Icons.payments_rounded,
+                  'mis_transacciones'),
             ),
           ],
         ),
 
         ExpansionTile(
           leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
-          title: const Text("Historiales", style: TextStyle(color: Colors.black, fontSize: 13)),
-          iconColor: Colors.black, // 🔥 Color del icono cuando se expande
-          collapsedIconColor: Colors.black, // 🔥 Color cuando está colapsado
+          title: const Text("Historiales",
+              style: TextStyle(color: Colors.black, fontSize: 13)),
+          iconColor: Colors.black,
+          // 🔥 Color del icono cuando se expande
+          collapsedIconColor: Colors.black,
+          // 🔥 Color cuando está colapsado
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
-              child: _buildDrawerTile(context, "Tus Solicitudes derecho peticion", Icons.history_edu_outlined, 'historial_solicitudes_derechos_peticion'),
+              padding: const EdgeInsets.only(left: 16.0),
+              // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(
+                  context, "Tus Solicitudes derecho peticion",
+                  Icons.history_edu_outlined,
+                  'historial_solicitudes_derechos_peticion'),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
-              child: _buildDrawerTile(context, "Tus Redenciones", Icons.filter_9_plus_outlined, 'mis_redenciones'),
+              padding: const EdgeInsets.only(left: 16.0),
+              // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(
+                  context, "Tus Redenciones", Icons.filter_9_plus_outlined,
+                  'mis_redenciones'),
             ),
           ],
         ),
 
         // 🔥 Submenú "Información general"
         ExpansionTile(
-          leading: const Icon(Icons.info_outline, color: Colors.black, size: 20),
-          title: const Text("Información general", style: TextStyle(color: Colors.black, fontSize: 13)),
+          leading: const Icon(
+              Icons.info_outline, color: Colors.black, size: 20),
+          title: const Text("Información general",
+              style: TextStyle(color: Colors.black, fontSize: 13)),
           iconColor: Colors.black,
           collapsedIconColor: Colors.black,
           children: [
             Padding(
-              padding: const EdgeInsets.only(left: 16.0), // 🔥 Espaciado para cada elemento
-              child: _buildDrawerTile(context, "Términos y condiciones", Icons.account_balance_outlined, 'terminos_y_condiciones'),
+              padding: const EdgeInsets.only(left: 16.0),
+              // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(context, "Términos y condiciones",
+                  Icons.account_balance_outlined, 'terminos_y_condiciones'),
             ),
             Padding(
               padding: const EdgeInsets.only(left: 16.0),
-              child: _buildDrawerTile(context, "Derechos del condenado", Icons.monitor_heart_rounded, 'derechos_info'),
+              child: _buildDrawerTile(context, "Derechos del condenado",
+                  Icons.monitor_heart_rounded, 'derechos_info'),
             ),
             Padding(
               padding: const EdgeInsets.only(left: 16.0),
-              child: _buildDrawerTile(context, "Quiénes somos", Icons.info, 'nosotros'),
+              child: _buildDrawerTile(
+                  context, "Quiénes somos", Icons.info, 'nosotros'),
             ),
           ],
         ),
-        _buildDrawerTile(context, "Buzón de sugerencias", Icons.mark_email_unread_outlined, 'buzon_sugerencias'),
+        _buildDrawerTile(
+            context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
+            'buzon_sugerencias'),
       ]);
     }
 
@@ -263,7 +334,8 @@ class _SideBarState extends State<SideBar> {
   }
 
 
-  Widget _buildDrawerTile(BuildContext context, String title, IconData icon, String route, {bool showBadge = false}) {
+  Widget _buildDrawerTile(BuildContext context, String title, IconData icon,
+      String route, {bool showBadge = false}) {
     return ValueListenableBuilder<bool>(
       valueListenable: _isPaid,
       builder: (context, isPaid, child) {
@@ -271,7 +343,10 @@ class _SideBarState extends State<SideBar> {
           onTap: () {
             // ✅ Si el usuario es admin, no aplicar la restricción
             if (_isAdmin == true) {
-              if (ModalRoute.of(context)?.settings.name != route) {
+              if (ModalRoute
+                  .of(context)
+                  ?.settings
+                  .name != route) {
                 Navigator.pushNamed(context, route);
               }
               return;
@@ -283,7 +358,10 @@ class _SideBarState extends State<SideBar> {
               return;
             }
 
-            if (ModalRoute.of(context)?.settings.name != route) {
+            if (ModalRoute
+                .of(context)
+                ?.settings
+                .name != route) {
               Navigator.pushNamed(context, route);
             }
           },
@@ -322,7 +400,8 @@ class _SideBarState extends State<SideBar> {
         return AlertDialog(
           backgroundColor: blanco,
           title: const Text("Acceso restringido"),
-          content: const Text("Para acceder a esta sección, debes pagar la suscripción."),
+          content: const Text(
+              "Para acceder a esta sección, debes pagar la suscripción."),
           actions: [
             TextButton(
               onPressed: () {
@@ -347,54 +426,31 @@ class _SideBarState extends State<SideBar> {
     return DrawerListTitle(
       title: "Cerrar sesión",
       icon: Icons.exit_to_app,
-      press: () {
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              backgroundColor: blanco,
-              title: const Text("Confirmación"),
-              content: const Text("¿Estás seguro de que deseas cerrar sesión?",
-                  style: TextStyle(color: Colors.black)),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text("SI", style: TextStyle(color: Colors.black)),
-                  onPressed: () async {
-                    try {
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.remove('isAdmin'); // 🔹 BORRA EL ESTADO GUARDADO
-                      await _authProvider.signOut();
-                      AdminProvider().reset();
-                      if(context.mounted){
-                        Navigator.of(context).pop();
-                        Navigator.pushNamedAndRemoveUntil(context, 'login', (Route<dynamic> route) => false);
-                      }
+      press: () async {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('isAdmin'); // 🔥 Borra datos guardados
+        await prefs.remove('rol');
 
-                    } catch (e) {
-                      if(context.mounted){
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Error al cerrar sesión"),
-                          ),
-                        );
-                      }
-                    }
-                  },
-                ),
-                TextButton(
-                  child: const Text("NO", style: TextStyle(color: Colors.black)),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
+        try {
+          await _authProvider.signOut();
+          AdminProvider().reset();
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+                context, 'login', (Route<dynamic> route) => false);
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Error al cerrar sesión")),
             );
-          },
-        );
+          }
+        }
       },
     );
   }
 }
 
-class DrawerListTitle extends StatelessWidget {
+  class DrawerListTitle extends StatelessWidget {
   final String title;
   final IconData icon;
   final VoidCallback press;

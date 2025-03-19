@@ -31,73 +31,81 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
   }
 
   void _checkAuthentication() async {
-    // Verifica si el usuario está autenticado
     User? user = FirebaseAuth.instance.currentUser;
 
     if (user != null) {
       final userId = user.uid;
-      // Consulta el documento en la colección "admin"
+
+      // 🔹 Verificar si el usuario es administrador
       final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
       if (adminDoc.exists) {
-        // Usuario es administrador, obtenemos el rol
-        String role = adminDoc.data()?['rol'] ?? "";
+        // 🔹 Obtener el rol asegurando que no tenga espacios extra
+        String role = adminDoc.data()?['rol']?.toString().trim() ?? "";
+        print("Rol obtenido: $role"); // 📌 Depuración
 
-        // Redirige según el rol obtenido:
+        // 🔹 Verificar si es pasante 1 o pasante 2
         if (role == "pasante 1" || role == "pasante 2") {
-          // Si es pasante 1 o pasante 2, enviar a SolicitudesDerechoPeticionAdminPage
           if (context.mounted) {
+            print("Redirigiendo a SolicitudesDerechoPeticionAdminPage...");
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const SolicitudesDerechoPeticionAdminPage()),
             );
           }
-        } else {
-          // Para los demás roles se redirige a HomeAdministradorPage
+          return;
+        }
+
+        // 🔹 Redirigir otros roles a la página de administración
+        if (context.mounted) {
+          print("Redirigiendo a HomeAdministradorPage...");
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
+          );
+        }
+        return;
+      }
+
+      // 🔹 Si no es administrador, buscar en la colección 'Ppl'
+      final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        final status = data['status']?.toString().trim() ?? "";
+        print("Estado del usuario en Ppl: $status"); // 📌 Depuración
+
+        if (status == 'registrado') {
           if (context.mounted) {
+            print("Redirigiendo a EstamosValidandoPage...");
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
+              MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
+            );
+          }
+        } else {
+          if (context.mounted) {
+            print("Redirigiendo a HomePage...");
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomePage()),
             );
           }
         }
       } else {
-        // Usuario no es administrador, consultamos su documento en la colección "Ppl"
-        final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
-
-        if (userDoc.exists) {
-          final data = userDoc.data() as Map<String, dynamic>;
-          final status = data['status'] ?? '';
-
-          // Si el status es "registrado", redirige a EstamosValidandoPage, de lo contrario a HomePage
-          if (status == 'registrado') {
-            if (context.mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
-              );
-            }
-          } else {
-            if (context.mounted) {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => HomePage()),
-              );
-            }
-          }
-        } else {
-          // Si no se encuentra el documento del usuario, redirige a LoginPage (o maneja el error de otra forma)
-          if (context.mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => LoginPage()),
-            );
-          }
+        // 🔹 Usuario no encontrado, redirigir a LoginPage
+        if (context.mounted) {
+          print("Usuario no encontrado, redirigiendo a LoginPage...");
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const LoginPage()),
+          );
         }
       }
     } else {
-      // Usuario no autenticado, redirige a LoginPage
+      // 🔹 Usuario no autenticado, redirigir a LoginPage
       if (context.mounted) {
+        print("Usuario no autenticado, redirigiendo a LoginPage...");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => LoginPage()),
@@ -105,6 +113,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
       }
     }
   }
+
 
 
 
