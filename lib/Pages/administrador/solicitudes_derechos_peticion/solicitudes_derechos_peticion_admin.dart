@@ -408,8 +408,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         _navegarAPagina(data, idDocumento, preguntas, respuestas);
       },
       child: Card(
-        color: blanco,
-        surfaceTintColor: blanco,
+        color: Colors.white,
+        surfaceTintColor: Colors.white,
         elevation: 5,
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         child: Padding(
@@ -438,8 +438,9 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                     const SizedBox(height: 10),
                     _buildFechaRevision("Revisado", fechaRevisado),
                     const SizedBox(height: 10),
-                    _buildFechaEnvio("Enviado", fechaEnviado)
-
+                    _buildFechaEnvio("Enviado", fechaEnviado),
+                    const SizedBox(height: 10),
+                    _buildTiempoSinRespuesta(fechaEnviado), // 🔥 NUEVO: Mostrar tiempo sin respuesta
                   ],
                 )
               else
@@ -463,6 +464,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                         Expanded(child: _buildFechaEnvio("Enviado", fechaEnviado)),
                       ],
                     ),
+                    const SizedBox(height: 10),
+                    _buildTiempoSinRespuesta(fechaEnviado), // 🔥 NUEVO: Mostrar tiempo sin respuesta
                   ],
                 ),
             ],
@@ -471,6 +474,79 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
       ),
     );
   }
+
+  /// 🔹 Calcula el tiempo sin respuesta y muestra un mensaje si ha pasado el límite.
+  Widget _buildTiempoSinRespuesta(Timestamp? fechaEnvio) {
+    if (fechaEnvio == null) return const SizedBox(); // No mostrar nada si no hay fecha de envío
+
+    return FutureBuilder<int>(
+      future: _obtenerTiempoPermitido(), // 🔥 Obtener el tiempo permitido desde Firestore
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const CircularProgressIndicator(); // Esperar carga
+
+        int tiempoPermitido = snapshot.data!;
+        DateTime fechaEnvioDT = fechaEnvio.toDate();
+
+        // 🔥 Stream que actualiza el contador cada segundo
+        return StreamBuilder<int>(
+          stream: Stream.periodic(const Duration(seconds: 1), (_) {
+            DateTime fechaActual = DateTime.now();
+            return fechaActual.difference(fechaEnvioDT).inDays;
+          }),
+          builder: (context, streamSnapshot) {
+            if (!streamSnapshot.hasData) return const SizedBox();
+
+            int diasTranscurridos = streamSnapshot.data!;
+            int diasRestantes = tiempoPermitido - diasTranscurridos;
+
+            return Row(
+              children: [
+                Icon(
+                  diasRestantes >= 0 ? Icons.timer_outlined : Icons.warning_amber_rounded,
+                  color: diasRestantes >= 0 ? Colors.green : Colors.red,
+                  size: 20,
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  diasRestantes >= 0
+                      ? "Tiempo límite restante para recibir respuesta: $diasRestantes días"
+                      : "Sin obtener respuesta (${diasTranscurridos} días)",
+                  style: TextStyle(
+                    color: diasRestantes >= 0 ? Colors.green : Colors.red,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// 🔹 Obtiene el tiempo permitido desde Firestore
+  Future<int> _obtenerTiempoPermitido() async {
+    try {
+      // 🔹 Obtener el primer documento (con ID aleatorio) de la colección "configuraciones"
+      QuerySnapshot configCollection = await FirebaseFirestore.instance.collection("configuraciones").get();
+
+      if (configCollection.docs.isNotEmpty) {
+        DocumentSnapshot configDoc = configCollection.docs.first; // Obtener el primer documento disponible
+
+        // 🔥 Extraer el valor del tiempo de respuesta
+        if (configDoc.data() != null && (configDoc.data() as Map<String, dynamic>).containsKey("tiempo_respuesta_derecho_peticion")) {
+          return (configDoc["tiempo_respuesta_derecho_peticion"] as num).toInt();
+        }
+      }
+
+      return 10; // 🔥 Valor por defecto si no hay documentos o no contiene el nodo
+    } catch (e) {
+      print("❌ Error al obtener tiempo permitido: $e");
+      return 10; // En caso de error, devolver 10 días como predeterminado
+    }
+  }
+
 
   /// 🔹 Navegar a la página correspondiente
   void _navegarAPagina(Map<String, dynamic> latestData, String idDocumento, List<String> preguntas, List<String> respuestas) {
