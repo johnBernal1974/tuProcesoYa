@@ -36,6 +36,7 @@ import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_d
 import 'Pages/client/solicitudes_page/solicitudes_page.dart';
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
+import 'Pages/configuraciones/configuraciones.dart';
 import 'Pages/forgot_password/forgot_password.dart';
 import 'Pages/login/login.dart';
 import 'commons/wompi/checkout_page.dart';
@@ -136,6 +137,7 @@ class MyApp extends StatelessWidget {
         'checkout_wompi': (context) => CheckoutPage(),
         'mis_transacciones': (context) => const MisTransaccionesPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
+        'configuraciones': (context) => ConfiguracionesPage(),
 
       },
         onGenerateRoute: (settings) {

@@ -280,13 +280,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
         if (_isPaid == false) {
           // Si no ha pagado, buscar el primer documento en "subscription"
-          QuerySnapshot subscriptionSnapshot = await _firestore.collection("suscribcion").limit(1).get();
+          QuerySnapshot subscriptionSnapshot = await _firestore.collection("configuraciones").limit(1).get();
 
           if (subscriptionSnapshot.docs.isNotEmpty) {
             DocumentSnapshot subscriptionDoc = subscriptionSnapshot.docs.first;
             setState(() {
-              _subscriptionValue = subscriptionDoc["valor"];
+              _subscriptionValue = subscriptionDoc["valor_subscripcion"];
             });
+            print("⚠️ Valor de la suscripcion $_subscriptionValue");
           } else {
             print("⚠️ No se encontró información de la suscripción en Firestore.");
           }

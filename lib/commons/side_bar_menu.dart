@@ -181,7 +181,7 @@ class _SideBarState extends State<SideBar> {
               'buzon_sugerencias_administrador',
               showBadge: _pendingSuggestions > 0),
           _buildDrawerTile(context, "Configuraciones", Icons.settings,
-              'configuraciones_admin'),
+              'configuraciones'),
           _buildDrawerTile(context, "Solicitudes derechos petición",
               Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
           _buildDrawerTile(
