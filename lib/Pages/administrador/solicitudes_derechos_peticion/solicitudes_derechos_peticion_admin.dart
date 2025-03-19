@@ -169,10 +169,6 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         var docs = snapshot.data!.docs;
         String? currentUserUid = FirebaseAuth.instance.currentUser?.uid;
         bool isMobile = MediaQuery.of(context).size.width < 600;
-
-        // 🔹 Contar "Solicitados"
-        // 🔹 Contar "Solicitados"
-        // 🔹 Contar "Solicitados"
         int countSolicitado = docs.where((d) {
           final data = d.data() as Map<String, dynamic>;
           final asignadoA = data['asignadoA']?.toString().trim();
@@ -498,9 +494,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
   Widget _buildFechaRevision(String? titulo, Timestamp? fecha) {
     if (fecha == null) return const SizedBox(); // Si no hay fecha, no mostrar nada
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: primary.withOpacity(0.3),
@@ -509,12 +504,12 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         children: [
           Text(
             "$titulo: ",
-            style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold),
           ),
           const SizedBox(width: 2),
           Text(
             DateFormat("dd/MM/yyyy hh:mm a", 'es').format(fecha.toDate()), // 📅 Formatear fecha
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -523,9 +518,8 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
   Widget _buildFechaEnvio(String? titulo, Timestamp? fecha) {
     if (fecha == null) return const SizedBox(); // Si no hay fecha, no mostrar nada
-
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: Colors.green.withOpacity(0.3),
@@ -534,12 +528,12 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         children: [
           Text(
             "$titulo: ",
-            style: const TextStyle(fontSize: 14, color: Colors.black, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold),
           ),
           const SizedBox(width: 2),
           Text(
             DateFormat("dd/MM/yyyy hh:mm a", 'es').format(fecha.toDate()), // 📅 Formatear fecha
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -550,8 +544,14 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
   /// 🔹 Construir información de la solicitud
   List<Widget> _buildSolicitudInfo(Map<String, dynamic> data) {
     return [
-      Text("No. Seguimiento: ${data['numero_seguimiento'] ?? 'Sin número'}",
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+      Row(
+        children: [
+          const Text("No. Seguimiento: ",
+              style: TextStyle(fontSize: 12)),
+          Text("${data['numero_seguimiento'] ?? 'Sin número'}",
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        ],
+      ),
       const SizedBox(height: 5),
       Text(
         DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es').format(data['fecha']?.toDate() ?? DateTime.now()),
@@ -582,12 +582,16 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
               Expanded(
                 child: Row(
                   children: [
-                    const Text("No. Seguimiento: ",
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    const Row(
+                      children: [
+                        Text("No. Seguimiento: ",
+                            style: TextStyle(fontSize: 11)),
+                      ],
+                    ),
                     Expanded(
                       child: Text(
                         data['numero_seguimiento'] ?? 'Sin número',
-                        style: const TextStyle(fontSize: 12),
+                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -654,18 +658,18 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
     Color backgroundColor = _getAsignacionColor(titulo);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 6),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: backgroundColor,
       ),
       child: Row(
         children: [
-          Text("$titulo: ", style: const TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.bold)),
+          Text("$titulo: ", style: const TextStyle(fontSize: 12, color: negro, fontWeight: FontWeight.bold)),
           const SizedBox(width: 2),
           Text(
             fecha != null ? DateFormat("dd/MM/yyyy hh:mm a", 'es').format(fecha.toDate()) : "Fecha no disponible",
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),
