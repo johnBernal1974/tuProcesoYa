@@ -73,24 +73,29 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                     final currentUser = FirebaseAuth.instance.currentUser;
                     final currentUserUid = currentUser?.uid;
 
+                    // 🔹 Filtrar documentos cuando el usuario da clic en la tarjeta de estadísticas
+                    // 🔹 Filtrar documentos cuando el usuario da clic en la tarjeta de estadísticas
                     var filteredDocs = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
                       final asignadoA = data['asignadoA']?.toString().trim();
                       final asignadoA_P2 = data['asignadoA_P2']?.toString().trim();
-                      bool unassigned = asignadoA == null || asignadoA.isEmpty;
                       bool assignedToMe = currentUserUid != null && asignadoA == currentUserUid;
                       bool assignedToMeP2 = currentUserUid != null && asignadoA_P2 == currentUserUid;
-                      print("Documento ID: ${doc.id}, Status: ${data["status"]}"); // Debug para ver qué datos están filtrando
+                      bool unassigned = asignadoA_P2 == null || asignadoA_P2.isEmpty;
 
-                      // 🔹 Master y Coordinadores: Ven TODO según el estado seleccionado
+                      // 🔹 Master y Coordinadores ven TODO según el estado seleccionado
                       if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
                         return data["status"] == _filtroEstado;
                       }
 
-                      // 🔹 Pasante 1: Ve "Solicitados" y "Diligenciados" asignados a él o sin asignación
+                      // 🔹 Pasante 1: Solo ve los documentos que él mismo diligenció, sin importar el estado actual
                       if (rol == "pasante 1") {
-                        if (_filtroEstado == "Solicitado") return unassigned || assignedToMe;
-                        if (_filtroEstado == "Diligenciado") return assignedToMe;
+                        if (_filtroEstado == "Diligenciado") {
+                          return assignedToMe &&
+                              (data["status"] == "Diligenciado" ||
+                                  data["status"] == "Revisado" ||
+                                  data["status"] == "Enviado");
+                        }
                       }
 
                       // 🔹 Pasante 2: Ve "Diligenciados" asignados a él y los no asignados, además de "Revisados" y "Enviados"
@@ -169,6 +174,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
         // 🔹 Contar "Solicitados"
         // 🔹 Contar "Solicitados"
+        // 🔹 Contar "Solicitados"
         int countSolicitado = docs.where((d) {
           final data = d.data() as Map<String, dynamic>;
           final asignadoA = data['asignadoA']?.toString().trim();
@@ -185,11 +191,19 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         }).length;
 
 // 🔹 Contar "Diligenciados"
+        // 🔹 Contar "Diligenciados" para estadísticas
         int countDiligenciado = docs.where((d) {
           final data = d.data() as Map<String, dynamic>;
+          final asignadoA = data['asignadoA']?.toString().trim();
           final asignadoA_P2 = data['asignadoA_P2']?.toString().trim();
-          bool unassigned = asignadoA_P2 == null || asignadoA_P2.isEmpty;
+          bool assignedToMe = currentUserUid != null && asignadoA == currentUserUid;
           bool assignedToMeP2 = currentUserUid != null && asignadoA_P2 == currentUserUid;
+          bool unassigned = asignadoA_P2 == null || asignadoA_P2.isEmpty;
+
+          if (rol == "pasante 1") {
+            // ✅ Cuenta los documentos que el pasante 1 diligenció (independientemente del estado actual)
+            return assignedToMe && (data["status"] == "Diligenciado" || data["status"] == "Revisado" || data["status"] == "Enviado");
+          }
 
           if (rol == "pasante 2") {
             return (data["status"] == "Diligenciado") && (assignedToMeP2 || unassigned);
@@ -198,8 +212,11 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
           if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
             return data["status"] == "Diligenciado";
           }
+
           return false;
         }).length;
+
+
 
 // 🔹 Contar "Revisados" (Solo los ve quien está en asignadoA_P2)
         int countRevisado = docs.where((d) {
