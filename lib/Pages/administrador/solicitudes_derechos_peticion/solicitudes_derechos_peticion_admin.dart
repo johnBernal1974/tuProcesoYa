@@ -80,6 +80,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                       bool unassigned = asignadoA == null || asignadoA.isEmpty;
                       bool assignedToMe = currentUserUid != null && asignadoA == currentUserUid;
                       bool assignedToMeP2 = currentUserUid != null && asignadoA_P2 == currentUserUid;
+                      print("Documento ID: ${doc.id}, Status: ${data["status"]}"); // Debug para ver qué datos están filtrando
 
                       // 🔹 Master y Coordinadores: Ven TODO según el estado seleccionado
                       if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
@@ -94,7 +95,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
                       // 🔹 Pasante 2: Ve "Diligenciados" asignados a él y los no asignados, además de "Revisados" y "Enviados"
                       if (rol == "pasante 2") {
-                        if (_filtroEstado == "Diligenciado") return assignedToMeP2 || unassigned;
+                        if (_filtroEstado == "Diligenciado") return data["status"] == "Diligenciado" && (assignedToMeP2 || unassigned);
                         if (_filtroEstado == "Revisado") return data["status"] == "Revisado" && assignedToMeP2;
                         if (_filtroEstado == "Enviado") return data["status"] == "Enviado";
                       }
@@ -191,8 +192,9 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
           bool assignedToMeP2 = currentUserUid != null && asignadoA_P2 == currentUserUid;
 
           if (rol == "pasante 2") {
-            return data["status"] == "Diligenciado" && (assignedToMeP2 || unassigned);
+            return (data["status"] == "Diligenciado") && (assignedToMeP2 || unassigned);
           }
+
           if (rol == "master" || rol == "masterFull" || rol == "coordinador 1" || rol == "coordinador 2") {
             return data["status"] == "Diligenciado";
           }
