@@ -72,8 +72,6 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
                     // Obtener el usuario actual
                     final currentUser = FirebaseAuth.instance.currentUser;
                     final currentUserUid = currentUser?.uid;
-
-                    // 🔹 Filtrar documentos cuando el usuario da clic en la tarjeta de estadísticas
                     // 🔹 Filtrar documentos cuando el usuario da clic en la tarjeta de estadísticas
                     var filteredDocs = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;

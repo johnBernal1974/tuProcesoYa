@@ -62,9 +62,10 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
 
                   transaccionesPorSemana.putIfAbsent(semana, () => []);
                   transaccionesPorSemana[semana]!.add(transaction);
-
-                  totalPorSemana[semana] = (totalPorSemana[semana] ?? 0) + (transaction["amount"] as num).toInt();
-                  totalGlobal += (transaction["amount"] as num).toInt();
+                  if (transaction["status"] == "APPROVED") {
+                    totalPorSemana[semana] = (totalPorSemana[semana] ?? 0) + (transaction["amount"] as num).toInt();
+                    totalGlobal += (transaction["amount"] as num).toInt();
+                  }
                 }
 
 
@@ -182,7 +183,17 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                       )),
                       DataCell(Text(userId, style: const TextStyle(fontSize: 12))),
                       DataCell(Text(paymentMethod, style: const TextStyle(fontSize: 12))),
-                      DataCell(Text(formattedAmount, style: const TextStyle(fontWeight: FontWeight.bold,fontSize: 12))),
+                      DataCell(
+                        Text(
+                          formattedAmount,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                            color: estado == "Rechazado" ? Colors.red : Colors.black,
+                            decoration: estado == "Rechazado" ? TextDecoration.lineThrough : TextDecoration.none,
+                          ),
+                        ),
+                      ),
                       DataCell(Text(transaccion, style: const TextStyle(fontSize: 12))),
                       DataCell(Text(
                         estado,
@@ -228,7 +239,16 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(formattedAmount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text(
+                formattedAmount,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: estado == "Rechazado" ? Colors.red : Colors.black,
+                  decoration: estado == "Rechazado" ? TextDecoration.lineThrough : TextDecoration.none,
+                ),
+              ),
+
               const SizedBox(height: 5),
               Text("$formattedDate - $paymentMethod", style: const TextStyle(fontSize: 12)),
               FutureBuilder<String>(
