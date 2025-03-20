@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
+import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import '../estamos_validando/estamos_validando.dart';
 
@@ -25,6 +26,8 @@ class _RegistroPageState extends State<RegistroPage> {
   final _formKeyParentescoAcudiente = GlobalKey<FormState>();
   final _formKeyNombresPPL = GlobalKey<FormState>();
   final _formKeyDocumentoPPL = GlobalKey<FormState>();
+  final _formKeySituacionPPL = GlobalKey<FormState>();
+  final _formKeyDomiciliarioCondicionalPPL = GlobalKey<FormState>();
   final _formKeyLegalPPL = GlobalKey<FormState>();
   final _formKeyTdPPL = GlobalKey<FormState>();
   final _formKeyNuiPPL = GlobalKey<FormState>();
@@ -51,29 +54,59 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController tdPplController = TextEditingController();
   final TextEditingController nuiPplController = TextEditingController();
   final TextEditingController patioPplController = TextEditingController();
-  String? selectedRegional; // Regional seleccionada
-  String? selectedCentro; // Centro de reclusión seleccionado
+  final TextEditingController direccionPplController = TextEditingController();
+  String? selectedRegional;
+  String? selectedCentro;
+  String? departamentoSeleccionado;
+  String? municipioSeleccionado;
 
   final List<String> parentescoOptions = ['Padre', 'Madre', 'Hermano/a', "Hijo/a", "Esposo/a",
     "Amigo/a", "Tio/a", "Sobrino/a", "Nieto/a", "Abuelo/a",'Abogado/a', 'Tutor/a', 'Otro'];
   final List<String> tipoDocumentoOptions = ['Cédula de Ciudadanía', 'Pasaporte', 'Tarjeta de Identidad'];
+  final List<String> situacionOptions = ['En Reclusión', 'En Prisión domiciliaria', 'En libertad condicional'];
   String? parentesco;
   String? tipoDocumento;
+  String? situacionActual;
+  String? direccion;
   String? td;
   String? nui;
   String? patio;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _aceptaTerminos = false; // Estado para el checkbox
+  bool _aceptaTerminos = false;
 
   void _prevPage() {
+    // 🔥 Si estamos en la página 11 y la opción NO fue "En Reclusión", regresamos directamente a la 9
+    if (_currentPage == 11 && situacionActual != "En Reclusión") {
+      setState(() {
+        _currentPage = 9;
+      });
+      _pageController.jumpToPage(9);
+      return;
+    }
+
+    // 🔥 Si estamos en la página 10 y venimos directamente de la 7, regresamos a la 7
+    if (_currentPage == 10 && situacionActual == "En Reclusión") {
+      setState(() {
+        _currentPage = 7; // Regresar directamente a la página 7
+      });
+      _pageController.jumpToPage(7);
+      return;
+    }
+
+    // 🔥 Comportamiento normal para retroceder una página
     if (_currentPage > 0) {
       setState(() {
         _currentPage--;
       });
-      _pageController.previousPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
+
+
 
   @override
   void initState() {
@@ -88,7 +121,7 @@ class _RegistroPageState extends State<RegistroPage> {
       backgroundColor: blanco,
       appBar: AppBar(
         backgroundColor: primary,
-        title: Text('Registro - Paso ${_currentPage + 1} de 13', style: const TextStyle(color: Colors.white)),
+        title: Text('Registro - Paso ${_currentPage + 1} de 16', style: const TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
       body: Center(
@@ -97,7 +130,7 @@ class _RegistroPageState extends State<RegistroPage> {
           padding: const EdgeInsets.all(10.0), // Agrega espacio alrededor del contenido
           child: Column(
             children: [
-              LinearProgressIndicator(value: (_currentPage + 1) /13, backgroundColor: Colors.grey.shade300),
+              LinearProgressIndicator(value: (_currentPage + 1) /16, backgroundColor: Colors.grey.shade300),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -110,6 +143,9 @@ class _RegistroPageState extends State<RegistroPage> {
                     _buildParentescoAcudienteForm(),
                     _buildNombresPplForm(),
                     _buildDocumentoPplForm(),
+                    _buildSituacionActualPplForm(),
+                    _buildDireccionDomiciliarioCondicionalPplForm(),
+                    _buildSeleccionDepartamentoMunicipioPplForm(),
                     _buildPplCentroReclusionLegalForm(),
                     _buildPplTDLegalForm(),
                     _buildPplNUILegalForm(),
@@ -154,11 +190,11 @@ class _RegistroPageState extends State<RegistroPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 🔥 Menos padding
                           minimumSize: const Size(50, 25), // 🔥 Tamaño mínimo más pequeño
                         ),
-                        onPressed: _currentPage == 12 ? _submitForm : _validarYContinuar,
+                        onPressed: _currentPage == 15 ? _submitForm : _validarYContinuar,
                         child: Row(
                           children: [
                             Text(
-                              _currentPage == 12 ? 'Finalizar' : 'Siguiente',
+                              _currentPage == 15 ? 'Finalizar' : 'Siguiente',
                               style: const TextStyle(fontSize: 10), // 🔹 Texto más pequeño
                             ),
                             const SizedBox(width: 3), // 🔥 Menos espacio
@@ -672,6 +708,164 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
+
+  Widget _buildSituacionActualPplForm() {
+    return Form(
+      key: _formKeySituacionPPL,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 30),
+              const Text("Situación actual del Ppl",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 15),
+              const Text("Selecciona una opción",
+                  style: TextStyle(fontSize: 14)),
+              const SizedBox(height: 15),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: DropdownButtonFormField<String>(
+                  dropdownColor: blancoCards,
+                  value: situacionActual,
+                  decoration: InputDecoration(
+                    labelText: 'Situación actual',
+                    floatingLabelBehavior: FloatingLabelBehavior.always, // 🔥 Siempre muestra el título arriba
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: primary, width: 2),
+                    ),
+                    errorBorder: OutlineInputBorder( // 🔥 Borde rojo cuando hay error
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.red, width: 1.5),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      situacionActual = value;
+                    });
+                  },
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor selecciona el una opción';
+                    }
+                    return null;
+                  },
+                  items: situacionOptions.map((option) {
+                    return DropdownMenuItem<String>(
+                      value: option,
+                      child: Text(option),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDireccionDomiciliarioCondicionalPplForm() {
+    return Form(
+      key: _formKeyDomiciliarioCondicionalPPL, // 🔥 Asignamos una clave de formulario para validar
+      //autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Has seleccionado que el PPL actualmente se encuentra en $situacionActual, por lo que requerimos la siguiente información.",
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              RichText(
+                text:const TextSpan(
+                  style: TextStyle(fontSize: 12, color: Colors.black),
+                  children: [
+                    TextSpan(text: "Por favor ingresa de manera clara la "),
+                    TextSpan(
+                      text: "dirección",
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    TextSpan(text: " donde se encuentra el PPL "),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // 🔹 Nombres
+              TextFormField(
+                controller: direccionPplController,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                keyboardType: TextInputType.text,
+                textCapitalization: TextCapitalization.words,
+                decoration: _buildInputDecoration('Dirección'),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Por favor ingresa la dirección';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 15),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeleccionDepartamentoMunicipioPplForm() {
+    final GlobalKey<FormState> formKeySituacionPPL = GlobalKey<FormState>();
+    return Form(
+      key: formKeySituacionPPL,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 30),
+              const Text("Ahora dinos en que departamento y minicipio se encuentra el Ppl", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.1)),
+              const SizedBox(height: 15),
+
+              // ✅ Widget de selección de Departamento y Municipio
+              DepartamentosMunicipiosWidget(
+                departamentoSeleccionado: departamentoSeleccionado,
+                municipioSeleccionado: municipioSeleccionado,
+                onSelectionChanged: (String departamento, String municipio) {
+                  setState(() {
+                    departamentoSeleccionado = departamento;
+                    municipioSeleccionado = municipio;
+                  });
+                },
+              ),
+
+              const SizedBox(height: 30), // Puedes quitar esto si ya no necesitas espacio extra
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 
   Widget _buildPplCentroReclusionLegalForm() {
     return Form(
@@ -1439,8 +1633,96 @@ class _RegistroPageState extends State<RegistroPage> {
       }
     }
 
-    // 🔥 Nueva Validación: Centro de Reclusión en la página 3
+    //para la situacion del ppl
+    // 🔹 Validación de la situación actual del PPL (Página 7)
     if (_currentPage == 7) {
+      if (situacionActual == null || situacionActual!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona una opción."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // 🔥 Si la opción seleccionada es "En Reclusión", salta a la página 10 directamente
+      if (situacionActual == "En Reclusión") {
+        setState(() {
+          _currentPage = 10; // Página del centro de reclusión
+        });
+        _pageController.jumpToPage(10); // Ir directamente a la página 10
+        return;
+      } else {
+        // 🔥 Si la opción es otra, ir a la página 8 (dirección) y **SALTAR la página 10**
+        setState(() {
+          _currentPage = 8;
+        });
+        _pageController.jumpToPage(8);
+        return;
+      }
+    }
+
+    //para la direccion
+    if(_currentPage == 8){
+      final String direccion = direccionPplController.text.trim();
+      if (direccion == null || direccion.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor ingresa la dirección."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+    }
+    // 🔹 Validación de selección de Departamento y Municipio (Página 9)
+    if (_currentPage == 9) {
+      if (departamentoSeleccionado == null || departamentoSeleccionado!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona un departamento."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      if (municipioSeleccionado == null || municipioSeleccionado!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona un municipio."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // 🔥 Si el usuario seleccionó "En Reclusión", ir a la página 10
+      if (situacionActual == "En Reclusión") {
+        setState(() {
+          _currentPage = 10;
+        });
+        _pageController.jumpToPage(10);
+        return;
+      }
+
+      // 🔥 Si el usuario seleccionó otra opción, saltar la página 10 e ir directo a la 11
+      setState(() {
+        _currentPage = 11;
+      });
+      _pageController.jumpToPage(11);
+      return;
+    }
+
+
+
+    // 🔥 Nueva Validación: Centro de Reclusión en la página 3
+    if (_currentPage == 10) {
 
       if (!_formKeyLegalPPL.currentState!.validate()) {
         setState(() {}); // 🔥 Refresca la pantalla para mostrar los errores
@@ -1471,7 +1753,7 @@ class _RegistroPageState extends State<RegistroPage> {
       }
     }
 
-    if (_currentPage == 8) {
+    if (_currentPage == 11) {
       final String td = tdPplController.text.trim();
 
       if (!_formKeyTdPPL.currentState!.validate()) {
@@ -1506,7 +1788,7 @@ class _RegistroPageState extends State<RegistroPage> {
       }
     }
 
-    if (_currentPage == 9) {
+    if (_currentPage == 12) {
       final String nui = nuiPplController.text.trim();
 
       if (!_formKeyNuiPPL.currentState!.validate()) {
@@ -1537,7 +1819,7 @@ class _RegistroPageState extends State<RegistroPage> {
       }
     }
 
-    if (_currentPage == 10) {
+    if (_currentPage == 13) {
       final String patio = patioPplController.text.trim();
 
       if (!_formKeyPatioPPL.currentState!.validate()) {
@@ -1558,7 +1840,7 @@ class _RegistroPageState extends State<RegistroPage> {
     }
 
     // Validación de email en la página 8
-    if (_currentPage == 11) {
+    if (_currentPage == 14) {
       final String email = emailController.text.trim();
       final String emailConfirmacion = emailConfirmarController.text.trim();
       final RegExp emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
@@ -1607,7 +1889,7 @@ class _RegistroPageState extends State<RegistroPage> {
     }
 
     // Avanzar solo si todas las validaciones se cumplen
-    if (_currentPage < 13) { // Ajusta el número máximo de páginas si es necesario
+    if (_currentPage < 16) { // Ajusta el número máximo de páginas si es necesario
       setState(() {
         _currentPage++;
       });
