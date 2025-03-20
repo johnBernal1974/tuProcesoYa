@@ -549,10 +549,22 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
 
   /// 🔹 Navegar a la página correspondiente
-  void _navegarAPagina(Map<String, dynamic> latestData, String idDocumento, List<String> preguntas, List<String> respuestas) {
+  void _navegarAPagina(Map<String, dynamic> latestData, String idDocumento, List<String> preguntas, List<String> respuestas) async {
+    int tiempoPermitido = await _obtenerTiempoPermitido(); // 🔥 Obtiene el tiempo permitido desde Firestore
+    DateTime fechaEnvio = latestData['fechaEnvio']?.toDate() ?? DateTime.now();
+    DateTime fechaLimite = fechaEnvio.add(Duration(days: tiempoPermitido));
+
+    bool sinRespuesta = DateTime.now().isAfter(fechaLimite); // 🔥 Verifica si ha pasado el tiempo permitido
+
+    print("📢 Navegando a la página: derechos_peticion_enviados_por_correo");
+    print("📢 sinRespuesta calculado: $sinRespuesta");
+    print("📢 Fecha de Envío: $fechaEnvio");
+    print("📢 Fecha Límite: $fechaLimite");
+    print("📢 Fecha Actual: ${DateTime.now()}");
+
     Navigator.pushNamed(
       context,
-      obtenerRutaSegunStatus(latestData['status'] ?? "Pendiente"),
+      'derechos_peticion_enviados_por_correo',
       arguments: {
         'status': latestData['status'] ?? "Pendiente",
         'idDocumento': idDocumento,
@@ -564,9 +576,17 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
         'archivos': latestData.containsKey('archivos') ? List<String>.from(latestData['archivos']) : [],
         'preguntas': preguntas,
         'respuestas': respuestas,
+        'sinRespuesta': sinRespuesta, // ✅ PASAMOS EL ARGUMENTO
       },
     );
   }
+
+
+
+
+
+
+
 
   Widget _buildFechaRevision(String? titulo, Timestamp? fecha) {
     if (fecha == null) return const SizedBox(); // Si no hay fecha, no mostrar nada
@@ -615,7 +635,6 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
       ),
     );
   }
-
 
   /// 🔹 Construir información de la solicitud
   List<Widget> _buildSolicitudInfo(Map<String, dynamic> data) {

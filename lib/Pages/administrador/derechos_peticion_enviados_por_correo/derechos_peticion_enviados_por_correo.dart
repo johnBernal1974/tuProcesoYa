@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
+import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
@@ -26,6 +27,7 @@ class DerechoSPeticionEnviadosPorCorreoPage extends StatefulWidget {
   final List<dynamic> archivos; // Lista de archivos
   final List<String> respuestas; // Lista de respuestas
   final List<String> preguntas; // Lista de respuestas
+  final bool sinRespuesta;
 
   const DerechoSPeticionEnviadosPorCorreoPage({
     super.key,
@@ -39,6 +41,7 @@ class DerechoSPeticionEnviadosPorCorreoPage extends StatefulWidget {
     required this.archivos,
     required this.respuestas,
     required this.preguntas,// Nuevo parámetro agregado
+    required this.sinRespuesta,
   });
 
   @override
@@ -69,6 +72,7 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
   DateTime? fechaEnvio;
   DateTime? fechaDiligenciamiento;
   DateTime? fechaRevision;
+  String rol = AdminProvider().rol ?? "";
 
   List<PlatformFile> _selectedFiles = [];
 
@@ -101,23 +105,102 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
+    print("📢 Página cargada: derechos_peticion_enviados_por_correo");
+    print("📢 sinRespuesta recibido en pantalla: ${widget.sinRespuesta}");
+
     return MainLayout(
       pageTitle: 'Derecho Petición Enviado',
       content: SingleChildScrollView(
         child: Center(
           child: SizedBox(
-            width: MediaQuery.of(context).size.width >= 1000 ? 1500 : double.infinity,
+            width: MediaQuery.of(context).size.width >= 1000
+                ? 1500
+                : double.infinity,
             child: Padding(
               padding: const EdgeInsets.all(5.0),
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  bool isWide = constraints.maxWidth > 800; // Si es PC/tablet grande
+                  bool isWide = constraints.maxWidth > 800;
+
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      if (widget.sinRespuesta)
+                        Column(
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red[50],
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(color: Colors.red, width: 1.5),
+                                  ),
+                                  child: const Row(
+                                    children: [
+                                      Icon(Icons.warning, color: Colors.red),
+                                      SizedBox(width: 10),
+                                      Text(
+                                        "Sin obtener respuesta de la autoridad competente.",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.red),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 50),
+                                if (rol != "pasante 1")
+                                  ElevatedButton(
+                                    style: ElevatedButton.styleFrom(
+                                      side: const BorderSide(width: 1, color: Colors.red), // Borde rojo
+                                      backgroundColor: Colors.white, // Fondo blanco
+                                      foregroundColor: Colors.black, // Letra en negro
+                                    ),
+                                    onPressed: () async {
+                                      bool confirmarTutela = await showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          backgroundColor: Colors.white, // Fondo blanco
+                                          title: const Text(
+                                            "Confirmación",
+                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                          content: const Text("¿Está seguro de que desea enviar esta solicitud a Tutela?"),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context, false), // Cierra sin confirmar
+                                              child: const Text("Cancelar", style: TextStyle(color: Colors.black)),
+                                            ),
+                                            TextButton(
+                                              onPressed: () {
+                                                Navigator.pop(context, true); // Confirma la acción
+                                              },
+                                              child: const Text("Sí, enviar", style: TextStyle(color: Colors.red)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+
+                                      if (confirmarTutela) {
+                                        print("📢 La solicitud ha sido enviada a Tutela.");
+                                      }
+                                    },
+                                    child: const Text("Iniciar Tutela"),
+                                  ),
+
+                              ],
+                            ),
+                            const Divider(color: Colors.red, height: 1),
+                          ],
+                        ),
+                      const SizedBox(height: 30),
                       if (isWide)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -126,28 +209,39 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                             const SizedBox(width: 50),
                             Expanded(
                               flex: 3,
-                              child: Column( // 👈 Envolver en Column para apilar los widgets verticalmente
+                              child: Column(
                                 children: [
-                                  vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
-                                  const SizedBox(height: 20), // Espacio opcional
-                                  if(pantallazoCorreoEnviado.isEmpty)
-                                  adjuntarPantallazoCorreoEnviado(),
+                                  vistaPreviaDerechoPeticion(userData,
+                                      consideraciones, fundamentosDeDerecho, peticionConcreta),
+                                  const SizedBox(height: 20),
+                                  if (pantallazoCorreoEnviado.isEmpty)
+                                    adjuntarPantallazoCorreoEnviado(),
                                   const SizedBox(height: 30),
-                                  /// 📂 **Mostramos los archivos aquí**
                                   Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      const Text("Pantallazo del correo enviado", style: TextStyle(fontWeight: FontWeight.bold),),
+                                      const Text(
+                                        "Pantallazo del correo enviado",
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.bold),
+                                      ),
                                       pantallazoCorreoEnviado.isNotEmpty
-                                          ? ArchivoViewerWeb(archivos: [pantallazoCorreoEnviado]) // Convertimos el string en una lista con un solo elemento
+                                          ? ArchivoViewerWeb(
+                                        archivos: [
+                                          pantallazoCorreoEnviado
+                                        ],
+                                      )
                                           : const Text(
                                         "Aún no se ha tomado el pantallazo del correo enviado",
-                                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w500,
+                                            color: Colors.red),
                                       ),
                                     ],
                                   ),
-                                // Ahora está debajo del otro widget
                                 ],
                               ),
                             ),
@@ -158,14 +252,13 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                           children: [
                             _buildMainContent(),
                             const SizedBox(height: 20),
-                            vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
+                            vistaPreviaDerechoPeticion(userData,
+                                consideraciones, fundamentosDeDerecho, peticionConcreta),
                             const SizedBox(height: 20),
-                            const Text("Hola"),
                           ],
                         ),
                     ],
                   );
-
                 },
               ),
             ),
@@ -174,6 +267,7 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
       ),
     );
   }
+
 
   Future<void> pickFiles() async {
     try {

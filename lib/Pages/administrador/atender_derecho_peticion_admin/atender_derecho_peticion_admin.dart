@@ -95,8 +95,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   List<String> archivos = [];
   String rol = AdminProvider().rol ?? "";
 
-
-
   @override
   void initState() {
     // TODO: implement initState
