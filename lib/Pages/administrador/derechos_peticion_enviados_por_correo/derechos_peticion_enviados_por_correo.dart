@@ -123,83 +123,44 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   bool isWide = constraints.maxWidth > 800;
-
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (widget.sinRespuesta)
-                        Column(
+                  if (widget.sinRespuesta)
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        bool isMobile = constraints.maxWidth < 800; // Detectar si es móvil
+
+                        return Column(
                           children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(10),
-                                  margin: const EdgeInsets.only(bottom: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: Colors.red, width: 1.5),
-                                  ),
-                                  child: const Row(
-                                    children: [
-                                      Icon(Icons.warning, color: Colors.red),
-                                      SizedBox(width: 10),
-                                      Text(
-                                        "Sin obtener respuesta de la autoridad competente.",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.red),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 50),
-                                if (rol != "pasante 1")
-                                  ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      side: const BorderSide(width: 1, color: Colors.red), // Borde rojo
-                                      backgroundColor: Colors.white, // Fondo blanco
-                                      foregroundColor: Colors.black, // Letra en negro
-                                    ),
-                                    onPressed: () async {
-                                      bool confirmarTutela = await showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          backgroundColor: Colors.white, // Fondo blanco
-                                          title: const Text(
-                                            "Confirmación",
-                                            style: TextStyle(fontWeight: FontWeight.bold),
-                                          ),
-                                          content: const Text("¿Está seguro de que desea enviar esta solicitud a Tutela?"),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(context, false), // Cierra sin confirmar
-                                              child: const Text("Cancelar", style: TextStyle(color: Colors.black)),
-                                            ),
-                                            TextButton(
-                                              onPressed: () {
-                                                Navigator.pop(context, true); // Confirma la acción
-                                              },
-                                              child: const Text("Sí, enviar", style: TextStyle(color: Colors.red)),
-                                            ),
-                                          ],
-                                        ),
-                                      );
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 10),
+                              child: isMobile
+                                  ? Column( // En móviles, disposición en columna
+                                children: [
+                                  _buildWarningMessage(),
+                                  const SizedBox(height: 10),
+                                  if (rol != "pasante 1") _buildTutelaButton(context),
+                                  SizedBox(height: 15)
+                                ],
+                              )
 
-                                      if (confirmarTutela) {
-                                        print("📢 La solicitud ha sido enviada a Tutela.");
-                                      }
-                                    },
-                                    child: const Text("Iniciar Tutela"),
-                                  ),
-
-                              ],
+                                  : Row( // En PC, mantener disposición en fila
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Flexible(child: _buildWarningMessage()), // Asegurar que el contenedor se renderice en PC
+                                  const SizedBox(width: 50),
+                                  if (rol != "pasante 1") SizedBox(width: 200, child: _buildTutelaButton(context)), // Definir tamaño del botón
+                                ],
+                              ),
                             ),
                             const Divider(color: Colors.red, height: 1),
                           ],
-                        ),
+                        );
+                      },
+                    ),
                       const SizedBox(height: 30),
                       if (isWide)
                         Row(
@@ -264,6 +225,75 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildTutelaButton(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        side: const BorderSide(width: 1, color: Colors.red),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
+      onPressed: () async {
+        bool confirmarTutela = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: const Text(
+              "Confirmación",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: const Text("¿Está seguro de que desea enviar esta solicitud a Tutela?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancelar", style: TextStyle(color: Colors.black)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                child: const Text("Sí, enviar", style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmarTutela) {
+          print("📢 La solicitud ha sido enviada a Tutela.");
+        }
+      },
+      child: const Text("Iniciar Tutela"),
+    );
+  }
+
+  // Widget para el mensaje de advertencia
+  Widget _buildWarningMessage() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red, width: 1.5),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.warning, color: Colors.red),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Sin obtener respuesta de la autoridad competente.",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
       ),
     );
   }
