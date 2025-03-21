@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../commons/admin_provider.dart';
+import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../providers/ppl_provider.dart';
@@ -35,6 +36,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _tdController = TextEditingController();
   final _nuiController = TextEditingController();
   final _patioController = TextEditingController();
+  final _direccionController = TextEditingController();
+
 
 
   /// controllers para el acudiente
@@ -54,7 +57,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   List<Map<String, dynamic>> delito = [];
   List<Map<String, Object>> centrosReclusionTodos = [];
 
-
+  ///Para PPL que no estan en reclusion
+  List<Map<String, dynamic>> situacion = [];
 
   /// variables para guardar opciones seleccionadas
   String? selectedRegional; // Regional seleccionada
@@ -96,6 +100,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   DateTime? _fechaSeleccionada;
   bool _isLoading = false;
 
+  String? departamentoSeleccionado;
+  String? municipioSeleccionado;
+
 
   bool _isLoadingJuzgados = false; // Bandera para evitar múltiples cargas
 
@@ -117,6 +124,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _asignarDocumento(); // Bloquea el documento al abrirlo
     _adminProvider.loadAdminData(); // 🔥 Cargar info del admin
     calcularTotalRedenciones(widget.doc.id); // 🔥 Llama la función aquí
+    _direccionController.text = widget.doc['direccion'] ?? '';
+
+    departamentoSeleccionado = widget.doc['departamento'];
+    municipioSeleccionado = widget.doc['municipio'];
 
   }
 
@@ -131,6 +142,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _tdController.dispose();
     _nuiController.dispose();
     _patioController.dispose();
+    _direccionController.dispose();
     //_liberarDocumento(); // 🔥 Libera el documento al cerrar la pantalla
     super.dispose();
   }
@@ -177,17 +189,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
         return ListView(
           children: [
-            const Row(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
+                const Text(
                   'Información del PPL',
                   style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                ),
+                if(widget.doc.get('situacion') == "En Prisión domiciliaria" ||
+                    widget.doc.get('situacion') == "En libertad condicional")
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.black,
+
+                  ),
+                  child: Text(
+                  widget.doc.get('situacion') ?? "",
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
+                  ),
                 ),
               ],
             ),
             Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
             const SizedBox(height: 20),
-
             datosEjecucionCondena(totalRedimido), // 🔥 Pasa el total de días redimidos
 
             const SizedBox(height: 20),
@@ -248,6 +274,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+              widget.doc["situacion"] == "En libertad condicional")
+          infoPplNoRecluido(),
+          const SizedBox(height: 20),
           agregarRedenciones(),
           const SizedBox(height: 20),
           Container(
@@ -442,7 +472,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
             // 📌 Botón para guardar la redención
             SizedBox(
-              width: double.infinity,
+              width: 250,
               child: ElevatedButton(
                 onPressed: widget.doc["status"] == "bloqueado"
                     ? null // 🔹 Desactiva el botón si el usuario está bloqueado
@@ -454,7 +484,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: widget.doc["status"] == "bloqueado"
-                      ? Colors.grey // 🔹 Cambia el color del botón cuando está deshabilitado
+                      ? Colors.black // 🔹 Cambia el color del botón cuando está deshabilitado
                       : Colors.green,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -613,8 +643,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
-
   /// 🔥 Método para obtener redenciones desde Firebase
   Future<List<Map<String, dynamic>>> _obtenerRedenciones() async {
     try {
@@ -668,9 +696,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       return [];
     }
   }
-
-
-
 
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDias = 0.0;
@@ -807,7 +832,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-
   // 🔹 Asigna el documento al operador actual para que solo él pueda verlo y editarlo
   Future<void> _asignarDocumento() async {
     String currentUserUid = FirebaseAuth.instance.currentUser!.uid;
@@ -910,6 +934,145 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
+  //*********para los no recluidos
+
+  Widget infoPplNoRecluido() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: blanco,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.black, width: 3),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 20),
+          const Text(
+            "Información de residencia del PPL",
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.1),
+          ),
+          const SizedBox(height: 20),
+          direccionPpl(),
+          const SizedBox(height: 20),
+          _buildSeleccionDepartamentoMunicipioPplForm(),
+          const SizedBox(height: 20),
+          guardarInfoResidenciaButton(
+            docId: widget.doc.id,
+            departamentoActual: departamentoSeleccionado ?? '',
+            municipioActual: municipioSeleccionado ?? '',
+          ),
+
+        ],
+      ),
+    );
+  }
+
+  Widget direccionPpl() {
+    _direccionController.text = widget.doc['direccion'] ?? ''; // ✅ Asegura valor inicial
+    return TextFormField(
+      controller: _direccionController,
+      decoration: InputDecoration(
+        labelText: 'Dirección',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      ),
+    );
+  }
+
+  Widget _buildSeleccionDepartamentoMunicipioPplForm() {
+    return DepartamentosMunicipiosWidget(
+      departamentoSeleccionado: departamentoSeleccionado,
+      municipioSeleccionado: municipioSeleccionado,
+      onSelectionChanged: (String dpto, String muni) {
+        setState(() {
+          departamentoSeleccionado = dpto;
+          municipioSeleccionado = muni;
+        });
+      },
+    );
+  }
+
+  Widget guardarInfoResidenciaButton({
+    required String docId,
+    required String departamentoActual,
+    required String municipioActual,
+  }) {
+    return SizedBox(
+      width: 250,
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.save),
+        label: const Text("Guardar información"),
+        style: ElevatedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+        ),
+        onPressed: () async {
+          final confirmar = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: blanco,
+              title: const Text("¿Confirmar cambios?"),
+              content: const Text("¿Está seguro de editar esta información de residencia?"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text("Cancelar"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text("Sí, guardar"),
+                ),
+              ],
+            ),
+          );
+
+          if (confirmar != true) return;
+
+          final direccionActual = _direccionController.text.trim();
+
+          try {
+            await FirebaseFirestore.instance.collection('Ppl').doc(docId).update({
+              'direccion': direccionActual,
+              'departamento': departamentoActual,
+              'municipio': municipioActual,
+            });
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Información actualizada correctamente."),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Error al guardar: $e"),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
   Widget seleccionarCentroReclusion() {
     // Si ya existe información guardada en el documento y no estamos en modo edición,
     // se muestra el contenedor con la info.
@@ -964,17 +1127,45 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       return Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          border: Border.all(color: primary),
+          border: Border.all(
+            color: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+                widget.doc["situacion"] == "En libertad condicional")
+                ? Colors.black
+                : primary,
+            width: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+                widget.doc["situacion"] == "En libertad condicional")
+                ? 3
+                : 1.5,
+          ),
           borderRadius: BorderRadius.circular(4),
           color: Colors.white,
         ),
+
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              "Buscar centro de reclusión",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            Row(
+              children: [
+                const Text(
+                  "Buscar centro de reclusión",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+                    widget.doc["situacion"] == "En libertad condicional") ...[
+                  const SizedBox(width: 10), // Espacio entre textos
+                  Text(
+                    "El PPL se encuentra ${widget.doc["situacion"]}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: Colors.red,
+                    ),
+                  ),
+                ],
+              ],
             ),
+
             const SizedBox(height: 8),
             Autocomplete<Map<String, String>>(
               optionsBuilder: (TextEditingValue textEditingValue) {
@@ -1096,130 +1287,179 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget seleccionarJuzgadoEjecucionPenas() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!_mostrarDropdownJuzgadoEjecucion)
-          if (widget.doc['juzgado_ejecucion_penas'] != null && widget.doc['juzgado_ejecucion_penas'].isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(4),
-                color: Colors.white,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    if (!_mostrarDropdownJuzgadoEjecucion &&
+        widget.doc['juzgado_ejecucion_penas'] != null &&
+        widget.doc['juzgado_ejecucion_penas'].toString().trim().isNotEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(4),
+          color: Colors.white,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _mostrarDropdownJuzgadoEjecucion = true;
+                  selectedJuzgadoEjecucionPenas = null;
+                  selectedJuzgadoEjecucionEmail = null;
+                });
+                _fetchJuzgadosEjecucion();
+              },
+              child: const Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _mostrarDropdownJuzgadoEjecucion = true;
-                        selectedJuzgadoEjecucionPenas = null;
-                      });
-                      _fetchJuzgadosEjecucion(); // 🔥 Llamar al método aquí también
-                    },
-                    child: const Row(
-                      children: [
-                        Text("Juzgado de Ejecución de Penas", style: TextStyle(fontSize: 11)),
-                        Icon(Icons.edit, size: 15),
-                      ],
-                    ),
-                  ),
-                  Text(widget.doc['juzgado_ejecucion_penas']!, style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-                  const SizedBox(height: 10),
-                  Text(
-                    "correo: ${widget.doc['juzgado_ejecucion_penas_email']!}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12,
-                      height: 1,
-                    ),
-                  )
-
+                  Text("Juzgado de Ejecución de Penas", style: TextStyle(fontSize: 11)),
+                  Icon(Icons.edit, size: 15),
                 ],
               ),
-            )
-          else
-            Align(
-              alignment: Alignment.centerLeft, // Botón alineado a la izquierda
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                  backgroundColor: Colors.white, // Fondo blanco
-                  foregroundColor: Colors.black, // Letra en negro
-                ),
-                onPressed: () {
-                  setState(() {
-                    _mostrarDropdownJuzgadoEjecucion = true;
-                  });
-                  _fetchJuzgadosEjecucion(); // 🔥 Cargar los juzgados aquí también
-                },
-                child: const Text("Seleccionar Juzgado de Ejecución de Penas"),
-              ),
+            ),
+            Text(
+              widget.doc['juzgado_ejecucion_penas'] ?? '',
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              "correo: ${widget.doc['juzgado_ejecucion_penas_email'] ?? 'No disponible'}",
+              style: const TextStyle(fontSize: 12, height: 1),
+            ),
+          ],
+        ),
+      );
+    }
 
-            )
-        else
-          Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: primary),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                  child: DropdownButton<String>(
-                    value: selectedJuzgadoEjecucionPenas,
-                    hint: const Text('Selecciona un Juzgado de Ejecución de Penas'),
-                    onChanged: (value) {
+    if (juzgadosEjecucionPenas.isEmpty) {
+      Future.microtask(() => _fetchJuzgadosEjecucion());
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary),
+        borderRadius: BorderRadius.circular(4),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Buscar Juzgado de Ejecución de Penas",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+
+          Autocomplete<Map<String, String>>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return const Iterable<Map<String, String>>.empty();
+              }
+              return juzgadosEjecucionPenas
+                  .where((juzgado) =>
+                  (juzgado['juzgadoEP'] ?? '')
+                      .toLowerCase()
+                      .contains(textEditingValue.text.toLowerCase()))
+
+                  .map((juzgado) => {
+                'juzgadoEP': juzgado['juzgadoEP'] ?? '',
+                'email': juzgado['email'] ?? ''
+              });
+
+            },
+            displayStringForOption: (option) => option['juzgadoEP']!,
+            fieldViewBuilder:
+                (context, textEditingController, focusNode, onFieldSubmitted) {
+              return TextField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  hintText: "Busca ingresando el nombre",
+                  labelText: "Juzgado de Ejecución de Penas",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                  contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  suffixIcon: selectedJuzgadoEjecucionPenas != null
+                      ? IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.red),
+                    onPressed: () {
                       setState(() {
-                        selectedJuzgadoEjecucionPenas = value;
-                        // Buscar el email correspondiente en la lista de juzgados
-                        final selected = juzgadosEjecucionPenas.firstWhere(
-                              (element) => element['juzgadoEP'] == value,
-                          orElse: () => <String, String>{}, // Especifica explícitamente el tipo
-                        );
-                        selectedJuzgadoEjecucionEmail = selected['email'];
+                        selectedJuzgadoEjecucionPenas = null;
+                        selectedJuzgadoEjecucionEmail = null;
+                        textEditingController.clear();
                       });
                     },
-                    isExpanded: true,
-                    dropdownColor: Colors.white,
-                    style: const TextStyle(color: Colors.black),
-                    items: (List<Map<String, String>>.from(juzgadosEjecucionPenas)
-                      ..sort((a, b) => a['juzgadoEP']!.compareTo(b['juzgadoEP']!))) // Ordena alfabéticamente
-                        .map((juzgado) {
-                      return DropdownMenuItem<String>(
-                        value: juzgado['juzgadoEP'],
-                        child: Text(
-                          juzgado['juzgadoEP']!,
-                          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-                        ),
-                      );
-                    }).toList(),
                   )
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownJuzgadoEjecucion = false;
-                    selectedJuzgadoEjecucionPenas = widget.doc['juzgado_ejecucion_penas'];
-                  });
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel, size: 15),
-                    Text("Cancelar", style: TextStyle(fontSize: 11)),
-                  ],
+                      : null,
                 ),
-              ),
-            ],
+              );
+            },
+            onSelected: (Map<String, String> option) {
+              setState(() {
+                selectedJuzgadoEjecucionPenas = option['juzgadoEP'];
+                selectedJuzgadoEjecucionEmail = option['email'];
+              });
+            },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  color: blanco,
+                  elevation: 4.0,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return ListTile(
+                        title: Text(option['juzgadoEP']!),
+                        onTap: () => onSelected(option),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
           ),
-      ],
+          const SizedBox(height: 10),
+
+          // 🔹 Botón cancelar
+          Align(
+            alignment: Alignment.center,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _mostrarDropdownJuzgadoEjecucion = false;
+                  selectedJuzgadoEjecucionPenas = widget.doc['juzgado_ejecucion_penas'];
+                  selectedJuzgadoEjecucionEmail = widget.doc['juzgado_ejecucion_penas_email'];
+                });
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cancel, size: 15),
+                  Text("Cancelar", style: TextStyle(fontSize: 11)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
+
 
   Widget seleccionarJuzgadoQueCondeno() {
     // Si ya existe información guardada en el documento y no estamos en modo edición,
@@ -1332,6 +1572,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Colors.grey, width: 1),
                     ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Colors.grey, width: 1),
+                    ),
                     contentPadding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                     suffixIcon: selectedJuzgadoNombre != null
@@ -1389,25 +1637,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             ),
             const SizedBox(height: 10),
 
-            // 🔹 Mostrar la selección actual 🔹
-            if (selectedJuzgadoNombre != null)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Juzgado seleccionado: $selectedJuzgadoNombre",
-                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    "Correo: ${selectedJuzgadoConocimientoEmail ?? 'No disponible'}",
-                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-                  ),
-                ],
-              ),
-
-            const SizedBox(height: 10),
-
             // 🔹 Botón para cancelar 🔹
             Align(
               alignment: Alignment.center,
@@ -1436,138 +1665,133 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget seleccionarDelito() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Si NO estamos en modo edición
-        if (!_mostrarDropdownDelito)
-        // Si ya existe un delito guardado en el documento
-          if (widget.doc['delito'] != null &&
-              widget.doc['delito'].toString().trim().isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(4),
-                color: Colors.white,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    // Mostrar contenedor si ya hay delito y no estamos editando
+    if (!_mostrarDropdownDelito &&
+        widget.doc['delito'] != null &&
+        widget.doc['delito'].toString().trim().isNotEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.grey),
+          borderRadius: BorderRadius.circular(4),
+          color: Colors.white,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _mostrarDropdownDelito = true;
+                  selectedDelito = null;
+                });
+                _fetchDelitos();
+              },
+              child: const Row(
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _mostrarDropdownDelito = true;
-                        selectedDelito = null;
-                      });
-                      _fetchDelitos();
-                    },
-                    child: const Row(
-                      children: [
-                        Text("Delito", style: TextStyle(fontSize: 11)),
-                        Icon(Icons.edit, size: 15),
-                      ],
-                    ),
-                  ),
-                  Text(
-                    widget.doc['delito'],
-                    style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-                  ),
+                  Text("Delito", style: TextStyle(fontSize: 11)),
+                  Icon(Icons.edit, size: 15),
                 ],
               ),
-            )
-          else
-          // Si no existe información, se muestra un botón para seleccionar
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  side: BorderSide(
-                      width: 1, color: Theme.of(context).primaryColor),
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _mostrarDropdownDelito = true;
-                  });
-                  _fetchDelitos();
-                },
-                child: const Text("Seleccionar Delito"),
-              ),
-            )
-        else
-        // Modo edición: se muestran los dropdowns para seleccionar el delito
-          Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  border: Border.all(color: primary),
-                  borderRadius: BorderRadius.circular(4),
-                  color: Colors.white,
-                ),
-                child: DropdownButton<String>(
-                  value: selectedDelito,
-                  hint: const Text('Selecciona un delito'),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedDelito = value;
-                    });
-                  },
-                  isExpanded: true,
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(color: Colors.black),
-                  items: delito.map((delitoDoc) {
-                    return DropdownMenuItem<String>(
-                      value: delitoDoc['delito'],
-                      child: Text(
-                        delitoDoc['delito']!,
-                        style: const TextStyle(
-                          color: Colors.black,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownDelito = false;
-                    // Se restaura el valor original del documento
-                    // (podrías asignarlo a una variable _delito si la usas)
-                  });
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel, size: 15),
-                    Text("Cancelar", style: TextStyle(fontSize: 11)),
-                  ],
-                ),
-              ),
-            ],
+            ),
+            Text(
+              widget.doc['delito'],
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Asegura que la lista esté cargada
+    if (delito.isEmpty) {
+      Future.microtask(() => _fetchDelitos());
+    }
+
+    // Mostrar dropdown en modo edición
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary),
+        borderRadius: BorderRadius.circular(4),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Seleccionar Delito",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
-      ],
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            value: selectedDelito,
+            hint: const Text('Selecciona un delito'),
+            onChanged: (value) {
+              setState(() {
+                selectedDelito = value;
+              });
+            },
+            isExpanded: true,
+            dropdownColor: Colors.white,
+            decoration: InputDecoration(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.grey, width: 1),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.grey, width: 1),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: const BorderSide(color: Colors.grey, width: 1),
+              ),
+            ),
+            items: delito
+                .map((delitoDoc) => DropdownMenuItem<String>(
+              value: delitoDoc['delito'],
+              child: Text(
+                delitoDoc['delito']!,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ))
+                .toList(),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.center,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _mostrarDropdownDelito = false;
+                  selectedDelito = widget.doc['delito'];
+                });
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.cancel, size: 15),
+                  Text("Cancelar", style: TextStyle(fontSize: 11)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final DocumentSnapshot document = await firestore.collection('Ppl').doc(widget.doc.id).get();
-
     if (document.exists) {
       final Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-      final String regional = data['regional'];
-      //final String centroReclusion = data['centro_reclusion'];
-      //final String juzgadoEjecucionPenas = data['juzgado_ejecucion_penas'];
       final String juzgado = data['juzgado_que_condeno'];
       final String juzgadoQueCondeno = data['ciudad'];
-      //final String delito = data['delito'];
-
       setState(() {
         _juzgado = juzgado;
         _juzgadoQueCondeno = juzgadoQueCondeno;
@@ -1634,6 +1858,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
     _celularAcudienteController.text = widget.doc.get('celular') ?? "";
     _emailAcudienteController.text = widget.doc.get('email') ?? "";
+    _direccionController.text = widget.doc['direccion'] ?? '';
   }
 
   Widget datosEjecucionCondena(double totalDiasRedimidos) {
@@ -2603,26 +2828,29 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
                 );
               });
-
-              // Mostrar diálogo de confirmación de guardado
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Se guardo la información de manera exitosa'),
-                  duration: Duration(seconds: 2),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              if(context.mounted){
+                // Mostrar diálogo de confirmación de guardado
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Se guardo la información de manera exitosa'),
+                    duration: Duration(seconds: 2),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
 
               // Enviar mensaje de WhatsApp
               validarYEnviarMensaje();
             } catch (error) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error al guardar: $error'),
-                  duration: const Duration(seconds: 2),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              if(context.mounted){
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error al guardar: $error'),
+                    duration: const Duration(seconds: 2),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           },
           child: const Text('Guardar Cambios'),
@@ -2638,7 +2866,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       barrierDismissible: false, // No permitir cerrar tocando fuera
       builder: (BuildContext context) {
         return AlertDialog(
-          backgroundColor: blancoCards,
+          backgroundColor: blanco,
           title: const Text("Confirmación"),
           content: const Text("¿Está seguro de que desea guardar los cambios?"),
           actions: [
@@ -2656,7 +2884,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     ) ?? false; // En caso de error, devuelve `false` por defecto
   }
 
-
   Future<String> obtenerNombreAdmin() async {
     AdminProvider adminProvider = AdminProvider();
 
@@ -2670,7 +2897,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     return adminProvider.adminFullName ?? "Desconocido";
   }
-
 
   Widget tipoDocumentoPpl(){
     return DropdownButtonFormField(

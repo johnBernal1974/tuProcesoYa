@@ -38,6 +38,10 @@ class Ppl {
   final bool isPaid;
   final String assignedTo;
   final DateTime? fechaRegistro;
+  final String departamento;
+  final String municipio;
+  final String direccion;
+  final String situacion;
 
   // Constructor
   Ppl({
@@ -70,6 +74,10 @@ class Ppl {
     required this.isPaid,
     required this.assignedTo,
     required this.fechaRegistro,
+    required this.departamento,
+    required this.municipio,
+    required this.direccion,
+    required this.situacion,
   });
 
   // Factory para crear una instancia de Ppl desde JSON
@@ -116,6 +124,10 @@ class Ppl {
         ? json["fechaRegistro"].toDate() // Si es Timestamp, convertir a DateTime
         : null)) // Si no es ni String ni Timestamp, devolver null
         : null,
+    departamento: json["departamento"] ?? '',
+    municipio: json["municipio"] ?? '',
+    direccion: json["direccion"] ?? '',
+    situacion: json["situacion"] ?? '',
 
   );
 
@@ -150,5 +162,9 @@ class Ppl {
     "isPaid": isPaid,
     "assignedTo": assignedTo,
     "fechaRegistro": fechaRegistro,
+    "departamento": departamento,
+    "municipio": municipio,
+    "direccion": direccion,
+    "situacion": situacion,
   };
 }

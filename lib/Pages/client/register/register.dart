@@ -1441,10 +1441,10 @@ class _RegistroPageState extends State<RegistroPage> {
         "fechaRegistro": DateTime.now(),
         "fecha_captura": null,
         "saldo": 0,
-        "departamento": departamentoSeleccionado,
-        "municipio": municipioSeleccionado,
-        "situacion": situacionActual,
-        "direccion": direccionPplController.text.trim(),
+        "departamento": departamentoSeleccionado ?? "",
+        "municipio": municipioSeleccionado ?? "",
+        "situacion": situacionActual ?? "",
+        "direccion": direccionPplController.text.trim() ?? "",
       };
 
       // 🔹 Guarda los datos en Firestore
