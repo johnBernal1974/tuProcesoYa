@@ -115,7 +115,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                       Text(_ppl!.situacion, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600, height: 1.1)),
                     ],
                   ),
-                  if(_ppl!.situacion != "En reclusión")
+                  if(_ppl!.situacion != "En Reclusión")
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -128,7 +128,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     ],
                   ),
                   const SizedBox(height: 10),
-                  if(_ppl!.situacion == "En reclusión")
+                  if(_ppl!.situacion == "En Reclusión")
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

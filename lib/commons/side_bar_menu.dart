@@ -20,7 +20,7 @@ class _SideBarState extends State<SideBar> {
   bool _isLoading = true;
   final ValueNotifier<bool> _isPaid = ValueNotifier<bool>(false);
   bool _isTrial = false;
-  String rol = "";
+  String? rol;
 
   @override
   void initState() {
@@ -65,46 +65,50 @@ class _SideBarState extends State<SideBar> {
   Future<void> _checkIfAdmin() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 🔹 Revisar si ya tenemos datos guardados
-    if (prefs.containsKey('isAdmin') && prefs.containsKey('rol')) {
-      setState(() {
+    try {
+      // 🔹 Leer de SharedPreferences si ya están guardados
+      if (prefs.containsKey('isAdmin') && prefs.containsKey('rol')) {
         _isAdmin = prefs.getBool('isAdmin');
-        rol = prefs.getString('rol') ?? ""; // 🔹 Cargar el rol guardado
-        _isLoading = false;
-      });
-      return;
+        rol = prefs.getString('rol') ?? "";
+      } else {
+        // 🔹 Consultar Firestore si no hay caché
+        final userId = FirebaseAuth.instance.currentUser?.uid;
+        if (userId == null) {
+          _isAdmin = false;
+          rol = "";
+        } else {
+          final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
+
+          // 🔹 Intentar cargar el rol desde AdminProvider
+          String? nuevoRol;
+          try {
+            await AdminProvider().loadAdminData();
+            nuevoRol = AdminProvider().rol;
+          } catch (_) {
+            nuevoRol = "";
+          }
+
+          _isAdmin = adminDoc.exists;
+          rol = nuevoRol ?? "";
+
+          // 🔹 Guardar resultados en SharedPreferences
+          await prefs.setBool('isAdmin', _isAdmin!);
+          await prefs.setString('rol', rol!);
+        }
+      }
+    } catch (e) {
+      // 🔥 En caso de error, marcamos como no admin
+      _isAdmin = false;
+      rol = "";
     }
-
-    // 🔹 Si no hay datos guardados, buscar en Firestore
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) {
-      setState(() {
-        _isAdmin = false;
-        rol = "";
-        _isLoading = false;
-      });
-      return;
-    }
-
-    final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(
-        userId).get();
-
-    // 🔹 Cargar datos del usuario desde Firestore
-    await AdminProvider().loadAdminData();
-    String? nuevoRol = AdminProvider().rol;
-
-    // 🔹 Guardar en SharedPreferences para futuras aperturas
-    await prefs.setBool('isAdmin', adminDoc.exists);
-    await prefs.setString('rol', nuevoRol ?? "");
 
     if (mounted) {
       setState(() {
-        _isAdmin = adminDoc.exists;
-        rol = nuevoRol!;
         _isLoading = false;
       });
     }
   }
+
 
 
   @override
