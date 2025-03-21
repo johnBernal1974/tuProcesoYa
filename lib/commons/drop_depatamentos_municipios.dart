@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../src/colors/colors.dart';
+
 class DepartamentosMunicipiosWidget extends StatefulWidget {
   final String? departamentoSeleccionado;
   final String? municipioSeleccionado;
@@ -75,6 +77,7 @@ class _DepartamentosMunicipiosWidgetState extends State<DepartamentosMunicipiosW
         _buildDropdownContainer(
           title: "Departamento",
           child: DropdownButtonFormField<String>(
+            dropdownColor: blanco,
             isExpanded: true,
             value: departamentoSeleccionado, // ✅ Ahora está validado
             hint: const Text("Seleccione un departamento"),
@@ -98,6 +101,7 @@ class _DepartamentosMunicipiosWidgetState extends State<DepartamentosMunicipiosW
         _buildDropdownContainer(
           title: "Municipio",
           child: DropdownButtonFormField<String>(
+            dropdownColor: blanco,
             isExpanded: true,
             value: municipioSeleccionado, // ✅ Ahora está validado
             hint: const Text("Seleccione un municipio"),
@@ -138,7 +142,7 @@ class _DepartamentosMunicipiosWidgetState extends State<DepartamentosMunicipiosW
   }
 
   InputDecoration _inputDecoration() {
-    return InputDecoration(
+    return const InputDecoration(
       border: InputBorder.none,
       contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     );

@@ -162,12 +162,12 @@ class _RegistroPageState extends State<RegistroPage> {
                   children: [
                     if (_currentPage > 0)
                       SizedBox(
-                        height: 25, // 🔥 Reducimos la altura del botón
+                        height: 35, // 🔥 Reducimos la altura del botón
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: gris, // 🔥 Color de fondo
                             foregroundColor: Colors.white, // 🔥 Color del texto
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 🔥 Menos padding
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 🔥 Menos padding
                             minimumSize: const Size(50, 25), // 🔥 Tamaño mínimo más pequeño
                           ),
                           onPressed: _prevPage,
@@ -175,19 +175,19 @@ class _RegistroPageState extends State<RegistroPage> {
                             children: [
                               Icon(Icons.keyboard_double_arrow_left, size: 16), // 🔹 Icono más pequeño
                               SizedBox(width: 3), // 🔥 Menos espacio
-                              Text('Anterior', style: TextStyle(fontSize: 10)), // 🔹 Texto más pequeño
+                              Text('Anterior', style: TextStyle(fontSize: 14)), // 🔹 Texto más pequeño
                             ],
                           ),
                         ),
                       ),
 
                     SizedBox(
-                      height: 25,
+                      height: 35,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: primary, // 🔥 Color de fondo
                           foregroundColor: Colors.white, // 🔥 Color del texto
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 🔥 Menos padding
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 🔥 Menos padding
                           minimumSize: const Size(50, 25), // 🔥 Tamaño mínimo más pequeño
                         ),
                         onPressed: _currentPage == 15 ? _submitForm : _validarYContinuar,
@@ -195,7 +195,7 @@ class _RegistroPageState extends State<RegistroPage> {
                           children: [
                             Text(
                               _currentPage == 15 ? 'Finalizar' : 'Siguiente',
-                              style: const TextStyle(fontSize: 10), // 🔹 Texto más pequeño
+                              style: const TextStyle(fontSize: 14), // 🔹 Texto más pequeño
                             ),
                             const SizedBox(width: 3), // 🔥 Menos espacio
                             const Icon(Icons.keyboard_double_arrow_right, size: 16), // 🔹 Icono más pequeño
@@ -1441,6 +1441,10 @@ class _RegistroPageState extends State<RegistroPage> {
         "fechaRegistro": DateTime.now(),
         "fecha_captura": null,
         "saldo": 0,
+        "departamento": departamentoSeleccionado,
+        "municipio": municipioSeleccionado,
+        "situacion": situacionActual,
+        "direccion": direccionPplController.text.trim(),
       };
 
       // 🔹 Guarda los datos en Firestore

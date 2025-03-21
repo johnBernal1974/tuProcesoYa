@@ -177,9 +177,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
         return ListView(
           children: [
-            const Text(
-              'Información del PPL',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+            const Row(
+              children: [
+                Text(
+                  'Información del PPL',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+                ),
+              ],
             ),
             Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
             const SizedBox(height: 20),
@@ -1557,7 +1561,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     if (document.exists) {
       final Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-      //final String regional = data['regional'];
+      final String regional = data['regional'];
       //final String centroReclusion = data['centro_reclusion'];
       //final String juzgadoEjecucionPenas = data['juzgado_ejecucion_penas'];
       final String juzgado = data['juzgado_que_condeno'];
