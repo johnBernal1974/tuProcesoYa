@@ -6,11 +6,23 @@ import 'package:tuprocesoya/commons/main_layaout.dart';
 import 'package:tuprocesoya/commons/wompi/webview.dart';
 import 'package:tuprocesoya/commons/wompi/wompi_service.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 class CheckoutPage extends StatefulWidget {
+  final bool esPagoDerechoPeticion;
+  final int? valorDerecho;
+  final String? referenciaDerecho;
+  final VoidCallback? onTransaccionAprobada;
+
+  const CheckoutPage({
+    super.key,
+    this.esPagoDerechoPeticion = false,
+    this.valorDerecho,
+    this.referenciaDerecho,
+    this.onTransaccionAprobada,
+  });
+
   @override
   _CheckoutPageState createState() => _CheckoutPageState();
 }
@@ -21,11 +33,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final WompiService _wompiService = WompiService();
   final TextEditingController _controller = TextEditingController();
   final NumberFormat _formatter = NumberFormat("#,###", "es_CO");
-  final Uuid _uuid = Uuid();
+  final Uuid _uuid = const Uuid();
 
-  bool? _isPaid; // Estado de suscripción
-  int? _subscriptionValue; // Valor de la suscripción
-  int? _valorPago; // Monto ingresado o seleccionado
+  bool? _isPaid;
+  int? _subscriptionValue;
+  int? _valorPago;
 
   @override
   void initState() {
@@ -33,391 +45,254 @@ class _CheckoutPageState extends State<CheckoutPage> {
     _checkSubscriptionStatus();
   }
 
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isPaid == null) {
-      return const Scaffold(
-        backgroundColor: blanco,
-        body: Center(child: CircularProgressIndicator()), // Cargando datos
-      );
-    }
-
-    if (_isPaid == false) {
-      return MainLayout(
-        pageTitle:"Pagar suscripción",
-        content: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(5.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                // Mantiene el logo a la izquierda
-                children: [
-                  // Logo alineado a la izquierda
-                  Image.asset(
-                    'assets/images/logo_tu_proceso_ya_transparente.png',
-                    height: 30,
-                  ),
-                  const SizedBox(height: 50),
-
-                  // Centrar todo el contenido excepto el logo
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      // Asegura que el contenido esté centrado
-                      children: [
-                        const Text(
-                          "Gracias por confiar en nosotros, para obtener todos los beneficios de nuestra plataforma debes hacer el pago de la suscripción.",
-                          style: TextStyle(
-                              fontSize: 14, fontWeight: FontWeight.bold),
-                          textAlign: TextAlign.center, // Texto centrado
-                        ),
-                        const SizedBox(height: 20),
-
-                        // Valor de la suscripción centrado
-                        _subscriptionValue != null
-                            ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text(
-                              "Valor de la suscripción",
-                              style: TextStyle(fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.grey),
-                            ),
-                            Text(
-                              "\$${_formatter.format(_subscriptionValue)}",
-                              style: const TextStyle(fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black),
-                            ),
-                          ],
-                        )
-                            : const CircularProgressIndicator(),
-
-                        const SizedBox(height: 30),
-
-                        // Botón de pago centrado
-                        ElevatedButton(
-                          onPressed: _pagarSuscripcion,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 40, vertical: 15),
-                            textStyle: const TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
-                          ),
-                          child: const Text("Pagar Suscripción"),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      );
-    }
-
-    // Si isPaid es true, mostrar el campo de recarga
-    return MainLayout(
-      pageTitle:"Recargar cuenta",
-      content: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(5.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              // Mantiene el logo alineado a la izquierda
-              children: [
-                // Logo alineado a la izquierda
-                Image.asset(
-                  'assets/images/logo_tu_proceso_ya_transparente.png',
-                  height: 30,
-                ),
-                const SizedBox(height: 30),
-
-                // Centrar todo el contenido debajo del logo
-                Center(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    // Asegura que el contenido esté centrado
-                    children: [
-                      const Text(
-                        "Ingresa el monto a recargar",
-                        style: TextStyle(
-                            fontSize: 14, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 15),
-
-                      // Campo de entrada del monto
-                      SizedBox(
-                        width: 180,
-                        height: 45,
-                        child: TextField(
-                          controller: _controller,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                          decoration: InputDecoration(
-                            prefixText: "\$ ",
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Colors.grey), // Borde gris por defecto
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: Colors.grey), // Borde gris cuando NO está enfocado
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                              borderSide: const BorderSide(color: primary, width: 2), // Borde azul cuando está enfocado
-                            ),
-                          ),
-                          onChanged: _actualizarValor,
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      // Botones rápidos para seleccionar monto
-                      const Text("O selecciona un monto rápido:",
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 10,
-                        children: [60000, 100000, 150000].map((monto) {
-                          return ElevatedButton(
-                            onPressed: () {
-                              _seleccionarMonto(monto);
-                              _controller.clear();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white, // Fondo blanco
-                              foregroundColor: Colors.black, // Texto negro
-                              side: const BorderSide(color: Colors.grey, width: 1), // Borde gris
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10), // Espaciado
-                              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold), // Tamaño del texto
-                            ),
-                            child: Text("\$${_formatter.format(monto)}"),
-                          );
-
-                        }).toList(),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      // Mostrar el monto seleccionado
-                      Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                          decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: gris)
-                          ),
-                          child: Column(
-                            children: [
-                              if (_valorPago != null)
-                                Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      "Valor a recargar:",
-                                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey),
-                                    ),
-                                    Text(
-                                      "\$${_formatter.format(_valorPago)}",
-                                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.black),
-                                    ),
-                                  ],
-                                ),
-                              const SizedBox(height: 20),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: primary,
-                                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
-                                ),
-                                onPressed: iniciarPagoRecarga,
-                                child: const Text("Pagar ahora", style: TextStyle(color: blanco, fontSize: 16)),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-    );
-  }
-
-
-  /// Obtiene el UID del usuario y verifica el estado de la suscripción
   Future<void> _checkSubscriptionStatus() async {
     User? user = _auth.currentUser;
-    if (user == null) {
-      print("⚠️ No hay usuario autenticado");
-      return;
-    }
+    if (user == null) return;
 
-    String uid = user.uid;
-    print("🔹 UID del usuario: $uid");
+    DocumentSnapshot userDoc = await _firestore.collection("Ppl").doc(user.uid).get();
+    setState(() {
+      _isPaid = userDoc["isPaid"];
+    });
 
-    try {
-      // Consultar Firestore para verificar el estado de pago del usuario
-      DocumentSnapshot userDoc = await _firestore.collection("Ppl").doc(uid).get();
-
-      if (userDoc.exists) {
+    if (_isPaid == false) {
+      QuerySnapshot config = await _firestore.collection("configuraciones").limit(1).get();
+      if (config.docs.isNotEmpty) {
         setState(() {
-          _isPaid = userDoc["isPaid"];
+          _subscriptionValue = config.docs.first["valor_subscripcion"];
         });
-
-        if (_isPaid == false) {
-          // Si no ha pagado, buscar el primer documento en "subscription"
-          QuerySnapshot subscriptionSnapshot = await _firestore.collection("configuraciones").limit(1).get();
-
-          if (subscriptionSnapshot.docs.isNotEmpty) {
-            DocumentSnapshot subscriptionDoc = subscriptionSnapshot.docs.first;
-            setState(() {
-              _subscriptionValue = subscriptionDoc["valor_subscripcion"];
-            });
-            print("⚠️ Valor de la suscripcion $_subscriptionValue");
-          } else {
-            print("⚠️ No se encontró información de la suscripción en Firestore.");
-          }
-        }
-
       }
-    } catch (e) {
-      print("⚠️ Error obteniendo datos de suscripción: $e");
     }
   }
 
-  /// Permite la edición del monto y actualiza el valor a recargar
   void _actualizarValor(String value) {
-    // ✅ Eliminamos caracteres no numéricos
-    String cleanValue = value.replaceAll(RegExp(r'[^0-9]'), '');
-    int parsedValue = int.tryParse(cleanValue) ?? 0;
-
-    if (parsedValue == 0) {
-      setState(() {
-        _valorPago = null;
-        _controller.clear();
-      });
-      return;
-    }
-
-    // ✅ Aplicamos formato con separador de miles
-    String formattedValue = _formatter.format(parsedValue);
-
+    String clean = value.replaceAll(RegExp(r'[^0-9]'), '');
+    int parsed = int.tryParse(clean) ?? 0;
     setState(() {
-      _valorPago = parsedValue;
-      _controller.text = formattedValue;
-      _controller.selection = TextSelection.fromPosition(
-        TextPosition(offset: _controller.text.length), // Mueve el cursor al final
-      );
+      _valorPago = parsed == 0 ? null : parsed;
+      _controller.text = _formatter.format(parsed);
+      _controller.selection = TextSelection.fromPosition(TextPosition(offset: _controller.text.length));
     });
   }
 
-
-  /// Selecciona un monto predefinido desde los botones
   void _seleccionarMonto(int monto) {
     setState(() {
       _valorPago = monto;
     });
   }
 
-  /// Inicia el pago de la suscripción
   void _pagarSuscripcion() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    String userId = user.uid;
-    if (_subscriptionValue == null) return;
-
-    String referencia = "suscripcion_${userId}_${_uuid.v4()}";
-    int montoCentavos = _subscriptionValue! * 100;
-
-    String? checkoutUrl = await _wompiService.generarUrlCheckout(
-      monto: montoCentavos,
-      referencia: referencia,
-    );
-
-    if (checkoutUrl != null) {
-      if (context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => WompiWebView(url: checkoutUrl, referencia: referencia),
-          ),
-        );
-      }
-    } else {
-      print("⚠️ No se generó la URL de pago.");
+    User? user = _auth.currentUser;
+    if (user == null || _subscriptionValue == null) return;
+    String referencia = "suscripcion_${user.uid}_${_uuid.v4()}";
+    int centavos = _subscriptionValue! * 100;
+    String? url = await _wompiService.generarUrlCheckout(monto: centavos, referencia: referencia);
+    if (url != null && context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WompiWebView(url: url, referencia: referencia),
+        ),
+      );
     }
   }
 
-
-
-
-  /// Inicia el pago de recarga de saldo
   void iniciarPagoRecarga() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    String userId = user.uid;
-
-    if (_valorPago == null || _valorPago! < 20000) {
+    User? user = _auth.currentUser;
+    if (user == null || _valorPago == null || _valorPago! < 20000) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("⚠️ Debes ingresar una recarga mínima de \$20.000."),
+          content: Text("Debes ingresar una recarga mínima de \$20.000."),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
         ),
       );
       return;
     }
-
-    String referencia = "recarga_${userId}_${_uuid.v4()}";
-    int montoCentavos = _valorPago! * 100;
-
-    String? checkoutUrl = await _wompiService.generarUrlCheckout(
-      monto: montoCentavos,
-      referencia: referencia,
-    );
-
-    if (checkoutUrl != null) {
-      if (context.mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => WompiWebView(url: checkoutUrl, referencia: referencia),
-          ),
-        );
-      }
+    String referencia = "recarga_${user.uid}_${_uuid.v4()}";
+    int centavos = _valorPago! * 100;
+    String? url = await _wompiService.generarUrlCheckout(monto: centavos, referencia: referencia);
+    if (url != null && context.mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WompiWebView(url: url, referencia: referencia),
+        ),
+      );
     }
   }
 
+  @override
+  Widget build(BuildContext context) {
+    if (widget.esPagoDerechoPeticion && widget.valorDerecho != null) {
+      return MainLayout(
+        pageTitle: "Pago por derecho de petición",
+        content: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 30),
+              RichText(
+                textAlign: TextAlign.center,
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                  children: [
+                    TextSpan(text: "Para enviar tu solicitud de "),
+                    TextSpan(
+                      text: "DERECHO DE PETICIÓN",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(text: ", debes realizar el pago del servicio."),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: primary),
+                  color: blanco,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      offset: const Offset(0, 2),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      "Valor del servicio:",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      " \$${_formatter.format(widget.valorDerecho)}",
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: primary),
+                onPressed: () async {
+                  String referencia = widget.referenciaDerecho ?? "peticion_${_auth.currentUser?.uid}_${_uuid.v4()}";
+                  int centavos = widget.valorDerecho! * 100;
+                  String? url = await _wompiService.generarUrlCheckout(monto: centavos, referencia: referencia);
+                  if (context.mounted && url != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => WompiWebView(
+                          url: url,
+                          referencia: referencia,
+                          esPagoDerechoPeticion: true,
+                          onTransaccionAprobada: widget.onTransaccionAprobada,
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: const Text("Pagar ahora", style: TextStyle(color: blanco)),
+              )
+            ],
+          ),
+        ),
+      );
+    }
 
-  void _monitorearTransaccion(String referencia) {
-    FirebaseFirestore.instance
-        .collection("recargas") // O usa "transacciones", si tu colección tiene otro nombre
-        .where("reference", isEqualTo: referencia)
-        .snapshots()
-        .listen((event) {
-      if (event.docs.isNotEmpty) {
-        var transaction = event.docs.first;
-        if (transaction["status"] == "APPROVED") {
-          print("✅ Transacción aprobada, redirigiendo al Home...");
-          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-        }
-      }
-    });
+    if (_isPaid == null) {
+      return const Scaffold(
+        backgroundColor: blanco,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_isPaid == false) {
+      return MainLayout(
+        pageTitle: "Pagar suscripción",
+        content: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 20),
+              const Text("Gracias por confiar en nosotros...", textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              if (_subscriptionValue != null)
+                Column(
+                  children: [
+                    const Text("Valor de la suscripción", style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text("\\${_formatter.format(_subscriptionValue)}", style: const TextStyle(fontSize: 22)),
+                  ],
+                )
+              else
+                const CircularProgressIndicator(),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                onPressed: _pagarSuscripcion,
+                child: const Text("Pagar Suscripción"),
+              )
+            ],
+          ),
+        ),
+      );
+    }
+
+    return MainLayout(
+      pageTitle: "Recargar cuenta",
+      content: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const SizedBox(height: 20),
+            const Text("Ingresa el monto a recargar"),
+            const SizedBox(height: 15),
+            SizedBox(
+              width: 180,
+              height: 45,
+              child: TextField(
+                controller: _controller,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                textAlign: TextAlign.center,
+                decoration: InputDecoration(
+                  prefixText: "\$ ",
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onChanged: _actualizarValor,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Wrap(
+              spacing: 10,
+              children: [60000, 100000, 150000].map((monto) {
+                return ElevatedButton(
+                  onPressed: () {
+                    _seleccionarMonto(monto);
+                    _controller.clear();
+                  },
+                  child: Text("\\${_formatter.format(monto)}"),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 30),
+            if (_valorPago != null)
+              Column(
+                children: [
+                  Text("Valor a recargar: \$${_formatter.format(_valorPago)}"),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: iniciarPagoRecarga,
+                    child: const Text("Pagar ahora"),
+                  )
+                ],
+              )
+          ],
+        ),
+      ),
+    );
   }
 }

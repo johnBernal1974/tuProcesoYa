@@ -129,6 +129,22 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
       console.log(`✅ Recarga aprobada para ${userId}: Nuevo saldo ${nuevoSaldo}`);
     }
 
+    // 📌 Si es un pago de derecho de petición y está aprobado, restar el saldo
+    if (tipoTransaccion === "derecho" && status === "APPROVED") {
+      const saldoActual = userDoc.data().saldo || 0;
+      const nuevoSaldo = saldoActual - amount;
+
+      if (nuevoSaldo < 0) {
+        console.warn(`⚠️ Saldo negativo al procesar derecho de petición para ${userId}`);
+      }
+
+      await userRef.update({
+        saldo: nuevoSaldo
+      });
+
+      console.log(`✅ Pago de derecho de petición procesado para ${userId}. Nuevo saldo: ${nuevoSaldo}`);
+    }
+
     return res.status(200).json({ message: "Estado de pago actualizado con éxito y guardado en recargas" });
 
   } catch (error) {

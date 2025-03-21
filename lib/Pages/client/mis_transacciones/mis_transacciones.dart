@@ -67,8 +67,13 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
 
   /// **🔹 Obtiene el concepto de la referencia**
   String _obtenerConcepto(String reference) {
-    return reference.startsWith("suscripcion") ? "Suscripción" : "Recarga";
+    if (reference.startsWith("suscripcion")) return "Suscripción";
+    if (reference.startsWith("recarga")) return "Recarga";
+    if (reference.startsWith("peticion")) return "Derecho petición";
+    if (reference.startsWith("tutela")) return "Tutela";
+    return "Otro";
   }
+
 
   @override
   Widget build(BuildContext context) {

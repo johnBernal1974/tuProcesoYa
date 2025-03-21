@@ -12,6 +12,7 @@ import 'package:tuprocesoya/Pages/client/solicitud_exitosa_derecho_peticion_page
 import 'package:tuprocesoya/commons/opciones_menu_derecho_peticion_helper.dart';
 import 'package:tuprocesoya/commons/preguntasDerechoPeticionHelper.dart';
 import '../../../commons/main_layaout.dart';
+import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
 
 class DerechoDePeticionSolicitudPage extends StatefulWidget {
@@ -349,50 +350,80 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
       return;
     }
 
-    guardarSolicitud(respuestas);
+    verificarSaldoYEnviarSolicitud(respuestas);
   }
 
-  Future<void> guardarSolicitud(List<String> respuestas) async {
-    if (selectedCategory == null || selectedSubCategory == null) {
-      if (kDebugMode) {
-        print("❌ Categoría o subcategoría no seleccionadas.");
-      }
-      return;
-    }
-
+  Future<void> verificarSaldoYEnviarSolicitud(List<String> respuestas) async {
     User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      if (kDebugMode) {
-        print("❌ No hay usuario autenticado.");
-      }
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+    final double valorDerechoPeticion = (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
+
+    if (saldo < valorDerechoPeticion) {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Pago requerido"),
+          content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutPage(
+                      esPagoDerechoPeticion: true,
+                      valorDerecho: valorDerechoPeticion.toInt(),
+                      onTransaccionAprobada: () {
+                        enviarSolicitudDerechoPeticion(respuestas);
+                      },
+                    ),
+                  ),
+                );
+              },
+              child: const Text("Pagar"),
+            ),
+          ],
+        ),
+      );
       return;
     }
+    enviarSolicitudDerechoPeticion(respuestas);
+  }
+
+  Future<void> enviarSolicitudDerechoPeticion(List<String> respuestas) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+    final double valorDerechoPeticion = (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
+
+    if (!context.mounted) return;
 
     bool confirmarEnvio = await showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: blanco,
-        title: const Text("Confirmar envío"),
-        content: const Text("Antes de enviar tu solicitud, asegúrate de haber "
-            "proporcionado toda la información necesaria y veraz. La precisión "
-            "y detalle en la información son clave para una diligencia eficiente. "
-            "Si necesitas revisar o agregar algo, por favor hazlo antes de enviar."),
+        title: const Text("Ya puedes enviar tu solicitud de derecho de petición"),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Revisar"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Enviar solicitud"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar solicitud")),
         ],
       ),
     );
 
     if (!confirmarEnvio) return;
 
-    String idUser = user.uid;
     if(context.mounted){
       showDialog(
         context: context,
@@ -404,7 +435,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
             children: [
               CircularProgressIndicator(),
               SizedBox(height: 10),
-              Text("Subiendo información, por favor espera..."),
+              Text("Subiendo información..."),
             ],
           ),
         ),
@@ -419,46 +450,24 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
       List<String> archivosUrls = [];
 
-      // Guardar archivos en Firebase Storage
       for (PlatformFile file in _selectedFiles) {
         try {
           String filePath = 'derechos_peticion/$docId/${file.name}';
           Reference storageRef = storage.ref(filePath);
-
-          UploadTask uploadTask;
-          String ext = file.name.split('.').last.toLowerCase();
-          String contentType = (ext == "jpg" || ext == "jpeg")
-              ? "image/jpeg"
-              : (ext == "png")
-              ? "image/png"
-              : (ext == "pdf")
-              ? "application/pdf"
-              : "application/octet-stream";
-
-          if (kIsWeb) {
-            uploadTask = storageRef.putData(file.bytes!, SettableMetadata(contentType: contentType));
-          } else {
-            File fileToUpload = File(file.path!);
-            uploadTask = storageRef.putFile(fileToUpload, SettableMetadata(contentType: contentType));
-          }
-
+          UploadTask uploadTask = kIsWeb
+              ? storageRef.putData(file.bytes!)
+              : storageRef.putFile(File(file.path!));
           TaskSnapshot snapshot = await uploadTask;
           String downloadUrl = await snapshot.ref.getDownloadURL();
           archivosUrls.add(downloadUrl);
-        } catch (e) {
-          if (kDebugMode) {
-            print("Error al subir el archivo ${file.name}: $e");
-          }
-        }
+        } catch (_) {}
       }
 
-      // Obtener preguntas basadas en la categoría y subcategoría
       List<String> preguntas = PreguntasDerechoPeticionHelper.obtenerPreguntasPorCategoriaYSubcategoria(
         selectedCategory,
         selectedSubCategory,
       );
 
-      // Emparejar preguntas y respuestas en una lista de mapas
       List<Map<String, String>> preguntasRespuestas = [];
       for (int i = 0; i < preguntas.length; i++) {
         preguntasRespuestas.add({
@@ -467,10 +476,9 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         });
       }
 
-      // Guardar datos en Firestore
       await firestore.collection('derechos_peticion_solicitados').doc(docId).set({
         "id": docId,
-        "idUser": idUser,
+        "idUser": user.uid,
         "numero_seguimiento": numeroSeguimiento,
         "categoria": selectedCategory,
         "subcategoria": selectedSubCategory,
@@ -480,6 +488,9 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         "status": "Solicitado",
         "asignadoA": "",
       });
+
+      double nuevoSaldo = saldo - valorDerechoPeticion;
+      await firestore.collection('Ppl').doc(user.uid).update({'saldo': nuevoSaldo});
 
       if (context.mounted) {
         Navigator.pop(context);
@@ -491,32 +502,23 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         );
       }
 
-      if (kDebugMode) {
-        print("✅ Solicitud guardada con éxito.");
-      }
     } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al guardar la solicitud: $e");
-      }
-
       if (context.mounted) {
         Navigator.pop(context);
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
             title: const Text("Error"),
-            content: const Text("Hubo un problema al guardar la solicitud. Por favor, intenta nuevamente."),
+            content: const Text("Hubo un problema al guardar la solicitud."),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Aceptar"),
-              ),
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Aceptar")),
             ],
           ),
         );
       }
     }
   }
+
 
 
 }

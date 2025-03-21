@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tuprocesoya/commons/wompi/pagoExistoso_peticion.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/commons/wompi/transaction_failed_page.dart';
@@ -8,16 +9,27 @@ import '../../src/colors/colors.dart';
 class WompiWebView extends StatefulWidget {
   final String url;
   final String referencia;
+  final bool esPagoDerechoPeticion;
+  final VoidCallback? onTransaccionAprobada;
 
-  const WompiWebView({super.key, required this.url, required this.referencia});
+  const WompiWebView({
+    Key? key,
+    required this.url,
+    required this.referencia,
+    this.esPagoDerechoPeticion = false,
+    this.onTransaccionAprobada,
+  }) : super(key: key);
 
   @override
   _WompiWebViewState createState() => _WompiWebViewState();
 }
 
+
 class _WompiWebViewState extends State<WompiWebView> {
   late final WebViewController _webViewController;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _callbackEjecutado = false;
+
 
   @override
   void initState() {
@@ -53,25 +65,38 @@ class _WompiWebViewState extends State<WompiWebView> {
 
   /// **Monitorea el estado de la transacción en Firestore**
   void _monitorearTransaccion(String referencia) {
-    _firestore.collection("recargas").where("reference", isEqualTo: referencia)
-        .snapshots().listen((event) {
-      if (event.docs.isNotEmpty) {
+    _firestore
+        .collection("recargas")
+        .where("reference", isEqualTo: referencia)
+        .snapshots()
+        .listen((event) {
+      if (event.docs.isNotEmpty && !_callbackEjecutado) {
         var transaction = event.docs.first;
         String status = transaction["status"];
 
         if (status == "APPROVED") {
-          print("✅ Transacción aprobada, redirigiendo home");
-          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-        } else {
-          print("❌ Transacción rechazada, redirigiendo a pantalla de error");
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const TransactionFailedPage(),
-            ),
-          );
+          if (widget.esPagoDerechoPeticion && widget.onTransaccionAprobada != null) {
+            final double amount = (transaction["amount"] ?? 0).toDouble();
+            final String transaccionId = transaction["transactionId"] ?? "N/A";
+            final DateTime fecha = (transaction["createdAt"] as Timestamp).toDate();
+
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PagoExitosoDerechoPeticionPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
+                  onContinuar: widget.onTransaccionAprobada!,
+                ),
+              ),
+            );
+          } else {
+            Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+          }
         }
       }
     });
   }
+
 }
