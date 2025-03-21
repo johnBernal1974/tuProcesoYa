@@ -111,11 +111,32 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Divider(color: Colors.grey),
+                      const Text('Sitación actual:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.situacion, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600, height: 1.1)),
+                    ],
+                  ),
+                  if(_ppl!.situacion != "En reclusión")
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(color: Colors.grey),
+                      const Text('Dirección registrada para cumplir la situación actual:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(
+                        "${_ppl!.direccion}, ${_ppl!.municipio} - ${_ppl!.departamento}",
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.1),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  if(_ppl!.situacion == "En reclusión")
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(color: Colors.grey),
                       const Text('Centro Reclusión:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.centroReclusion, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600, height: 1.1)),
                     ],
                   ),
-                  const SizedBox(height: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
