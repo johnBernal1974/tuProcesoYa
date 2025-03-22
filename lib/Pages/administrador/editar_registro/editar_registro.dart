@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../commons/admin_provider.dart';
+import '../../../commons/drop_delitos.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
@@ -67,6 +68,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   String? selectedCiudad;
   String? selectedJuzgadoNombre;
   String? selectedDelito;
+  String? categoriaDelito;
 
   String _juzgadoQueCondeno= "";
   String _juzgado= "";
@@ -128,6 +130,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     departamentoSeleccionado = widget.doc['departamento'];
     municipioSeleccionado = widget.doc['municipio'];
+    categoriaDelito = widget.doc['categoria_delito'];
+    selectedDelito = widget.doc['delito'];
+
 
   }
 
@@ -231,7 +236,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             const SizedBox(height: 15),
             seleccionarJuzgadoQueCondeno(),
             const SizedBox(height: 15),
-            seleccionarDelito(),
+            DelitosDropdownWidget(
+              categoriaSeleccionada: categoriaDelito,
+              delitoSeleccionado: selectedDelito,
+              onDelitoChanged: (categoria, delito) {
+                setState(() {
+                  categoriaDelito = categoria;
+                  selectedDelito = delito;
+                });
+              },
+            ),
             const SizedBox(height: 15),
             fechaCapturaPpl(),
             const SizedBox(height: 15),
@@ -811,26 +825,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  Future<void> _fetchDelitos() async {
-    try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance.collection('delitos').get();
-
-      List<Map<String, String>> fetchedDelitos = querySnapshot.docs.map((doc) {
-        return {
-          'id': doc.id,
-          'delito': doc.get('delito').toString(),
-        };
-      }).toList();
-
-      setState(() {
-        delito = fetchedDelitos;
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error al obtener los delitos: $e");
-      }
-    }
-  }
 
   // 🔹 Asigna el documento al operador actual para que solo él pueda verlo y editarlo
   Future<void> _asignarDocumento() async {
@@ -1665,7 +1659,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget seleccionarDelito() {
-    // Mostrar contenedor si ya hay delito y no estamos editando
     if (!_mostrarDropdownDelito &&
         widget.doc['delito'] != null &&
         widget.doc['delito'].toString().trim().isNotEmpty) {
@@ -1683,9 +1676,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               onTap: () {
                 setState(() {
                   _mostrarDropdownDelito = true;
-                  selectedDelito = null;
                 });
-                _fetchDelitos();
               },
               child: const Row(
                 children: [
@@ -1703,18 +1694,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       );
     }
 
-    // Asegura que la lista esté cargada
-    if (delito.isEmpty) {
-      Future.microtask(() => _fetchDelitos());
-    }
-
-    // Mostrar dropdown en modo edición
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        border: Border.all(color: primary),
+        border: Border.all(color: Colors.grey),
         borderRadius: BorderRadius.circular(4),
-        color: Colors.white,
+        color: Colors.white, // Fondo blanco para el dropdown
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1724,66 +1709,24 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 8),
-          DropdownButtonFormField<String>(
-            value: selectedDelito,
-            hint: const Text('Selecciona un delito'),
-            onChanged: (value) {
+          DelitosDropdownWidget(
+            categoriaSeleccionada: categoriaDelito,
+            delitoSeleccionado: selectedDelito,
+            onDelitoChanged: (categoria, delito) {
               setState(() {
-                selectedDelito = value;
+                categoriaDelito = categoria;
+                selectedDelito = delito;
+                _mostrarDropdownDelito = false;
               });
             },
-            isExpanded: true,
-            dropdownColor: Colors.white,
-            decoration: InputDecoration(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.grey, width: 1),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.grey, width: 1),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: Colors.grey, width: 1),
-              ),
-            ),
-            items: delito
-                .map((delitoDoc) => DropdownMenuItem<String>(
-              value: delitoDoc['delito'],
-              child: Text(
-                delitoDoc['delito']!,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ))
-                .toList(),
-          ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.center,
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _mostrarDropdownDelito = false;
-                  selectedDelito = widget.doc['delito'];
-                });
-              },
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.cancel, size: 15),
-                  Text("Cancelar", style: TextStyle(fontSize: 11)),
-                ],
-              ),
-            ),
           ),
         ],
       ),
     );
   }
+
+
+
 
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -2786,6 +2729,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
                 'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
                 'delito': selectedDelito ?? widget.doc['delito'],
+                'categoria_delito': categoriaDelito ?? widget.doc['categoria_delito'],
                 'radicado': _radicadoController.text,
                 'tiempo_condena': tiempoCondena,
                 'fecha_captura': _fechaDeCapturaController.text,
