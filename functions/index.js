@@ -82,7 +82,7 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
       return res.status(400).json({ error: "Referencia inválida" });
     }
 
-    const tipoTransaccion = referenceParts[0]; // "suscripcion" o "recarga"
+    const tipoTransaccion = referenceParts[0];
     const userId = referenceParts[1]; // ID del usuario en Firestore
 
     // 📌 Obtener documento del usuario en Firestore
@@ -130,20 +130,21 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
     }
 
     // 📌 Si es un pago de derecho de petición y está aprobado, restar el saldo
-    if (tipoTransaccion === "derecho" && status === "APPROVED") {
+    if (tipoTransaccion === "peticion" && status === "APPROVED") {
       const saldoActual = userDoc.data().saldo || 0;
-      const nuevoSaldo = saldoActual - amount;
+      const monto = Number(amount) || 0;
 
-      if (nuevoSaldo < 0) {
-        console.warn(`⚠️ Saldo negativo al procesar derecho de petición para ${userId}`);
-      }
+      // Suma y resta inmediata para dejar saldo igual
+      const nuevoSaldo = saldoActual + monto;
 
       await userRef.update({
         saldo: nuevoSaldo
       });
 
-      console.log(`✅ Pago de derecho de petición procesado para ${userId}. Nuevo saldo: ${nuevoSaldo}`);
+      console.log(`✅ Pago derecho petición compensado para ${userId}. Saldo no afectado: ${nuevoSaldo}`);
     }
+
+
 
     return res.status(200).json({ message: "Estado de pago actualizado con éxito y guardado en recargas" });
 

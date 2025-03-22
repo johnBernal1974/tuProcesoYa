@@ -382,7 +382,23 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
                     builder: (_) => CheckoutPage(
                       esPagoDerechoPeticion: true,
                       valorDerecho: valorDerechoPeticion.toInt(),
-                      onTransaccionAprobada: () {
+                      onTransaccionAprobada: () async {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) return;
+
+                        final userRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
+                        final userDoc = await userRef.get();
+                        final double saldoActual = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+                        final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+                        final double valorDerechoPeticion = (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
+
+                        // 👇 Sumar y restar para compensar
+                        final double nuevoSaldo = saldoActual + valorDerechoPeticion - valorDerechoPeticion;
+
+                        await userRef.update({'saldo': nuevoSaldo});
+
+                        // 👇 Luego continuar con la solicitud
                         enviarSolicitudDerechoPeticion(respuestas);
                       },
                     ),
