@@ -550,6 +550,7 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
 
   /// 🔹 Navegar a la página correspondiente
   void _navegarAPagina(Map<String, dynamic> latestData, String idDocumento, List<String> preguntas, List<String> respuestas) async {
+    final String rutaDestino = obtenerRutaSegunStatus(latestData['status'] ?? "Pendiente");
     int tiempoPermitido = await _obtenerTiempoPermitido(); // 🔥 Obtiene el tiempo permitido desde Firestore
     DateTime fechaEnvio = latestData['fechaEnvio']?.toDate() ?? DateTime.now();
     DateTime fechaLimite = fechaEnvio.add(Duration(days: tiempoPermitido));
@@ -562,31 +563,26 @@ class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerecho
     print("📢 Fecha Límite: $fechaLimite");
     print("📢 Fecha Actual: ${DateTime.now()}");
 
-    Navigator.pushNamed(
-      context,
-      'derechos_peticion_enviados_por_correo',
-      arguments: {
-        'status': latestData['status'] ?? "Pendiente",
-        'idDocumento': idDocumento,
-        'numeroSeguimiento': latestData['numero_seguimiento'] ?? "Sin número",
-        'categoria': latestData['categoria'] ?? "Sin categoría",
-        'subcategoria': latestData['subcategoria'] ?? "Sin subcategoría",
-        'fecha': latestData['fecha'] != null ? latestData['fecha'].toDate().toString() : "Fecha no disponible",
-        'idUser': latestData['idUser'] ?? "Desconocido",
-        'archivos': latestData.containsKey('archivos') ? List<String>.from(latestData['archivos']) : [],
-        'preguntas': preguntas,
-        'respuestas': respuestas,
-        'sinRespuesta': sinRespuesta, // ✅ PASAMOS EL ARGUMENTO
-      },
-    );
+    if(context.mounted){
+      Navigator.pushNamed(
+        context,
+        rutaDestino,
+        arguments: {
+          'status': latestData['status'] ?? "Pendiente",
+          'idDocumento': idDocumento,
+          'numeroSeguimiento': latestData['numero_seguimiento'] ?? "Sin número",
+          'categoria': latestData['categoria'] ?? "Sin categoría",
+          'subcategoria': latestData['subcategoria'] ?? "Sin subcategoría",
+          'fecha': latestData['fecha'] != null ? latestData['fecha'].toDate().toString() : "Fecha no disponible",
+          'idUser': latestData['idUser'] ?? "Desconocido",
+          'archivos': latestData.containsKey('archivos') ? List<String>.from(latestData['archivos']) : [],
+          'preguntas': preguntas,
+          'respuestas': respuestas,
+          'sinRespuesta': sinRespuesta,
+        },
+      );
+    }
   }
-
-
-
-
-
-
-
 
   Widget _buildFechaRevision(String? titulo, Timestamp? fecha) {
     if (fecha == null) return const SizedBox(); // Si no hay fecha, no mostrar nada
