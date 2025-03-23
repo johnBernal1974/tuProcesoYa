@@ -26,6 +26,7 @@ class Ppl {
   final String ciudad;
   final String juzgadoQueCondeno;
   final String juzgadoQueCondenoEmail;
+  final String categoriaDelDelito;
   final String delito;
   final String radicado;
   final int tiempoCondena;
@@ -62,6 +63,7 @@ class Ppl {
     required this.ciudad,
     required this.juzgadoQueCondeno,
     required this.juzgadoQueCondenoEmail,
+    required this.categoriaDelDelito,
     required this.delito,
     required this.radicado,
     required this.tiempoCondena,
@@ -99,6 +101,7 @@ class Ppl {
     ciudad: json["ciudad"] ?? '',
     juzgadoQueCondeno: json["juzgado_que_condeno"] ?? '',
     juzgadoQueCondenoEmail: json["juzgado_que_condeno_email"] ?? '',
+    categoriaDelDelito: json["categoria_delito"] ?? '',
     delito: json["delito"] ?? '',
     radicado: json["radicado"] ?? '',
     tiempoCondena: json["tiempo_condena"] ?? 0,
@@ -150,6 +153,7 @@ class Ppl {
     "ciudad": ciudad,
     "juzgado_que_condeno": juzgadoQueCondeno,
     "juzgado_que_condeno_email": juzgadoQueCondenoEmail,
+    "categoria_delito": categoriaDelDelito,
     "delito": delito,
     "radicado": radicado,
     "tiempo_condena": tiempoCondena,

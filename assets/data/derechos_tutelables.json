@@ -1,0 +1,206 @@
+{
+  "derechos": [
+    {
+      "id": "salud",
+      "titulo": "Derecho a la salud",
+      "descripcion": "Se tutela cuando hay omisión, negligencia o negativa injustificada a prestar atención médica en condiciones dignas para personas privadas de la libertad.",
+      "fundamentos": [
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 49 de la Constitución Política",
+          "detalle": "La atención en salud es un servicio público a cargo del Estado. Se garantiza a todas las personas el acceso a los servicios de promoción, protección y recuperación de la salud."
+        },
+        {
+          "tipo": "ley",
+          "titulo": "Ley 1751 de 2015 - Ley Estatutaria de Salud",
+          "detalle": "Establece que el derecho fundamental a la salud es autónomo e irrenunciable en todos los casos. Toda persona tiene derecho al acceso a los servicios de salud sin discriminación, barreras administrativas o dilaciones."
+        },
+        {
+          "tipo": "decreto",
+          "titulo": "Decreto 780 de 2016 - Artículo 2.5.3.2.7",
+          "detalle": "Regula el suministro de servicios y tecnologías no financiadas por el Plan de Beneficios, indicando que deben autorizarse si son necesarias según criterio médico."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-760 de 2008",
+          "detalle": "La Corte Constitucional reiteró que la salud es un derecho fundamental y ordenó eliminar las barreras administrativas para el acceso a servicios requeridos por el médico tratante."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-388 de 2013",
+          "detalle": "La Corte declaró el estado de cosas inconstitucional en las cárceles y ordenó garantizar condiciones de dignidad humana, incluyendo acceso oportuno a la salud."
+        }
+      ],
+      "pretensiones": [
+        "Que se tutele el derecho fundamental a la salud.",
+        "Que se ordene autorizar y prestar de manera inmediata la atención médica requerida, incluyendo remisiones, tratamientos o medicamentos.",
+        "Que se garantice el seguimiento integral por personal médico especializado."
+      ]
+    },
+    {
+      "id": "vida",
+      "titulo": "Derecho a la vida",
+      "descripcion": "Se tutela cuando existe una amenaza real, inminente y grave contra la vida de una persona privada de la libertad, debido a omisión estatal, negligencia o condiciones inhumanas de reclusión.",
+      "fundamentos": [
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 11 de la Constitución Política",
+          "detalle": "El derecho a la vida es inviolable. No habrá pena de muerte."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-881 de 2002",
+          "detalle": "La Corte Constitucional estableció que el Estado tiene un deber reforzado de garantía del derecho a la vida respecto de las personas privadas de la libertad."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-282 de 2014",
+          "detalle": "Reitera que el derecho a la vida impone al Estado la obligación de prevenir riesgos ciertos que puedan derivar en la muerte de una persona privada de la libertad."
+        }
+      ],
+      "pretensiones": [
+        "Que se tutele el derecho fundamental a la vida.",
+        "Que se adopten las medidas urgentes necesarias para proteger la vida del accionante.",
+        "Que se verifiquen y corrijan las condiciones materiales que estén poniendo en riesgo su existencia."
+      ]
+    },
+    {
+      "id": "integridad",
+      "titulo": "Derecho a la integridad personal",
+      "descripcion": "Se tutela cuando una persona privada de la libertad es sometida a tratos crueles, inhumanos o degradantes, o cuando se vulnera su salud mental, integridad física o emocional por acción u omisión del Estado.",
+      "fundamentos": [
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 12 de la Constitución Política",
+          "detalle": "Nadie será sometido a desaparición forzada, torturas ni tratos o penas crueles, inhumanos o degradantes."
+        },
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 5 de la Constitución Política",
+          "detalle": "El Estado reconoce, sin discriminación alguna, la primacía de los derechos inalienables de la persona."
+        },
+        {
+          "tipo": "ley",
+          "titulo": "Ley 65 de 1993 - Código Penitenciario y Carcelario",
+          "detalle": "Establece que las personas privadas de la libertad deben ser tratadas con el respeto debido a la dignidad humana y deben contar con condiciones adecuadas para el ejercicio de sus derechos."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-025 de 2004",
+          "detalle": "Reconoce la conexión entre el derecho a la integridad y otros derechos fundamentales, especialmente en contextos de reclusión o desplazamiento forzado."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-881 de 2002",
+          "detalle": "Establece que la protección a la integridad personal requiere condiciones materiales y humanas que aseguren la dignidad en centros de reclusión."
+        }
+      ],
+      "pretensiones": [
+        "Que se tutele el derecho fundamental a la integridad personal.",
+        "Que se ordene cesar los tratos crueles, inhumanos o degradantes a los que está siendo sometido el accionante.",
+        "Que se ordene brindar atención psicológica y protección frente a factores de riesgo dentro del centro penitenciario."
+      ]
+    },
+    {
+      "id": "dignidad",
+      "titulo": "Derecho a la dignidad humana",
+      "descripcion": "Se tutela cuando las condiciones de reclusión o el trato recibido desconocen el valor intrínseco del ser humano, afectando el desarrollo libre, digno y respetuoso de su personalidad y derechos fundamentales.",
+      "fundamentos": [
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 1 de la Constitución Política",
+          "detalle": "Colombia se constituye en un Estado social de derecho, fundado en el respeto de la dignidad humana."
+        },
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 5 de la Constitución Política",
+          "detalle": "El Estado reconoce, sin discriminación alguna, la primacía de los derechos inalienables de la persona."
+        },
+        {
+          "tipo": "ley",
+          "titulo": "Ley 65 de 1993 - Código Penitenciario y Carcelario",
+          "detalle": "La ejecución de la pena privativa de la libertad debe hacerse con respeto a la dignidad del interno y procurando su resocialización."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-153 de 1998",
+          "detalle": "La Corte establece que la dignidad humana es el principio fundante del orden constitucional y que debe guiar todas las actuaciones estatales."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-388 de 2013",
+          "detalle": "Se reconoce el estado de cosas inconstitucional en las cárceles como una violación sistemática a la dignidad humana de los reclusos."
+        }
+      ],
+      "pretensiones": [
+        "Que se tutele el derecho fundamental a la dignidad humana.",
+        "Que se ordene el mejoramiento inmediato de las condiciones de reclusión incompatibles con la dignidad humana.",
+        "Que se garantice un trato digno y respetuoso hacia el accionante, conforme al principio de humanidad."
+      ]
+    },
+    {
+      "id": "debido_proceso",
+      "titulo": "Derecho al debido proceso",
+      "descripcion": "Se tutela cuando se vulneran las garantías procesales mínimas en actuaciones administrativas o judiciales que afectan derechos de personas privadas de la libertad, como la falta de notificación, defensa o acceso a la justicia.",
+      "fundamentos": [
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 29 de la Constitución Política",
+          "detalle": "El debido proceso se aplicará a toda clase de actuaciones judiciales y administrativas. Nadie podrá ser juzgado sino conforme a leyes preexistentes, ante juez o tribunal competente y con observancia de la plenitud de las formas propias de cada juicio."
+        },
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 228 de la Constitución Política",
+          "detalle": "La administración de justicia es función pública. Sus decisiones son independientes. El procedimiento será público y prevalecerán el derecho sustancial."
+        },
+        {
+          "tipo": "ley",
+          "titulo": "Ley 906 de 2004 - Código de Procedimiento Penal",
+          "detalle": "Garantiza el respeto al debido proceso en materia penal, incluyendo la presunción de inocencia, el derecho de defensa, la publicidad del juicio y la legalidad de la prueba."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-429 de 2009",
+          "detalle": "Reitera la importancia del debido proceso como pilar del Estado de Derecho y su aplicación a actuaciones administrativas que afectan derechos fundamentales."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-110 de 2012",
+          "detalle": "Declara la nulidad de actos administrativos proferidos sin garantizar el derecho de defensa, especialmente en contextos carcelarios."
+        }
+      ],
+      "pretensiones": [
+        "Que se tutele el derecho fundamental al debido proceso.",
+        "Que se declare la nulidad de las actuaciones surtidas sin garantías procesales.",
+        "Que se ordene rehacer el procedimiento con observancia del debido proceso, asegurando la participación del accionante."
+      ]
+    },
+    {
+      "id": "intimidad",
+      "titulo": "Derecho a la intimidad",
+      "descripcion": "Se tutela cuando se vulnera la privacidad personal o familiar de las personas privadas de la libertad, por registros invasivos, divulgación indebida de información o interferencias injustificadas del Estado.",
+      "fundamentos": [
+        {
+          "tipo": "constitucion",
+          "titulo": "Artículo 15 de la Constitución Política",
+          "detalle": "Todas las personas tienen derecho a su intimidad personal y familiar y a su buen nombre, y el Estado debe respetarlos y hacerlos respetar."
+        },
+        {
+          "tipo": "ley",
+          "titulo": "Ley 1581 de 2012 - Habeas Data",
+          "detalle": "Regula el derecho de todas las personas a conocer, actualizar y rectificar la información que se haya recogido sobre ellas en bancos de datos y en archivos de entidades públicas y privadas."
+        },
+        {
+          "tipo": "jurisprudencia",
+          "titulo": "Sentencia T-383 de 2016",
+          "detalle": "La Corte indicó que los controles de seguridad sobre las personas privadas de la libertad deben respetar su intimidad y dignidad, y evitar registros humillantes."
+        }
+      ],
+      "pretensiones": [
+        "Que se tutele el derecho fundamental a la intimidad.",
+        "Que se ordene cesar las actuaciones invasivas o arbitrarias que afecten la privacidad personal o familiar del accionante.",
+        "Que se garantice el manejo reservado de la información personal en los establecimientos de reclusión."
+      ]
+    }
+  ]
+}

@@ -159,6 +159,14 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Divider(color: Colors.grey),
+                      const Text('Categoría del delito:', style: TextStyle(fontSize: 13, color: negro)),
+                      Text(_ppl!.categoriaDelDelito, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Divider(color: Colors.grey),
                       const Text('Delito:', style: TextStyle(fontSize: 13, color: negro)),
                       Text(_ppl!.delito, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],

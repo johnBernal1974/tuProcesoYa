@@ -26,7 +26,7 @@ class SolicitudExitosaDerechoPeticionPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 const Text(
-                  "Tu solicitud ha sido recibida",
+                  "Tu solicitud de derecho de petición ha sido recibida",
                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, height: 1),
                   textAlign: TextAlign.center,
                 ),

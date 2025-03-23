@@ -13,6 +13,7 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
+import 'Pages/administrador/atender_tutela/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
@@ -22,6 +23,7 @@ import 'Pages/administrador/operadores_page/operadores_page.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
+import 'Pages/administrador/tutelas/derechos_tutelables_page.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
@@ -106,38 +108,47 @@ class MyApp extends StatelessWidget {
       ),
       initialRoute: 'splash', // Ruta inicial
       routes: {
-        'home': (context) => const HomePage(), // Página principal
-        'login': (context) => const LoginPage(),
-        'register': (context) => RegistroPage(),
-        'splash': (context) => SplashPage(),
-        'cargar_info': (context) => AddDelitoPage(),
-        'mis_datos': (context) => const MisDatosPage(),
-        'nosotros': (context) => const NosotrosPage(),
-        'solicitudes_page': (context) => const SolicitudesdeServicioPage(),
-        'derecho_peticion': (context) => const DerechoDePeticionPage(),
-        'tutela': (context) => const TutelaPage(),
-        'derecho_peticion_solicitud': (context) => const DerechoDePeticionSolicitudPage(),
-        'tutela_solicitud': (context) => const TutelaSolicitudPage(),
-        'home_admin': (context) => const HomeAdministradorPage(),
+        //administrador
         'editar_registro_admin': (context) {
           final doc = ModalRoute.of(context)!.settings.arguments as DocumentSnapshot;
           return EditarRegistroPage(doc: doc);
         },
-        'estamos_validando': (context) => EstamosValidandoPage(),
-        'derechos_info': (context) => const DerechosInfoPage(),
-        'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
-        'forgot_password': (context) => const ForgotPasswordPage(),
+        'home_admin': (context) => const HomeAdministradorPage(),
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
         'solicitudes_derecho_peticion_admin': (context) => const SolicitudesDerechoPeticionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
-        'mis_redenciones': (context) => const HistorialRedencionesPage(),
         'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
-        'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
-        'checkout_wompi': (context) => CheckoutPage(),
-        'mis_transacciones': (context) => const MisTransaccionesPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
         'configuraciones': (context) => ConfiguracionesPage(),
+        'derechos_tutelables_page': (context) => const DerechosTutelablesPage(),
+        'atender_tutela': (context) => const AtenderTutelaPage(),
+
+
+
+        //Usuario
+        'home': (context) => const HomePage(), // Página principal
+        'register': (context) => RegistroPage(),
+        'mis_datos': (context) => const MisDatosPage(),
+        'nosotros': (context) => const NosotrosPage(),
+        'solicitudes_page': (context) => const SolicitudesdeServicioPage(),
+        'derecho_peticion_solicitud': (context) => const DerechoDePeticionSolicitudPage(),
+        'estamos_validando': (context) => EstamosValidandoPage(),
+        'derechos_info': (context) => const DerechosInfoPage(),
+        'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
+        'forgot_password': (context) => const ForgotPasswordPage(),
+        'mis_redenciones': (context) => const HistorialRedencionesPage(),
+        'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
+        'checkout_wompi': (context) => const CheckoutPage(),
+        'mis_transacciones': (context) => const MisTransaccionesPage(),
+
+        //general
+        'login': (context) => const LoginPage(),
+        'splash': (context) => SplashPage(),
+        'cargar_info': (context) => AddDelitoPage(),
+        'derecho_peticion': (context) => const DerechoDePeticionPage(),
+        'tutela': (context) => const TutelaPage(),
+        'tutela_solicitud': (context) => const TutelaSolicitudPage(),
 
       },
         onGenerateRoute: (settings) {

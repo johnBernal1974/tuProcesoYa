@@ -110,6 +110,7 @@ flutter:
     - assets/images/
     - assets/config/config.json
     - assets/config/env.json
+    - assets/data/derechos_tutelables.json
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

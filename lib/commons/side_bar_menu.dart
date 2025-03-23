@@ -186,6 +186,10 @@ class _SideBarState extends State<SideBar> {
               showBadge: _pendingSuggestions > 0),
           _buildDrawerTile(context, "Configuraciones", Icons.settings,
               'configuraciones'),
+          _buildDrawerTile(context, "atender tutela", Icons.settings,
+              'atender_tutela'),
+          _buildDrawerTile(context, "pa las tutelas", Icons.settings,
+              'derechos_tutelables_page'),
           _buildDrawerTile(context, "Solicitudes derechos petición",
               Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
           _buildDrawerTile(
