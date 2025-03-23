@@ -34,39 +34,41 @@ class CalculoCondenaController with ChangeNotifier {
         return;
       }
 
-      // 🔥 Obtener los días redimidos
       await calcularTotalRedenciones(id);
       debugPrint("📌 Días redimidos: $_totalDiasRedimidos");
 
-      // 🔥 Aplicar los días redimidos a la condena total
       int condenaTotalDias = (tiempoCondena! * 30) - _totalDiasRedimidos.toInt();
-      if (condenaTotalDias < 0) condenaTotalDias = 0; // Evitar valores negativos
+
+      // 🔥 Condena ya cumplida o inválida
+      if (condenaTotalDias <= 0) {
+        porcentajeEjecutado = 100.0;
+        mesesEjecutado = tiempoCondena; // se cumplió todo
+        diasEjecutadoExactos = 0;
+        mesesRestante = 0;
+        diasRestanteExactos = 0;
+        notifyListeners();
+        return;
+      }
 
       DateTime fechaActual = DateTime.now();
       final fechaFinCondena = fechaCaptura.add(Duration(days: condenaTotalDias));
       final diferenciaRestante = fechaFinCondena.difference(fechaActual);
       final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
 
-      mesesRestante = (diferenciaRestante.inDays ~/ 30);
+      mesesRestante = diferenciaRestante.inDays ~/ 30;
       diasRestanteExactos = diferenciaRestante.inDays % 30;
       mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
       diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
 
-      // 🔥 Calcular porcentaje ejecutado con redenciones aplicadas
       porcentajeEjecutado = (diferenciaEjecutado.inDays / condenaTotalDias) * 100;
-      if (condenaTotalDias == 0) porcentajeEjecutado = 100; // Si la condena es 0, se cumplió todo
-
-      debugPrint("✅ Cálculo de condena actualizado:");
-      debugPrint("   - Condena total (descontando redenciones): $condenaTotalDias días");
-      debugPrint("   - Meses ejecutados: $mesesEjecutado - Días ejecutados: $diasEjecutadoExactos");
-      debugPrint("   - Meses restantes: $mesesRestante - Días restantes: $diasRestanteExactos");
-      debugPrint("   - Porcentaje ejecutado: ${porcentajeEjecutado!.toStringAsFixed(1)}%");
-
       notifyListeners();
+
+      debugPrint("✅ Cálculo actualizado: % ejecutado: $porcentajeEjecutado%");
     } catch (e) {
       debugPrint("❌ Error en calcularTiempo: $e");
     }
   }
+
 
   /// 🔥 Método para obtener la suma total de días redimidos
   Future<void> calcularTotalRedenciones(String pplId) async {

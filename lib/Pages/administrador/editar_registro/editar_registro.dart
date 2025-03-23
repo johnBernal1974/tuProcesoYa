@@ -615,16 +615,18 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                     DateFormat("d 'de' MMMM 'de' y").format(redencion['fecha']),
                                     style: const TextStyle(fontSize: 13),
                                   )),
-                                  DataCell(
-                                    Align(
-                                      alignment: Alignment.centerRight,
-                                      child: Text(
-                                        redencion['dias_redimidos'].toString(),
-                                        style: const TextStyle(fontSize: 13),
+                                      DataCell(
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: Text(
+                                            (redencion['dias_redimidos'] % 1 == 0
+                                                ? (redencion['dias_redimidos'] as double).toStringAsFixed(0)
+                                                : (redencion['dias_redimidos'] as double).toStringAsFixed(1)),
+                                            style: const TextStyle(fontSize: 13),
+                                          ),
+                                        ),
                                       ),
-                                    ),
-                                  ),
-                                  DataCell(Text("${redencion['admin_nombre']} ${redencion['admin_apellido']}",
+                                      DataCell(Text("${redencion['admin_nombre']} ${redencion['admin_apellido']}",
                                       style: const TextStyle(fontSize: 13))),
                                   DataCell(
                                     Text(
@@ -647,7 +649,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                     Align(
                                       alignment: Alignment.centerRight,
                                       child: Text(
-                                        totalDiasRedimidos.toStringAsFixed(1),
+                                        (totalDiasRedimidos % 1 == 0
+                                            ? totalDiasRedimidos.toStringAsFixed(0)
+                                            : totalDiasRedimidos.toStringAsFixed(1)),
                                         style: const TextStyle(fontWeight: FontWeight.bold),
                                       ),
                                     ),
@@ -1804,15 +1808,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           Text(
             'Tiempo\nredimido',
             style: TextStyle(
-                fontSize: screenWidth > 600 ? 14 : 12,
-                color: negroLetras,
-                height: 1
+              fontSize: screenWidth > 600 ? 14 : 12,
+              color: negroLetras,
+              height: 1,
             ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 5),
           Text(
-            '${totalDiasRedimidos.toStringAsFixed(1)} días', // 🔹 Muestra los días redimidos
+            '${totalDiasRedimidos % 1 == 0 ? totalDiasRedimidos.toStringAsFixed(0) : totalDiasRedimidos.toStringAsFixed(1)} días',
             style: TextStyle(
               fontSize: screenWidth > 600 ? 14 : 11,
               fontWeight: FontWeight.bold,
@@ -1820,6 +1824,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
         ],
       ),
+
     );
 
     // 🔶 Nueva Tarjeta para "Condena Total Cumplida"
