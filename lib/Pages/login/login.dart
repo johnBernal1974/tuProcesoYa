@@ -243,7 +243,7 @@ class _LoginPageState extends State<LoginPage> {
             if (role == "pasante 1" || role == "pasante 2") {
               if (context.mounted) {
                 print("Redirigiendo a SolicitudesDerechoPeticionAdminPage...");
-                Navigator.pushNamedAndRemoveUntil(context, 'solicitudes_derecho_peticion_admin', (route) => false);
+                Navigator.pushNamedAndRemoveUntil(context, 'historial_solicitudes_derecho_peticion_admin', (route) => false);
               }
               return;
             }

@@ -162,10 +162,16 @@ class DelitosDropdownWidget extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          DropdownButtonFormField<String>(
+          delitosDisponibles.isNotEmpty
+              ? DropdownButtonFormField<String>(
             dropdownColor: blanco,
             isExpanded: true,
-            value: delitosDisponibles.contains(delitoSeleccionado) ? delitoSeleccionado : null,
+            value: (delitoSeleccionado != null &&
+                delitoSeleccionado!.isNotEmpty &&
+                delitosDisponibles.contains(delitoSeleccionado))
+                ? delitoSeleccionado
+                : null,
+
             decoration: _inputDecoration("Delito"),
             items: delitosDisponibles.map((String delito) {
               return DropdownMenuItem<String>(
@@ -178,7 +184,9 @@ class DelitosDropdownWidget extends StatelessWidget {
                 onDelitoChanged(categoriaSeleccionada!, nuevoDelito);
               }
             },
-          ),
+          )
+              : const SizedBox.shrink(),
+
 
         ],
       ),

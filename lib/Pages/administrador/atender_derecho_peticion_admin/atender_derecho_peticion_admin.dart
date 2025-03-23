@@ -1757,7 +1757,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                       Navigator.of(context).pop();
                       Navigator.pushReplacementNamed(
                         context,
-                        'solicitudes_derecho_peticion_admin',
+                        'historial_solicitudes_derecho_peticion_admin',
                       );
                     },
                     child: const Text("OK"),

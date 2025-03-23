@@ -132,6 +132,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     municipioSeleccionado = widget.doc['municipio'];
     categoriaDelito = widget.doc['categoria_delito'];
     selectedDelito = widget.doc['delito'];
+    if (categoriaDelito != null && categoriaDelito!.trim().isEmpty) {
+      categoriaDelito = null;
+    }
+    if (selectedDelito != null && selectedDelito!.trim().isEmpty) {
+      selectedDelito = null;
+    }
 
 
   }
@@ -276,6 +282,30 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             const SizedBox(height: 15),
             emailAcudiente(),
             const SizedBox(height: 50),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: gris),
+                color: blanco
+              ),
+              child: Row(
+                children: [
+                  if (widget.doc["status"] != "bloqueado") ...[
+                    botonGuardar(),
+                    const SizedBox(height: 150),
+                    bloquearUsuario(),
+                  ] else
+                    FutureBuilder<bool>(
+                      future: _adminPuedeDesbloquear(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const SizedBox();
+                        return snapshot.data == true ? desbloquearUsuario() : const SizedBox();
+                      },
+                    ),
+                ],
+              ),
+            ),
           ],
         );
       },
@@ -316,22 +346,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 historialAccionUsuario(),
                 const SizedBox(height: 20),
                 // 🔹 Botones de acción con borde
-                Column(
-                  children: [
-                    if (widget.doc["status"] != "bloqueado") ...[
-                      botonGuardar(),
-                      const SizedBox(height: 150),
-                      bloquearUsuario(),
-                    ] else
-                      FutureBuilder<bool>(
-                        future: _adminPuedeDesbloquear(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) return const SizedBox();
-                          return snapshot.data == true ? desbloquearUsuario() : const SizedBox();
-                        },
-                      ),
-                  ],
-                ),
+
               ],
             ),
           )
@@ -1454,7 +1469,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   Widget seleccionarJuzgadoQueCondeno() {
     // Si ya existe información guardada en el documento y no estamos en modo edición,
     // se muestra el contenedor con la información almacenada.
@@ -1657,76 +1671,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       );
     }
   }
-
-  Widget seleccionarDelito() {
-    if (!_mostrarDropdownDelito &&
-        widget.doc['delito'] != null &&
-        widget.doc['delito'].toString().trim().isNotEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(4),
-          color: Colors.white,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _mostrarDropdownDelito = true;
-                });
-              },
-              child: const Row(
-                children: [
-                  Text("Delito", style: TextStyle(fontSize: 11)),
-                  Icon(Icons.edit, size: 15),
-                ],
-              ),
-            ),
-            Text(
-              widget.doc['delito'],
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey),
-        borderRadius: BorderRadius.circular(4),
-        color: Colors.white, // Fondo blanco para el dropdown
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Seleccionar Delito",
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          DelitosDropdownWidget(
-            categoriaSeleccionada: categoriaDelito,
-            delitoSeleccionado: selectedDelito,
-            onDelitoChanged: (categoria, delito) {
-              setState(() {
-                categoriaDelito = categoria;
-                selectedDelito = delito;
-                _mostrarDropdownDelito = false;
-              });
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-
-
 
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -2011,7 +1955,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   Widget nombrePpl() {
     return textFormField(
       controller: _nombreController,
@@ -2063,17 +2006,27 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.deepPurple, width: 1), // Borde gris cuando no está enfocado
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 1), // Borde gris cuando está enfocado
+          borderSide: const BorderSide(color: Colors.grey, width: 2),
+        ),
+        // 👇 Agrega estas 2 líneas para quitar el borde rojo de error
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 2),
         ),
         suffixIcon: IconButton(
           icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
           onPressed: () => _seleccionarFechaCaptura(context),
         ),
       ),
+
       validator: (value) {
         if (value == null || value.isEmpty) {
           return 'Por favor ingrese la fecha de captura';
@@ -2127,13 +2080,40 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Widget condenaPpl(){
-    return textFormField(
+  Widget condenaPpl() {
+    return TextFormField(
       controller: _tiempoCondenaController,
-      labelText: 'Condena en meses',
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: 'Tiempo de condena',
+        floatingLabelStyle: TextStyle(
+          color: Colors.grey.shade700,
+          fontWeight: FontWeight.bold,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.red.shade900, width: 2),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.red.shade900, width: 2),
+        ),
+      ),
       validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingrese la condena en meses';
+        final parsed = int.tryParse(value ?? '');
+        if (parsed == null || parsed <= 0) {
+          return 'Por favor, ingrese un valor válido mayor a 0';
         }
         return null;
       },
@@ -2662,6 +2642,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
             // 🔹 Validaciones
             if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
+            if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
             if ((selectedRegional ?? widget.doc['regional']) == null) camposFaltantes.add("Regional");
             if ((selectedCiudad ?? widget.doc['ciudad']) == null) camposFaltantes.add("Ciudad");
             if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) camposFaltantes.add("Juzgado de Ejecución de Penas");
@@ -2673,6 +2654,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
             if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
             if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
+            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
+            if (tiempoCondena == 0) camposFaltantes.add("Tiempo de condena");
 
             if (camposFaltantes.isNotEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -2684,8 +2667,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
               return;
             }
-
-            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
 
             // 🔹 Obtener los correos del centro de reclusión
             Map<String, String> correosCentro = {

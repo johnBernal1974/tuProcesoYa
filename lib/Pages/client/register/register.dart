@@ -1428,6 +1428,7 @@ class _RegistroPageState extends State<RegistroPage> {
         "juzgado_que_condeno": "",
         "juzgado_que_condeno_email": "",
         "ciudad": "",
+        "categoria_delito": "",
         "delito": "",
         "td": tdPplController.text.trim(),
         "nui": nuiPplController.text.trim(),

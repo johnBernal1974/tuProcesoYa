@@ -190,8 +190,8 @@ class _SideBarState extends State<SideBar> {
               'atender_tutela'),
           _buildDrawerTile(context, "pa las tutelas", Icons.settings,
               'derechos_tutelables_page'),
-          _buildDrawerTile(context, "Solicitudes derechos petición",
-              Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(context, "Historial Solicitudes derechos petición",
+              Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
           _buildDrawerTile(
               context, "Registrar Operadores", Icons.app_registration,
               'registrar_operadores'),
@@ -208,8 +208,8 @@ class _SideBarState extends State<SideBar> {
               context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
               'buzon_sugerencias_administrador',
               showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(context, "Solicitudes derechos petición",
-              Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(context, "Historial Solicitudes derechos petición",
+              Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
         ]);
       }
 
@@ -222,8 +222,8 @@ class _SideBarState extends State<SideBar> {
               context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
               'buzon_sugerencias_administrador',
               showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(context, "Solicitudes derechos petición",
-              Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(context, "Historial Solicitudes derechos petición",
+              Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
         ]);
       } else if (rol == "operador 1" || rol == "operador 2") {
         // Para operadores se muestran opciones básicas.
@@ -235,8 +235,8 @@ class _SideBarState extends State<SideBar> {
       if (rol == "pasante 1" || rol == "pasante 2" || rol == "pasante 3") {
         // Para pasantes, se muestra solo la página principal.
         items.add(
-          _buildDrawerTile(context, "Solicitudes derechos petición",
-              Icons.add_alert_outlined, 'solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(context, "Historial Solicitudes derechos petición",
+              Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
         );
       }
     } else {
@@ -247,8 +247,6 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Tus datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar,
             'solicitudes_page'),
-
-
         ExpansionTile(
           leading: const Icon(
               Icons.attach_money, color: Colors.black, size: 20),

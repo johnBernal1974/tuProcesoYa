@@ -48,7 +48,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 
-final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 Map<String, dynamic> envVars = {}; // 🔹 Variable global para almacenar las variables de entorno
 
 void main() async {
@@ -91,7 +91,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navKey,
+      navigatorKey: navigatorKey,
       title: 'Tu Proceso Ya',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -115,10 +115,9 @@ class MyApp extends StatelessWidget {
         },
         'home_admin': (context) => const HomeAdministradorPage(),
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
-        'solicitudes_derecho_peticion_admin': (context) => const SolicitudesDerechoPeticionAdminPage(),
+        'historial_solicitudes_derecho_peticion_admin': (context) => const SolicitudesDerechoPeticionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
-        'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
         'configuraciones': (context) => ConfiguracionesPage(),
         'derechos_tutelables_page': (context) => const DerechosTutelablesPage(),
@@ -133,6 +132,7 @@ class MyApp extends StatelessWidget {
         'nosotros': (context) => const NosotrosPage(),
         'solicitudes_page': (context) => const SolicitudesdeServicioPage(),
         'derecho_peticion_solicitud': (context) => const DerechoDePeticionSolicitudPage(),
+        'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
