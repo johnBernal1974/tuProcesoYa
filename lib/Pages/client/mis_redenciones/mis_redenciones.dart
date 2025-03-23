@@ -16,7 +16,7 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
   late MyAuthProvider _authProvider;
   bool _isLoading = true;
   List<Map<String, dynamic>> _redenciones = [];
-  double _totalDiasRedimidos = 0.0; // 🔥 Variable para almacenar la sumatoria
+  double _totalDiasRedimidos = 0.0;
 
   @override
   void initState() {
@@ -50,12 +50,12 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
             try {
               fecha = DateFormat('d/M/yyyy').parse(fechaStr);
             } catch (e) {
-              debugPrint("❌ Error al parsear fecha: $fechaStr - $e");
+              debugPrint("\u274c Error al parsear fecha: $fechaStr - $e");
               fecha = DateTime(2000, 1, 1);
             }
 
             double dias = (doc['dias_redimidos'] ?? 0).toDouble();
-            sumatoria += dias; // 🔥 Acumular los días redimidos
+            sumatoria += dias;
 
             return {
               'dias_redimidos': dias,
@@ -63,16 +63,20 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
             };
           }).toList();
 
-          _totalDiasRedimidos = sumatoria; // 🔥 Guardar la sumatoria total
+          _totalDiasRedimidos = sumatoria;
           _isLoading = false;
         });
       } catch (e) {
-        debugPrint("❌ Error al obtener redenciones: $e");
+        debugPrint("\u274c Error al obtener redenciones: $e");
         setState(() {
           _isLoading = false;
         });
       }
     }
+  }
+
+  String _formatearDias(double dias) {
+    return dias % 1 == 0 ? dias.toStringAsFixed(0) : dias.toStringAsFixed(1);
   }
 
   @override
@@ -108,7 +112,7 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
                     DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
                     DataColumn(
                       label: Align(
-                        alignment: Alignment.centerRight, // 🔹 Alinear encabezado a la derecha
+                        alignment: Alignment.centerRight,
                         child: Text('Días Redimidos', style: TextStyle(fontWeight: FontWeight.bold)),
                       ),
                     ),
@@ -122,16 +126,15 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
                         )),
                         DataCell(
                           Align(
-                            alignment: Alignment.centerRight, // 🔹 Alinea el contenido a la derecha
+                            alignment: Alignment.centerRight,
                             child: Text(
-                              redencion['dias_redimidos'].toString(),
+                              _formatearDias(redencion['dias_redimidos']),
                               style: const TextStyle(fontSize: 13),
                             ),
                           ),
                         ),
                       ]),
                     ),
-                    // 🔥 Fila adicional para mostrar la sumatoria total
                     DataRow(
                       color: MaterialStateColor.resolveWith((states) => Colors.grey.shade300),
                       cells: [
@@ -143,7 +146,7 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: Text(
-                              _totalDiasRedimidos.toStringAsFixed(2), // 🔥 Mostrar el total con 2 decimales
+                              _formatearDias(_totalDiasRedimidos),
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                           ),

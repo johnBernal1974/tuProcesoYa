@@ -197,7 +197,7 @@ class _SideBarState extends State<SideBar> {
               'registrar_operadores'),
           _buildDrawerTile(
               context, "Operadores", Icons.account_box, 'operadores_page'),
-          _buildDrawerTile(context, "Transacciones", Icons.account_box,
+          _buildDrawerTile(context, " Historial Transacciones", Icons.account_box,
               'admin_transacciones'),
         ]);
       } else if (rol == "master") {
@@ -245,8 +245,9 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(
             context, "Página principal", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Tus datos", Icons.person_pin, 'mis_datos'),
-        _buildDrawerTile(context, "Solicitar servicios", Icons.edit_calendar,
-            'solicitudes_page'),
+        _buildDrawerTile(context, "Solicitar derecho de petición", Icons.account_balance_outlined, 'derecho_peticion'),
+        _buildDrawerTile(context, "Solicitar acción de tutela", Icons.account_balance_sharp, 'tutela'),
+
         ExpansionTile(
           leading: const Icon(
               Icons.attach_money, color: Colors.black, size: 20),

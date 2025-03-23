@@ -1,8 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
 import '../administrador/home_admin/home_admin.dart';
-import '../administrador/solicitudes_derechos_peticion/solicitudes_derechos_peticion_admin.dart';
 import '../client/estamos_validando/estamos_validando.dart';
 import '../client/home/home.dart';
 import '../login/login.dart';
@@ -50,7 +50,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
             print("Redirigiendo a SolicitudesDerechoPeticionAdminPage...");
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (context) => const SolicitudesDerechoPeticionAdminPage()),
+              MaterialPageRoute(builder: (context) => const HistorialSolicitudesDerechoPeticionAdminPage()),
             );
           }
           return;

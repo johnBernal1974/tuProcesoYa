@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:tuprocesoya/Pages/administrador/solicitudes_derechos_peticion/solicitudes_derechos_peticion_admin.dart';
 import 'package:tuprocesoya/Pages/client/derecho_de_peticion_solicitud/derecho_de_peticion_solicitud.dart';
 import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
@@ -17,9 +16,10 @@ import 'Pages/administrador/atender_tutela/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
-import 'Pages/administrador/historial_transacciones/historial_transacciones.dart';
+import 'Pages/administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
+import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
-import 'Pages/administrador/operadores_page/operadores_page.dart';
+import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
@@ -35,7 +35,6 @@ import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
 import 'Pages/client/register/register.dart';
 import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
-import 'Pages/client/solicitudes_page/solicitudes_page.dart';
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
@@ -45,7 +44,6 @@ import 'commons/wompi/checkout_page.dart';
 import 'firebase_config.dart';
 import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -115,7 +113,7 @@ class MyApp extends StatelessWidget {
         },
         'home_admin': (context) => const HomeAdministradorPage(),
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
-        'historial_solicitudes_derecho_peticion_admin': (context) => const SolicitudesDerechoPeticionAdminPage(),
+        'historial_solicitudes_derecho_peticion_admin': (context) => const HistorialSolicitudesDerechoPeticionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -130,7 +128,6 @@ class MyApp extends StatelessWidget {
         'register': (context) => RegistroPage(),
         'mis_datos': (context) => const MisDatosPage(),
         'nosotros': (context) => const NosotrosPage(),
-        'solicitudes_page': (context) => const SolicitudesdeServicioPage(),
         'derecho_peticion_solicitud': (context) => const DerechoDePeticionSolicitudPage(),
         'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),

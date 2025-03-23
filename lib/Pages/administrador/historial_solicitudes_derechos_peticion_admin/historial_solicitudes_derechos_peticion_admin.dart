@@ -7,14 +7,14 @@ import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../src/colors/colors.dart';
 
-class SolicitudesDerechoPeticionAdminPage extends StatefulWidget {
-  const SolicitudesDerechoPeticionAdminPage({super.key});
+class HistorialSolicitudesDerechoPeticionAdminPage extends StatefulWidget {
+  const HistorialSolicitudesDerechoPeticionAdminPage({super.key});
 
   @override
-  State<SolicitudesDerechoPeticionAdminPage> createState() => _SolicitudesDerechoPeticionAdminPageState();
+  State<HistorialSolicitudesDerechoPeticionAdminPage> createState() => _HistorialSolicitudesDerechoPeticionAdminPageState();
 }
 
-class _SolicitudesDerechoPeticionAdminPageState extends State<SolicitudesDerechoPeticionAdminPage> {
+class _HistorialSolicitudesDerechoPeticionAdminPageState extends State<HistorialSolicitudesDerechoPeticionAdminPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   String _filtroEstado = "Solicitado"; // Estado por defecto
   String rol = AdminProvider().rol ?? "";
