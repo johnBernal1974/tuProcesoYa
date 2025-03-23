@@ -218,21 +218,37 @@ class _CheckoutPageState extends State<CheckoutPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              const Text("Gracias por confiar en nosotros...", textAlign: TextAlign.center),
-              const SizedBox(height: 20),
+              const Text("Gracias por confiar en nosotros y esperamos que hayas disfrutado de tus 7 días de suscripción gratis.", style:
+                  TextStyle(fontWeight: FontWeight.w900, fontSize: 18, height: 1.2), textAlign: TextAlign.center),
+              const SizedBox(height: 10),
+              const Text("Para que puedas acceder a los bajos precios de nuestros servicios, es necesario "
+                  "que te suscribas.", style: TextStyle(fontSize: 14, height: 1.2), textAlign: TextAlign.center),
+              const SizedBox(height: 10),
+              const Text("¡Este valor se paga una única vez!", style: TextStyle(fontWeight: FontWeight.w900),
+              textAlign: TextAlign.center),
+              const SizedBox(height: 40),
               if (_subscriptionValue != null)
-                Column(
-                  children: [
-                    const Text("Valor de la suscripción", style: TextStyle(fontWeight: FontWeight.bold)),
-                    Text("\\${_formatter.format(_subscriptionValue)}", style: const TextStyle(fontSize: 22)),
-                  ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: gris),
+                    color: Colors.green
+                  ),
+                  child: Column(
+                    children: [
+                      const Text("Valor de la suscripción", style: TextStyle(fontWeight: FontWeight.bold, color: blanco)),
+                      Text("\$${_formatter.format(_subscriptionValue)}", style: const TextStyle(fontSize: 22, color: blanco)),
+                    ],
+                  ),
                 )
               else
                 const CircularProgressIndicator(),
-              const SizedBox(height: 30),
+              const SizedBox(height: 70),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: primary),
                 onPressed: _pagarSuscripcion,
-                child: const Text("Pagar Suscripción"),
+                child: const Text("Pagar Suscripción", style: TextStyle(color: blanco)),
               )
             ],
           ),

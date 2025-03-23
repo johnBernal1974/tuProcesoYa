@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
@@ -35,7 +36,7 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
           child: SizedBox(
             width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(6),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -71,6 +72,8 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
   }
 
   Future<void> _validarYEnviarFormulario() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
     final respuestas = _controllers.map((c) => c.text.trim()).toList();
 
     if (respuestas.any((r) => r.isEmpty)) {
@@ -139,6 +142,7 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
       // 📝 Guardar en Firestore
       await firestore.collection('tutelas_solicitadas').doc(docId).set({
         "id": docId,
+        "idUser": user.uid,
         "numero_seguimiento": numeroSeguimiento,
         "categoria": selectedCategory,
         "subcategoria": selectedSubCategory,

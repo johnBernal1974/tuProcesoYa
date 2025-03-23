@@ -296,6 +296,14 @@ class _SideBarState extends State<SideBar> {
               padding: const EdgeInsets.only(left: 16.0),
               // 🔥 Espaciado para cada elemento
               child: _buildDrawerTile(
+                  context, "Tus Solicitudes de tutelas",
+                  Icons.history_edu_outlined,
+                  'historial_solicitudes_tutelas'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(
                   context, "Tus Redenciones", Icons.filter_9_plus_outlined,
                   'mis_redenciones'),
             ),
