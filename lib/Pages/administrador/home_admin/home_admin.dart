@@ -196,14 +196,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           ],
                         ),
                         const SizedBox(height: 20),
-                        _buildSearchField(),
+                        Container(
+                          width: 800,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: gris),
+                              color: blanco
+                            ),
+                            child: _buildSearchField()),
                         const SizedBox(height: 20),
 
                         // 🔥 Mostrar mensaje si no hay documentos después del filtro
                         filteredDocs.isEmpty
                             ? Center(
                           child: Padding(
-                            padding: EdgeInsets.all(16.0),
+                            padding: const EdgeInsets.all(16.0),
                             child: Text(
                               "No hay ${filterStatus == 'registrado' ? 'nuevos usuarios registrados' : filterStatus == 'activado' ? 'usuarios activados' : filterStatus == 'bloqueado' ? 'usuarios bloqueados' : 'documentos'} disponibles.",
                               style: const TextStyle(fontSize: 28, color: Colors.grey),
@@ -328,6 +336,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
               },
               decoration: InputDecoration(
                 labelText: "Buscar registros",
+                floatingLabelBehavior: FloatingLabelBehavior.always, // 🔹 Mantener visible
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: searchQuery.isNotEmpty
                     ? IconButton(
@@ -340,7 +349,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                   },
                 )
                     : null,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.grey, width: 2),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Colors.grey),
+                ),
               ),
             ),
 
@@ -375,6 +399,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                   },
                   decoration: InputDecoration(
                     labelText: "Buscar por operador",
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
                     prefixIcon: const Icon(Icons.person_search),
                     suffixIcon: searchAdminQuery.isNotEmpty
                         ? IconButton(
@@ -387,8 +412,24 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       },
                     )
                         : null,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.grey, width: 2),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.grey),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.grey),
+                    ),
+                  )
+                  ,
                 ),
               ),
           ],

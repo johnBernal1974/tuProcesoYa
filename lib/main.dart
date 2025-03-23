@@ -48,7 +48,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
 Map<String, dynamic> envVars = {}; // 🔹 Variable global para almacenar las variables de entorno
 
 void main() async {
@@ -91,7 +91,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      navigatorKey: navigatorKey,
+      navigatorKey: navKey,
       title: 'Tu Proceso Ya',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

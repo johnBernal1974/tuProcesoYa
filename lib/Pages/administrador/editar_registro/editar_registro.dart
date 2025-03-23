@@ -283,7 +283,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             emailAcudiente(),
             const SizedBox(height: 50),
             Container(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: gris),
@@ -293,7 +293,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 children: [
                   if (widget.doc["status"] != "bloqueado") ...[
                     botonGuardar(),
-                    const SizedBox(height: 150),
                     bloquearUsuario(),
                   ] else
                     FutureBuilder<bool>(
