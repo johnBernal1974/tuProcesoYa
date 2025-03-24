@@ -16,6 +16,8 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import '../../../widgets/datos_ejecucion_condena.dart';
+
 class AtenderDerechoPeticionPage extends StatefulWidget {
   final String status;
   final String idDocumento;
@@ -864,10 +866,64 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ],
           ),
           const SizedBox(height: 15),
-          infocondena()
+          FutureBuilder<double>(
+            future: calcularTotalRedenciones(widget.idUser),
+            builder: (context, snapshot) {
+              double totalRedimido = snapshot.data ?? 0.0;
+              return _datosEjecucionCondena(totalRedimido);
+            },
+          ),
+          const SizedBox(height: 20),
+          Column(
+            children: [
+              _buildBenefitCard(
+                title: 'Permiso Administrativo de 72 horas',
+                condition: porcentajeEjecutado >= 33.33,
+                remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+              ),
+              _buildBenefitCard(
+                title: 'Prisión Domiciliaria',
+                condition: porcentajeEjecutado >= 50,
+                remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+              ),
+              _buildBenefitCard(
+                title: 'Libertad Condicional',
+                condition: porcentajeEjecutado >= 60,
+                remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+              ),
+              _buildBenefitCard(
+                title: 'Extinción de la Pena',
+                condition: porcentajeEjecutado >= 100,
+                remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 50),
         ],
       ),
     );
+  }
+
+  Future<double> calcularTotalRedenciones(String pplId) async {
+    double totalDias = 0.0;
+
+    try {
+      QuerySnapshot redencionesSnapshot = await FirebaseFirestore.instance
+          .collection('Ppl')
+          .doc(pplId)
+          .collection('redenciones')
+          .get();
+
+      for (var doc in redencionesSnapshot.docs) {
+        totalDias += (doc['dias_redimidos'] as num).toDouble();
+      }
+
+      print("📌 Total días redimidos en el atender: $totalDias"); // 🔥 Mostrar en consola
+    } catch (e) {
+      print("❌ Error calculando redenciones: $e");
+    }
+
+    return totalDias;
   }
 
   String obtenerEntidad(String nombre) {
@@ -961,6 +1017,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     }
   }
 
+  //Para los tiempos de los beneficios
   Future<void> calcularTiempo(String id) async {
     final pplData = await _pplProvider.getById(id);
     if (pplData != null) {
@@ -1017,133 +1074,23 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     }
   }
 
-  Widget infocondena(){
-    final screenWidth = MediaQuery.of(context).size.width;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Card(
-              shape: RoundedRectangleBorder(
-                side: const BorderSide(color: primary, width: 1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              elevation: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Condena\ntranscurrido',
-                        style: TextStyle(fontSize: screenWidth > 600 ? 12 : 11, fontWeight: FontWeight.bold,
-                            color: negroLetras,
-                            height: 1),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        mesesEjecutado == 1
-                            ? diasEjecutadoExactos == 1
-                            ? '$mesesEjecutado mes : $diasEjecutadoExactos día'
-                            : '$mesesEjecutado mes : $diasEjecutadoExactos días'
-                            : diasEjecutadoExactos == 1
-                            ? '$mesesEjecutado meses : $diasEjecutadoExactos día'
-                            : '$mesesEjecutado meses : $diasEjecutadoExactos días',
-                        style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, fontWeight: FontWeight.bold),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Card(
-              shape: RoundedRectangleBorder(
-                side: const BorderSide(color: primary, width: 1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              elevation: 3,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Condena\nrestante',
-                        style: TextStyle(fontSize: screenWidth > 600 ? 12 : 11, fontWeight: FontWeight.bold,
-                            color: negroLetras,
-                            height: 1),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        mesesRestante == 1
-                            ? diasRestanteExactos == 1
-                            ? '$mesesRestante mes : $diasRestanteExactos día'
-                            : '$mesesRestante mes : $diasRestanteExactos días'
-                            : mesesRestante > 0
-                            ? diasRestanteExactos == 1
-                            ? '$mesesRestante meses : $diasRestanteExactos día'
-                            : '$mesesRestante meses : $diasRestanteExactos días'
-                            : diasRestanteExactos == 1
-                            ? '$diasRestanteExactos día'
-                            : '$diasRestanteExactos días',
-                        style: TextStyle(fontSize: screenWidth > 600 ? 14 : 12, fontWeight: FontWeight.bold),
-                      )
-                    ],
-                  ),
-                ),
-              ),
-            )
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'Porcentaje de condena ejecutado: ${porcentajeEjecutado.toStringAsFixed(1)}%',
-          style: const TextStyle(fontSize: 16),
-        ),
-        const SizedBox(height: 20),
+  Widget _datosEjecucionCondena(double totalDiasRedimidos) {
+    // 🔹 Asegurar que los cálculos usen `totalDiasRedimidos`
+    int totalDiasEjecutados = mesesEjecutado * 30 + diasEjecutadoExactos + totalDiasRedimidos.toInt();
+    int totalDiasRestantes = (mesesRestante * 30 + diasRestanteExactos - totalDiasRedimidos).toInt();
+    int mesesRestantesActualizados = totalDiasRestantes ~/ 30;
+    int diasRestantesActualizados = totalDiasRestantes % 30;
+    double nuevoPorcentajeEjecutado = ((totalDiasEjecutados) / (totalDiasEjecutados + totalDiasRestantes) * 100).clamp(0, 100);
 
-        Column(
-          children: [
-            _buildBenefitCard(
-              title: 'Permiso Administrativo de 72 horas',
-              condition: porcentajeEjecutado >= 33.33,
-              remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-            ),
-            _buildBenefitCard(
-              title: 'Prisión Domiciliaria',
-              condition: porcentajeEjecutado >= 50,
-              remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-            ),
-            _buildBenefitCard(
-              title: 'Libertad Condicional',
-              condition: porcentajeEjecutado >= 60,
-              remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-            ),
-            _buildBenefitCard(
-              title: 'Extinción de la Pena',
-              condition: porcentajeEjecutado >= 100,
-              remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-            ),
-          ],
-        ),
-        const SizedBox(height: 50),
-      ],
+    return DatosEjecucionCondena(
+      mesesEjecutado: mesesEjecutado,
+      diasEjecutadoExactos: diasEjecutadoExactos,
+      mesesRestante: mesesRestantesActualizados,
+      diasRestanteExactos: diasRestantesActualizados,
+      totalDiasRedimidos: totalDiasRedimidos,
+      porcentajeEjecutado: nuevoPorcentajeEjecutado,
+      primary: Colors.grey,
+      negroLetras: Colors.black,
     );
   }
 
@@ -1669,7 +1616,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
