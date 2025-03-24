@@ -3,9 +3,23 @@ const admin = require("firebase-admin"); // 📌 Importamos Firebase Admin SDK
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 const express = require("express");
-admin.initializeApp(); // 📌 Inicializa Firebase Admin
 
+admin.initializeApp(); // 📌 Inicializa Firebase Admin
 const db = admin.firestore(); // 📌 Referencia a Firestore
+
+// ✅ Manejo seguro de functions.config()
+let firebaseConfig = {};
+try {
+    firebaseConfig = functions.config().app_config;
+    console.log("🔥 Configuración cargada correctamente.");
+} catch (error) {
+    console.error("⚠️ No se pudo cargar functions.config():", error);
+}
+
+console.log("🔥 Clave API:", firebaseConfig.web_api_key || "NO DEFINIDA");
+console.log("🔥 Project ID:", firebaseConfig.project_id || "NO DEFINIDA");
+console.log("🔥 Auth Domain:", firebaseConfig.auth_domain || "NO DEFINIDA");
+console.log("🔥 Storage Bucket:", firebaseConfig.storage_bucket || "NO DEFINIDA");
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -23,31 +37,22 @@ app.post("/enviarCorreo", async (req, res) => {
       },
     });
 
-    let adjuntos = [];
-
-    if (archivos && archivos.length > 0) {
-      archivos.forEach((archivo) => {
-        if (archivo.base64) {
-          adjuntos.push({
-            filename: archivo.nombre,
-            content: archivo.base64,
-            encoding: "base64",
-          });
-        }
-      });
-    }
+    let adjuntos = archivos?.map(archivo => ({
+      filename: archivo.nombre,
+      content: archivo.base64,
+      encoding: "base64",
+    })) || [];
 
     let mailOptions = {
       from: "johnnever.bernal@gmail.com",
       to: destinatario,
       subject: asunto,
       html: mensaje,
-      attachments: adjuntos.length > 0 ? adjuntos : undefined,
+      attachments: adjuntos.length ? adjuntos : undefined,
     };
 
     let info = await transporter.sendMail(mailOptions);
     res.status(200).json({ message: "Correo enviado con éxito", response: info.response });
-
   } catch (error) {
     console.error("🚨 Error al enviar correo:", error);
     res.status(500).json({ error: "Error al enviar el correo", details: error.message });
@@ -71,11 +76,10 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
     const transactionId = transaction.id;
     const status = transaction.status;
     const reference = transaction.reference;
-    const amount = transaction.amount_in_cents / 100; // Convertir a pesos
+    const amount = transaction.amount_in_cents / 100;
     const paymentMethod = transaction.payment_method_type;
-    const createdAt = transaction.created_at; // Fecha de la transacción
+    const createdAt = transaction.created_at;
 
-    // 📌 Extraer el ID del usuario desde la referencia
     const referenceParts = reference.split("_");
     if (referenceParts.length < 3) {
       console.error("⚠️ Referencia inválida:", reference);
@@ -83,9 +87,8 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
     }
 
     const tipoTransaccion = referenceParts[0];
-    const userId = referenceParts[1]; // ID del usuario en Firestore
+    const userId = referenceParts[1];
 
-    // 📌 Obtener documento del usuario en Firestore
     const userRef = db.collection("Ppl").doc(userId);
     const userDoc = await userRef.get();
 
@@ -94,7 +97,6 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado en Firestore" });
     }
 
-    // 📌 Guardar transacción en la colección "recargas"
     const recargaRef = db.collection("recargas").doc(transactionId);
     await recargaRef.set({
       userId: userId,
@@ -109,54 +111,30 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
 
     console.log(`✅ Transacción guardada en "recargas": ${transactionId}`);
 
-    // 📌 Si es una suscripción, activar isPaid solo si está aprobada
     if (tipoTransaccion === "suscripcion" && status === "APPROVED") {
-      await userRef.update({
-        isPaid: true
-      });
+      await userRef.update({ isPaid: true });
       console.log(`✅ Suscripción aprobada para ${userId}`);
     }
 
-    // 📌 Si es una recarga y está aprobada, sumar el saldo
     if (tipoTransaccion === "recarga" && status === "APPROVED") {
       const saldoActual = userDoc.data().saldo || 0;
       const nuevoSaldo = saldoActual + amount;
 
-      await userRef.update({
-        saldo: nuevoSaldo
-      });
-
+      await userRef.update({ saldo: nuevoSaldo });
       console.log(`✅ Recarga aprobada para ${userId}: Nuevo saldo ${nuevoSaldo}`);
     }
 
-    // 📌 Si es un pago de derecho de petición y está aprobado, restar el saldo
     if (tipoTransaccion === "peticion" && status === "APPROVED") {
       const saldoActual = userDoc.data().saldo || 0;
-      const monto = Number(amount) || 0;
+      const nuevoSaldo = saldoActual + amount;
 
-      // Suma y resta inmediata para dejar saldo igual
-      const nuevoSaldo = saldoActual + monto;
-
-      await userRef.update({
-        saldo: nuevoSaldo
-      });
-
+      await userRef.update({ saldo: nuevoSaldo });
       console.log(`✅ Pago derecho petición compensado para ${userId}. Saldo no afectado: ${nuevoSaldo}`);
     }
 
-
-
     return res.status(200).json({ message: "Estado de pago actualizado con éxito y guardado en recargas" });
-
   } catch (error) {
     console.error("🚨 Error en el webhook de Wompi:", error);
     return res.status(500).json({ error: "Error procesando el webhook", details: error.message });
   }
 });
-
-
-
-
-
-
-
