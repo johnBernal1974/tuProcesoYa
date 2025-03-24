@@ -76,9 +76,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       pageTitle: 'Panel de administración',
       content: SingleChildScrollView(
         child: Center(
-          child: Container(
+          child: SizedBox(
             width: MediaQuery.of(context).size.width >= 1000 ? 1500 : double.infinity,
-            padding: const EdgeInsets.all(10),
             child: FutureBuilder<DocumentSnapshot>(
               future: _firebaseFirestore.collection('admin').doc(FirebaseAuth.instance.currentUser?.uid ?? "").get(),
               builder: (context, snapshot) {
@@ -163,7 +162,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       children: [
                         Wrap(
                           alignment: WrapAlignment.spaceEvenly,
-                          spacing: 20,
+                          spacing: 10,
                           runSpacing: 20,
                           children: [
                             _buildStatCard("Registrados", countRegistrado, primary, () {
@@ -214,7 +213,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                             padding: const EdgeInsets.all(16.0),
                             child: Text(
                               "No hay ${filterStatus == 'registrado' ? 'nuevos usuarios registrados' : filterStatus == 'activado' ? 'usuarios activados' : filterStatus == 'bloqueado' ? 'usuarios bloqueados' : 'documentos'} disponibles.",
-                              style: const TextStyle(fontSize: 28, color: Colors.grey),
+                              style: const TextStyle(fontSize: 20, color: Colors.grey),
                             ),
 
                           ),
@@ -614,7 +613,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       },
     );
   }
-
 
   String _obtenerRangoSemana(DateTime fecha) {
     DateTime inicioSemana = fecha.subtract(Duration(days: fecha.weekday - 1)); // Lunes de esa semana

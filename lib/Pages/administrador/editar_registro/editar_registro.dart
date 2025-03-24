@@ -160,29 +160,27 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = MediaQuery.of(context).size.width > 600;
     return MainLayout(
       pageTitle: 'Datos generales',
-      content: Form(
-        key: _formKey,
-        child: Center(
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width >= 1000 ? 1500 : double.infinity,
-            child: Row(
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Center(
+            child: isWide
+                ? Row( // escritorio
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 🔹 Sección principal (flex: 3)
-                Expanded(
-                  flex: 4,
-                  child: _buildMainContent(),
-                ),
-
-                const SizedBox(width: 50), // Espacio entre secciones
-
-                // 🔹 Sección secundaria o widgets adicionales (flex: 2)
-                Expanded(
-                  flex: 2,
-                  child: _buildExtraWidget(),
-                ),
+                Expanded(flex: 4, child: _buildMainContent()),
+                const SizedBox(width: 50),
+                Expanded(flex: 2, child: _buildExtraWidget()),
+              ],
+            )
+                : Column( // móvil
+              children: [
+                _buildMainContent(),
+                const SizedBox(height: 30),
+                _buildExtraWidget(),
               ],
             ),
           ),
@@ -191,125 +189,133 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+
   /// 🔹 Contenido principal (Información del PPL y Acudiente)
   Widget _buildMainContent() {
-    return FutureBuilder<double>(
-      future: calcularTotalRedenciones(widget.doc.id), // 🔥 Calcula los días redimidos
-      builder: (context, snapshot) {
-        double totalRedimido = snapshot.data ?? 0.0; // 🟢 Si no hay datos, usa 0.0
-
-        return ListView(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Información del PPL',
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-                ),
-                if(widget.doc.get('situacion') == "En Prisión domiciliaria" ||
-                    widget.doc.get('situacion') == "En libertad condicional")
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Información del PPL',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+              ),
+              if (widget.doc.get('situacion') == "En Prisión domiciliaria" ||
+                  widget.doc.get('situacion') == "En libertad condicional")
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     color: Colors.black,
-
                   ),
                   child: Text(
-                  widget.doc.get('situacion') ?? "",
+                    widget.doc.get('situacion') ?? "",
                     style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
                   ),
                 ),
+            ],
+          ),
+          Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
+          const SizedBox(height: 20),
+
+          FutureBuilder<double>(
+            future: calcularTotalRedenciones(widget.doc.id),
+            builder: (context, snapshot) {
+              double totalRedimido = snapshot.data ?? 0.0;
+              return datosEjecucionCondena(totalRedimido);
+            },
+          ),
+
+          const SizedBox(height: 20),
+          nombrePpl(),
+          const SizedBox(height: 15),
+          apellidoPpl(),
+          const SizedBox(height: 15),
+          tipoDocumentoPpl(),
+          const SizedBox(height: 15),
+          numeroDocumentoPpl(),
+          const SizedBox(height: 15),
+          seleccionarCentroReclusion(),
+          const SizedBox(height: 15),
+          seleccionarJuzgadoEjecucionPenas(),
+          const SizedBox(height: 15),
+          seleccionarJuzgadoQueCondeno(),
+          const SizedBox(height: 15),
+          DelitosDropdownWidget(
+            categoriaSeleccionada: categoriaDelito,
+            delitoSeleccionado: selectedDelito,
+            onDelitoChanged: (categoria, delito) {
+              setState(() {
+                categoriaDelito = categoria;
+                selectedDelito = delito;
+              });
+            },
+          ),
+          const SizedBox(height: 15),
+          fechaCapturaPpl(),
+          const SizedBox(height: 15),
+          radicadoPpl(),
+          const SizedBox(height: 15),
+          condenaPpl(),
+          const SizedBox(height: 15),
+          tdPpl(),
+          const SizedBox(height: 15),
+          nuiPpl(),
+          const SizedBox(height: 15),
+          patioPpl(),
+          const SizedBox(height: 30),
+
+          // 🔹 Información del Acudiente
+          const Text(
+            'Información del Acudiente',
+            style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          ),
+          const SizedBox(height: 15),
+          nombreAcudiente(),
+          const SizedBox(height: 15),
+          apellidosAcudiente(),
+          const SizedBox(height: 15),
+          parentescoAcudiente(),
+          const SizedBox(height: 15),
+          celularAcudiente(),
+          const SizedBox(height: 15),
+          emailAcudiente(),
+          const SizedBox(height: 50),
+
+          // 🔹 Contenedor de acciones
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey),
+              color: Colors.white,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (widget.doc["status"] != "bloqueado") ...[
+                  botonGuardar(),
+                  bloquearUsuario(),
+                ] else
+                  FutureBuilder<bool>(
+                    future: _adminPuedeDesbloquear(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) return const SizedBox();
+                      return snapshot.data == true ? desbloquearUsuario() : const SizedBox();
+                    },
+                  ),
               ],
             ),
-            Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
-            const SizedBox(height: 20),
-            datosEjecucionCondena(totalRedimido), // 🔥 Pasa el total de días redimidos
-
-            const SizedBox(height: 20),
-            nombrePpl(),
-            const SizedBox(height: 15),
-            apellidoPpl(),
-            const SizedBox(height: 15),
-            tipoDocumentoPpl(),
-            const SizedBox(height: 15),
-            numeroDocumentoPpl(),
-            const SizedBox(height: 15),
-            seleccionarCentroReclusion(),
-            const SizedBox(height: 15),
-            seleccionarJuzgadoEjecucionPenas(),
-            const SizedBox(height: 15),
-            seleccionarJuzgadoQueCondeno(),
-            const SizedBox(height: 15),
-            DelitosDropdownWidget(
-              categoriaSeleccionada: categoriaDelito,
-              delitoSeleccionado: selectedDelito,
-              onDelitoChanged: (categoria, delito) {
-                setState(() {
-                  categoriaDelito = categoria;
-                  selectedDelito = delito;
-                });
-              },
-            ),
-            const SizedBox(height: 15),
-            fechaCapturaPpl(),
-            const SizedBox(height: 15),
-            radicadoPpl(),
-            const SizedBox(height: 15),
-            condenaPpl(),
-            const SizedBox(height: 15),
-            tdPpl(),
-            const SizedBox(height: 15),
-            nuiPpl(),
-            const SizedBox(height: 15),
-            patioPpl(),
-            const SizedBox(height: 30),
-
-            // 🔹 Información del Acudiente
-            const Text(
-              'Información del Acudiente',
-              style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-            ),
-            const SizedBox(height: 15),
-            nombreAcudiente(),
-            const SizedBox(height: 15),
-            apellidosAcudiente(),
-            const SizedBox(height: 15),
-            parentescoAcudiente(),
-            const SizedBox(height: 15),
-            celularAcudiente(),
-            const SizedBox(height: 15),
-            emailAcudiente(),
-            const SizedBox(height: 50),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: gris),
-                color: blanco
-              ),
-              child: Row(
-                children: [
-                  if (widget.doc["status"] != "bloqueado") ...[
-                    botonGuardar(),
-                    bloquearUsuario(),
-                  ] else
-                    FutureBuilder<bool>(
-                      future: _adminPuedeDesbloquear(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const SizedBox();
-                        return snapshot.data == true ? desbloquearUsuario() : const SizedBox();
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ],
+      ),
     );
   }
+
+
 
   /// 🔹 Widgets adicionales (Historial y acciones)
   Widget _buildExtraWidget() {
@@ -319,24 +325,23 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         children: [
           if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
               widget.doc["situacion"] == "En libertad condicional")
-          infoPplNoRecluido(),
+            infoPplNoRecluido(),
           const SizedBox(height: 20),
           agregarRedenciones(),
           const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.all(12), // Espaciado interno
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey, width: 1), // 🔹 Borde gris
-              borderRadius: BorderRadius.circular(10), // 🔹 Esquinas redondeadas
-              color: Colors.white, // 🔹 Fondo blanco
+              border: Border.all(color: Colors.grey, width: 1),
+              borderRadius: BorderRadius.circular(10),
+              color: Colors.white,
             ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
                 const SizedBox(height: 20),
-      
                 const Text(
                   "Historial Acciones Administrativas",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -344,16 +349,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 const SizedBox(height: 10),
                 historialAccionUsuario(),
                 const SizedBox(height: 20),
-                // 🔹 Botones de acción con borde
-
               ],
             ),
-          )
-      
+          ),
         ],
       ),
     );
   }
+
 
   //para seleccionar fecha redenciones
   /// 🔥 Mostrar un DatePicker para seleccionar la fecha de redención
@@ -1958,6 +1961,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ],
     );
   }
+
+
 
   Widget nombrePpl() {
     return textFormField(
