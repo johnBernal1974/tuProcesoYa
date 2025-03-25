@@ -6,6 +6,8 @@ const express = require("express");
 const crypto = require("crypto");
 const { defineSecret } = require("firebase-functions/params");
 const { onRequest } = require("firebase-functions/v2/https");
+const AWS = require("aws-sdk");
+
 
 const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
 const WOMPI_INTEGRITY_SECRET = defineSecret("WOMPI_INTEGRITY_SECRET");
@@ -203,5 +205,50 @@ exports.wompiCheckoutUrl = onRequest({
   }
 });
 
+exports.sendEmailWithSES = onRequest({
+  secrets: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SES_REGION"],
+}, async (req, res) => {
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).send("Method Not Allowed");
+    }
+
+    const { to, subject, html } = req.body;
+
+    if (!to || !subject || !html) {
+      return res.status(400).json({ error: "Faltan campos obligatorios: to, subject, html" });
+    }
+
+    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
+    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
+    const region = process.env.AWS_SES_REGION;
+
+    const ses = new AWS.SES({
+      accessKeyId,
+      secretAccessKey,
+      region,
+    });
+
+    const params = {
+      Destination: {
+        ToAddresses: [to],
+      },
+      Message: {
+        Body: {
+          Html: { Charset: "UTF-8", Data: html },
+        },
+        Subject: { Charset: "UTF-8", Data: subject },
+      },
+      Source: "tuproceso.ya@gmail.com",
+    };
+
+    await ses.sendEmail(params).promise();
+
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("❌ Error enviando correo SES:", error);
+    return res.status(500).json({ error: "Error enviando correo SES" });
+  }
+});
 
 
