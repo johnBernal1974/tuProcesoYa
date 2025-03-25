@@ -42,7 +42,6 @@ import 'Pages/configuraciones/configuraciones.dart';
 import 'Pages/forgot_password/forgot_password.dart';
 import 'Pages/login/login.dart';
 import 'commons/wompi/checkout_page.dart';
-import 'firebase_config.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
 

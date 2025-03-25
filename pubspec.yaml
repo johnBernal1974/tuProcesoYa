@@ -42,7 +42,6 @@ dependencies:
   firebase_core: ^2.27.0
   intl: ^0.18.1
   flutter_rating_bar: ^4.0.1
-  flutter_dotenv: ^5.1.0
   url_launcher: ^6.3.0
   shared_preferences: ^2.2.3
   file_picker: ^6.1.1
@@ -108,8 +107,6 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/images/
-    - assets/config/config.json
-    - assets/config/env.json
     - assets/data/derechos_tutelables.json
   #   - images/a_dot_ham.jpeg
 
