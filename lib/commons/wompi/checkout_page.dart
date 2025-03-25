@@ -85,7 +85,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (user == null || _subscriptionValue == null) return;
     String referencia = "suscripcion_${user.uid}_${_uuid.v4()}";
     int centavos = _subscriptionValue! * 100;
-    String? url = await _wompiService.generarUrlCheckout(monto: centavos, referencia: referencia);
+    String? url = await WompiService.obtenerCheckoutUrl(monto: centavos, referencia: referencia);
     if (url != null && context.mounted) {
       Navigator.push(
         context,
@@ -109,7 +109,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
     String referencia = "recarga_${user.uid}_${_uuid.v4()}";
     int centavos = _valorPago! * 100;
-    String? url = await _wompiService.generarUrlCheckout(monto: centavos, referencia: referencia);
+    String? url = await WompiService.obtenerCheckoutUrl(monto: centavos, referencia: referencia);
     if (url != null && context.mounted) {
       Navigator.push(
         context,
@@ -179,7 +179,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 onPressed: () async {
                   String referencia = widget.referenciaDerecho ?? "peticion_${_auth.currentUser?.uid}_${_uuid.v4()}";
                   int centavos = widget.valorDerecho! * 100;
-                  String? url = await _wompiService.generarUrlCheckout(monto: centavos, referencia: referencia);
+                  String? url = await WompiService.obtenerCheckoutUrl(monto: centavos, referencia: referencia);
                   if (context.mounted && url != null) {
                     Navigator.push(
                       context,
