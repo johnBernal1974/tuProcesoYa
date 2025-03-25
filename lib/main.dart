@@ -43,8 +43,8 @@ import 'Pages/forgot_password/forgot_password.dart';
 import 'Pages/login/login.dart';
 import 'commons/wompi/checkout_page.dart';
 import 'firebase_config.dart';
-import 'firebase_options.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:http/http.dart' as http;
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -57,31 +57,37 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  await loadFirebaseConfig(); // 🔥 Cargar `firebaseConfig` antes de Firebase
+  final config = await obtenerFirebaseConfig();
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+      apiKey: config['apiKey'],
+      authDomain: config['authDomain'],
+      projectId: config['projectId'],
+      storageBucket: config['storageBucket'],
+      appId: config['appId'],
+      messagingSenderId: config['messagingSenderId'],
+    ),
+  );
 
   WebViewPlatform.instance = WebWebViewPlatform();
-
-  // Inicializa Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform, // Usa las opciones generadas en firebase_options.dart
-  );
 
   runApp(const MyApp());
 
   // Luego corre la aplicación
 }
-// 🌐 Método para cargar el .env en Flutter Web
-Future<Map<String, dynamic>> loadEnv() async {
-  try {
-    final String response = await rootBundle.loadString('assets/config/env.json');
-    final Map<String, dynamic> data = jsonDecode(response);
-    print("✅ env.json cargado correctamente");
-    return data;
-  } catch (e) {
-    print("❌ Error cargando env.json: $e");
-    return {};
+
+Future<Map<String, dynamic>> obtenerFirebaseConfig() async {
+  final response = await http.get(
+    Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getFirestoreConfig"),
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  } else {
+    throw Exception("Error obteniendo configuración: ${response.statusCode}");
   }
 }
+
 
 
 class MyApp extends StatelessWidget {

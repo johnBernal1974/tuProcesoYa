@@ -1,25 +1,56 @@
 const functions = require("firebase-functions");
-const admin = require("firebase-admin"); // 📌 Importamos Firebase Admin SDK
+const admin = require("firebase-admin");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
 const express = require("express");
+const { defineSecret } = require("firebase-functions/params");
+const { onRequest } = require("firebase-functions/v2/https");
 
-admin.initializeApp(); // 📌 Inicializa Firebase Admin
-const db = admin.firestore(); // 📌 Referencia a Firestore
+admin.initializeApp();
+const db = admin.firestore();
 
-// ✅ Manejo seguro de functions.config()
-let firebaseConfig = {};
-try {
-    firebaseConfig = functions.config().app_config;
-    console.log("🔥 Configuración cargada correctamente.");
-} catch (error) {
-    console.error("⚠️ No se pudo cargar functions.config():", error);
-}
+// 🔐 Secret config variables
+const FIREBASE_API_KEY = defineSecret("FB_API_KEY");
+const FIREBASE_AUTH_DOMAIN = defineSecret("FB_AUTH_DOMAIN");
+const FIREBASE_PROJECT_ID = defineSecret("FB_PROJECT_ID");
+const FIREBASE_STORAGE_BUCKET = defineSecret("FB_STORAGE_BUCKET");
+const FIREBASE_APP_ID = defineSecret("FB_APP_ID");
+const FIREBASE_MESSAGING_SENDER_ID = defineSecret("FB_MESSAGING_SENDER_ID");
 
-console.log("🔥 Clave API:", firebaseConfig.web_api_key || "NO DEFINIDA");
-console.log("🔥 Project ID:", firebaseConfig.project_id || "NO DEFINIDA");
-console.log("🔥 Auth Domain:", firebaseConfig.auth_domain || "NO DEFINIDA");
-console.log("🔥 Storage Bucket:", firebaseConfig.storage_bucket || "NO DEFINIDA");
+let cachedConfig = null;
+let lastFetchTime = 0;
+const CACHE_DURATION_MS = 5 * 60 * 1000;
+
+exports.getFirestoreConfig = onRequest({
+  cors: true,
+  secrets: [
+    FIREBASE_API_KEY,
+    FIREBASE_AUTH_DOMAIN,
+    FIREBASE_PROJECT_ID,
+    FIREBASE_STORAGE_BUCKET,
+    FIREBASE_APP_ID,
+    FIREBASE_MESSAGING_SENDER_ID,
+  ],
+}, async (req, res) => {
+  try {
+    const now = Date.now();
+    if (!cachedConfig || now - lastFetchTime > CACHE_DURATION_MS) {
+      cachedConfig = {
+        apiKey: FIREBASE_API_KEY.value(),
+        authDomain: FIREBASE_AUTH_DOMAIN.value(),
+        projectId: FIREBASE_PROJECT_ID.value(),
+        storageBucket: FIREBASE_STORAGE_BUCKET.value(),
+        appId: FIREBASE_APP_ID.value(),
+        messagingSenderId: FIREBASE_MESSAGING_SENDER_ID.value(),
+      };
+      lastFetchTime = now;
+    }
+
+    return res.status(200).json(cachedConfig);
+  } catch (error) {
+    return res.status(500).json({ error: "Error interno del servidor", details: error.message });
+  }
+});
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -37,7 +68,7 @@ app.post("/enviarCorreo", async (req, res) => {
       },
     });
 
-    let adjuntos = archivos?.map(archivo => ({
+    let adjuntos = archivos?.map((archivo) => ({
       filename: archivo.nombre,
       content: archivo.base64,
       encoding: "base64",
@@ -99,37 +130,29 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
 
     const recargaRef = db.collection("recargas").doc(transactionId);
     await recargaRef.set({
-      userId: userId,
-      amount: amount,
-      status: status,
-      paymentMethod: paymentMethod,
-      transactionId: transactionId,
-      reference: reference,
+      userId,
+      amount,
+      status,
+      paymentMethod,
+      transactionId,
+      reference,
       createdAt: admin.firestore.Timestamp.fromDate(new Date(createdAt)),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
 
     console.log(`✅ Transacción guardada en "recargas": ${transactionId}`);
 
+    const saldoActual = userDoc.data().saldo || 0;
+    const nuevoSaldo = saldoActual + amount;
+
     if (tipoTransaccion === "suscripcion" && status === "APPROVED") {
       await userRef.update({ isPaid: true });
       console.log(`✅ Suscripción aprobada para ${userId}`);
     }
 
-    if (tipoTransaccion === "recarga" && status === "APPROVED") {
-      const saldoActual = userDoc.data().saldo || 0;
-      const nuevoSaldo = saldoActual + amount;
-
+    if (["recarga", "peticion"].includes(tipoTransaccion) && status === "APPROVED") {
       await userRef.update({ saldo: nuevoSaldo });
-      console.log(`✅ Recarga aprobada para ${userId}: Nuevo saldo ${nuevoSaldo}`);
-    }
-
-    if (tipoTransaccion === "peticion" && status === "APPROVED") {
-      const saldoActual = userDoc.data().saldo || 0;
-      const nuevoSaldo = saldoActual + amount;
-
-      await userRef.update({ saldo: nuevoSaldo });
-      console.log(`✅ Pago derecho petición compensado para ${userId}. Saldo no afectado: ${nuevoSaldo}`);
+      console.log(`✅ ${tipoTransaccion} aprobada para ${userId}: nuevo saldo ${nuevoSaldo}`);
     }
 
     return res.status(200).json({ message: "Estado de pago actualizado con éxito y guardado en recargas" });
