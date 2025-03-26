@@ -1537,8 +1537,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-  Future<void> enviarCorreo() async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/enviarCorreo/enviarCorreo");
+  Future<void> enviarCorreoSES() async {
+    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithSES");
 
     // 🔹 Crear la plantilla del derecho de petición
     var derechoPeticion = DerechoPeticionTemplate(
@@ -1589,9 +1589,9 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
     // 🔥 Enviar correo con adjuntos
     final body = jsonEncode({
-      "destinatario": correoSeleccionado,
-      "asunto": asuntoCorreo,
-      "mensaje": mensajeHtml,
+      "to": correoSeleccionado,
+      "subject": asuntoCorreo,
+      "html": mensajeHtml,
       "archivos": archivosBase64,
     });
 
@@ -1684,7 +1684,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             );
           }
 
-          await enviarCorreo(); // Llama la función que envía el correo
+          await enviarCorreoSES(); // Llama la función que envía el correo
 
           if (mounted) {
             // 🟢 Cerramos la alerta de "Enviando correo..."

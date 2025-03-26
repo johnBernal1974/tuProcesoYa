@@ -7,6 +7,7 @@ const crypto = require("crypto");
 const { defineSecret } = require("firebase-functions/params");
 const { onRequest } = require("firebase-functions/v2/https");
 const AWS = require("aws-sdk");
+const { Buffer } = require("buffer");
 
 
 const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
@@ -208,41 +209,75 @@ exports.wompiCheckoutUrl = onRequest({
 exports.sendEmailWithSES = onRequest({
   secrets: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SES_REGION"],
 }, async (req, res) => {
-  try {
-    if (req.method !== "POST") {
-      return res.status(405).send("Method Not Allowed");
-    }
+  // CORS headers
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Headers", "Content-Type");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
 
-    const { to, subject, html } = req.body;
+  if (req.method === "OPTIONS") {
+    return res.status(204).send("");
+  }
+
+  try {
+    const { to, cc, subject, html, archivos } = req.body;
 
     if (!to || !subject || !html) {
       return res.status(400).json({ error: "Faltan campos obligatorios: to, subject, html" });
     }
 
+    const normalizeEmails = (field) => {
+      if (!field) return [];
+      return Array.isArray(field) ? field : [field];
+    };
+
+    const toAddresses = normalizeEmails(to);
+    const ccAddresses = normalizeEmails(cc);
+
     const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
     const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
     const region = process.env.AWS_SES_REGION;
 
-    const ses = new AWS.SES({
-      accessKeyId,
-      secretAccessKey,
-      region,
-    });
+    const ses = new AWS.SES({ accessKeyId, secretAccessKey, region });
+
+    const boundary = "NextPart";
+    let rawMessage = "";
+
+    rawMessage += `From: Tu Proceso Ya <tuproceso.ya@gmail.com>\n`;
+    rawMessage += `To: ${toAddresses.join(", ")}\n`;
+    if (ccAddresses.length) rawMessage += `Cc: ${ccAddresses.join(", ")}\n`;
+    rawMessage += `Subject: ${subject}\n`;
+    rawMessage += `MIME-Version: 1.0\n`;
+    rawMessage += `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n\n`;
+
+    rawMessage += `--${boundary}\n`;
+    rawMessage += `Content-Type: text/html; charset=\"UTF-8\"\n`;
+    rawMessage += `Content-Transfer-Encoding: 7bit\n\n`;
+    rawMessage += `${html}\n\n`;
+
+    if (Array.isArray(archivos)) {
+      for (const archivo of archivos) {
+        if (archivo.nombre && archivo.base64) {
+          rawMessage += `--${boundary}\n`;
+          rawMessage += `Content-Type: application/octet-stream; name=\"${archivo.nombre}\"\n`;
+          rawMessage += `Content-Description: ${archivo.nombre}\n`;
+          rawMessage += `Content-Disposition: attachment; filename=\"${archivo.nombre}\"; size=${Buffer.from(archivo.base64, 'base64').length};\n`;
+          rawMessage += `Content-Transfer-Encoding: base64\n\n`;
+          rawMessage += `${archivo.base64}\n\n`;
+        }
+      }
+    }
+
+    rawMessage += `--${boundary}--`;
 
     const params = {
-      Destination: {
-        ToAddresses: [to],
-      },
-      Message: {
-        Body: {
-          Html: { Charset: "UTF-8", Data: html },
-        },
-        Subject: { Charset: "UTF-8", Data: subject },
+      RawMessage: {
+        Data: Buffer.from(rawMessage)
       },
       Source: "tuproceso.ya@gmail.com",
+      Destinations: toAddresses
     };
 
-    await ses.sendEmail(params).promise();
+    await ses.sendRawEmail(params).promise();
 
     return res.status(200).json({ success: true });
   } catch (error) {
@@ -250,5 +285,7 @@ exports.sendEmailWithSES = onRequest({
     return res.status(500).json({ error: "Error enviando correo SES" });
   }
 });
+
+
 
 
