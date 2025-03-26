@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -18,6 +19,7 @@ class _HistorialSolicitudesDerechoPeticionAdminPageState extends State<Historial
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   String _filtroEstado = "Solicitado"; // Estado por defecto
   String rol = AdminProvider().rol ?? "";
+  String adminFullName="";
 
   @override
   void initState() {
@@ -25,6 +27,12 @@ class _HistorialSolicitudesDerechoPeticionAdminPageState extends State<Historial
     _loadAdminRole();
     // Otras inicializaciones, por ejemplo:
     // _fetchPendingSuggestions();
+    adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
+    if (adminFullName.isEmpty) {
+      if (kDebugMode) {
+        print("❌ No se pudo obtener el nombre del administrador.");
+      }
+    }
   }
 
   Future<void> _loadAdminRole() async {
@@ -88,6 +96,11 @@ class _HistorialSolicitudesDerechoPeticionAdminPageState extends State<Historial
 
                       // 🔹 Pasante 1: Solo ve los documentos que él mismo diligenció, sin importar el estado actual
                       if (rol == "pasante 1") {
+                        if (_filtroEstado == "Solicitado") {
+                          return (asignadoA == null || asignadoA.isEmpty || asignadoA == currentUserUid)
+                              && data["status"] == "Solicitado";
+                        }
+
                         if (_filtroEstado == "Diligenciado") {
                           return assignedToMe &&
                               (data["status"] == "Diligenciado" ||
@@ -95,6 +108,7 @@ class _HistorialSolicitudesDerechoPeticionAdminPageState extends State<Historial
                                   data["status"] == "Enviado");
                         }
                       }
+
 
                       // 🔹 Pasante 2: Ve "Diligenciados" asignados a él y los no asignados, además de "Revisados" y "Enviados"
                       if (rol == "pasante 2") {
@@ -379,6 +393,7 @@ class _HistorialSolicitudesDerechoPeticionAdminPageState extends State<Historial
                 .doc(idDocumento)
                 .update({
               'asignadoA_P2': user.uid,
+              'asignado_para_revisar': adminFullName,
               'asignado_fecha_P2': FieldValue.serverTimestamp(),
             });
 

@@ -101,6 +101,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   List<String> archivos = [];
   String rol = AdminProvider().rol ?? "";
   late DerechoPeticionTemplate derechoPeticion;
+  String asignadoA_P2 = '';
+  String asignadoNombreP2 = '';
+  DateTime? fechaAsignadoP2;
+
 
 
   @override
@@ -211,10 +215,12 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             diligencio = data['diligencio'] ?? 'No Diligenciado';
             reviso = data['reviso'] ?? 'No Revisado';
             envio = data['envió'] ?? 'No enviado';
-
             fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
             fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
             fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
+            asignadoA_P2 = data['asignadoA_P2'] ?? '';
+            asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
+            fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
           });
         }
       } else {
@@ -328,6 +334,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         children: [
           _buildFechaHoy(),
           const SizedBox(height: 10),
+          infoAccionesAdmin(),
+          const SizedBox(height: 15),
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
@@ -535,39 +543,76 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-  Widget infoAccionesAdmin(){
-    return Column(
-      children: [
-        if (widget.status == "Diligenciado" || widget.status == "Revisado" || widget.status == "Enviado")
-          Row(
-            children: [
-              const Text("Diligenció: ", style: TextStyle(color: Colors.grey, fontSize: 13)),
-              Text(diligencio, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 15),
-              Text(_formatFecha(fechaDiligenciamiento), style: const TextStyle(fontSize: 13)),
+  Widget infoAccionesAdmin() {
+    if (asignadoA_P2.isEmpty && diligencio.isEmpty && reviso.isEmpty && envio.isEmpty) {
+      return const SizedBox();
+    }
 
-            ],
-          ),
-        if (widget.status == "Revisado" || widget.status == "Enviado")
-          Row(
-            children: [
-              const Text("Revisó: ", style: TextStyle(color: Colors.grey, fontSize: 13)),
-              Text(reviso, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 15),
-              Text(_formatFecha(fechaRevision), style: const TextStyle(fontSize: 13)),
-            ],
-          ),
-        if (widget.status == "Enviado")
-          Row(
-            children: [
-              const Text("Envió: ", style: TextStyle(color: Colors.grey, fontSize: 13)),
-              Text(envio, style: const TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 15),
+    return Card(
+      color: blanco,
+      surfaceTintColor: blanco,
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Historial de acciones", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
 
-              Text(_formatFecha(fechaEnvio), style: const TextStyle(fontSize: 13)),
-            ],
-          ),
-      ],
+            if (asignadoA_P2.isNotEmpty)
+              Row(
+                children: [
+                  const Text("Asignado para revisar: ", style: TextStyle(color: Colors.black87, fontSize: 13)),
+                  Text(
+                    asignadoNombreP2,
+                    style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(width: 15),
+                  Text(
+                    _formatFecha(fechaAsignadoP2),
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+
+            if (widget.status == "Diligenciado" || widget.status == "Revisado" || widget.status == "Enviado")
+              Row(
+                children: [
+                  const Text("Diligenció: ", style: TextStyle(color: Colors.black87, fontSize: 13)),
+                  Text(diligencio, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 15),
+                  Text(_formatFecha(fechaDiligenciamiento), style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+
+            if (widget.status == "Revisado" || widget.status == "Enviado")
+              Row(
+                children: [
+                  const Text("Revisó: ", style: TextStyle(color: Colors.black87, fontSize: 12)),
+                  Text(reviso, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 15),
+                  Text(_formatFecha(fechaRevision), style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+
+            if (widget.status == "Enviado")
+              Row(
+                children: [
+                  const Text("Envió: ", style: TextStyle(color: Colors.black87, fontSize: 12)),
+                  Text(envio, style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 15),
+                  Text(_formatFecha(fechaEnvio), style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+
+            const SizedBox(height: 10),
+            Text("ID del documento: ${widget.idDocumento}", style: const TextStyle(fontSize: 11, color: Colors.grey)),
+          ],
+        ),
+      ),
     );
   }
 
@@ -1543,8 +1588,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
         ),
         const SizedBox(height: 50),
-        infoAccionesAdmin(),
-        const SizedBox(height: 30),
         Wrap(
           children: [
             if (widget.status == "Solicitado") ...[
