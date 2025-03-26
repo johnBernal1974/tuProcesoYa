@@ -183,24 +183,18 @@ exports.sendEmailWithSES = onRequest({
     const { to, cc, subject, html, archivos, idDocumento, enviadoPor } = req.body;
 
     if (!to || !subject || !html || !idDocumento || !enviadoPor) {
-      return res.status(400).json({
-        error: "Faltan campos obligatorios: to, subject, html, idDocumento, enviadoPor"
-      });
+      return res.status(400).json({ error: "Faltan campos obligatorios: to, subject, html, idDocumento, enviadoPor" });
     }
 
-    const normalizeEmails = (field) => {
-      if (!field) return [];
-      return Array.isArray(field) ? field : [field];
-    };
+    const normalizeEmails = (field) => Array.isArray(field) ? field : field ? [field] : [];
+    const toAddresses = normalizeEmails(to);
+    const ccAddresses = normalizeEmails(cc);
 
-    const toAddresses = [...new Set(normalizeEmails(to))];
-    let ccAddresses = normalizeEmails(cc).filter(email => !toAddresses.includes(email));
-
-    const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
-    const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
-    const region = process.env.AWS_SES_REGION;
-
-    const ses = new AWS.SES({ accessKeyId, secretAccessKey, region });
+    const ses = new AWS.SES({
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      region: process.env.AWS_SES_REGION,
+    });
 
     const boundary = "NextPart";
     let rawMessage = "";
@@ -210,22 +204,20 @@ exports.sendEmailWithSES = onRequest({
     if (ccAddresses.length) rawMessage += `Cc: ${ccAddresses.join(", ")}\n`;
     rawMessage += `Subject: ${subject}\n`;
     rawMessage += `MIME-Version: 1.0\n`;
-    rawMessage += `Content-Type: multipart/mixed; boundary=\"${boundary}\"\n\n`;
+    rawMessage += `Content-Type: multipart/mixed; boundary="${boundary}"\n\n`;
 
     rawMessage += `--${boundary}\n`;
-    rawMessage += `Content-Type: text/html; charset=\"UTF-8\"\n`;
+    rawMessage += `Content-Type: text/html; charset="UTF-8"\n`;
     rawMessage += `Content-Transfer-Encoding: 7bit\n\n`;
     rawMessage += `${html}\n\n`;
 
-    const tieneAdjuntos = Array.isArray(archivos) && archivos.length > 0;
-
-    if (tieneAdjuntos) {
+    if (Array.isArray(archivos)) {
       for (const archivo of archivos) {
         if (archivo.nombre && archivo.base64) {
           rawMessage += `--${boundary}\n`;
-          rawMessage += `Content-Type: application/octet-stream; name=\"${archivo.nombre}\"\n`;
+          rawMessage += `Content-Type: application/octet-stream; name="${archivo.nombre}"\n`;
           rawMessage += `Content-Description: ${archivo.nombre}\n`;
-          rawMessage += `Content-Disposition: attachment; filename=\"${archivo.nombre}\"; size=${Buffer.from(archivo.base64, 'base64').length};\n`;
+          rawMessage += `Content-Disposition: attachment; filename="${archivo.nombre}"; size=${Buffer.from(archivo.base64, 'base64').length};\n`;
           rawMessage += `Content-Transfer-Encoding: base64\n\n`;
           rawMessage += `${archivo.base64}\n\n`;
         }
@@ -234,18 +226,25 @@ exports.sendEmailWithSES = onRequest({
 
     rawMessage += `--${boundary}--`;
 
-    const params = {
-      RawMessage: {
-        Data: Buffer.from(rawMessage)
-      },
+    const result = await ses.sendRawEmail({
+      RawMessage: { Data: Buffer.from(rawMessage) },
       Source: "tuproceso.ya@gmail.com",
-      Destinations: toAddresses
-    };
+      Destinations: toAddresses,
+    }).promise();
 
-    const result = await ses.sendRawEmail(params).promise();
-
+    // 🧠 SUBIR HTML AL STORAGE
     const firestore = getFirestore();
+    const bucket = admin.storage().bucket();
+    const timestamp = new Date().toISOString();
+    const pdfPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
 
+    await bucket.file(pdfPath).save(Buffer.from(html, "utf-8"), {
+      metadata: { contentType: "text/html; charset=utf-8" },
+    });
+
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${pdfPath}`;
+
+    // ✅ GUARDAR EN log_correos
     await firestore
       .collection("derechos_peticion_solicitados")
       .doc(idDocumento)
@@ -255,9 +254,8 @@ exports.sendEmailWithSES = onRequest({
         cc: ccAddresses,
         subject,
         html,
+        htmlUrl: publicUrl,
         archivos: archivos?.map(a => ({ nombre: a.nombre })),
-        totalAdjuntos: archivos?.length ?? 0,
-        adjuntos: tieneAdjuntos,
         enviadoPor,
         messageId: result.MessageId,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
@@ -269,6 +267,7 @@ exports.sendEmailWithSES = onRequest({
     return res.status(500).json({ error: "Error enviando correo SES" });
   }
 });
+
 
 
 

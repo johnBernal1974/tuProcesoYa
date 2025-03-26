@@ -15,6 +15,7 @@ import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_derecho_peticion.dart';
 import '../../../src/colors/colors.dart';
 import 'dart:io'; // Necesario para manejar archivos en almacenamiento local
+import 'package:universal_html/html.dart' as html;
 
 class DerechoSPeticionEnviadosPorCorreoPage extends StatefulWidget {
   final String status;
@@ -166,43 +167,62 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(flex: 3, child: _buildMainContent()),
+                            Expanded(flex: 4, child: _buildMainContent()),
                             const SizedBox(width: 50),
                             Expanded(
                               flex: 3,
-                              child: Column(
-                                children: [
-                                  verCorreoEnviadoButton(),
-                                  const SizedBox(height: 20),
-                                  if (pantallazoCorreoEnviado.isEmpty)
-                                    adjuntarPantallazoCorreoEnviado(),
-                                  const SizedBox(height: 30),
-                                  Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Pantallazo del correo enviado",
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      pantallazoCorreoEnviado.isNotEmpty
-                                          ? ArchivoViewerWeb(
-                                        archivos: [
-                                          pantallazoCorreoEnviado
-                                        ],
-                                      )
-                                          : const Text(
-                                        "Aún no se ha tomado el pantallazo del correo enviado",
-                                        style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.red),
-                                      ),
-                                    ],
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 25),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300, // Borde sutil
+                                    width: 1,
                                   ),
-                                ],
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    verCorreoEnviadoButton(),
+                                    const SizedBox(height: 20),
+                                    if (pantallazoCorreoEnviado.isEmpty)
+                                      adjuntarPantallazoCorreoEnviado(),
+                                    const SizedBox(height: 30),
+                                    Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          "Pantallazo del correo enviado",
+                                          style: TextStyle(
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        pantallazoCorreoEnviado.isNotEmpty
+                                            ? ArchivoViewerWeb(
+                                          archivos: [
+                                            pantallazoCorreoEnviado
+                                          ],
+                                        )
+                                            : const Text(
+                                          "Aún no se ha tomado el pantallazo del correo enviado",
+                                          style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.red),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ],
@@ -298,7 +318,6 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
     );
   }
 
-
   Future<void> pickFiles() async {
     try {
       // Permitir selección múltiple de archivos
@@ -321,6 +340,7 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
 
   Widget adjuntarPantallazoCorreoEnviado() {
     return Column(
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         const SizedBox(height: 15),
         GestureDetector(
@@ -544,8 +564,6 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
       }
     }
   }
-
-
 
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
@@ -846,61 +864,76 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
           context: context,
           barrierDismissible: true,
           builder: (context) => Dialog(
-            backgroundColor: blanco,
-            surfaceTintColor: blanco,
-            child: FutureBuilder<QuerySnapshot>(
-              future: FirebaseFirestore.instance
-                  .collection('derechos_peticion_solicitados')
-                  .doc(widget.idDocumento)
-                  .collection('log_correos')
-                  .orderBy('timestamp', descending: true)
-                  .limit(1)
-                  .get(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: CircularProgressIndicator(),
-                  );
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Padding(
-                    padding: EdgeInsets.all(20),
-                    child: Text("No se encontró información del correo enviado."),
-                  );
-                }
+            backgroundColor: Colors.white,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
 
-                final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
-                final to = (data['to'] as List).join(', ');
-                final cc = (data['cc'] as List?)?.join(', ') ?? '';
-                final subject = data['subject'] ?? '';
-                final html = data['html'] ?? '';
-                final archivos = data['archivos'] as List?;
-
-                final timestamp = data['timestamp'] as Timestamp?;
-                final fechaHoraEnvio = timestamp != null
-                    ? DateFormat("dd/MM/yyyy hh:mm a", 'es').format(timestamp.toDate())
-                    : 'Sin fecha registrada';
-
-                return SingleChildScrollView(
+                return Container(
+                  color: blanco,
+                  width: isMobile ? double.infinity : 1000,
                   padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text("Para: $to"),
-                      if (cc.isNotEmpty) Text("CC: $cc"),
-                      const SizedBox(height: 10),
-                      Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
-                      Text("Fecha de envío: $fechaHoraEnvio", style: const TextStyle(fontSize: 12),),
-                      const Divider(color: gris, height: 1,),
-                      Html(data: html),
-                      if (archivos != null && archivos.isNotEmpty) ...[
-                        const Divider(),
-                        const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
-                        ...archivos.map((a) => Text("- ${a['nombre']}"))
-                      ]
-                    ],
+                  child: FutureBuilder<QuerySnapshot>(
+                    future: FirebaseFirestore.instance
+                        .collection('derechos_peticion_solicitados')
+                        .doc(widget.idDocumento)
+                        .collection('log_correos')
+                        .orderBy('timestamp', descending: true)
+                        .limit(1)
+                        .get(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                        return const Text("No se encontró información del correo enviado.");
+                      }
+
+                      final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+                      final to = (data['to'] as List).join(', ');
+                      final cc = (data['cc'] as List?)?.join(', ') ?? '';
+                      final subject = data['subject'] ?? '';
+                      final htmlContent = data['html'] ?? '';
+                      final archivos = data['archivos'] as List?;
+                      final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+                      final fechaEnvio = timestamp != null
+                          ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
+                          : 'Fecha no disponible';
+
+                      return SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Text("Para: ", style: TextStyle(fontSize: 13)),
+                                Text(to, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              ],
+                            ),
+                            if (cc.isNotEmpty) Text("CC: $cc"),
+                            const SizedBox(height: 10),
+                            Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
+                            Text("📅 Fecha de envío: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                            const Divider(),
+                            Html(data: htmlContent),
+                            if (archivos != null && archivos.isNotEmpty) ...[
+                              const Divider(),
+                              const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
+                              ...archivos.map((a) => Text("- ${a['nombre']}"))
+                            ],
+                            const SizedBox(height: 20),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                child: const Text("Cerrar"),
+                                onPressed: () => Navigator.of(context).pop(),
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    },
                   ),
                 );
               },
@@ -910,6 +943,12 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
       },
       child: const Text("Ver correo enviado"),
     );
+  }
+
+
+  /// 📄 Abrir HTML en nueva pestaña para que el usuario pueda imprimir/guardar como PDF
+  void abrirHtmlParaImprimir(String url) {
+    html.window.open(url, '_blank');
   }
 
 
