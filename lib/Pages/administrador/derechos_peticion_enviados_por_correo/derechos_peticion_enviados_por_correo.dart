@@ -172,8 +172,7 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                               flex: 3,
                               child: Column(
                                 children: [
-                                  vistaPreviaDerechoPeticion(userData,
-                                      consideraciones, fundamentosDeDerecho, peticionConcreta),
+                                  verCorreoEnviadoButton(),
                                   const SizedBox(height: 20),
                                   if (pantallazoCorreoEnviado.isEmpty)
                                     adjuntarPantallazoCorreoEnviado(),
@@ -213,8 +212,9 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                           children: [
                             _buildMainContent(),
                             const SizedBox(height: 20),
-                            vistaPreviaDerechoPeticion(userData,
-                                consideraciones, fundamentosDeDerecho, peticionConcreta),
+                            verCorreoEnviadoButton(),
+                            // vistaPreviaDerechoPeticion(userData,
+                            //     consideraciones, fundamentosDeDerecho, peticionConcreta),
                             const SizedBox(height: 20),
                           ],
                         ),
@@ -794,45 +794,123 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
     }
   }
 
-  Widget vistaPreviaDerechoPeticion(userData, String consideracionesRevisado, String fundamentosDeDerechoRevisado, String peticionConcretaRevisado) {
-    var derechoPeticion = DerechoPeticionTemplate(
-      dirigido: "",
-      entidad: userData?.centroReclusion ?? "",
-      referencia: '${widget.categoria} - ${widget.subcategoria}',
-      nombrePpl: userData?.nombrePpl?.trim() ?? "",
-      apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
-      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-      centroPenitenciario: userData?.centroReclusion ?? "",
-      consideraciones: consideraciones,
-      fundamentosDeDerecho: fundamentosDeDerecho,
-      peticionConcreta: peticionConcreta,
-      emailUsuario: userData?.email?.trim() ?? "",
-      td: userData?.td?.trim() ?? "",
-      nui: userData?.nui?.trim() ?? "",
-    );
+  // Widget vistaPreviaDerechoPeticion(userData, String consideracionesRevisado, String fundamentosDeDerechoRevisado, String peticionConcretaRevisado) {
+  //   var derechoPeticion = DerechoPeticionTemplate(
+  //     dirigido: "",
+  //     entidad: userData?.centroReclusion ?? "",
+  //     referencia: '${widget.categoria} - ${widget.subcategoria}',
+  //     nombrePpl: userData?.nombrePpl?.trim() ?? "",
+  //     apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
+  //     identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+  //     centroPenitenciario: userData?.centroReclusion ?? "",
+  //     consideraciones: consideraciones,
+  //     fundamentosDeDerecho: fundamentosDeDerecho,
+  //     peticionConcreta: peticionConcreta,
+  //     emailUsuario: userData?.email?.trim() ?? "",
+  //     td: userData?.td?.trim() ?? "",
+  //     nui: userData?.nui?.trim() ?? "",
+  //   );
+  //
+  //
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Text(
+  //         "Correo enviado",
+  //         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  //       ),
+  //       const SizedBox(height: 10),
+  //       Container(
+  //         padding: const EdgeInsets.all(12),
+  //         decoration: BoxDecoration(
+  //           color: Colors.green[50],
+  //           borderRadius: BorderRadius.circular(8),
+  //         ),
+  //         child: Html(
+  //           data: derechoPeticion.generarTextoHtml(),
+  //         ),
+  //       ),
+  //       const SizedBox(height: 50),
+  //     ],
+  //   );
+  // }
 
+  Widget verCorreoEnviadoButton() {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+      onPressed: () async {
+        showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (context) => Dialog(
+            backgroundColor: blanco,
+            surfaceTintColor: blanco,
+            child: FutureBuilder<QuerySnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('derechos_peticion_solicitados')
+                  .doc(widget.idDocumento)
+                  .collection('log_correos')
+                  .orderBy('timestamp', descending: true)
+                  .limit(1)
+                  .get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return const Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text("No se encontró información del correo enviado."),
+                  );
+                }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Correo enviado",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.green[50],
-            borderRadius: BorderRadius.circular(8),
+                final data = snapshot.data!.docs.first.data() as Map<String, dynamic>;
+                final to = (data['to'] as List).join(', ');
+                final cc = (data['cc'] as List?)?.join(', ') ?? '';
+                final subject = data['subject'] ?? '';
+                final html = data['html'] ?? '';
+                final archivos = data['archivos'] as List?;
+
+                final timestamp = data['timestamp'] as Timestamp?;
+                final fechaHoraEnvio = timestamp != null
+                    ? DateFormat("dd/MM/yyyy hh:mm a", 'es').format(timestamp.toDate())
+                    : 'Sin fecha registrada';
+
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text("Para: $to"),
+                      if (cc.isNotEmpty) Text("CC: $cc"),
+                      const SizedBox(height: 10),
+                      Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
+                      Text("Fecha de envío: $fechaHoraEnvio", style: const TextStyle(fontSize: 12),),
+                      const Divider(color: gris, height: 1,),
+                      Html(data: html),
+                      if (archivos != null && archivos.isNotEmpty) ...[
+                        const Divider(),
+                        const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
+                        ...archivos.map((a) => Text("- ${a['nombre']}"))
+                      ]
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
-          child: Html(
-            data: derechoPeticion.generarTextoHtml(),
-          ),
-        ),
-        const SizedBox(height: 50),
-      ],
+        );
+      },
+      child: const Text("Ver correo enviado"),
     );
   }
+
 
 }

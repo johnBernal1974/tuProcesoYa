@@ -1,6 +1,5 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const nodemailer = require("nodemailer");
 const cors = require("cors");
 const express = require("express");
 const crypto = require("crypto");
@@ -8,6 +7,7 @@ const { defineSecret } = require("firebase-functions/params");
 const { onRequest } = require("firebase-functions/v2/https");
 const AWS = require("aws-sdk");
 const { Buffer } = require("buffer");
+const { getFirestore } = require("firebase-admin/firestore");
 
 
 const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
@@ -57,44 +57,6 @@ exports.getFirestoreConfig = onRequest({
     return res.status(500).json({ error: "Error interno del servidor", details: error.message });
   }
 });
-
-const app = express();
-app.use(cors({ origin: true }));
-app.use(express.json());
-
-app.post("/enviarCorreo", async (req, res) => {
-  try {
-    const { destinatario, asunto, mensaje, archivos } = req.body;
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: "johnnever.bernal@gmail.com",
-        pass: "yqfo mify fcso edam",
-      },
-    });
-    const adjuntos = archivos?.map((archivo) => ({
-      filename: archivo.nombre,
-      content: archivo.base64,
-      encoding: "base64",
-    })) || [];
-
-    const mailOptions = {
-      from: "johnnever.bernal@gmail.com",
-      to: destinatario,
-      subject: asunto,
-      html: mensaje,
-      attachments: adjuntos.length ? adjuntos : undefined,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    res.status(200).json({ message: "Correo enviado con éxito", response: info.response });
-  } catch (error) {
-    console.error("🚨 Error al enviar correo:", error);
-    res.status(500).json({ error: "Error al enviar el correo", details: error.message });
-  }
-});
-
-exports.enviarCorreo = functions.https.onRequest(app);
 
 exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
   try {
@@ -209,7 +171,6 @@ exports.wompiCheckoutUrl = onRequest({
 exports.sendEmailWithSES = onRequest({
   secrets: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SES_REGION"],
 }, async (req, res) => {
-  // CORS headers
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Headers", "Content-Type");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -219,10 +180,12 @@ exports.sendEmailWithSES = onRequest({
   }
 
   try {
-    const { to, cc, subject, html, archivos } = req.body;
+    const { to, cc, subject, html, archivos, idDocumento, enviadoPor } = req.body;
 
-    if (!to || !subject || !html) {
-      return res.status(400).json({ error: "Faltan campos obligatorios: to, subject, html" });
+    if (!to || !subject || !html || !idDocumento || !enviadoPor) {
+      return res.status(400).json({
+        error: "Faltan campos obligatorios: to, subject, html, idDocumento, enviadoPor"
+      });
     }
 
     const normalizeEmails = (field) => {
@@ -230,8 +193,8 @@ exports.sendEmailWithSES = onRequest({
       return Array.isArray(field) ? field : [field];
     };
 
-    const toAddresses = normalizeEmails(to);
-    const ccAddresses = normalizeEmails(cc);
+    const toAddresses = [...new Set(normalizeEmails(to))];
+    let ccAddresses = normalizeEmails(cc).filter(email => !toAddresses.includes(email));
 
     const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
     const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
@@ -254,7 +217,9 @@ exports.sendEmailWithSES = onRequest({
     rawMessage += `Content-Transfer-Encoding: 7bit\n\n`;
     rawMessage += `${html}\n\n`;
 
-    if (Array.isArray(archivos)) {
+    const tieneAdjuntos = Array.isArray(archivos) && archivos.length > 0;
+
+    if (tieneAdjuntos) {
       for (const archivo of archivos) {
         if (archivo.nombre && archivo.base64) {
           rawMessage += `--${boundary}\n`;
@@ -277,7 +242,26 @@ exports.sendEmailWithSES = onRequest({
       Destinations: toAddresses
     };
 
-    await ses.sendRawEmail(params).promise();
+    const result = await ses.sendRawEmail(params).promise();
+
+    const firestore = getFirestore();
+
+    await firestore
+      .collection("derechos_peticion_solicitados")
+      .doc(idDocumento)
+      .collection("log_correos")
+      .add({
+        to: toAddresses,
+        cc: ccAddresses,
+        subject,
+        html,
+        archivos: archivos?.map(a => ({ nombre: a.nombre })),
+        totalAdjuntos: archivos?.length ?? 0,
+        adjuntos: tieneAdjuntos,
+        enviadoPor,
+        messageId: result.MessageId,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
 
     return res.status(200).json({ success: true });
   } catch (error) {
@@ -285,6 +269,8 @@ exports.sendEmailWithSES = onRequest({
     return res.status(500).json({ error: "Error enviando correo SES" });
   }
 });
+
+
 
 
 

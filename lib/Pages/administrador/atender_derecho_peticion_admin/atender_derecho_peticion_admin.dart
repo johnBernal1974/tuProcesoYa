@@ -1,10 +1,14 @@
 
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:printing/printing.dart';
 import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../../commons/admin_provider.dart';
@@ -96,6 +100,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   DateTime? fechaRevision;
   List<String> archivos = [];
   String rol = AdminProvider().rol ?? "";
+  late DerechoPeticionTemplate derechoPeticion;
+
 
   @override
   void initState() {
@@ -1000,10 +1006,28 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       if (mounted) {
         setState(() {
           userData = fetchedData;
-          // ✅ Solo actualiza `correosCentro` si los datos son válidos
+
           if (correos.isNotEmpty && correos.values.any((correo) => correo != 'No disponible')) {
             correosCentro = correos;
           }
+
+          // 🔹 Inicializamos el derechoPeticion
+          derechoPeticion = DerechoPeticionTemplate(
+            dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+            entidad: userData?.centroReclusion ?? "",
+            referencia: '${widget.categoria} - ${widget.subcategoria}',
+            nombrePpl: userData?.nombrePpl?.trim() ?? "",
+            apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
+            identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+            centroPenitenciario: userData?.centroReclusion ?? "",
+            consideraciones: consideraciones,
+            fundamentosDeDerecho: fundamentosDeDerecho,
+            peticionConcreta: peticionConcreta,
+            emailUsuario: userData?.email?.trim() ?? "",
+            td: userData?.td?.trim() ?? "",
+            nui: userData?.nui?.trim() ?? "",
+          );
+
           isLoading = false;
         });
       }
@@ -1016,6 +1040,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
+
 
   //Para los tiempos de los beneficios
   Future<void> calcularTiempo(String id) async {
@@ -1557,17 +1582,14 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       td: userData?.td.trim() ?? "",
     );
 
-    // 🔹 Generar el HTML del derecho de petición
+    // 🔹 Generar HTML
     String mensajeHtml = derechoPeticion.generarTextoHtml();
 
-    // 📥 Descargar archivos desde Firebase Storage y convertirlos a Base64
+    // 📥 Descargar y codificar archivos
     List<Map<String, String>> archivosBase64 = [];
-
     for (String archivoUrl in widget.archivos) {
       try {
         String nombreArchivo = obtenerNombreArchivo(archivoUrl);
-
-        // Descargar archivo
         final response = await http.get(Uri.parse(archivoUrl));
         if (response.statusCode == 200) {
           String base64String = base64Encode(response.bodyBytes);
@@ -1584,15 +1606,29 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
 
-    // 🔹 Construir el asunto con el número de seguimiento
+    // 🔹 Asunto y remitente
     String asuntoCorreo = "Derecho de Petición - ${widget.numeroSeguimiento}";
+    final currentUser = FirebaseAuth.instance.currentUser;
+    final enviadoPor = currentUser?.email ?? adminFullName;
 
-    // 🔥 Enviar correo con adjuntos
+    // 🔹 Copia opcional
+    List<String>? correosCC;
+    final copia = correosCentro["Copia"];
+    if (copia != null && copia.trim().isNotEmpty && copia != "No disponible") {
+      if (copia.trim() != correoSeleccionado!.trim()) {
+        correosCC = [copia.trim()];
+      }
+    }
+
+    // 🔥 Enviar al backend
     final body = jsonEncode({
       "to": correoSeleccionado,
+      "cc": correosCC,
       "subject": asuntoCorreo,
       "html": mensajeHtml,
       "archivos": archivosBase64,
+      "idDocumento": widget.idDocumento,
+      "enviadoPor": enviadoPor,
     });
 
     final response = await http.post(
@@ -1684,7 +1720,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             );
           }
 
-          await enviarCorreoSES(); // Llama la función que envía el correo
+          await enviarCorreoSES();
+          // ⬇️ Generar y subir PDF del correo enviado
+          final html = derechoPeticion.generarTextoHtml();
+          await subirHtmlCorreoADocumento(
+            idDocumento: widget.idDocumento,
+            htmlContent: html,
+          );
 
           if (mounted) {
             // 🟢 Cerramos la alerta de "Enviando correo..."
@@ -1716,6 +1758,54 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       },
       child: const Text("Enviar por correo"),
     );
+  }
+
+  Future<void> subirHtmlCorreoADocumento({
+    required String idDocumento,
+    required String htmlContent,
+  }) async {
+    try {
+      // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
+      final contenidoFinal = htmlUtf8Compatible(htmlContent);
+
+      // 📁 Crear bytes
+      final bytes = utf8.encode(contenidoFinal);
+      const fileName = "correo.html";
+      final filePath = "derechos_peticion/$idDocumento/correos/$fileName";
+
+      final ref = FirebaseStorage.instance.ref(filePath);
+      final metadata = SettableMetadata(contentType: "text/html");
+
+      // ⬆️ Subir archivo
+      await ref.putData(Uint8List.fromList(bytes), metadata);
+
+      // 🌐 Obtener URL
+      final downloadUrl = await ref.getDownloadURL();
+
+      // 🗃️ Guardar en Firestore
+      await FirebaseFirestore.instance
+          .collection("derechos_peticion_solicitados")
+          .doc(idDocumento)
+          .update({
+        "correoHtmlUrl": downloadUrl,
+        "fechaHtmlCorreo": FieldValue.serverTimestamp(),
+      });
+
+      print("✅ HTML subido y guardado con URL: $downloadUrl");
+    } catch (e) {
+      print("❌ Error al subir HTML del correo: $e");
+    }
+  }
+
+  /// 💡 Corrige el HTML para asegurar que tenga codificación UTF-8
+  String htmlUtf8Compatible(String html) {
+    const headTag = "<head>";
+    const metaCharset = '<meta charset="UTF-8">';
+    if (html.contains(headTag)) {
+      return html.replaceFirst(headTag, "$headTag\n  $metaCharset");
+    } else {
+      return "$metaCharset\n$html";
+    }
   }
 
   Future<Map<String, String>> obtenerCorreosCentro(DocumentReference userDoc) async {
