@@ -1463,7 +1463,6 @@ class _RegistroPageState extends State<RegistroPage> {
           ),
         );
       }
-
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
