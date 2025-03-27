@@ -9,6 +9,8 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../helper/pago_helper.dart';
+
 class CheckoutPage extends StatefulWidget {
   final bool esPagoDerechoPeticion;
   final int? valorDerecho;
@@ -83,21 +85,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void _pagarSuscripcion() async {
     User? user = _auth.currentUser;
     if (user == null || _subscriptionValue == null) return;
+
     String referencia = "suscripcion_${user.uid}_${_uuid.v4()}";
     int centavos = _subscriptionValue! * 100;
-    String? url = await WompiService.obtenerCheckoutUrl(monto: centavos, referencia: referencia);
-    if (url != null && context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => WompiWebView(url: url, referencia: referencia),
-        ),
-      );
-    }
+
+    await PagoHelper.iniciarFlujoPago(
+      context: context,
+      centavos: centavos,
+      referencia: referencia,
+      buildCheckoutWidget: (url) => WompiWebView(url: url, referencia: referencia),
+    );
   }
+
+
 
   void iniciarPagoRecarga() async {
     User? user = _auth.currentUser;
+
     if (user == null || _valorPago == null || _valorPago! < 20000) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -107,18 +111,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
       );
       return;
     }
+
     String referencia = "recarga_${user.uid}_${_uuid.v4()}";
     int centavos = _valorPago! * 100;
-    String? url = await WompiService.obtenerCheckoutUrl(monto: centavos, referencia: referencia);
-    if (url != null && context.mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => WompiWebView(url: url, referencia: referencia),
-        ),
-      );
-    }
+
+    await PagoHelper.iniciarFlujoPago(
+      context: context,
+      centavos: centavos,
+      referencia: referencia,
+      buildCheckoutWidget: (url) => WompiWebView(url: url, referencia: referencia),
+    );
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -179,20 +184,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 onPressed: () async {
                   String referencia = widget.referenciaDerecho ?? "peticion_${_auth.currentUser?.uid}_${_uuid.v4()}";
                   int centavos = widget.valorDerecho! * 100;
-                  String? url = await WompiService.obtenerCheckoutUrl(monto: centavos, referencia: referencia);
-                  if (context.mounted && url != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => WompiWebView(
-                          url: url,
-                          referencia: referencia,
-                          esPagoDerechoPeticion: true,
-                          onTransaccionAprobada: widget.onTransaccionAprobada,
-                        ),
-                      ),
-                    );
-                  }
+
+                  await PagoHelper.iniciarFlujoPago(
+                    context: context,
+                    centavos: centavos,
+                    referencia: referencia,
+                    buildCheckoutWidget: (url) => WompiWebView(
+                      url: url,
+                      referencia: referencia,
+                      esPagoDerechoPeticion: true,
+                      onTransaccionAprobada: widget.onTransaccionAprobada,
+                    ),
+                  );
                 },
                 child: const Text("Pagar ahora", style: TextStyle(color: blanco)),
               )
@@ -311,4 +314,5 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     );
   }
+
 }

@@ -146,7 +146,7 @@ class _RegistroPageState extends State<RegistroPage> {
                     _buildSituacionActualPplForm(),
                     _buildDireccionDomiciliarioCondicionalPplForm(),
                     _buildSeleccionDepartamentoMunicipioPplForm(),
-                    _buildPplCentroReclusionLegalForm(),
+                    if (situacionActual == "En Reclusión") _buildPplCentroReclusionLegalForm(),
                     _buildPplTDLegalForm(),
                     _buildPplNUILegalForm(),
                     _buildPplPatioLegalForm(),
