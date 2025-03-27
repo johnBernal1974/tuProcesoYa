@@ -753,6 +753,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
   /// 🎉 Nuevo Widget (Columna extra en PC, o debajo en móvil)
   Widget _buildExtraWidget() {
+    bool estaEnReclusion = userData?.situacion?.toLowerCase() == "en reclusión";
+
     if (userData == null) {
       return const Center(child: CircularProgressIndicator()); // 🔹 Muestra un loader mientras `userData` se carga
     }
@@ -794,20 +796,19 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ],
           ),
           const SizedBox(height: 15),
-          const Divider(color: primary),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-              const SizedBox(height: 10),
-              const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
-              correoConBoton('Principal', correosCentro['correo_principal']),
-              correoConBoton('Director', correosCentro['correo_direccion']),
-              correoConBoton('Jurídica', correosCentro['correo_juridica']),
-              correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-            ],
-          ),
+          if (estaEnReclusion) ...[
+            const Divider(color: primary),
+            const SizedBox(height: 10),
+            const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
+            Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
+            const SizedBox(height: 10),
+            const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
+            correoConBoton('Principal', correosCentro['correo_principal']),
+            correoConBoton('Director', correosCentro['correo_direccion']),
+            correoConBoton('Jurídica', correosCentro['correo_juridica']),
+            correoConBoton('Sanidad', correosCentro['correo_sanidad']),
+          ],
+
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
           Column(

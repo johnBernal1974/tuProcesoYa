@@ -107,8 +107,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   String? municipioSeleccionado;
 
 
-  bool _isLoadingJuzgados = false; // Bandera para evitar múltiples cargas
-
+  bool _isLoadingJuzgados = false; //
 
   /// opciones de documento de identidad
   final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte', 'Tarjeta de Identidad'];
@@ -1768,214 +1767,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  // Widget datosEjecucionCondena(double totalDiasRedimidos) {
-  //   double screenWidth = MediaQuery.of(context).size.width;
-  //
-  //   // 🔷 Tarjeta para "Condena transcurrida"
-  //   Widget boxCondenaTranscurrida = Container(
-  //     width: 150,
-  //     padding: const EdgeInsets.all(8),
-  //     decoration: BoxDecoration(
-  //       border: Border.all(color: primary, width: 3),
-  //       borderRadius: BorderRadius.circular(8),
-  //       color: Colors.white,
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.center,
-  //       children: [
-  //         Text(
-  //           'Condena\ntranscurrida',
-  //           style: TextStyle(
-  //               fontSize: screenWidth > 600 ? 14 : 12,
-  //               color: negroLetras,
-  //               height: 1
-  //           ),
-  //           textAlign: TextAlign.center,
-  //         ),
-  //         const SizedBox(height: 5),
-  //         Text(
-  //           mesesEjecutado == 1
-  //               ? diasEjecutadoExactos == 1
-  //               ? '$mesesEjecutado mes : $diasEjecutadoExactos día'
-  //               : '$mesesEjecutado mes : $diasEjecutadoExactos días'
-  //               : diasEjecutadoExactos == 1
-  //               ? '$mesesEjecutado meses : $diasEjecutadoExactos día'
-  //               : '$mesesEjecutado meses : $diasEjecutadoExactos días',
-  //           style: TextStyle(
-  //             fontSize: screenWidth > 600 ? 14 : 11,
-  //             fontWeight: FontWeight.bold,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  //
-  //   // 🟢 Tarjeta para "Tiempo de Redención"
-  //   Widget boxTiempoRedencion = Container(
-  //     width: 150,
-  //     padding: const EdgeInsets.all(8),
-  //     decoration: BoxDecoration(
-  //       border: Border.all(color: primary, width: 3),
-  //       borderRadius: BorderRadius.circular(8),
-  //       color: Colors.white,
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.center,
-  //       children: [
-  //         Text(
-  //           'Tiempo\nredimido',
-  //           style: TextStyle(
-  //             fontSize: screenWidth > 600 ? 14 : 12,
-  //             color: negroLetras,
-  //             height: 1,
-  //           ),
-  //           textAlign: TextAlign.center,
-  //         ),
-  //         const SizedBox(height: 5),
-  //         Text(
-  //           '${totalDiasRedimidos % 1 == 0 ? totalDiasRedimidos.toStringAsFixed(0) : totalDiasRedimidos.toStringAsFixed(1)} días',
-  //           style: TextStyle(
-  //             fontSize: screenWidth > 600 ? 14 : 11,
-  //             fontWeight: FontWeight.bold,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //
-  //   );
-  //
-  //   // 🔶 Nueva Tarjeta para "Condena Total Cumplida"
-  //   int totalDiasCumplidos = (mesesEjecutado * 30 + diasEjecutadoExactos + totalDiasRedimidos).toInt();
-  //   int totalMesesCumplidos = totalDiasCumplidos ~/ 30;
-  //   int diasCumplidosExactos = totalDiasCumplidos % 30;
-  //
-  //   Widget boxCondenaTotalCumplida = Container(
-  //     width: 150,
-  //     padding: const EdgeInsets.all(8),
-  //     decoration: BoxDecoration(
-  //       border: Border.all(color: primary, width: 3),
-  //       borderRadius: BorderRadius.circular(8),
-  //       color: Colors.white,
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.center,
-  //       children: [
-  //         Text(
-  //           'Condena total\ncumplida',
-  //           style: TextStyle(
-  //               fontSize: screenWidth > 600 ? 14 : 12,
-  //               color: negroLetras,
-  //               height: 1
-  //           ),
-  //           textAlign: TextAlign.center,
-  //         ),
-  //         const SizedBox(height: 5),
-  //         Text(
-  //           totalMesesCumplidos == 1
-  //               ? diasCumplidosExactos == 1
-  //               ? '$totalMesesCumplidos mes : $diasCumplidosExactos día'
-  //               : '$totalMesesCumplidos mes : $diasCumplidosExactos días'
-  //               : diasCumplidosExactos == 1
-  //               ? '$totalMesesCumplidos meses : $diasCumplidosExactos día'
-  //               : '$totalMesesCumplidos meses : $diasCumplidosExactos días',
-  //           style: TextStyle(
-  //             fontSize: screenWidth > 600 ? 14 : 11,
-  //             fontWeight: FontWeight.bold,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  //
-  //   // 🟠 Tarjeta para "Condena restante"
-  //   Widget boxCondenaRestante = Container(
-  //     width: 150,
-  //     padding: const EdgeInsets.all(8),
-  //     decoration: BoxDecoration(
-  //       border: Border.all(color: primary, width: 3),
-  //       borderRadius: BorderRadius.circular(8),
-  //       color: Colors.white,
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.center,
-  //       children: [
-  //         Text(
-  //           'Condena\nrestante',
-  //           style: TextStyle(
-  //               fontSize: screenWidth > 600 ? 14 : 12,
-  //               color: negroLetras,
-  //               height: 1
-  //           ),
-  //           textAlign: TextAlign.center,
-  //         ),
-  //         const SizedBox(height: 5),
-  //         Text(
-  //           mesesRestante == 1
-  //               ? diasRestanteExactos == 1
-  //               ? '$mesesRestante mes : $diasRestanteExactos día'
-  //               : '$mesesRestante mes : $diasRestanteExactos días'
-  //               : mesesRestante > 0
-  //               ? diasRestanteExactos == 1
-  //               ? '$mesesRestante meses : $diasRestanteExactos día'
-  //               : '$mesesRestante meses : $diasRestanteExactos días'
-  //               : diasRestanteExactos == 1
-  //               ? '$diasRestanteExactos día'
-  //               : '$diasRestanteExactos días',
-  //           style: TextStyle(
-  //             fontSize: screenWidth > 600 ? 14 : 11,
-  //             fontWeight: FontWeight.bold,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  //
-  //   // 🔵 Tarjeta para "Porcentaje ejecutado"
-  //   Widget boxPorcentajeEjecutado = Container(
-  //     width: 150,
-  //     padding: const EdgeInsets.all(8),
-  //     decoration: BoxDecoration(
-  //       border: Border.all(color: primary, width: 3),
-  //       borderRadius: BorderRadius.circular(8),
-  //       color: Colors.white,
-  //     ),
-  //     child: Column(
-  //       mainAxisSize: MainAxisSize.min,
-  //       children: [
-  //         Text(
-  //           'Porcentaje\nejecutado: ',
-  //           style: TextStyle(
-  //               fontSize: screenWidth > 600 ? 14 : 12,
-  //               color: negroLetras,
-  //               height: 1
-  //           ),
-  //         ),
-  //         const SizedBox(height: 6),
-  //         Text(
-  //           '${porcentajeEjecutado.toStringAsFixed(1)}%',
-  //           style: TextStyle(
-  //             fontSize: screenWidth > 600 ? 14 : 11,
-  //             fontWeight: FontWeight.bold,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  //
-  //   // 🔥 Ajustamos el diseño con `Wrap`
-  //   return Wrap(
-  //     spacing: 10,
-  //     runSpacing: 10,
-  //     children: [
-  //       boxCondenaTranscurrida,
-  //       boxTiempoRedencion,
-  //       boxCondenaTotalCumplida, // 🔹 Nueva tarjeta agregada
-  //       boxCondenaRestante,
-  //       boxPorcentajeEjecutado,
-  //     ],
-  //   );
-  // }
-
   Widget nombrePpl() {
     return textFormField(
       controller: _nombreController,
@@ -2729,7 +2520,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'regional': selectedRegional ?? widget.doc['regional'],
                 'ciudad': selectedCiudad ?? widget.doc['ciudad'],
                 'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
+                'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'],
                 'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
+                'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'],
                 'delito': selectedDelito ?? widget.doc['delito'],
                 'categoria_delito': categoriaDelito ?? widget.doc['categoria_delito'],
                 'radicado': _radicadoController.text,
