@@ -61,7 +61,13 @@ class PagoExitosoDerechoPeticionPage extends StatelessWidget {
                   onPressed: onContinuar,
                   style: ElevatedButton.styleFrom(backgroundColor: primary),
                   child: const Text("Continuar", style: TextStyle(color: blanco)),
-                )
+                ),
+                const SizedBox(height: 30),
+                const Text(
+                  "¡Por favor no salgas de esta página sin antes de dar click en el botón CONTINUAR!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),

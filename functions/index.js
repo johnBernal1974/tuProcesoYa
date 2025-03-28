@@ -313,6 +313,66 @@ exports.generarTextoIA = onRequest({
   }
 });
 
+exports.generarTextoIAExtendido = onRequest({
+  cors: true,
+  secrets: [OPENAI_API_KEY],
+}, async (req, res) => {
+  try {
+    const { categoria, subcategoria, respuestasUsuario } = req.body;
+
+    if (!categoria || !subcategoria || !Array.isArray(respuestasUsuario)) {
+      return res.status(400).json({ error: "Faltan campos requeridos" });
+    }
+
+    const prompt = `
+Redacta para un derecho de petición en Colombia en base a estas respuestas del usuario. Dame tres secciones separadas:
+1. Consideraciones claras y bien estructuradas.
+2. Fundamentos jurídicos aplicables según Constitución, Leyes y Jurisprudencia colombiana.
+3. Una petición concreta basada en lo anterior.
+
+Categoría: ${categoria}
+Subcategoría: ${subcategoria}
+
+Respuestas:
+${respuestasUsuario.map((r, i) => `(${i + 1}) ${r}`).join("\n")}
+`;
+
+    const OpenAI = require("openai");
+    const openai = new OpenAI({ apiKey: OPENAI_API_KEY.value() });
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "Eres un redactor legal colombiano, claro y técnico." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.6,
+      max_tokens: 1000,
+    });
+
+    const respuesta = completion.choices[0].message.content;
+
+    // Separar secciones esperadas por delimitadores específicos
+    const consideraciones = respuesta.split("2. Fundamentos")[0].trim();
+    const fundamentos = respuesta.split("2. Fundamentos")[1].split("3. Una petición")[0].trim();
+    const peticion = respuesta.split("3. Una petición")[1]?.trim() ?? '';
+
+    return res.status(200).json({
+      consideraciones,
+      fundamentos,
+      peticion,
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      error: "Error generando texto IA extendido",
+      message: error.message,
+      stack: error.stack,
+    });
+  }
+});
+
+
 
 
 

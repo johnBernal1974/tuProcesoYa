@@ -1263,7 +1263,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           subcategoria: widget.subcategoria,
           respuestasUsuario: widget.respuestas,
           controllerDestino: _consideracionesController,
+          fundamentosController: _fundamentosDerechoController,
+          peticionController: _peticionConcretaController,
         ),
+
         const SizedBox(height: 5),
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),

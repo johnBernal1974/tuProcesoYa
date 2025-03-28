@@ -73,6 +73,7 @@ class _WompiWebViewState extends State<WompiWebView> {
       if (event.docs.isNotEmpty && !_callbackEjecutado) {
         var transaction = event.docs.first;
         String status = transaction["status"];
+        _callbackEjecutado = true; // ⚠️ importante para evitar múltiples llamadas
 
         if (status == "APPROVED") {
           if (widget.esPagoDerechoPeticion && widget.onTransaccionAprobada != null) {
@@ -95,8 +96,17 @@ class _WompiWebViewState extends State<WompiWebView> {
             Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
           }
         }
+
+        // ✅ Manejo si es DECLINED
+        else if (status == "DECLINED") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const TransactionFailedPage()),
+          );
+        }
       }
     });
   }
+
 
 }

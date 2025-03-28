@@ -7,6 +7,8 @@ class TextoIAConCard extends StatefulWidget {
   final String subcategoria;
   final List<String> respuestasUsuario;
   final TextEditingController controllerDestino;
+  final TextEditingController? fundamentosController;
+  final TextEditingController? peticionController;
 
   const TextoIAConCard({
     super.key,
@@ -14,6 +16,8 @@ class TextoIAConCard extends StatefulWidget {
     required this.subcategoria,
     required this.respuestasUsuario,
     required this.controllerDestino,
+    this.fundamentosController,
+    this.peticionController,
   });
 
   @override
@@ -31,17 +35,40 @@ class _TextoIAConCardState extends State<TextoIAConCard> {
     });
 
     try {
-      final texto = await IABackendService.generarTextoDesdeCloudFunction(
-        categoria: widget.categoria,
-        subcategoria: widget.subcategoria,
-        respuestasUsuario: widget.respuestasUsuario,
-      );
+      if (widget.fundamentosController != null && widget.peticionController != null) {
+        final data = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
+          categoria: widget.categoria,
+          subcategoria: widget.subcategoria,
+          respuestasUsuario: widget.respuestasUsuario,
+        );
 
-      setState(() {
-        textoGeneradoIA = texto;
-        mostrarCard = true;
-        cargando = false;
-      });
+        setState(() {
+          textoGeneradoIA = data['consideraciones'];
+          mostrarCard = true;
+          cargando = false;
+        });
+
+        widget.controllerDestino.text = data['consideraciones'] ?? '';
+        widget.fundamentosController!.text = data['fundamentos'] ?? '';
+        widget.peticionController!.text = data['peticion'] ?? '';
+
+      } else {
+        // Caso simple, solo generar el texto para consideraciones
+        final texto = await IABackendService.generarTextoDesdeCloudFunction(
+          categoria: widget.categoria,
+          subcategoria: widget.subcategoria,
+          respuestasUsuario: widget.respuestasUsuario,
+        );
+
+        setState(() {
+          textoGeneradoIA = texto;
+          mostrarCard = true;
+          cargando = false;
+        });
+
+        widget.controllerDestino.text = texto;
+      }
+
     } catch (e) {
       setState(() {
         textoGeneradoIA = "❌ Error generando texto con IA:\n$e";
@@ -50,6 +77,7 @@ class _TextoIAConCardState extends State<TextoIAConCard> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -98,6 +126,8 @@ class _TextoIAConCardState extends State<TextoIAConCard> {
                     child: ElevatedButton.icon(
                       onPressed: () {
                         widget.controllerDestino.text = textoGeneradoIA!;
+                        widget.fundamentosController?.text = textoGeneradoIA!;
+                        widget.peticionController?.text = textoGeneradoIA!;
                         setState(() {
                           mostrarCard = false;
                         });
