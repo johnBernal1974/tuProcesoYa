@@ -119,24 +119,36 @@ class _SideBarState extends State<SideBar> {
 
     List<Widget> drawerItems = _buildDrawerItems(context, _isAdmin, rol);
 
-    return Drawer(
-      elevation: 1,
-      child: Container(
-        color: blanco,
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const SizedBox(height: 40),
-            _buildDrawerHeader(_isAdmin),
-            const Divider(height: 1, color: grisMedio),
-            ...drawerItems,
-            const Divider(height: 1, color: Colors.white70),
-            _buildLogoutTile(context),
-            const SizedBox(height: 20),
-          ],
+    return Container(
+      decoration: const BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black38, // Sombra suave
+            offset: Offset(2, 0),   // A la derecha
+            blurRadius: 6,          // Difuminado
+          ),
+        ],
+      ),
+      child: Drawer(
+        elevation: 0, // Elevation en 0 ya que usamos BoxShadow
+        child: Container(
+          color: Colors.white,
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              const SizedBox(height: 40),
+              _buildDrawerHeader(_isAdmin),
+              const Divider(height: 1, color: grisMedio),
+              ...drawerItems,
+              const Divider(height: 1, color: Colors.white70),
+              _buildLogoutTile(context),
+              const SizedBox(height: 20),
+            ],
+          ),
         ),
       ),
     );
+
   }
 
 

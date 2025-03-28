@@ -7,19 +7,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
-import 'package:pdf/pdf.dart';
-import 'package:printing/printing.dart';
 import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
+import '../../../commons/ia_backend_service/TextoIAConCard.dart';
+import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_derecho_peticion.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-
 import '../../../widgets/datos_ejecucion_condena.dart';
 
 class AtenderDerechoPeticionPage extends StatefulWidget {
@@ -104,6 +103,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   String asignadoA_P2 = '';
   String asignadoNombreP2 = '';
   DateTime? fechaAsignadoP2;
+  String? textoGeneradoIA; // A nivel de clase (State)
+  bool mostrarCardIA = false;
 
 
 
@@ -198,133 +199,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         ),
       ),
     );
-  }
-
-  void fetchDocumentoDerechoPeticion() async {
-    try {
-      DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
-          .doc(widget.idDocumento)
-          .get();
-
-      if (documentSnapshot.exists) {
-        Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
-
-        if (data != null && mounted) {
-          setState(() {
-            diligencio = data['diligencio'] ?? 'No Diligenciado';
-            reviso = data['reviso'] ?? 'No Revisado';
-            envio = data['envió'] ?? 'No enviado';
-            fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
-            fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
-            fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
-            asignadoA_P2 = data['asignadoA_P2'] ?? '';
-            asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
-            fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
-          });
-        }
-      } else {
-        if (kDebugMode) {
-          print("⚠️ Documento no encontrado en Firestore");
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al obtener datos de Firestore: $e");
-      }
-    }
-  }
-
-  Future<void> cargarCorreos() async {
-    Map<String, String> correos = await obtenerCorreosCentro(userDoc);
-    if (mounted) {
-      setState(() {
-        correosCentro = correos;
-      });
-    }
-  }
-
-  void _actualizarAltura() {
-    int lineas = '\n'.allMatches(_consideracionesController.text).length + 1;
-    setState(() {
-      _maxLines = lineas > 5 ? 5 : lineas; // Limita el crecimiento a 5 líneas
-    });
-  }
-
-  void _guardarDatosEnVariables() {
-    if (_consideracionesController.text.isEmpty || _fundamentosDerechoController.text.isEmpty
-        || _peticionConcretaController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("⚠️ Todos los campos deben estar llenos."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      _mostrarBotonVistaPrevia = false;
-      _mostrarVistaPrevia = false;
-      return; // Detiene la ejecución si hay campos vacíos
-    }
-
-    setState(() {
-      consideraciones = _consideracionesController.text;
-      fundamentosDeDerecho = _fundamentosDerechoController.text;
-      peticionConcreta = _peticionConcretaController.text;
-    });
-    _mostrarBotonVistaPrevia = true;
-  }
-
-  @override
-  void dispose() {
-    _consideracionesController.removeListener(_actualizarAltura);
-    _fundamentosDerechoController.removeListener(_actualizarAltura);
-    _consideracionesController.dispose();
-    _fundamentosDerechoController.dispose();
-    super.dispose();
-  }
-
-  String obtenerTituloCorreo(String? nombreCorreo) {
-    switch (nombreCorreo) {
-      case 'Director':
-        return 'Señor\nDirector';
-      case 'Jurídica':
-        return 'Señores Oficina Jurídica';
-      case 'Principal':
-        return 'Señores';
-      case 'Sanidad':
-        return 'Señores Oficina de Sanidad';
-      case 'Correo JEP':
-        return 'Señor(a) Juez';
-      case 'Correo JDC':
-        return 'Señor(a) Juez';
-      default:
-        return '';
-    }
-  }
-  Color _obtenerColorStatus(String status) {
-    switch (status) {
-      case "Solicitado":
-        return Colors.red;
-      case "Diligenciado":
-        return Colors.amber;
-      case "Revisado":
-        return primary; // Puedes usar Colors.blue o Theme.of(context).primaryColor
-      default:
-        return Colors.grey; // Color por defecto
-    }
-  }
-
-  Color _obtenerColorFondo(String status) {
-    switch (status) {
-      case "Solicitado":
-        return const Color(0xFFFFF5F5); // Rojo extra claro
-      case "Diligenciado":
-        return const Color(0xFFFFFBEA); // Ámbar extra claro
-      case "Revisado":
-        return const Color(0xFFF5EAFE); // primary extra claro
-      default:
-        return const Color(0xFFFAFAFA); // Gris casi blanco
-    }
   }
 
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
@@ -500,11 +374,192 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
+
+
+  Widget _buildSolicitudTexto() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(color: gris),
+        const Text(
+          "Comentarios hechos por el usuario",
+          style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w900),
+        ),
+
+        const SizedBox(height: 15),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: Colors.grey.shade200,
+          ),
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          child: widget.preguntas.isNotEmpty && widget.respuestas.isNotEmpty
+              ? Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: List.generate(
+              widget.preguntas.length,
+                  (index) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.preguntas[index],
+                      style: const TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      index < widget.respuestas.length ? widget.respuestas[index] : 'No hay respuesta',
+                      style: const TextStyle(fontSize: 12, color: Colors.black),
+                    ),
+                    const Divider(), // Separador entre preguntas
+                  ],
+                ),
+              ),
+            ),
+          )
+              : const Text(
+            "No hay preguntas ni respuestas registradas.",
+            style: TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  void fetchDocumentoDerechoPeticion() async {
+    try {
+      DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
+          .collection('derechos_peticion_solicitados')
+          .doc(widget.idDocumento)
+          .get();
+
+      if (documentSnapshot.exists) {
+        Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
+
+        if (data != null && mounted) {
+          setState(() {
+            diligencio = data['diligencio'] ?? 'No Diligenciado';
+            reviso = data['reviso'] ?? 'No Revisado';
+            envio = data['envió'] ?? 'No enviado';
+            fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
+            fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
+            fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
+            asignadoA_P2 = data['asignadoA_P2'] ?? '';
+            asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
+            fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+          });
+        }
+      } else {
+        if (kDebugMode) {
+          print("⚠️ Documento no encontrado en Firestore");
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error al obtener datos de Firestore: $e");
+      }
+    }
+  }
+
+  Future<void> cargarCorreos() async {
+    Map<String, String> correos = await obtenerCorreosCentro(userDoc);
+    if (mounted) {
+      setState(() {
+        correosCentro = correos;
+      });
+    }
+  }
+
+  void _actualizarAltura() {
+    int lineas = '\n'.allMatches(_consideracionesController.text).length + 1;
+    setState(() {
+      _maxLines = lineas > 5 ? 5 : lineas; // Limita el crecimiento a 5 líneas
+    });
+  }
+
+  void _guardarDatosEnVariables() {
+    if (_consideracionesController.text.isEmpty || _fundamentosDerechoController.text.isEmpty
+        || _peticionConcretaController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("⚠️ Todos los campos deben estar llenos."),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      _mostrarBotonVistaPrevia = false;
+      _mostrarVistaPrevia = false;
+      return; // Detiene la ejecución si hay campos vacíos
+    }
+
+    setState(() {
+      consideraciones = _consideracionesController.text;
+      fundamentosDeDerecho = _fundamentosDerechoController.text;
+      peticionConcreta = _peticionConcretaController.text;
+    });
+    _mostrarBotonVistaPrevia = true;
+  }
+
+  @override
+  void dispose() {
+    _consideracionesController.removeListener(_actualizarAltura);
+    _fundamentosDerechoController.removeListener(_actualizarAltura);
+    _consideracionesController.dispose();
+    _fundamentosDerechoController.dispose();
+    super.dispose();
+  }
+
+  String obtenerTituloCorreo(String? nombreCorreo) {
+    switch (nombreCorreo) {
+      case 'Director':
+        return 'Señor\nDirector';
+      case 'Jurídica':
+        return 'Señores Oficina Jurídica';
+      case 'Principal':
+        return 'Señores';
+      case 'Sanidad':
+        return 'Señores Oficina de Sanidad';
+      case 'Correo JEP':
+        return 'Señor(a) Juez';
+      case 'Correo JDC':
+        return 'Señor(a) Juez';
+      default:
+        return '';
+    }
+  }
+  Color _obtenerColorStatus(String status) {
+    switch (status) {
+      case "Solicitado":
+        return Colors.red;
+      case "Diligenciado":
+        return Colors.amber;
+      case "Revisado":
+        return primary; // Puedes usar Colors.blue o Theme.of(context).primaryColor
+      default:
+        return Colors.grey; // Color por defecto
+    }
+  }
+
+  Color _obtenerColorFondo(String status) {
+    switch (status) {
+      case "Solicitado":
+        return const Color(0xFFFFF5F5); // Rojo extra claro
+      case "Diligenciado":
+        return const Color(0xFFFFFBEA); // Ámbar extra claro
+      case "Revisado":
+        return const Color(0xFFF5EAFE); // primary extra claro
+      default:
+        return const Color(0xFFFAFAFA); // Gris casi blanco
+    }
+  }
+
   Widget _buildSolicitadoPor() {
     bool isMobile = MediaQuery.of(context).size.width < 600; // Detectar si es móvil
 
     return isMobile
-    ? Align(
+        ? Align(
       alignment: Alignment.centerLeft, // Asegura que todo el contenido esté alineado a la izquierda
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -525,7 +580,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       ),
     )
 
-    : Row( // En PC, mantener en una fila
+        : Row( // En PC, mantener en una fila
       children: [
         const Text(
           "Solicitado por:",
@@ -540,6 +595,56 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           style: const TextStyle(fontSize: 14),
         ),
       ],
+    );
+  }
+
+
+  /// 📌 Muestra detalles de la solicitud (seguimiento, categoría, fecha, subcategoría)
+  Widget _buildDetallesSolicitud() {
+    double fontSize = MediaQuery.of(context).size.width < 600 ? 10 : 12; // Tamaño más pequeño en móviles
+    bool isMobile = MediaQuery.of(context).size.width < 600; // Verifica si es móvil
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, // Asegurar alineación izquierda en móviles
+        children: [
+          isMobile
+              ? Column( // En móviles, mostrar en columnas
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Categoría", widget.categoria, fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
+            ],
+          )
+              : Row( // En PC, mantener filas
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
+                  const SizedBox(height: 5),
+                  _buildDetalleItem("Categoría", widget.categoria, fontSize),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
+                  const SizedBox(height: 5),
+                  _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -633,55 +738,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-  /// 📌 Muestra detalles de la solicitud (seguimiento, categoría, fecha, subcategoría)
-  Widget _buildDetallesSolicitud() {
-    double fontSize = MediaQuery.of(context).size.width < 600 ? 10 : 12; // Tamaño más pequeño en móviles
-    bool isMobile = MediaQuery.of(context).size.width < 600; // Verifica si es móvil
-
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start, // Asegurar alineación izquierda en móviles
-        children: [
-          isMobile
-              ? Column( // En móviles, mostrar en columnas
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
-              const SizedBox(height: 5),
-              _buildDetalleItem("Categoría", widget.categoria, fontSize),
-              const SizedBox(height: 5),
-              _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
-              const SizedBox(height: 5),
-              _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
-            ],
-          )
-              : Row( // En PC, mantener filas
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
-                  const SizedBox(height: 5),
-                  _buildDetalleItem("Categoría", widget.categoria, fontSize),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
-                  const SizedBox(height: 5),
-                  _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
 // Método auxiliar para evitar repetir código
   Widget _buildDetalleItem(String title, String value, double fontSize) {
     return Column(
@@ -689,58 +745,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       children: [
         Text(title, style: TextStyle(fontSize: fontSize, color: Colors.grey)),
         Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize + 2)),
-      ],
-    );
-  }
-
-
-  Widget _buildSolicitudTexto() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Divider(color: gris),
-        const Text(
-          "Comentarios hechos por el usuario",
-          style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.w900),
-        ),
-
-        const SizedBox(height: 15),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: Colors.grey.shade200,
-          ),
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          child: widget.preguntas.isNotEmpty && widget.respuestas.isNotEmpty
-              ? Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: List.generate(
-              widget.preguntas.length,
-                  (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.preguntas[index],
-                      style: const TextStyle(fontSize: 12, color: Colors.black, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      index < widget.respuestas.length ? widget.respuestas[index] : 'No hay respuesta',
-                      style: const TextStyle(fontSize: 12, color: Colors.black),
-                    ),
-                    const Divider(), // Separador entre preguntas
-                  ],
-                ),
-              ),
-            ),
-          )
-              : const Text(
-            "No hay preguntas ni respuestas registradas.",
-            style: TextStyle(fontSize: 12, color: Colors.black54),
-          ),
-        ),
       ],
     );
   }
@@ -767,6 +771,20 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (userData!.situacion == "En Prisión domiciliaria" ||
+              userData!.situacion == "En libertad condicional")
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.black,
+              ),
+              child: Text(
+                userData!.situacion ?? "",
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
+              ),
+            ),
+          const SizedBox(height: 20),
           const Text("Datos generales del PPL", style: TextStyle(
             fontWeight: FontWeight.w900, fontSize: 24
           ),),
@@ -849,30 +867,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           const SizedBox(height: 10),
           Row(
             children: [
-              const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text('${userData!.tiempoCondena} meses', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
-          Row(
-            children: [
-              const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
-          Row(
-            children: [
               const Text('Fecha Captura:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
               Text(
                 DateFormat('yyyy-MM-dd').format(userData!.fechaCaptura!),
@@ -880,7 +874,35 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               ),
             ],
           ),
-
+          Row(
+            children: [
+              const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text('${userData!.tiempoCondena} meses', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          if(userData!.situacion == "En Reclusión")
+          Column(
+            children: [
+              Row(
+                children: [
+                  const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                  Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ],
+              ),
+              Row(
+                children: [
+                  const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                  Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ],
+              ),
+              Row(
+                children: [
+                  const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                  Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ],
+              ),
+            ],
+          ),
           const SizedBox(height: 15),
           const Text("Datos del Acudiente", style: TextStyle(
               fontWeight: FontWeight.w900,
@@ -928,16 +950,19 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           const SizedBox(height: 20),
           Column(
             children: [
+              if(userData!.situacion == "En Reclusión")
               _buildBenefitCard(
                 title: 'Permiso Administrativo de 72 horas',
                 condition: porcentajeEjecutado >= 33.33,
                 remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
               ),
+              if(userData!.situacion == "En Reclusión")
               _buildBenefitCard(
                 title: 'Prisión Domiciliaria',
                 condition: porcentajeEjecutado >= 50,
                 remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
               ),
+              if(userData!.situacion == "En Reclusión" || userData!.situacion == "En Prisión domiciliaria")
               _buildBenefitCard(
                 title: 'Libertad Condicional',
                 condition: porcentajeEjecutado >= 60,
@@ -1226,13 +1251,22 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          "Consideraciones",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        // ElevatedButton.icon(
+        //   icon: const Icon(Icons.auto_awesome),
+        //   label: const Text("Generar texto completo con IA"),
+        //   onPressed: generarTextoIAExtendido,
+        // ),
+        //
+
+        TextoIAConCard(
+          categoria: widget.categoria,
+          subcategoria: widget.subcategoria,
+          respuestasUsuario: widget.respuestas,
+          controllerDestino: _consideracionesController,
         ),
         const SizedBox(height: 5),
         AnimatedContainer(
-          duration: const Duration(milliseconds: 300), // Animación suave
+          duration: const Duration(milliseconds: 300),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             border: Border.all(color: Colors.grey),
@@ -1241,7 +1275,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           child: Column(
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   IconButton(
                     icon: Icon(
@@ -1256,7 +1290,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                   ),
                 ],
               ),
-              if (_expandidoConsideraciones) // Solo muestra el campo si está expandido
+              if (_expandidoConsideraciones)
                 Padding(
                   padding: const EdgeInsets.only(top: 8.0),
                   child: TextField(
@@ -1265,7 +1299,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                     maxLines: 20,
                     decoration: const InputDecoration(
                       hintText: "Escribe aquí...",
-                      border: InputBorder.none, // Sin borde interno
+                      border: InputBorder.none,
                     ),
                   ),
                 ),
@@ -1275,6 +1309,35 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       ],
     );
   }
+  //
+  // Future<void> generarTextoIAExtendido() async {
+  //   try {
+  //     final resultado = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
+  //       categoria: widget.categoria,
+  //       subcategoria: widget.subcategoria,
+  //       respuestasUsuario: widget.respuestas,
+  //     );
+  //
+  //     print("🔹 Consideraciones: ${resultado['consideraciones']}");
+  //     print("🔹 Fundamentos: ${resultado['fundamentos']}");
+  //     print("🔹 Petición: ${resultado['peticion']}");
+  //
+  //     setState(() {
+  //       _consideracionesController.text = resultado['consideraciones'] ?? '';
+  //       _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
+  //       _peticionConcretaController.text = resultado['peticion'] ?? '';
+  //     });
+  //
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
+  //     );
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text("❌ Error: $e")),
+  //     );
+  //   }
+  // }
+
 
   Future<void> cargarConsideraciones(String docId) async {
     try {

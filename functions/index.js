@@ -8,6 +8,7 @@ const { onRequest } = require("firebase-functions/v2/https");
 const AWS = require("aws-sdk");
 const { Buffer } = require("buffer");
 const { getFirestore } = require("firebase-admin/firestore");
+const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 
 
 const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
@@ -265,6 +266,50 @@ exports.sendEmailWithSES = onRequest({
   } catch (error) {
     console.error("❌ Error enviando correo SES:", error);
     return res.status(500).json({ error: "Error enviando correo SES" });
+  }
+});
+
+exports.generarTextoIA = onRequest({
+  cors: true,
+  secrets: [OPENAI_API_KEY],
+}, async (req, res) => {
+  try {
+    const { categoria, subcategoria, respuestasUsuario } = req.body;
+
+    if (!categoria || !subcategoria || !Array.isArray(respuestasUsuario)) {
+      return res.status(400).json({ error: "Faltan campos requeridos" });
+    }
+
+    const prompt = `
+    Quiero que actúes como un asistente legal. A partir de las respuestas de un ciudadano a un formulario de derecho de petición en la categoría "${categoria}" y subcategoría "${subcategoria}", redacta un texto coherente, organizado y bien redactado que unifique estas respuestas en un solo párrafo. Las respuestas del usuario son:
+    ${respuestasUsuario.map((r, i) => `(${i + 1}) ${r}`).join("\n")}
+    `;
+
+    const OpenAI = require("openai");
+    const openai = new OpenAI({
+      apiKey: OPENAI_API_KEY.value(),
+    });
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "Eres un asistente legal experto en redacción clara y formal." },
+        { role: "user", content: prompt }
+      ],
+      temperature: 0.7,
+      max_tokens: 500,
+    });
+
+    const texto = completion.data.choices[0].message.content;
+
+    return res.status(200).json({ texto });
+  } catch (error) {
+    console.error("❌ Error al generar texto con OpenAI:", error);
+    return res.status(500).json({
+      error: "Error generando texto IA",
+      message: error.message,
+      stack: error.stack,
+    });
   }
 });
 
