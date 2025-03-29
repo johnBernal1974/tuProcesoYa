@@ -1,9 +1,12 @@
+// lib/commons/wompi/reintento_pago_suscripcion.dart
 import 'package:flutter/material.dart';
 
 import '../../src/colors/colors.dart';
 
-class TransactionFailedPage extends StatelessWidget {
-  const TransactionFailedPage({super.key});
+class ReintentoPagoSuscripcionPage extends StatelessWidget {
+  final String referencia;
+
+  const ReintentoPagoSuscripcionPage({super.key, required this.referencia});
 
   @override
   Widget build(BuildContext context) {
@@ -12,15 +15,6 @@ class TransactionFailedPage extends StatelessWidget {
       appBar: AppBar(
         iconTheme: const IconThemeData(color: Colors.white, size: 30),
         title: const Text("Pago Rechazado", style: TextStyle(color: blanco)),
-        actions: <Widget>[
-          Container(
-            margin: const EdgeInsets.only(right: 15),
-            child: const Image(
-                height: 60.0,
-                width: 60.0,
-                image: AssetImage('assets/images/logo_tu_proceso_ya_transparente.png')),
-          )
-        ],
         backgroundColor: Colors.red,
       ),
       body: Padding(
@@ -47,18 +41,21 @@ class TransactionFailedPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  "No pudimos procesar tu pago. Puedes intentarlo nuevamente o salir.",
+                  "No pudimos procesar tu pago de suscripción. Puedes intentarlo nuevamente o salir.",
                   style: TextStyle(fontSize: 14, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 25),
 
-                // Botón para reintentar pago
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamed(context, 'checkout_wompi'); // Ahora permite volver atrás
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.pushReplacementNamed(context, '/checkout');
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
@@ -92,13 +89,11 @@ class TransactionFailedPage extends StatelessWidget {
                         style: TextStyle(color: Colors.white, fontSize: 14)),
                   ),
                 ),
-                const SizedBox(height: 10),
               ],
             ),
           ),
         ),
       ),
-
     );
   }
 }

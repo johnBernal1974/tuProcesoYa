@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
 import '../../src/colors/colors.dart';
 
-class PagoExitosoDerechoPeticionPage extends StatelessWidget {
-  final VoidCallback onContinuar;
+
+class PagoExitosoTutelaPage extends StatelessWidget {
   final double montoPagado;
   final String transaccionId;
   final DateTime fecha;
 
-  const PagoExitosoDerechoPeticionPage({
+  const PagoExitosoTutelaPage({
     super.key,
-    required this.onContinuar,
     required this.montoPagado,
     required this.transaccionId,
     required this.fecha,
@@ -42,7 +42,7 @@ class PagoExitosoDerechoPeticionPage extends StatelessWidget {
                 const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
                 const SizedBox(height: 20),
                 const Text(
-                  "¡Pago realizado con éxito!",
+                  "¡Pago de tutela realizado con éxito!",
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
@@ -58,7 +58,9 @@ class PagoExitosoDerechoPeticionPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: onContinuar,
+                  onPressed: (){
+                    Navigator.pushNamedAndRemoveUntil(context, 'home', (r) => false);
+                  },
                   style: ElevatedButton.styleFrom(backgroundColor: primary),
                   child: const Text("Continuar", style: TextStyle(color: blanco)),
                 ),
