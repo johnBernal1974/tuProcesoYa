@@ -286,9 +286,10 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
                 ),
                 const SizedBox(height: 10),
                 TextField(
-                  textCapitalization:TextCapitalization.sentences,
+                  textCapitalization: TextCapitalization.sentences,
                   controller: _controllers[index],
-                  maxLines: 10,
+                  minLines: 2, // 👈 Se añade esto
+                  maxLines: null, // 👈 Esto permite que crezca dinámicamente
                   decoration: InputDecoration(
                     border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
                     enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
