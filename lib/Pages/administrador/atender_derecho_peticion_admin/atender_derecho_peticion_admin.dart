@@ -743,7 +743,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: TextStyle(fontSize: fontSize, color: Colors.grey)),
+        Text(title, style: TextStyle(fontSize: fontSize, color: Colors.black87)),
         Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize + 2)),
       ],
     );
