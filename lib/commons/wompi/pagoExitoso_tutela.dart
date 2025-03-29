@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
 import '../../src/colors/colors.dart';
 
-
 class PagoExitosoTutelaPage extends StatelessWidget {
+  final VoidCallback onContinuar;
   final double montoPagado;
   final String transaccionId;
   final DateTime fecha;
 
   const PagoExitosoTutelaPage({
     super.key,
+    required this.onContinuar,
     required this.montoPagado,
     required this.transaccionId,
     required this.fecha,
@@ -23,12 +23,13 @@ class PagoExitosoTutelaPage extends StatelessWidget {
       name: '',
       decimalDigits: 0,
     );
+
     return WillPopScope(
-      onWillPop: () async => false, // ❌ Bloquea botón físico
+      onWillPop: () async => false, // ❌ Bloquea botón físico atrás
       child: Scaffold(
         backgroundColor: blanco,
         appBar: AppBar(
-          automaticallyImplyLeading: false, // ❌ Quita flecha de retroceso
+          automaticallyImplyLeading: false,
           backgroundColor: primary,
           title: const Text("Pago exitoso", style: TextStyle(color: Colors.white)),
         ),
@@ -47,20 +48,13 @@ class PagoExitosoTutelaPage extends StatelessWidget {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                Text(
-                  "Monto: \$${formatter.format(montoPagado)}",
-                  style: const TextStyle(fontSize: 16),
-                ),
+                Text("Monto: \$${formatter.format(montoPagado)}", style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 8),
-                Text(
-                  "Fecha: ${DateFormat('dd/MM/yyyy hh:mm a').format(fecha)}",
-                  style: const TextStyle(fontSize: 13),
-                ),
+                Text("Fecha: ${DateFormat('dd/MM/yyyy hh:mm a').format(fecha)}",
+                    style: const TextStyle(fontSize: 13)),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: (){
-                    Navigator.pushNamedAndRemoveUntil(context, 'home', (r) => false);
-                  },
+                  onPressed: onContinuar,
                   style: ElevatedButton.styleFrom(backgroundColor: primary),
                   child: const Text("Continuar", style: TextStyle(color: blanco)),
                 ),

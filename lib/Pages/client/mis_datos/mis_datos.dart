@@ -187,6 +187,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                       Text('${_ppl!.tiempoCondena} meses', style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
+                  if(_ppl!.situacion == "En Reclusión")
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -195,6 +196,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                       Text(_ppl!.td, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
+                  if(_ppl!.situacion == "En Reclusión")
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -203,6 +205,7 @@ class _MisDatosPageState extends State<MisDatosPage> {
                       Text(_ppl!.nui, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
+                  if(_ppl!.situacion == "En Reclusión")
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

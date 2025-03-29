@@ -92,31 +92,31 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
             padding: const EdgeInsets.all(0.0),
             child: Column(
               children: [
-                // 🔥 SECCIÓN DEL SALDO ACTUAL 🔥
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  margin: const EdgeInsets.only(bottom: 15),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: gris, width: 2),
-                  ),
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Saldo Actual",
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
-                      ),
-                      Text(
-                        _saldo != null
-                            ? "\$${NumberFormat("#,###", "es_CO").format(_saldo)}"
-                            : "Cargando...",
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black),
-                      ),
-                    ],
-                  ),
-                ),
+                // // 🔥 SECCIÓN DEL SALDO ACTUAL 🔥
+                // Container(
+                //   width: double.infinity,
+                //   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                //   margin: const EdgeInsets.only(bottom: 15),
+                //   decoration: BoxDecoration(
+                //     color: Colors.white,
+                //     borderRadius: BorderRadius.circular(12),
+                //     border: Border.all(color: gris, width: 2),
+                //   ),
+                //   child: Column(
+                //     children: [
+                //       const Text(
+                //         "Saldo Actual",
+                //         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
+                //       ),
+                //       Text(
+                //         _saldo != null
+                //             ? "\$${NumberFormat("#,###", "es_CO").format(_saldo)}"
+                //             : "Cargando...",
+                //         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black),
+                //       ),
+                //     ],
+                //   ),
+                // ),
 
                 // 🔥 LISTA DE TRANSACCIONES 🔥
                 Expanded(
@@ -183,6 +183,10 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
                                   ),
                                   Text(
                                     "ID: $transactionId",
+                                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                  ),
+                                  Text(
+                                    "Método de pago: : $paymentMethod",
                                     style: const TextStyle(fontSize: 10, color: Colors.grey),
                                   ),
                                 ],

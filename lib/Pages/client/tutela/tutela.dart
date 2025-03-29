@@ -138,10 +138,7 @@ class _TutelaPageState extends State<TutelaPage> {
                       'La acción de tutela sirve para que un juez emita una orden dirigida a la autoridad pública o al particular, según '
                           'corresponda, con el fin de que estos cesen las actividades amenazadoras o vulneradoras '
                           'del derecho fundamental. Igualmente, para que estos sujetos tomen las medidas necesarias '
-                          'para evitar dicha vulneración y se garanticen los derechos fundamentales del solicitante.\n\n'
-                          'Cuando sean particulares los accionados, la tutela es procedente en los siguientes casos: relación '
-                          'de subordinación (como un contrato laboral); relación de indefensión (en las situaciones '
-                          'en donde haya una relación de poder) o que esté encargado de la prestación de servicios públicos',
+                          'para evitar dicha vulneración y se garanticen los derechos fundamentales del solicitante.\n\n',
                       style: TextStyle(fontSize: 14),
                       textAlign: TextAlign.justify,
                     ),

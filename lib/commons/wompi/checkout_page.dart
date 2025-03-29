@@ -16,12 +16,18 @@ class CheckoutPage extends StatefulWidget {
   final int? valorDerecho;
   final String? referenciaDerecho;
   final VoidCallback? onTransaccionAprobada;
+  final bool esPagoTutela;
+  final int? valorTutela;
+  final String? referenciaTutela;
 
   const CheckoutPage({
     super.key,
     this.esPagoDerechoPeticion = false,
     this.valorDerecho,
     this.referenciaDerecho,
+    this.esPagoTutela = false,
+    this.valorTutela,
+    this.referenciaTutela,
     this.onTransaccionAprobada,
   });
 
@@ -168,7 +174,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 child: Column(
                   children: [
                     const Text(
-                      "Valor del servicio:",
+                      "Valor",
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Text(
@@ -193,6 +199,84 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       url: url,
                       referencia: referencia,
                       esPagoDerechoPeticion: true,
+                      onTransaccionAprobada: widget.onTransaccionAprobada,
+                    ),
+                  );
+                },
+                child: const Text("Pagar ahora", style: TextStyle(color: blanco)),
+              )
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (widget.esPagoTutela && widget.valorTutela != null) {
+      return MainLayout(
+        pageTitle: "Pago por tutela",
+        content: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 30),
+              RichText(
+                textAlign: TextAlign.center,
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                  children: [
+                    TextSpan(text: "Para enviar tu solicitud de "),
+                    TextSpan(
+                      text: "TUTELA",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(text: ", debes realizar el pago del servicio."),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: primary),
+                  color: blanco,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      offset: const Offset(0, 2),
+                      blurRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      "Valor",
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      " \$${_formatter.format(widget.valorTutela)}",
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: primary),
+                onPressed: () async {
+                  String referencia = widget.referenciaTutela ?? "tutela_${_auth.currentUser?.uid}_${_uuid.v4()}";
+                  int centavos = widget.valorTutela! * 100;
+
+                  await PagoHelper.iniciarFlujoPago(
+                    context: context,
+                    centavos: centavos,
+                    referencia: referencia,
+                    buildCheckoutWidget: (url) => WompiWebView(
+                      url: url,
+                      referencia: referencia,
+                      esPagoDerechoPeticion: false,
                       onTransaccionAprobada: widget.onTransaccionAprobada,
                     ),
                   );

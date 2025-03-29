@@ -259,33 +259,35 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Tus datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Solicitar derecho de petición", Icons.account_balance_outlined, 'derecho_peticion'),
         _buildDrawerTile(context, "Solicitar acción de tutela", Icons.account_balance_sharp, 'tutela'),
+        _buildDrawerTile(context, "Tus pagos", Icons.attach_money, 'mis_transacciones'),
 
-        ExpansionTile(
-          leading: const Icon(
-              Icons.attach_money, color: Colors.black, size: 20),
-          title: const Text(
-              "Recargas", style: TextStyle(color: Colors.black, fontSize: 13)),
-          iconColor: Colors.black,
-          // 🔥 Color del icono cuando se expande
-          collapsedIconColor: Colors.black,
-          // 🔥 Color cuando está colapsado
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(left: 16.0),
-              // 🔥 Espaciado para cada elemento
-              child: _buildDrawerTile(
-                  context, "Recargar cuenta", Icons.monetization_on_outlined,
-                  'checkout_wompi'),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(left: 16.0),
-              // 🔥 Espaciado para cada elemento
-              child: _buildDrawerTile(
-                  context, "Tus transacciones", Icons.payments_rounded,
-                  'mis_transacciones'),
-            ),
-          ],
-        ),
+
+        // ExpansionTile(
+        //   leading: const Icon(
+        //       Icons.attach_money, color: Colors.black, size: 20),
+        //   title: const Text(
+        //       "Recargas", style: TextStyle(color: Colors.black, fontSize: 13)),
+        //   iconColor: Colors.black,
+        //   // 🔥 Color del icono cuando se expande
+        //   collapsedIconColor: Colors.black,
+        //   // 🔥 Color cuando está colapsado
+        //   children: [
+        //     Padding(
+        //       padding: const EdgeInsets.only(left: 16.0),
+        //       // 🔥 Espaciado para cada elemento
+        //       child: _buildDrawerTile(
+        //           context, "Recargar cuenta", Icons.monetization_on_outlined,
+        //           'checkout_wompi'),
+        //     ),
+        //     Padding(
+        //       padding: const EdgeInsets.only(left: 16.0),
+        //       // 🔥 Espaciado para cada elemento
+        //       child: _buildDrawerTile(
+        //           context, "Tus transacciones", Icons.payments_rounded,
+        //           'mis_transacciones'),
+        //     ),
+        //   ],
+        // ),
 
         ExpansionTile(
           leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),

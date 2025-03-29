@@ -57,7 +57,7 @@ class _WompiWebViewState extends State<WompiWebView> {
   }
 
   void _monitorearTransaccion(String referencia) {
-    _firestore.collection("recargas").where("reference", isEqualTo: referencia).snapshots().listen((event) {
+    _firestore.collection("recargas").where("reference", isEqualTo: referencia).snapshots().listen((event) async {
       if (event.docs.isNotEmpty && !_callbackEjecutado) {
         var transaction = event.docs.first;
         String status = transaction["status"];
@@ -108,6 +108,7 @@ class _WompiWebViewState extends State<WompiWebView> {
                     montoPagado: amount,
                     transaccionId: transaccionId,
                     fecha: fecha,
+                    onContinuar: widget.onTransaccionAprobada!,
                   ),
                 ),
               );
