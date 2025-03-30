@@ -2694,14 +2694,18 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         print("Error obteniendo nombre del acudiente: $e");
       }
     }
-
     // Construir el mensaje
     String mensaje = Uri.encodeComponent(
         "Hola *$nombreAcudiente*,\n\n"
-            "Tu cuenta de *Tu Proceso Ya* ha sido activada.\n\n"
+            "¡Nos alegra darte la bienvenida a *Tu Proceso Ya*! \n\n"
+            "Tu cuenta ha sido activada exitosamente. Desde ahora podrás gestionar solicitudes y hacer seguimiento a la situación de tu ser querido PPL de forma rápida y sencilla.\n\n"
+            "Contarás con *7 días completamente gratis* para explorar todas las funcionalidades de nuestra plataforma.\n\n"
+            "Pasado ese tiempo, deberás activar tu suscripción para seguir disfrutando de nuestros servicios y de los *precios especiales* diseñados para ti.\n\n"
+            "Ingresa a la aplicación aquí: https://tu-proceso-ya-fe845.web.app\n\n"
             "Gracias por confiar en nosotros.\n\n"
-            "Cordialmente,\nEl equipo de soporte."
+            "Cordialmente,\n*El equipo de soporte de Tu Proceso Ya*"
     );
+
 
     String whatsappBusinessUri = "whatsapp://send?phone=$celular&text=$mensaje"; // WhatsApp Business
     String webUrl = "https://wa.me/$celular?text=$mensaje"; // WhatsApp Web
