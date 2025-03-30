@@ -248,11 +248,26 @@ class _HomePageState extends State<HomePage> {
           style: const TextStyle(fontWeight: FontWeight.bold),
           textAlign: TextAlign.center,
         ),
+        if(_ppl!.situacion == "En Reclusión")
         Text(
           "NUI: ${_ppl?.nui ?? "No disponible"}     TD: ${_ppl?.td ?? "No disponible"}",
           style: const TextStyle(fontSize: 14, color: Colors.black),
           textAlign: TextAlign.center,
         ),
+        if(_ppl!.situacion != "En Reclusión")
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const Divider(color: Colors.grey),
+              const Text('Dirección registrada para cumplir la situación actual:', style: TextStyle(fontSize: 13, color: negro)),
+              Text(
+                "${_ppl!.direccion}, ${_ppl!.municipio} - ${_ppl!.departamento}",
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, height: 1.1),
+              ),
+            ],
+          ),
+        const SizedBox(height: 10),
+        situacionPpl(),
         const SizedBox(height: 20),
         Container(
           decoration: BoxDecoration(
@@ -377,6 +392,16 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget situacionPpl(){
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(6),
+        color: Colors.black87
+      ),
+        child: Text(_ppl!.situacion, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 12)));
+  }
+
   // para isPid false
   Widget _buildCondenaCard(String title, int meses, int dias, {bool oculto = false}) {
     return Card(
@@ -429,18 +454,20 @@ class _HomePageState extends State<HomePage> {
 
     return Column(
       children: [
+        if(_ppl!.situacion == "En Reclusión")
         _buildBeneficioFila(
           'Permiso de 72h',
           33.33,
           'salir del centro de reclusión por un periodo de 72 horas.',
         ),
-        const Divider(color: gris),
+
+        if(_ppl!.situacion == "En Reclusión")
         _buildBeneficioFila(
           'Prisión Domiciliaria',
           50,
           'cumplir el resto de la condena en su domicilio bajo vigilancia.',
         ),
-        const Divider(color: gris),
+        if(_ppl!.situacion == "En Reclusión" || _ppl!.situacion == "En Prisión domiciliaria")
         _buildBeneficioFila(
           'Libertad Condicional',
           60,
@@ -538,6 +565,7 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+          const Divider(color: gris),
         ],
       ),
     );
