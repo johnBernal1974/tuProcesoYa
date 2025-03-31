@@ -1109,7 +1109,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     }
   }
 
-
   //Para los tiempos de los beneficios
   Future<void> calcularTiempo(String id) async {
     final pplData = await _pplProvider.getById(id);
@@ -1307,7 +1306,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     }
   }
 
-
   Future<void> cargarConsideraciones(String docId) async {
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance
@@ -1393,7 +1391,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       ],
     );
   }
-
 
   Future<void> cargarFundamentosDeDerecho(String docId) async {
     try {
@@ -1481,7 +1478,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       ],
     );
   }
-
 
   Future<void> cargarPeticionConcreta(String docId) async {
     try {
