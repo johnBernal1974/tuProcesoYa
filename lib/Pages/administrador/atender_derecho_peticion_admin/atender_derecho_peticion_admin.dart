@@ -11,7 +11,7 @@ import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/a
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
-import '../../../commons/ia_backend_service/TextoIAConCard.dart';
+import '../../../commons/ia_backend_service/IASuggestionCard.dart';
 import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
@@ -65,9 +65,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
   List<Map<String, String>> archivosAdjuntos = [];
-  bool _expandidoConsideraciones = false;
-  bool _expandidoFundamentosDerecho = false;
-  bool _expandidoPeticionConcreta = false;
   final TextEditingController _consideracionesController = TextEditingController();
   final TextEditingController _fundamentosDerechoController = TextEditingController();
   final TextEditingController _peticionConcretaController = TextEditingController();
@@ -1251,95 +1248,64 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ElevatedButton.icon(
-        //   icon: const Icon(Icons.auto_awesome),
-        //   label: const Text("Generar texto completo con IA"),
-        //   onPressed: generarTextoIAExtendido,
-        // ),
-        //
-
-        TextoIAConCard(
+        IASuggestionCard(
           categoria: widget.categoria,
           subcategoria: widget.subcategoria,
           respuestasUsuario: widget.respuestas,
-          controllerDestino: _consideracionesController,
+          consideracionesController: _consideracionesController,
           fundamentosController: _fundamentosDerechoController,
           peticionController: _peticionConcretaController,
         ),
-
         const SizedBox(height: 5),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(10),
+        TextField(
+          controller: _consideracionesController,
+          minLines:1,
+          maxLines: null,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100, // Fondo gris claro
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      _expandidoConsideraciones ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _expandidoConsideraciones = !_expandidoConsideraciones;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              if (_expandidoConsideraciones)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: TextField(
-                    controller: _consideracionesController,
-                    minLines: 3,
-                    maxLines: 20,
-                    decoration: const InputDecoration(
-                      hintText: "Escribe aquí...",
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+          style: const TextStyle(fontSize: 14),
+          onChanged: (_) => verificarVistaPrevia(),
+        )
       ],
     );
   }
-  //
-  // Future<void> generarTextoIAExtendido() async {
-  //   try {
-  //     final resultado = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
-  //       categoria: widget.categoria,
-  //       subcategoria: widget.subcategoria,
-  //       respuestasUsuario: widget.respuestas,
-  //     );
-  //
-  //     print("🔹 Consideraciones: ${resultado['consideraciones']}");
-  //     print("🔹 Fundamentos: ${resultado['fundamentos']}");
-  //     print("🔹 Petición: ${resultado['peticion']}");
-  //
-  //     setState(() {
-  //       _consideracionesController.text = resultado['consideraciones'] ?? '';
-  //       _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-  //       _peticionConcretaController.text = resultado['peticion'] ?? '';
-  //     });
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("❌ Error: $e")),
-  //     );
-  //   }
-  // }
+
+  Future<void> generarTextoIAExtendido() async {
+    try {
+      final resultado = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
+        categoria: widget.categoria,
+        subcategoria: widget.subcategoria,
+        respuestasUsuario: widget.respuestas,
+      );
+
+      print("🔹 Consideraciones: ${resultado['consideraciones']}");
+      print("🔹 Fundamentos: ${resultado['fundamentos']}");
+      print("🔹 Petición: ${resultado['peticion']}");
+
+      setState(() {
+        _consideracionesController.text = resultado['consideraciones'] ?? '';
+        _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
+        _peticionConcretaController.text = resultado['peticion'] ?? '';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Error: $e")),
+      );
+    }
+  }
 
 
   Future<void> cargarConsideraciones(String docId) async {
@@ -1406,51 +1372,28 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 5),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300), // Animación suave
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(10),
+        TextField(
+          controller: _fundamentosDerechoController,
+          minLines:1,
+          maxLines: null,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100, // Fondo gris claro
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      _expandidoFundamentosDerecho ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _expandidoFundamentosDerecho = !_expandidoFundamentosDerecho;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              if (_expandidoFundamentosDerecho) // Solo muestra el campo si está expandido
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: TextField(
-                    controller: _fundamentosDerechoController,
-                    minLines: 3,
-                    maxLines: 20,
-                    decoration: const InputDecoration(
-                      hintText: "Escribe aquí...",
-                      border: InputBorder.none, // Sin borde interno
-                    ),
-                    onChanged: (text) => verificarVistaPrevia(), // ✅ Verifica al escribir
-                  ),
-                ),
-            ],
-          ),
-        ),
+          style: const TextStyle(fontSize: 14),
+          onChanged: (_) => verificarVistaPrevia(),
+        )
       ],
     );
   }
+
 
   Future<void> cargarFundamentosDeDerecho(String docId) async {
     try {
@@ -1517,51 +1460,28 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 5),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 300), // Animación suave
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey),
-            borderRadius: BorderRadius.circular(10),
+        TextField(
+          controller: _peticionConcretaController,
+          minLines:1,
+          maxLines: null,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100, // Fondo gris claro
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      _expandidoPeticionConcreta ? Icons.expand_less : Icons.expand_more,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _expandidoPeticionConcreta = !_expandidoPeticionConcreta;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              if (_expandidoPeticionConcreta) // Solo muestra el campo si está expandido
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: TextField(
-                    controller: _peticionConcretaController,
-                    minLines: 3,
-                    maxLines: 20,
-                    decoration: const InputDecoration(
-                      hintText: "Escribe aquí...",
-                      border: InputBorder.none, // Sin borde interno
-                    ),
-                    onChanged: (text) => verificarVistaPrevia(), // ✅ Verifica al escribir
-                  ),
-                ),
-            ],
-          ),
-        ),
+          style: const TextStyle(fontSize: 14),
+          onChanged: (_) => verificarVistaPrevia(),
+        )
       ],
     );
   }
+
 
   Future<void> cargarPeticionConcreta(String docId) async {
     try {

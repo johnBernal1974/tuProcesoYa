@@ -1,4 +1,3 @@
-// lib/widgets/ia_suggestion_card.dart
 import 'package:flutter/material.dart';
 import '../../commons/ia_backend_service/ia_backend_service.dart';
 
@@ -29,9 +28,13 @@ class _IASuggestionCardState extends State<IASuggestionCard> {
   String? consideracion;
   String? fundamentos;
   String? peticion;
+  bool mostrarSugerencias = false;
 
   Future<void> _generarTextoExtendido() async {
-    setState(() => cargando = true);
+    setState(() {
+      cargando = true;
+      mostrarSugerencias = false; // Oculta sugerencias anteriores al generar nuevas
+    });
 
     try {
       final resultado = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
@@ -41,15 +44,17 @@ class _IASuggestionCardState extends State<IASuggestionCard> {
       );
 
       setState(() {
-        consideracion = resultado['consideracion'];
+        consideracion = resultado['consideraciones'];
         fundamentos = resultado['fundamentos'];
         peticion = resultado['peticion'];
         cargando = false;
+        mostrarSugerencias = true;
       });
     } catch (e) {
       setState(() {
         consideracion = fundamentos = peticion = '❌ Error generando texto con IA: $e';
         cargando = false;
+        mostrarSugerencias = true;
       });
     }
   }
@@ -58,6 +63,10 @@ class _IASuggestionCardState extends State<IASuggestionCard> {
     widget.consideracionesController.text = consideracion ?? '';
     widget.fundamentosController.text = fundamentos ?? '';
     widget.peticionController.text = peticion ?? '';
+
+    setState(() {
+      mostrarSugerencias = false; // Oculta la tarjeta al usar los textos
+    });
   }
 
   @override
@@ -68,7 +77,7 @@ class _IASuggestionCardState extends State<IASuggestionCard> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text("💡 TEXTO IA EXTENDIDO", style: TextStyle(fontWeight: FontWeight.w900)),
+            const Text("Consideraciones", style: TextStyle(fontWeight: FontWeight.w900)),
             TextButton.icon(
               icon: const Icon(Icons.auto_awesome),
               label: const Text("Generar IA"),
@@ -76,11 +85,12 @@ class _IASuggestionCardState extends State<IASuggestionCard> {
             )
           ],
         ),
-        if (cargando) const Padding(
-          padding: EdgeInsets.symmetric(vertical: 16),
-          child: Center(child: CircularProgressIndicator()),
-        ),
-        if (consideracion != null && fundamentos != null && peticion != null)
+        if (cargando)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        if (mostrarSugerencias && consideracion != null && fundamentos != null && peticion != null)
           Card(
             elevation: 3,
             color: Colors.grey.shade100,

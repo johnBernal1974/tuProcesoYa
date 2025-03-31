@@ -269,50 +269,6 @@ exports.sendEmailWithSES = onRequest({
   }
 });
 
-exports.generarTextoIA = onRequest({
-  cors: true,
-  secrets: [OPENAI_API_KEY],
-}, async (req, res) => {
-  try {
-    const { categoria, subcategoria, respuestasUsuario } = req.body;
-
-    if (!categoria || !subcategoria || !Array.isArray(respuestasUsuario)) {
-      return res.status(400).json({ error: "Faltan campos requeridos" });
-    }
-
-    const prompt = `
-    Quiero que actúes como un asistente legal. A partir de las respuestas de un ciudadano a un formulario de derecho de petición en la categoría "${categoria}" y subcategoría "${subcategoria}", redacta un texto coherente, organizado y bien redactado que unifique estas respuestas en un solo párrafo. Las respuestas del usuario son:
-    ${respuestasUsuario.map((r, i) => `(${i + 1}) ${r}`).join("\n")}
-    `;
-
-    const OpenAI = require("openai");
-    const openai = new OpenAI({
-      apiKey: OPENAI_API_KEY.value(),
-    });
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        { role: "system", content: "Eres un asistente legal experto en redacción clara y formal." },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
-    });
-
-    const texto = completion.data.choices[0].message.content;
-
-    return res.status(200).json({ texto });
-  } catch (error) {
-    console.error("❌ Error al generar texto con OpenAI:", error);
-    return res.status(500).json({
-      error: "Error generando texto IA",
-      message: error.message,
-      stack: error.stack,
-    });
-  }
-});
-
 exports.generarTextoIAExtendido = onRequest({
   cors: true,
   secrets: [OPENAI_API_KEY],
@@ -320,22 +276,37 @@ exports.generarTextoIAExtendido = onRequest({
   try {
     const { categoria, subcategoria, respuestasUsuario } = req.body;
 
-    if (!categoria || !subcategoria || !Array.isArray(respuestasUsuario)) {
+    if (
+      typeof categoria !== 'string' || categoria.trim() === '' ||
+      typeof subcategoria !== 'string' || subcategoria.trim() === '' ||
+      !Array.isArray(respuestasUsuario) || respuestasUsuario.length === 0
+    ) {
       return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
     const prompt = `
-Redacta para un derecho de petición en Colombia en base a estas respuestas del usuario. Dame tres secciones separadas:
-1. Consideraciones claras y bien estructuradas.
-2. Fundamentos jurídicos aplicables según Constitución, Leyes y Jurisprudencia colombiana.
-3. Una petición concreta basada en lo anterior.
+    Redacta el cuerpo de un derecho de petición en Colombia para una persona privada de la libertad, con base en sus respuestas. El documento ya cuenta con un encabezado con el nombre, documento y centro penitenciario, por lo que **no debes repetir esa información**.
 
-Categoría: ${categoria}
-Subcategoría: ${subcategoria}
+    Escribe en tercera persona, con un lenguaje claro, formal y técnico. No incluyas saludos ni despedidas. No incluyas frases como “el suscrito”, “quedo atento”, “cordialmente”, ni ningún dato personal.
 
-Respuestas:
-${respuestasUsuario.map((r, i) => `(${i + 1}) ${r}`).join("\n")}
-`;
+    Estructura el texto con los siguientes títulos, exactamente así (sin numeración, sin asteriscos, sin guiones y sin saltos innecesarios):
+
+    Consideraciones
+    Fundamentos de derecho
+    Petición concreta
+
+    En los Fundamentos de derecho, incluye:
+    - Fundamento en la Constitución Política (menciona el artículo y su contenido).
+    - Fundamento en una ley penitenciaria aplicable (por ejemplo, Ley 65 de 1993).
+    - Fundamento en cualquier otra ley aplicable.
+    - Fundamento en una sentencia relevante de la Corte Constitucional o Corte Suprema (cita el número de sentencia, año y criterio aplicable).
+
+    En la Petición concreta incluye algún otro derecho vinculado que tambien puede estar en riesgo vulnerabilidad.
+
+    Respuestas del ciudadano privado de la libertad:
+    ${respuestasUsuario.map((r, i) => `- ${r}`).join("\n")}
+    `;
+
 
     const OpenAI = require("openai");
     const openai = new OpenAI({ apiKey: OPENAI_API_KEY.value() });
@@ -343,7 +314,7 @@ ${respuestasUsuario.map((r, i) => `(${i + 1}) ${r}`).join("\n")}
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "Eres un redactor legal colombiano, claro y técnico." },
+        { role: "system", content: "Eres un redactor legal colombiano, claro, técnico y respetuoso del lenguaje formal." },
         { role: "user", content: prompt }
       ],
       temperature: 0.6,
@@ -352,10 +323,24 @@ ${respuestasUsuario.map((r, i) => `(${i + 1}) ${r}`).join("\n")}
 
     const respuesta = completion.choices[0].message.content;
 
-    // Separar secciones esperadas por delimitadores específicos
-    const consideraciones = respuesta.split("2. Fundamentos")[0].trim();
-    const fundamentos = respuesta.split("2. Fundamentos")[1].split("3. Una petición")[0].trim();
-    const peticion = respuesta.split("3. Una petición")[1]?.trim() ?? '';
+    // Separar secciones
+    const partes = respuesta.split(/Fundamentos de derecho/i);
+    const resto = partes[1]?.split(/Petición concreta/i) ?? [];
+
+    const consideraciones = partes[0]
+      ?.replace(/Consideraciones[:\s]*/i, '')
+      .replace(/^[:\s]+/, '')
+      .trim() ?? '';
+
+    const fundamentos = resto[0]
+      ?.replace(/^[:\s]+/, '')
+      .replace(/[:\s]+$/, '')
+      .trim() ?? '';
+
+    const peticion = resto[1]
+      ?.replace(/Petición concreta[:\s]*/i, '')
+      .replace(/^[:\s]+/, '')
+      .trim() ?? '';
 
     return res.status(200).json({
       consideraciones,
@@ -364,6 +349,7 @@ ${respuestasUsuario.map((r, i) => `(${i + 1}) ${r}`).join("\n")}
     });
 
   } catch (error) {
+    console.error("❌ Error en generarTextoIAExtendido:", error);
     return res.status(500).json({
       error: "Error generando texto IA extendido",
       message: error.message,
@@ -371,11 +357,4 @@ ${respuestasUsuario.map((r, i) => `(${i + 1}) ${r}`).join("\n")}
     });
   }
 });
-
-
-
-
-
-
-
 
