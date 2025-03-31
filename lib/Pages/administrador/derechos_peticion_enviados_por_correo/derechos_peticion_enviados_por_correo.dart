@@ -232,6 +232,59 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                         Column(
                           children: [
                             _buildMainContent(),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "📬 Historial de correos",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  historialCorreosTable(),
+                                  const SizedBox(height: 20),
+                                  if (pantallazoCorreoEnviado.isEmpty)
+                                    adjuntarPantallazoCorreoEnviado(),
+                                  const SizedBox(height: 30),
+                                  const Text(
+                                    "Pantallazo del correo enviado",
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  pantallazoCorreoEnviado.isNotEmpty
+                                      ? ArchivoViewerWeb(
+                                    archivos: [pantallazoCorreoEnviado],
+                                  )
+                                      : const Text(
+                                    "Aún no se ha tomado el pantallazo del correo enviado",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             const SizedBox(height: 20),
                           ],
                         ),
@@ -569,7 +622,34 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
       children: [
         _buildFechaHoy(),
         const SizedBox(height: 10),
-        const Text("Derecho de petición (Enviado)", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 28)),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            final fontSize = isMobile ? 20.0 : 28.0;
+
+            return Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                Text(
+                  "Derecho de petición - Enviado",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: fontSize,
+                  ),
+                ),
+              ],
+            );
+
+          },
+        ),
         Row(
           children: [
             Text(
@@ -617,35 +697,64 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
 
   /// 📌 Muestra detalles de la solicitud (seguimiento, categoría, fecha, subcategoría)
   Widget _buildDetallesSolicitud() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    double fontSize = MediaQuery.of(context).size.width < 600 ? 10 : 12; // Tamaño más pequeño en móviles
+    bool isMobile = MediaQuery.of(context).size.width < 600; // Verifica si es móvil
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, // Asegurar alineación izquierda en móviles
+        children: [
+          isMobile
+              ? Column( // En móviles, mostrar en columnas
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Categoría", widget.categoria, fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
+            ],
+          )
+              : Row( // En PC, mantener filas
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
+                  const SizedBox(height: 5),
+                  _buildDetalleItem("Categoría", widget.categoria, fontSize),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
+                  const SizedBox(height: 5),
+                  _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Método auxiliar para evitar repetir código
+  Widget _buildDetalleItem(String title, String value, double fontSize) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Número de seguimiento", style: TextStyle(fontSize: 12, color: Colors.black87)),
-            Text(widget.numeroSeguimiento, style: const TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 5),
-            const Text("Categoría", style: TextStyle(fontSize: 12, color: Colors.black87)),
-            Text(widget.categoria, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Fecha de solicitud", style: TextStyle(fontSize: 12, color: Colors.black87)),
-            Text(
-              _formatFecha(DateTime.tryParse(widget.fecha)), // Convierte antes de formatear
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 5),
-            const Text("Subcategoría", style: TextStyle(fontSize: 12, color: Colors.black87)),
-            Text(widget.subcategoria, style: const TextStyle(fontWeight: FontWeight.bold)),
-          ],
-        ),
+        Text(title, style: TextStyle(fontSize: fontSize, color: Colors.black87)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize + 2)),
       ],
     );
   }
+
 
   /// 🔹 Widget de fila con título y valor
   Widget _buildRow(String title, String value) {
@@ -701,7 +810,6 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
       ),
     );
   }
-
 
   /// 📝 Muestra la descripción de la solicitud en un contenedor estilizado
   Widget _buildSolicitudTexto() {

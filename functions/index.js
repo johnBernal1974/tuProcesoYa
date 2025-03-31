@@ -9,6 +9,7 @@ const AWS = require("aws-sdk");
 const { Buffer } = require("buffer");
 const { getFirestore } = require("firebase-admin/firestore");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
+const puppeteer = require("puppeteer");
 
 
 const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
@@ -358,3 +359,37 @@ exports.generarTextoIAExtendido = onRequest({
   }
 });
 
+exports.consultarProcesosPorCedula = functions.https.onRequest(async (req, res) => {
+  const cedula = req.body.cedula;
+
+  if (!cedula) {
+    return res.status(400).json({ error: "Debes enviar una cédula" });
+  }
+
+  try {
+    const puppeteer = require("puppeteer");
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+    await page.goto("https://consultaprocesos.ramajudicial.gov.co/", {
+      waitUntil: "networkidle2",
+    });
+
+    // Aquí aún falta adaptar el selector correcto para cédula
+    const contenido = await page.evaluate(() => {
+      return document.body.innerText;
+    });
+
+    await browser.close();
+
+    return res.status(200).json({ textoExtraido: contenido });
+
+  } catch (error) {
+    console.error("❌ Error:", error);
+    return res.status(500).json({ error: "Error al consultar", detalle: error.message });
+  }
+});
