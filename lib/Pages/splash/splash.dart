@@ -5,6 +5,7 @@ import '../administrador/historial_solicitudes_derechos_peticion_admin/historial
 import '../administrador/home_admin/home_admin.dart';
 import '../client/estamos_validando/estamos_validando.dart';
 import '../client/home/home.dart';
+import '../landing_page/info_page.dart';
 import '../login/login.dart';
 
 class SplashPage extends StatefulWidget {
@@ -103,12 +104,12 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
         }
       }
     } else {
-      // 🔹 Usuario no autenticado, redirigir a LoginPage
+      // 🔹 Usuario no autenticado, redirigir a info page
       if (context.mounted) {
-        print("Usuario no autenticado, redirigiendo a LoginPage...");
+        print("Usuario no autenticado, redirigiendo a infoPage...");
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => LoginPage()),
+          MaterialPageRoute(builder: (context) => const InfoPage()),
         );
       }
     }

@@ -1,5 +1,14 @@
 {
   "projects": {
     "default": "tu-proceso-ya-fe845"
+  },
+  "targets": {
+    "tu-proceso-ya-fe845": {
+      "hosting": {}
+    }
+  },
+  "etags": {},
+  "hosting": {
+    "site": "tu-proceso-ya-fe845"
   }
 }

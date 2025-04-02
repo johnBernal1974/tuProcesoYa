@@ -26,7 +26,7 @@ class DerechoPeticionTemplate {
     required this.fundamentosDeDerecho,
     required this.peticionConcreta,
     required this.emailUsuario,
-    this.emailAlternativo = "peticiones@tuprocesoya.com.co",
+    this.emailAlternativo = "peticiones@tuprocesoya.com",
     required this.nui,
     required this.td,
   });
@@ -52,7 +52,7 @@ class DerechoPeticionTemplate {
         Agradezco enormemente su colaboración y respuesta rápida y satisfactoria.,<br><br>
         Atentamente,<br><br>
         <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="150" height="50"><br>
-        www.tuprocesoya.com.co<br><br>
+        www.tuprocesoya.com<br><br>
       </body>
     </html>
     """;

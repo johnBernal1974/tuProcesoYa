@@ -66,6 +66,9 @@ class _LoginPageState extends State<LoginPage> {
                           keyboardType: TextInputType.emailAddress,
                           decoration: InputDecoration(
                             labelText: "Correo Electrónico",
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
+                            labelStyle: const TextStyle(color: gris),
+                            floatingLabelStyle: const TextStyle(color: primary, fontSize: 14),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(color: gris, width: 1),
@@ -77,6 +80,14 @@ class _LoginPageState extends State<LoginPage> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(color: primary, width: 2),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.red, width: 2),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.red, width: 2),
                             ),
                             prefixIcon: const Icon(Icons.email),
                           ),
@@ -90,6 +101,7 @@ class _LoginPageState extends State<LoginPage> {
                             return null;
                           },
                         ),
+
                         const SizedBox(height: 20),
 
                         // CAMPO DE CONTRASEÑA
@@ -98,6 +110,8 @@ class _LoginPageState extends State<LoginPage> {
                           obscureText: _obscureText,
                           decoration: InputDecoration(
                             labelText: "Contraseña",
+                            labelStyle: const TextStyle(color: gris),
+                            floatingLabelBehavior: FloatingLabelBehavior.always,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(color: gris, width: 1),
@@ -109,6 +123,14 @@ class _LoginPageState extends State<LoginPage> {
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(color: primary, width: 2),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.red, width: 2),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: Colors.red, width: 2),
                             ),
                             prefixIcon: const Icon(Icons.lock),
                             suffixIcon: GestureDetector(

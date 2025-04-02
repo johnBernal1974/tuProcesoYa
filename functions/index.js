@@ -201,7 +201,7 @@ exports.sendEmailWithSES = onRequest({
     const boundary = "NextPart";
     let rawMessage = "";
 
-    rawMessage += `From: Tu Proceso Ya <tuproceso.ya@gmail.com>\n`;
+    rawMessage += `From: Tu Proceso Ya <peticiones@tuprocesoya.com>\n`;
     rawMessage += `To: ${toAddresses.join(", ")}\n`;
     if (ccAddresses.length) rawMessage += `Cc: ${ccAddresses.join(", ")}\n`;
     rawMessage += `Subject: ${subject}\n`;
@@ -230,7 +230,7 @@ exports.sendEmailWithSES = onRequest({
 
     const result = await ses.sendRawEmail({
       RawMessage: { Data: Buffer.from(rawMessage) },
-      Source: "tuproceso.ya@gmail.com",
+      Source: "peticiones@tuprocesoya.com",
       Destinations: toAddresses,
     }).promise();
 

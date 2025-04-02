@@ -40,6 +40,7 @@ import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
 import 'Pages/forgot_password/forgot_password.dart';
+import 'Pages/landing_page/info_page.dart';
 import 'Pages/login/login.dart';
 import 'commons/wompi/checkout_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -153,6 +154,7 @@ class MyApp extends StatelessWidget {
         'derecho_peticion': (context) => const DerechoDePeticionPage(),
         'tutela': (context) => const TutelaPage(),
         'tutela_solicitud': (context) => const TutelaSolicitudPage(),
+        'info': (context) => const InfoPage(),
 
       },
         onGenerateRoute: (settings) {
@@ -209,6 +211,9 @@ class MyApp extends StatelessWidget {
                 sinRespuesta: args['sinRespuesta'] ?? false,
               ),
             );
+          }
+          else if (settings.name == '/info') {
+            return MaterialPageRoute(builder: (context) => const InfoPage());
           }
           return null; // Manejar rutas desconocidas si es necesario
         },
