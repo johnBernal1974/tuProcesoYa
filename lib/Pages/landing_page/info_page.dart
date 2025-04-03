@@ -7,7 +7,9 @@ class InfoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isWide = screenWidth > 800;
+    final isTablet = screenWidth >= 600 && screenWidth < 1000;
+    final isDesktop = screenWidth >= 1000;
+    final contentPadding = EdgeInsets.symmetric(horizontal: isDesktop ? 200 : isTablet ? 100 : 25);
 
     return Scaffold(
       backgroundColor: blancoCards,
@@ -32,7 +34,7 @@ class InfoPage extends StatelessWidget {
             ),
 
             Padding(
-              padding: EdgeInsets.symmetric(horizontal: isWide ? 300 : 25),
+              padding: contentPadding,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -71,13 +73,11 @@ class InfoPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 30),
 
-                  isWide
-                      ? Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: _buildCards(crossAxisCount: 3),
-                  )
-                      : Column(
-                    children: _buildCards(crossAxisCount: 1),
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 20,
+                    runSpacing: 20,
+                    children: _buildCards(crossAxisCount: isDesktop ? 3 : isTablet ? 2 : 1),
                   ),
 
                   const SizedBox(height: 40),
@@ -159,6 +159,8 @@ class InfoPage extends StatelessWidget {
     );
   }
 
+  // ... _buildValueCard, _buildCards, _buildSection, _buildCard (sin cambios)
+
   static Widget _buildValueCard(IconData icon, String title, String description) {
     return SizedBox(
       width: 230,
@@ -182,34 +184,25 @@ class InfoPage extends StatelessWidget {
     );
   }
 
-  // ... (_buildCards, _buildSection, _buildCard se mantienen igual)
-
   List<Widget> _buildCards({required int crossAxisCount}) {
     final List<Map<String, String>> data = [
       {
         'title': '¿Quiénes Somos?',
         'image': 'assets/images/equipo1.png',
         'description':
-        'Somos una plataforma tecnológica dedicada a promover el acceso a la justicia, la equidad y la defensa de los derechos humanos. '
-            'Acompañamos y brindamos apoyo a las personas privadas de la libertad, fortaleciendo su bienestar y ayudándoles a sobrellevar '
-            'su estadía en prisión con dignidad y esperanza.'
+        'Somos una plataforma tecnológica dedicada a promover el acceso a la justicia, la equidad y la defensa de los derechos humanos. Acompañamos y brindamos apoyo a las personas privadas de la libertad, fortaleciendo su bienestar y ayudándoles a sobrellevar su estadía en prisión con dignidad y esperanza.'
       },
       {
         'title': '¿Qué Hacemos?',
         'image': 'assets/images/familia.png',
         'description':
-        'Facilitamos a las personas privadas de la libertad y a sus seres queridos el acceso sencillo y seguro a servicios jurídicos como '
-            'derechos de petición y tutelas. Contribuimos a que las familias mantengan el vínculo, participen activamente en la defensa de '
-            'sus derechos y encuentren alivio en medio de la adversidad.'
+        'Facilitamos a las personas privadas de la libertad y a sus seres queridos el acceso sencillo y seguro a servicios jurídicos como derechos de petición y tutelas. Contribuimos a que las familias mantengan el vínculo, participen activamente en la defensa de sus derechos y encuentren alivio en medio de la adversidad.'
       },
       {
         'title': '¿A Quién Va Dirigido?',
         'image': 'assets/images/equipo.png',
         'description':
-        'Está dirigido a familiares, amigos y personas cercanas de personas condenadas, brindándoles una herramienta accesible para apoyar la '
-            'gestión y seguimiento de trámites legales, fortaleciendo así su acompañamiento desde el exterior. Esta plataforma les permite involucrarse '
-            'activamente en la defensa de los derechos de sus seres queridos. '
-
+        'Está dirigido a familiares, amigos y personas cercanas de personas condenadas, brindándoles una herramienta accesible para apoyar la gestión y seguimiento de trámites legales, fortaleciendo así su acompañamiento desde el exterior. Esta plataforma les permite involucrarse activamente en la defensa de los derechos de sus seres queridos. '
       },
     ];
 
