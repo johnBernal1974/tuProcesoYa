@@ -526,6 +526,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         return '';
     }
   }
+
   Color _obtenerColorStatus(String status) {
     switch (status) {
       case "Solicitado":

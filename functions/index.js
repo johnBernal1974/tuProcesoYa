@@ -286,28 +286,31 @@ exports.generarTextoIAExtendido = onRequest({
     }
 
     const prompt = `
-    Redacta el cuerpo de un derecho de petición en Colombia para una persona privada de la libertad, con base en sus respuestas. El documento ya cuenta con un encabezado con el nombre, documento y centro penitenciario, por lo que **no debes repetir esa información**.
+Redacta el cuerpo de un derecho de petición en Colombia para una persona privada de la libertad.
 
-    Escribe en tercera persona, con un lenguaje claro, formal y técnico. No incluyas saludos ni despedidas. No incluyas frases como “el suscrito”, “quedo atento”, “cordialmente”, ni ningún dato personal.
+🔒 Ya existe un encabezado con nombre, documento y centro penitenciario: **no repitas esos datos**.
 
-    Estructura el texto con los siguientes títulos, exactamente así (sin numeración, sin asteriscos, sin guiones y sin saltos innecesarios):
+🧠 Usa toda la información que da el ciudadano para construir una sección sólida de “Consideraciones”, redactada en tercera persona, con lenguaje técnico, claro y sin adornos personales.
 
-    Consideraciones
-    Fundamentos de derecho
-    Petición concreta
+✒️ Estructura el documento con estos títulos (tal cual):
 
-    En los Fundamentos de derecho, incluye:
-    - Fundamento en la Constitución Política (menciona el artículo y su contenido).
-    - Fundamento en una ley penitenciaria aplicable (por ejemplo, Ley 65 de 1993).
-    - Fundamento en cualquier otra ley aplicable.
-    - Fundamento en una sentencia relevante de la Corte Constitucional o Corte Suprema (cita el número de sentencia, año y criterio aplicable).
+Consideraciones
+Fundamentos de derecho
+Petición concreta
 
-    En la Petición concreta incluye algún otro derecho vinculado que tambien puede estar en riesgo vulnerabilidad.
+📌 Fundamentos de derecho debe incluir:
+- Fundamento en la Constitución Política (con número de artículo y descripción).
+- Fundamento en la Ley 65 de 1993 o normas penitenciarias pertinentes.
+- Otras normas que respalden el caso.
+- Jurisprudencia relevante: cita número de sentencia, año y criterio aplicable.
 
-    Respuestas del ciudadano privado de la libertad:
-    ${respuestasUsuario.map((r, i) => `- ${r}`).join("\n")}
-    `;
+📌 En la Petición concreta:
+- Redacta con precisión y claridad.
+- Incluye si hay otro derecho que también esté en riesgo o se vulnera.
 
+Respuestas dadas por la persona privada de la libertad:
+${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
+    `.trim();
 
     const OpenAI = require("openai");
     const openai = new OpenAI({ apiKey: OPENAI_API_KEY.value() });
@@ -315,33 +318,27 @@ exports.generarTextoIAExtendido = onRequest({
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "Eres un redactor legal colombiano, claro, técnico y respetuoso del lenguaje formal." },
+        { role: "system", content: "Eres un redactor legal colombiano. Redactas en tercera persona, con precisión jurídica, sin adornos personales. Redacción clara, técnica y estructurada." },
         { role: "user", content: prompt }
       ],
       temperature: 0.6,
-      max_tokens: 1000,
+      max_tokens: 1200,
     });
 
-    const respuesta = completion.choices[0].message.content;
+    const texto = completion.choices[0].message.content ?? '';
 
-    // Separar secciones
-    const partes = respuesta.split(/Fundamentos de derecho/i);
-    const resto = partes[1]?.split(/Petición concreta/i) ?? [];
+    // 🔍 Separar en partes
+    const seccion = (label, source) => {
+      const regex = new RegExp(`${label}[:\\s]*`, 'i');
+      return source.split(regex)[1]?.split(/\n(?=\w)/)?.[0]?.trim() ?? '';
+    };
 
-    const consideraciones = partes[0]
+    const consideraciones = texto.split(/Fundamentos de derecho/i)[0]
       ?.replace(/Consideraciones[:\s]*/i, '')
-      .replace(/^[:\s]+/, '')
-      .trim() ?? '';
+      ?.trim() ?? '';
 
-    const fundamentos = resto[0]
-      ?.replace(/^[:\s]+/, '')
-      .replace(/[:\s]+$/, '')
-      .trim() ?? '';
-
-    const peticion = resto[1]
-      ?.replace(/Petición concreta[:\s]*/i, '')
-      .replace(/^[:\s]+/, '')
-      .trim() ?? '';
+    const fundamentos = texto.match(/Fundamentos de derecho(.*?)Petición concreta/is)?.[1]?.trim() ?? '';
+    const peticion = texto.split(/Petición concreta/i)[1]?.trim() ?? '';
 
     return res.status(200).json({
       consideraciones,
@@ -358,6 +355,7 @@ exports.generarTextoIAExtendido = onRequest({
     });
   }
 });
+
 
 exports.consultarProcesosPorCedula = functions.https.onRequest(async (req, res) => {
   const cedula = req.body.cedula;
