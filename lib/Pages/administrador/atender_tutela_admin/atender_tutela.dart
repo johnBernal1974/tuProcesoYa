@@ -679,8 +679,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     }
   }
 
-
-
   void verificarVistaPrevia() {
     setState(() {
       _mostrarBotonVistaPrevia =
@@ -744,7 +742,21 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                 style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
               ),
             ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 10),
+          if (userData!.situacion == "En Prisión domiciliaria" ||
+              userData!.situacion == "En libertad condicional")
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Lugar donde se esta cumpliendo el beneficio", style: TextStyle( fontSize: 12, color: Colors.black87)),
+              Text('${userData?.direccion}, ${userData?.municipio ?? "Sin info"}, '
+                  '${userData?.departamento}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)
+              ),
+              const Divider(color: primary, height: 1,)
+            ],
+          ),
+          const SizedBox(height: 10),
           const Text("Datos generales del PPL", style: TextStyle(
               fontWeight: FontWeight.w900, fontSize: 24
           ),),
@@ -774,18 +786,18 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             ],
           ),
           const SizedBox(height: 15),
-          if (estaEnReclusion) ...[
-            const Divider(color: primary),
-            const SizedBox(height: 10),
-            const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
-            Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-            const SizedBox(height: 10),
-            const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
-            correoConBoton('Principal', correosCentro['correo_principal']),
-            correoConBoton('Director', correosCentro['correo_direccion']),
-            correoConBoton('Jurídica', correosCentro['correo_juridica']),
-            correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-          ],
+          // if (estaEnReclusion) ...[
+          //   const Divider(color: primary),
+          //   const SizedBox(height: 10),
+          //   const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //   Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
+          //   const SizedBox(height: 10),
+          //   const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //   correoConBoton('Principal', correosCentro['correo_principal']),
+          //   correoConBoton('Director', correosCentro['correo_direccion']),
+          //   correoConBoton('Jurídica', correosCentro['correo_juridica']),
+          //   correoConBoton('Sanidad', correosCentro['correo_sanidad']),
+          // ],
 
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
@@ -840,29 +852,29 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
               Text('${userData!.tiempoCondena} meses', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
-          if(userData!.situacion == "En Reclusión")
-            Column(
-              children: [
-                Row(
-                  children: [
-                    const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                    Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                    Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-                Row(
-                  children: [
-                    const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                    Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-              ],
-            ),
+          // if(userData!.situacion == "En Reclusión")
+          //   Column(
+          //     children: [
+          //       Row(
+          //         children: [
+          //           const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //           Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          //         ],
+          //       ),
+          //       Row(
+          //         children: [
+          //           const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //           Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          //         ],
+          //       ),
+          //       Row(
+          //         children: [
+          //           const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //           Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          //         ],
+          //       ),
+          //     ],
+          //   ),
           const SizedBox(height: 15),
           const Text("Datos del Acudiente", style: TextStyle(
               fontWeight: FontWeight.w900,
