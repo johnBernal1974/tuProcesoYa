@@ -170,8 +170,8 @@ exports.wompiCheckoutUrl = onRequest({
   }
 });
 
-exports.sendEmailWithSES = onRequest({
-  secrets: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SES_REGION"],
+exports.sendEmailWithMailerSend = onRequest({
+  secrets: ["MAILERSEND_API_TOKEN"],
 }, async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Headers", "Content-Type");
@@ -192,61 +192,60 @@ exports.sendEmailWithSES = onRequest({
     const toAddresses = normalizeEmails(to);
     const ccAddresses = normalizeEmails(cc);
 
-    const ses = new AWS.SES({
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      region: process.env.AWS_SES_REGION,
+    const attachments = (archivos || []).map((archivo) => ({
+      content: archivo.base64,
+      filename: archivo.nombre,
+      disposition: "attachment"
+    }));
+
+    const payload = {
+      from: {
+        email: "peticiones@tuprocesoya.com",
+        name: "Tu Proceso Ya"
+      },
+      to: toAddresses.map(email => ({ email })),
+      cc: ccAddresses.map(email => ({ email })),
+      subject,
+      html,
+      attachments
+    };
+
+    const response = await fetch("https://api.mailersend.com/v1/email", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.MAILERSEND_API_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
     });
 
-    const boundary = "NextPart";
-    let rawMessage = "";
+    const rawText = await response.text();
 
-    rawMessage += `From: Tu Proceso Ya <peticiones@tuprocesoya.com>\n`;
-    rawMessage += `To: ${toAddresses.join(", ")}\n`;
-    if (ccAddresses.length) rawMessage += `Cc: ${ccAddresses.join(", ")}\n`;
-    rawMessage += `Subject: ${subject}\n`;
-    rawMessage += `MIME-Version: 1.0\n`;
-    rawMessage += `Content-Type: multipart/mixed; boundary="${boundary}"\n\n`;
+    if (!response.ok) {
+      console.error("❌ Mailersend API error:", rawText);
+      return res.status(500).json({ error: rawText });
+    }
 
-    rawMessage += `--${boundary}\n`;
-    rawMessage += `Content-Type: text/html; charset="UTF-8"\n`;
-    rawMessage += `Content-Transfer-Encoding: 7bit\n\n`;
-    rawMessage += `${html}\n\n`;
-
-    if (Array.isArray(archivos)) {
-      for (const archivo of archivos) {
-        if (archivo.nombre && archivo.base64) {
-          rawMessage += `--${boundary}\n`;
-          rawMessage += `Content-Type: application/octet-stream; name="${archivo.nombre}"\n`;
-          rawMessage += `Content-Description: ${archivo.nombre}\n`;
-          rawMessage += `Content-Disposition: attachment; filename="${archivo.nombre}"; size=${Buffer.from(archivo.base64, 'base64').length};\n`;
-          rawMessage += `Content-Transfer-Encoding: base64\n\n`;
-          rawMessage += `${archivo.base64}\n\n`;
-        }
+    let responseData = {};
+    if (rawText?.trim()) {
+      try {
+        responseData = JSON.parse(rawText);
+      } catch (parseErr) {
+        console.warn("⚠️ Respuesta no JSON:", rawText);
       }
     }
 
-    rawMessage += `--${boundary}--`;
-
-    const result = await ses.sendRawEmail({
-      RawMessage: { Data: Buffer.from(rawMessage) },
-      Source: "peticiones@tuprocesoya.com",
-      Destinations: toAddresses,
-    }).promise();
-
-    // 🧠 SUBIR HTML AL STORAGE
     const firestore = getFirestore();
     const bucket = admin.storage().bucket();
     const timestamp = new Date().toISOString();
-    const pdfPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
+    const htmlPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
 
-    await bucket.file(pdfPath).save(Buffer.from(html, "utf-8"), {
+    await bucket.file(htmlPath).save(Buffer.from(html, "utf-8"), {
       metadata: { contentType: "text/html; charset=utf-8" },
     });
 
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${pdfPath}`;
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${htmlPath}`;
 
-    // ✅ GUARDAR EN log_correos
     await firestore
       .collection("derechos_peticion_solicitados")
       .doc(idDocumento)
@@ -259,16 +258,17 @@ exports.sendEmailWithSES = onRequest({
         htmlUrl: publicUrl,
         archivos: archivos?.map(a => ({ nombre: a.nombre })),
         enviadoPor,
-        messageId: result.MessageId,
+        messageId: responseData.message_id || null,
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
 
     return res.status(200).json({ success: true });
   } catch (error) {
-    console.error("❌ Error enviando correo SES:", error);
-    return res.status(500).json({ error: "Error enviando correo SES" });
+    console.error("❌ Error enviando correo Mailersend:", error);
+    return res.status(500).json({ error: "Error enviando correo Mailersend" });
   }
 });
+
 
 exports.generarTextoIAExtendido = onRequest({
   cors: true,

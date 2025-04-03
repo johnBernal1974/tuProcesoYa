@@ -1588,10 +1588,9 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-  Future<void> enviarCorreoSES() async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithSES");
+  Future<void> enviarCorreoMailersend() async {
+    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithMailerSend");
 
-    // 🔹 Crear la plantilla del derecho de petición
     var derechoPeticion = DerechoPeticionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: userData?.centroReclusion ?? "",
@@ -1608,10 +1607,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       td: userData?.td.trim() ?? "",
     );
 
-    // 🔹 Generar HTML
     String mensajeHtml = derechoPeticion.generarTextoHtml();
 
-    // 📥 Descargar y codificar archivos
     List<Map<String, String>> archivosBase64 = [];
     for (String archivoUrl in widget.archivos) {
       try {
@@ -1632,21 +1629,15 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
 
-    // 🔹 Asunto y remitente
     String asuntoCorreo = "Derecho de Petición - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
-    // 🔹 Copia opcional
-    List<String>? correosCC;
-    final copia = correosCentro["Copia"];
-    if (copia != null && copia.trim().isNotEmpty && copia != "No disponible") {
-      if (copia.trim() != correoSeleccionado!.trim()) {
-        correosCC = [copia.trim()];
-      }
+    List<String> correosCC = [];
+    if (userData?.email != null && userData!.email.trim().isNotEmpty) {
+      correosCC.add(userData!.email.trim());
     }
 
-    // 🔥 Enviar al backend
     final body = jsonEncode({
       "to": correoSeleccionado,
       "cc": correosCC,
@@ -1674,10 +1665,11 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       });
     } else {
       if (kDebugMode) {
-        print("❌ Error al enviar el correo: ${response.body}");
+        print("❌ Error al enviar el correo con Mailersend: ${response.body}");
       }
     }
   }
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1746,7 +1738,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             );
           }
 
-          await enviarCorreoSES();
+          await enviarCorreoMailersend();
           // ⬇️ Generar y subir PDF del correo enviado
           final html = derechoPeticion.generarTextoHtml();
           await subirHtmlCorreoADocumento(
