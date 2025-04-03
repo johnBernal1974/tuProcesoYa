@@ -12,7 +12,7 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
-import 'Pages/administrador/atender_tutela/atender_tutela.dart';
+import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
@@ -121,14 +121,12 @@ class MyApp extends StatelessWidget {
         'home_admin': (context) => const HomeAdministradorPage(),
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
         'historial_solicitudes_derecho_peticion_admin': (context) => const HistorialSolicitudesDerechoPeticionAdminPage(),
+        'historial_solicitudes_tutelas_admin': (context) => const HistorialSolicitudesTutelaPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
         'configuraciones': (context) => ConfiguracionesPage(),
         'derechos_tutelables_page': (context) => const DerechosTutelablesPage(),
-        'atender_tutela': (context) => const AtenderTutelaPage(),
-
-
 
         //Usuario
         'home': (context) => const HomePage(), // Página principal
@@ -209,6 +207,25 @@ class MyApp extends StatelessWidget {
                 preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
                 sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
+          else if (settings.name == 'atender_tutela_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderTutelaPage(
+                status: args['status'] ?? "Diligenciado",  // 👈 Evita error si es null
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'],
+                subcategoria: args['subcategoria'],
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
+                respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
+
+
               ),
             );
           }

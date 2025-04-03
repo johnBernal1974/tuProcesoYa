@@ -204,6 +204,8 @@ class _SideBarState extends State<SideBar> {
               'derechos_tutelables_page'),
           _buildDrawerTile(context, "Historial Solicitudes derechos petición",
               Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(context, "Historial Solicitudes de tutela",
+              Icons.abc_rounded, 'historial_solicitudes_tutelas_admin'),
           _buildDrawerTile(
               context, "Registrar Operadores", Icons.app_registration,
               'registrar_operadores'),
@@ -222,6 +224,8 @@ class _SideBarState extends State<SideBar> {
               showBadge: _pendingSuggestions > 0),
           _buildDrawerTile(context, "Historial Solicitudes derechos petición",
               Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(context, "Historial Solicitudes de tutela",
+              Icons.abc_rounded, 'historial_solicitudes_tutelas_admin'),
         ]);
       }
 
@@ -236,6 +240,8 @@ class _SideBarState extends State<SideBar> {
               showBadge: _pendingSuggestions > 0),
           _buildDrawerTile(context, "Historial Solicitudes derechos petición",
               Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
+          _buildDrawerTile(context, "Historial Solicitudes de tutela",
+              Icons.abc_rounded, 'historial_solicitudes_tutelas_admin'),
         ]);
       } else if (rol == "operador 1" || rol == "operador 2") {
         // Para operadores se muestran opciones básicas.
@@ -243,12 +249,18 @@ class _SideBarState extends State<SideBar> {
           _buildDrawerTile(
               context, "Página principal", Icons.home_filled, 'home_admin'),
         ]);
-      } else
-      if (rol == "pasante 1" || rol == "pasante 2" || rol == "pasante 3") {
+      } else if (rol == "pasante 1" || rol == "pasante 2") {
         // Para pasantes, se muestra solo la página principal.
         items.add(
           _buildDrawerTile(context, "Historial Solicitudes derechos petición",
               Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
+        );
+      }
+      else if (rol == "pasante 3" || rol == "pasante 4") {
+        // Para pasantes, se muestra solo la página principal.
+        items.add(
+          _buildDrawerTile(context, "Historial Solicitudes de tutela",
+              Icons.abc_rounded, 'historial_solicitudes_tutelas_admin'),
         );
       }
     } else {

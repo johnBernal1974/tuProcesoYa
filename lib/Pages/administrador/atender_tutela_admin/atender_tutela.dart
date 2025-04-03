@@ -15,12 +15,13 @@ import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_derecho_peticion.dart';
+import '../../../plantillas/plantilla_tutela.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 
-class AtenderDerechoPeticionPage extends StatefulWidget {
+class AtenderTutelaPage extends StatefulWidget {
   final String status;
   final String idDocumento;
   final String numeroSeguimiento;
@@ -32,7 +33,7 @@ class AtenderDerechoPeticionPage extends StatefulWidget {
   final List<String> respuestas; // Lista de respuestas
   final List<String> preguntas; // Lista de preguntas
 
-  const AtenderDerechoPeticionPage({
+  const AtenderTutelaPage({
     super.key,
     required this.status,
     required this.idDocumento,
@@ -47,11 +48,11 @@ class AtenderDerechoPeticionPage extends StatefulWidget {
   });
 
   @override
-  State<AtenderDerechoPeticionPage> createState() => _AtenderDerechoPeticionPageState();
+  State<AtenderTutelaPage> createState() => _AtenderDerechoPeticionPageState();
 }
 
 
-class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage> {
+class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   late PplProvider _pplProvider;
   Ppl? userData;
   bool isLoading = true; // Bandera para controlar la carga
@@ -91,7 +92,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   DateTime? fechaRevision;
   List<String> archivos = [];
   String rol = AdminProvider().rol ?? "";
-  late DerechoPeticionTemplate derechoPeticion;
+  late TutelaTemplate accionTutela;
   String asignadoA_P2 = '';
   String asignadoNombreP2 = '';
   DateTime? fechaAsignadoP2;
@@ -151,7 +152,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     final isWide = MediaQuery.of(context).size.width > 1000;
 
     return MainLayout(
-      pageTitle: 'Atender derecho de petición',
+      pageTitle: 'ATENDER ACCIÓN DE TUTELA',
       content: isWide
           ? Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -208,104 +209,104 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildFechaHoy(),
-          const SizedBox(height: 10),
-          if(rol == "masterFull" || rol == "master" || rol == "coordinador 1")
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFechaHoy(),
+        const SizedBox(height: 10),
+        if(rol == "masterFull" || rol == "master" || rol == "coordinador 1")
           infoAccionesAdmin(),
-          const SizedBox(height: 15),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: _obtenerColorFondo(widget.status),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-            child: Column(
-              children: [
-                MediaQuery.of(context).size.width < 600
-                    ? Column( // En móviles, cambia a columna
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      "Derecho de petición ",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20, // Reduce tamaño en móviles
-                      ),
-                    ),
-                    const SizedBox(height: 5), // Espaciado entre el texto y el círculo en móvil
-                    Row(
-                      children: [
-                        Text(
-                          widget.status,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16, // Reduce tamaño en móviles
-                          ),
-                        ),
-                        const SizedBox(width: 15),
-                        CircleAvatar(
-                          radius: 6,
-                          backgroundColor: _obtenerColorStatus(widget.status),
-                        ),
-                      ],
-                    ),
-                  ],
-                )
-                    : Row( // En pantallas grandes, mantiene la fila
-                  children: [
-                    Text(
-                      "Derecho de petición - ${widget.status}",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 28,
-                      ),
-                    ),
-                    const SizedBox(width: 14), // Espacio entre el texto y el círculo
-                    CircleAvatar(
-                      radius: 12,
-                      backgroundColor: _obtenerColorStatus(widget.status),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                _buildSolicitadoPor(),
-
-                const SizedBox(height: 15),
-                _buildDetallesSolicitud(),
-                const SizedBox(height: 20),
-              ],
-            ),
-
+        const SizedBox(height: 15),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: _obtenerColorFondo(widget.status),
           ),
-          _buildSolicitudTexto(),
-          const SizedBox(height: 30),
-          const Row(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+          child: Column(
             children: [
-              Icon(Icons.attach_file),
-              Text("Archivos adjuntos", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              MediaQuery.of(context).size.width < 600
+                  ? Column( // En móviles, cambia a columna
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Acción de tutela ",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20, // Reduce tamaño en móviles
+                    ),
+                  ),
+                  const SizedBox(height: 5), // Espaciado entre el texto y el círculo en móvil
+                  Row(
+                    children: [
+                      Text(
+                        widget.status,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16, // Reduce tamaño en móviles
+                        ),
+                      ),
+                      const SizedBox(width: 15),
+                      CircleAvatar(
+                        radius: 6,
+                        backgroundColor: _obtenerColorStatus(widget.status),
+                      ),
+                    ],
+                  ),
+                ],
+              )
+                  : Row( // En pantallas grandes, mantiene la fila
+                children: [
+                  Text(
+                    "Acción de tutela - ${widget.status}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 28,
+                    ),
+                  ),
+                  const SizedBox(width: 14), // Espacio entre el texto y el círculo
+                  CircleAvatar(
+                    radius: 12,
+                    backgroundColor: _obtenerColorStatus(widget.status),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildSolicitadoPor(),
+
+              const SizedBox(height: 15),
+              _buildDetallesSolicitud(),
+              const SizedBox(height: 20),
             ],
           ),
-          const SizedBox(height: 30),
 
-          /// 📂 **Mostramos los archivos aquí**
-          archivosAdjuntos.isNotEmpty
-              ? ArchivoViewerWeb(archivos: archivos)
-              : const Text(
-            "El usuario no compartió ningún archivo",
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
-          ),
-          const SizedBox(height: 30),
-          const Divider(color: gris),
-          if (((widget.status == "Diligenciado" ||
-                  widget.status == "Revisado" ||
-                  widget.status == "Enviado") &&
-                  rol != "pasante 1") || (widget.status == "Solicitado" && rol == "pasante 1")
-              || (rol == "master" || rol == "masterFull" || rol == "coordinador 1"
-                  || rol == "coordinador 2"))
+        ),
+        _buildSolicitudTexto(),
+        const SizedBox(height: 30),
+        const Row(
+          children: [
+            Icon(Icons.attach_file),
+            Text("Archivos adjuntos", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        const SizedBox(height: 30),
 
-            Column(
+        /// 📂 **Mostramos los archivos aquí**
+        archivosAdjuntos.isNotEmpty
+            ? ArchivoViewerWeb(archivos: archivos)
+            : const Text(
+          "El usuario no compartió ningún archivo",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
+        ),
+        const SizedBox(height: 30),
+        const Divider(color: gris),
+        if (((widget.status == "Diligenciado" ||
+            widget.status == "Revisado" ||
+            widget.status == "Enviado") &&
+            rol != "pasante 1") || (widget.status == "Solicitado" && rol == "pasante 1")
+            || (rol == "master" || rol == "masterFull" || rol == "coordinador 1"
+                || rol == "coordinador 2"))
+
+          Column(
             children: [
               Text(
                 "Espacio de diligenciamiento",
@@ -324,58 +325,58 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ],
           ),
 
-          if (((widget.status == "Diligenciado" ||
-              widget.status == "Revisado" ||
-              widget.status == "Enviado") &&
-              rol != "pasante 1") || (widget.status == "Solicitado" && rol == "pasante 1")
-              || (rol == "master" || rol == "masterFull" || rol == "coordinador 1"
-                  || rol == "coordinador 2"))
+        if (((widget.status == "Diligenciado" ||
+            widget.status == "Revisado" ||
+            widget.status == "Enviado") &&
+            rol != "pasante 1") || (widget.status == "Solicitado" && rol == "pasante 1")
+            || (rol == "master" || rol == "masterFull" || rol == "coordinador 1"
+                || rol == "coordinador 2"))
 
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                backgroundColor: Colors.white, // Fondo blanco
-                foregroundColor: Colors.black, // Letra en negro
-              ),
-              onPressed: () {
-                setState(() {
-                  _guardarDatosEnVariables();
-                });
-              },
-              child: const Text("Guardar información"),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+              backgroundColor: Colors.white, // Fondo blanco
+              foregroundColor: Colors.black, // Letra en negro
             ),
-          const SizedBox(height: 10),
-          // ✅ Solo muestra la vista previa si _mostrarVistaPrevia es true
-          if (_mostrarBotonVistaPrevia)
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                    backgroundColor: Colors.white, // Fondo blanco
-                    foregroundColor: Colors.black, // Letra en negro
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      // Actualizar las variables con los valores de los controladores
-                      consideraciones = _consideracionesController.text.trim();
-                      fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
-                      peticionConcreta = _peticionConcretaController.text.trim();
-                      _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
-                    });
-                  },
-                  child: const Text("Vista previa"),
+            onPressed: () {
+              setState(() {
+                _guardarDatosEnVariables();
+              });
+            },
+            child: const Text("Guardar información"),
+          ),
+        const SizedBox(height: 10),
+        // ✅ Solo muestra la vista previa si _mostrarVistaPrevia es true
+        if (_mostrarBotonVistaPrevia)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
+                  backgroundColor: Colors.white, // Fondo blanco
+                  foregroundColor: Colors.black, // Letra en negro
                 ),
+                onPressed: () {
+                  setState(() {
+                    // Actualizar las variables con los valores de los controladores
+                    consideraciones = _consideracionesController.text.trim();
+                    fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
+                    peticionConcreta = _peticionConcretaController.text.trim();
+                    _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
+                  });
+                },
+                child: const Text("Vista previa"),
+              ),
 
-                // 🔹 Agregar espaciado SOLO cuando _mostrarVistaPrevia es true
-                if (_mostrarVistaPrevia) const SizedBox(height: 50),
-              ],
-            ),
+              // 🔹 Agregar espaciado SOLO cuando _mostrarVistaPrevia es true
+              if (_mostrarVistaPrevia) const SizedBox(height: 50),
+            ],
+          ),
 
-          if (_mostrarVistaPrevia)
-            vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
-        ],
+        if (_mostrarVistaPrevia)
+          vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
+      ],
     );
   }
 
@@ -745,7 +746,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ),
           const SizedBox(height: 20),
           const Text("Datos generales del PPL", style: TextStyle(
-            fontWeight: FontWeight.w900, fontSize: 24
+              fontWeight: FontWeight.w900, fontSize: 24
           ),),
           const SizedBox(height: 25),
           Row(
@@ -840,28 +841,28 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ],
           ),
           if(userData!.situacion == "En Reclusión")
-          Column(
-            children: [
-              Row(
-                children: [
-                  const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                  Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                ],
-              ),
-              Row(
-                children: [
-                  const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                  Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                ],
-              ),
-              Row(
-                children: [
-                  const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                  Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ],
-          ),
+            Column(
+              children: [
+                Row(
+                  children: [
+                    const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ],
+            ),
           const SizedBox(height: 15),
           const Text("Datos del Acudiente", style: TextStyle(
               fontWeight: FontWeight.w900,
@@ -910,23 +911,23 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           Column(
             children: [
               if(userData!.situacion == "En Reclusión")
-              _buildBenefitCard(
-                title: 'Permiso Administrativo de 72 horas',
-                condition: porcentajeEjecutado >= 33.33,
-                remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
+                _buildBenefitCard(
+                  title: 'Permiso Administrativo de 72 horas',
+                  condition: porcentajeEjecutado >= 33.33,
+                  remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                ),
               if(userData!.situacion == "En Reclusión")
-              _buildBenefitCard(
-                title: 'Prisión Domiciliaria',
-                condition: porcentajeEjecutado >= 50,
-                remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
+                _buildBenefitCard(
+                  title: 'Prisión Domiciliaria',
+                  condition: porcentajeEjecutado >= 50,
+                  remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                ),
               if(userData!.situacion == "En Reclusión" || userData!.situacion == "En Prisión domiciliaria")
-              _buildBenefitCard(
-                title: 'Libertad Condicional',
-                condition: porcentajeEjecutado >= 60,
-                remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
+                _buildBenefitCard(
+                  title: 'Libertad Condicional',
+                  condition: porcentajeEjecutado >= 60,
+                  remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                ),
               _buildBenefitCard(
                 title: 'Extinción de la Pena',
                 condition: porcentajeEjecutado >= 100,
@@ -1042,7 +1043,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           }
 
           // 🔹 Inicializamos el derechoPeticion
-          derechoPeticion = DerechoPeticionTemplate(
+          accionTutela = TutelaTemplate(
             dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
             entidad: userData?.centroReclusion ?? "",
             referencia: '${widget.categoria} - ${widget.subcategoria}',
@@ -1452,20 +1453,20 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
   Widget vistaPreviaDerechoPeticion(userData, String consideraciones, String fundamentosDeDerecho, String peticionConcreta) {
     var derechoPeticion = DerechoPeticionTemplate(
-      dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad,
-      referencia: '${widget.categoria} - ${widget.subcategoria}',
-      nombrePpl: userData?.nombrePpl?.trim() ?? "",
-      apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
-      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-      centroPenitenciario: userData?.centroReclusion ?? "",
-      consideraciones: consideraciones,
-      fundamentosDeDerecho: fundamentosDeDerecho,
-      peticionConcreta: peticionConcreta,
-      emailUsuario: userData?.email?.trim() ?? "",
-      td: userData?.td?.trim() ?? "",
-      nui: userData?.nui?.trim() ?? "",
-      numeroSeguimiento: widget.numeroSeguimiento
+        dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+        entidad: entidad,
+        referencia: '${widget.categoria} - ${widget.subcategoria}',
+        nombrePpl: userData?.nombrePpl?.trim() ?? "",
+        apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
+        identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+        centroPenitenciario: userData?.centroReclusion ?? "",
+        consideraciones: consideraciones,
+        fundamentosDeDerecho: fundamentosDeDerecho,
+        peticionConcreta: peticionConcreta,
+        emailUsuario: userData?.email?.trim() ?? "",
+        td: userData?.td?.trim() ?? "",
+        nui: userData?.nui?.trim() ?? "",
+        numeroSeguimiento: widget.numeroSeguimiento
     );
 
     return Column(
@@ -1508,20 +1509,20 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithMailerSend");
 
     var derechoPeticion = DerechoPeticionTemplate(
-      dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: userData?.centroReclusion ?? "",
-      referencia: '${widget.categoria} - ${widget.subcategoria}',
-      nombrePpl: userData?.nombrePpl.trim() ?? "",
-      apellidoPpl: userData?.apellidoPpl.trim() ?? "",
-      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-      centroPenitenciario: userData?.centroReclusion ?? "",
-      consideraciones: consideraciones,
-      fundamentosDeDerecho: fundamentosDeDerecho,
-      peticionConcreta: peticionConcreta,
-      emailUsuario: userData?.email.trim() ?? "",
-      nui: userData?.nui.trim() ?? "",
-      td: userData?.td.trim() ?? "",
-      numeroSeguimiento: widget.numeroSeguimiento
+        dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+        entidad: userData?.centroReclusion ?? "",
+        referencia: '${widget.categoria} - ${widget.subcategoria}',
+        nombrePpl: userData?.nombrePpl.trim() ?? "",
+        apellidoPpl: userData?.apellidoPpl.trim() ?? "",
+        identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+        centroPenitenciario: userData?.centroReclusion ?? "",
+        consideraciones: consideraciones,
+        fundamentosDeDerecho: fundamentosDeDerecho,
+        peticionConcreta: peticionConcreta,
+        emailUsuario: userData?.email.trim() ?? "",
+        nui: userData?.nui.trim() ?? "",
+        td: userData?.td.trim() ?? "",
+        numeroSeguimiento: widget.numeroSeguimiento
     );
 
     String mensajeHtml = derechoPeticion.generarTextoHtml();
@@ -1656,7 +1657,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
           await enviarCorreoMailersend();
           // ⬇️ Generar y subir PDF del correo enviado
-          final html = derechoPeticion.generarTextoHtml();
+          final html = accionTutela.generarTextoHtml();
           await subirHtmlCorreoADocumento(
             idDocumento: widget.idDocumento,
             htmlContent: html,
