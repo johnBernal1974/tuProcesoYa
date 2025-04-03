@@ -1,5 +1,4 @@
 
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -31,7 +30,7 @@ class AtenderDerechoPeticionPage extends StatefulWidget {
   final String idUser;
   final List<dynamic> archivos; // Lista de archivos
   final List<String> respuestas; // Lista de respuestas
-  final List<String> preguntas; // Lista de respuestas
+  final List<String> preguntas; // Lista de preguntas
 
   const AtenderDerechoPeticionPage({
     super.key,
@@ -69,8 +68,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   final TextEditingController _fundamentosDerechoController = TextEditingController();
   final TextEditingController _peticionConcretaController = TextEditingController();
   final AtenderDerechoPeticionAdminController _controller = AtenderDerechoPeticionAdminController();
-  int _maxLines = 1; // Empieza con 1 línea
-
   String consideraciones = "";
   String fundamentosDeDerecho = "";
   String peticionConcreta = "";
@@ -81,13 +78,11 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   String? correoSeleccionado= ""; // Guarda el correo seleccionado
   String? nombreCorreoSeleccionado;
   String idDocumento="";
-
   bool _isConsideracionesLoaded = false; // Bandera para evitar sobrescribir
   bool _isFundamentosLoaded = false; // Bandera para evitar sobrescribir
   bool _isPeticionConcretaLoaded = false; // Bandera para evitar sobrescribir
   String adminFullName="";
   String entidad= "";
-
   String diligencio = '';
   String reviso = '';
   String envio = '';
@@ -371,8 +366,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-
-
   Widget _buildSolicitudTexto() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,42 +417,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-
-  void fetchDocumentoDerechoPeticion() async {
-    try {
-      DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
-          .doc(widget.idDocumento)
-          .get();
-
-      if (documentSnapshot.exists) {
-        Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
-
-        if (data != null && mounted) {
-          setState(() {
-            diligencio = data['diligencio'] ?? 'No Diligenciado';
-            reviso = data['reviso'] ?? 'No Revisado';
-            envio = data['envió'] ?? 'No enviado';
-            fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
-            fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
-            fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
-            asignadoA_P2 = data['asignadoA_P2'] ?? '';
-            asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
-            fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
-          });
-        }
-      } else {
-        if (kDebugMode) {
-          print("⚠️ Documento no encontrado en Firestore");
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al obtener datos de Firestore: $e");
-      }
-    }
-  }
-
   Future<void> cargarCorreos() async {
     Map<String, String> correos = await obtenerCorreosCentro(userDoc);
     if (mounted) {
@@ -472,7 +429,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   void _actualizarAltura() {
     int lineas = '\n'.allMatches(_consideracionesController.text).length + 1;
     setState(() {
-      _maxLines = lineas > 5 ? 5 : lineas; // Limita el crecimiento a 5 líneas
+// Limita el crecimiento a 5 líneas
     });
   }
 
@@ -595,7 +552,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       ],
     );
   }
-
 
   /// 📌 Muestra detalles de la solicitud (seguimiento, categoría, fecha, subcategoría)
   Widget _buildDetallesSolicitud() {
@@ -722,8 +678,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   void verificarVistaPrevia() {
     setState(() {
       _mostrarBotonVistaPrevia =
-          _consideracionesController.text.trim().isNotEmpty ||
-              _fundamentosDerechoController.text.trim().isNotEmpty ||
+          _consideracionesController.text.trim().isNotEmpty &&
+              _fundamentosDerechoController.text.trim().isNotEmpty &&
               _peticionConcretaController.text.trim().isNotEmpty;
     });
   }
@@ -1095,7 +1051,9 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             emailUsuario: userData?.email?.trim() ?? "",
             td: userData?.td?.trim() ?? "",
             nui: userData?.nui?.trim() ?? "",
+            numeroSeguimiento: widget.numeroSeguimiento, // 👈 asegúrate que esta variable exista
           );
+
 
           isLoading = false;
         });
@@ -1106,6 +1064,41 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           userData = fetchedData;
           isLoading = false;
         });
+      }
+    }
+  }
+
+  void fetchDocumentoDerechoPeticion() async {
+    try {
+      DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
+          .collection('derechos_peticion_solicitados')
+          .doc(widget.idDocumento)
+          .get();
+
+      if (documentSnapshot.exists) {
+        Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
+
+        if (data != null && mounted) {
+          setState(() {
+            diligencio = data['diligencio'] ?? 'No Diligenciado';
+            reviso = data['reviso'] ?? 'No Revisado';
+            envio = data['envió'] ?? 'No enviado';
+            fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
+            fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
+            fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
+            asignadoA_P2 = data['asignadoA_P2'] ?? '';
+            asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
+            fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+          });
+        }
+      } else {
+        if (kDebugMode) {
+          print("⚠️ Documento no encontrado en Firestore");
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error al obtener datos de Firestore: $e");
       }
     }
   }
@@ -1244,6 +1237,117 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
+  Future<void> generarTextoIAExtendido() async {
+    try {
+      final resultado = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
+        categoria: widget.categoria,
+        subcategoria: widget.subcategoria,
+        respuestasUsuario: widget.respuestas,
+      );
+
+      print("🔹 Consideraciones: ${resultado['consideraciones']}");
+      print("🔹 Fundamentos: ${resultado['fundamentos']}");
+      print("🔹 Petición: ${resultado['peticion']}");
+
+      setState(() {
+        _consideracionesController.text = resultado['consideraciones'] ?? '';
+        _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
+        _peticionConcretaController.text = resultado['peticion'] ?? '';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Error: $e")),
+      );
+    }
+  }
+
+  // corregido full
+  Future<void> cargarConsideraciones(String docId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('derechos_peticion_solicitados')
+          .doc(docId)
+          .get();
+
+      if (doc.exists && !_isConsideracionesLoaded) {
+        final data = doc.data() as Map<String, dynamic>?;
+
+        final texto = data?['consideraciones'];
+        if (texto != null && texto is String) {
+          setState(() {
+            _consideracionesController.text = texto;
+            _isConsideracionesLoaded = true;
+          });
+
+          verificarVistaPrevia();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error cargando consideraciones: $e");
+      }
+    }
+  }
+  //corregido full
+  Future<void> cargarFundamentosDeDerecho(String docId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('derechos_peticion_solicitados')
+          .doc(docId)
+          .get();
+
+      if (doc.exists && !_isFundamentosLoaded) {
+        final data = doc.data() as Map<String, dynamic>?;
+
+        final texto = data?['fundamentos_de_derecho'];
+        if (texto != null && texto is String) {
+          setState(() {
+            _fundamentosDerechoController.text = texto;
+            _isFundamentosLoaded = true;
+          });
+
+          verificarVistaPrevia();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error cargando fundamentos de derecho: $e");
+      }
+    }
+  }
+  //corregido full
+  Future<void> cargarPeticionConcreta(String docId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('derechos_peticion_solicitados')
+          .doc(docId)
+          .get();
+
+      if (doc.exists && !_isPeticionConcretaLoaded) {
+        final data = doc.data() as Map<String, dynamic>?;
+
+        final texto = data?['peticion_concreta'];
+        if (texto != null && texto is String) {
+          setState(() {
+            _peticionConcretaController.text = texto;
+            _isPeticionConcretaLoaded = true;
+          });
+
+          verificarVistaPrevia();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error cargando petición concreta: $e");
+      }
+    }
+  }
+
+  // corregido full - autollenado por IA o se puede escribir igualmente
   Widget ingresarConsideraciones() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1278,90 +1382,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       ],
     );
   }
-
-  Future<void> generarTextoIAExtendido() async {
-    try {
-      final resultado = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
-        categoria: widget.categoria,
-        subcategoria: widget.subcategoria,
-        respuestasUsuario: widget.respuestas,
-      );
-
-      print("🔹 Consideraciones: ${resultado['consideraciones']}");
-      print("🔹 Fundamentos: ${resultado['fundamentos']}");
-      print("🔹 Petición: ${resultado['peticion']}");
-
-      setState(() {
-        _consideracionesController.text = resultado['consideraciones'] ?? '';
-        _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-        _peticionConcretaController.text = resultado['peticion'] ?? '';
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error: $e")),
-      );
-    }
-  }
-
-  Future<void> cargarConsideraciones(String docId) async {
-    try {
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
-          .doc(docId)
-          .get();
-
-      if (doc.exists) {
-        var data = doc.data() as Map<String, dynamic>?;
-
-        if (data != null && !_isConsideracionesLoaded) {
-          String key = (widget.status == "Revisado") ? 'consideraciones_revisado' : 'consideraciones';
-
-          if (data.containsKey(key) && data[key] != null) {
-            setState(() {
-              _consideracionesController.text = data[key];
-              _isConsideracionesLoaded = true;
-            });
-          }
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando consideraciones: $e");
-      }
-    }
-  }
-
-  Future<void> guardarConsideraciones() async {
-    try {
-      String nuevoTexto = _consideracionesController.text.trim();
-
-      await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
-          .doc(widget.idDocumento)
-          .update({'consideraciones': nuevoTexto}); // Guarda solo el texto actualizado
-      if(context.mounted){
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Consideraciones guardadas correctamente")),
-        );
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al guardar consideraciones: $e");
-      }
-      if(context.mounted){
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error al guardar consideraciones")),
-        );
-      }
-    }
-  }
-
+  // corregido full - autollenado por IA o se puede escribir igualmente
   Widget ingresarFundamentosDeDerecho() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1392,63 +1413,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       ],
     );
   }
-
-  Future<void> cargarFundamentosDeDerecho(String docId) async {
-    try {
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
-          .doc(docId)
-          .get();
-
-      if (doc.exists) {
-        var data = doc.data() as Map<String, dynamic>?;
-
-        if (data != null && !_isFundamentosLoaded) {
-          String key = (widget.status == "Revisado") ? 'fundamentos_de_derecho_revisado' : 'fundamentos_de_derecho';
-
-          if (data.containsKey(key) && data[key] != null) {
-            setState(() {
-              _fundamentosDerechoController.text = data[key];
-              _isFundamentosLoaded = true;
-            });
-          }
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando fundamentos de derecho: $e");
-      }
-    }
-  }
-
-  Future<void> guardarFundamentosDeDerecho() async {
-    try {
-      String nuevoTexto = _fundamentosDerechoController.text.trim();
-
-      await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
-          .doc(widget.idDocumento)
-          .update({'fundamentos_de_derecho': nuevoTexto}); // Guarda solo el texto actualizado
-
-      if(context.mounted){
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Fundamentos de derecho guardados correctamente")),
-        );
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al guardar fundamentos de derecho: $e");
-      }
-      if(context.mounted){
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error al guardar fundamentos de derecho")),
-        );
-      }
-    }
-  }
-
+  // corregido full - autollenado por IA o se puede escribir igualmente
   Widget ingresarPeticionConcreta() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1480,62 +1445,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-  Future<void> cargarPeticionConcreta(String docId) async {
-    try {
-      DocumentSnapshot doc = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
-          .doc(docId)
-          .get();
-
-      if (doc.exists) {
-        var data = doc.data() as Map<String, dynamic>?;
-
-        if (data != null && !_isPeticionConcretaLoaded) {
-          String key = (widget.status == "Revisado") ? 'peticion_concreta_revisado' : 'peticion_concreta';
-
-          if (data.containsKey(key) && data[key] != null) {
-            setState(() {
-              _peticionConcretaController.text = data[key];
-              _isPeticionConcretaLoaded = true;
-            });
-          }
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando petición concreta: $e");
-      }
-    }
-  }
-
-  Future<void> guardarPeticionConcreta() async {
-    try {
-      String nuevoTexto = _peticionConcretaController.text.trim();
-
-      await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
-          .doc(widget.idDocumento)
-          .update({'peticion_concreta': nuevoTexto}); // Guarda solo el texto actualizado
-
-      if(context.mounted){
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Petición concreta guardada correctamente")),
-        );
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al guardar petición concreta: $e");
-      }
-      if(context.mounted){
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Error al guardar petición concreta")),
-        );
-      }
-    }
-  }
-
   Widget vistaPreviaDerechoPeticion(userData, String consideraciones, String fundamentosDeDerecho, String peticionConcreta) {
     var derechoPeticion = DerechoPeticionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
@@ -1551,6 +1460,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       emailUsuario: userData?.email?.trim() ?? "",
       td: userData?.td?.trim() ?? "",
       nui: userData?.nui?.trim() ?? "",
+      numeroSeguimiento: widget.numeroSeguimiento
     );
 
     return Column(
@@ -1606,6 +1516,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       emailUsuario: userData?.email.trim() ?? "",
       nui: userData?.nui.trim() ?? "",
       td: userData?.td.trim() ?? "",
+      numeroSeguimiento: widget.numeroSeguimiento
     );
 
     String mensajeHtml = derechoPeticion.generarTextoHtml();
@@ -1670,7 +1581,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
