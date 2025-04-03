@@ -80,7 +80,9 @@ class _WompiWebViewState extends State<WompiWebView> {
                       montoPagado: amount,
                       transaccionId: transaccionId,
                       fecha: fecha,
-                      onContinuar: widget.onTransaccionAprobada!,
+                      onContinuar: () async {
+                        widget.onTransaccionAprobada?.call();
+                      },
                     ),
                   ),
                 );
@@ -108,11 +110,14 @@ class _WompiWebViewState extends State<WompiWebView> {
                     montoPagado: amount,
                     transaccionId: transaccionId,
                     fecha: fecha,
-                    onContinuar: widget.onTransaccionAprobada!,
+                    onContinuar: () async {
+                      widget.onTransaccionAprobada?.call();
+                    },
                   ),
                 ),
               );
               break;
+
 
             default:
               Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);

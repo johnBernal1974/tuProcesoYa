@@ -1941,9 +1941,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             "status": "Revisado",
             "reviso": adminFullName, // Guarda el nombre del admin
             "fecha_revision": FieldValue.serverTimestamp(),
-            "consideraciones_revisado": _consideracionesController.text,
-            "fundamentos_de_derecho_revisado": _fundamentosDerechoController.text,
-            "peticion_concreta_revisado": _peticionConcretaController.text
           });
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(

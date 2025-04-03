@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../src/colors/colors.dart';
 
-class PagoExitosoTutelaPage extends StatelessWidget {
-  final VoidCallback onContinuar;
+class PagoExitosoTutelaPage extends StatefulWidget {
+  final Future<void> Function() onContinuar;
   final double montoPagado;
   final String transaccionId;
   final DateTime fecha;
@@ -17,15 +17,40 @@ class PagoExitosoTutelaPage extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final formatter = NumberFormat.simpleCurrency(
-      locale: 'es_CO',
-      name: '',
-      decimalDigits: 0,
+  State<PagoExitosoTutelaPage> createState() => _PagoExitosoTutelaPageState();
+}
+
+class _PagoExitosoTutelaPageState extends State<PagoExitosoTutelaPage> {
+  bool isLoading = false;
+
+  Future<void> _handleContinuar() async {
+    setState(() => isLoading = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: Colors.black87,
+        duration: const Duration(seconds: 2),
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.hourglass_empty, color: Colors.white),
+            SizedBox(width: 8),
+            Text("Espera un momento..."),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
     );
+    await widget.onContinuar();
+    if (mounted) setState(() => isLoading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final formatter = NumberFormat.simpleCurrency(locale: 'es_CO', name: '', decimalDigits: 0);
 
     return WillPopScope(
-      onWillPop: () async => false, // ❌ Bloquea botón físico atrás
+      onWillPop: () async => false,
       child: Scaffold(
         backgroundColor: blanco,
         appBar: AppBar(
@@ -48,13 +73,13 @@ class PagoExitosoTutelaPage extends StatelessWidget {
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
-                Text("Monto: \$${formatter.format(montoPagado)}", style: const TextStyle(fontSize: 16)),
+                Text("Monto: \$${formatter.format(widget.montoPagado)}", style: const TextStyle(fontSize: 16)),
                 const SizedBox(height: 8),
-                Text("Fecha: ${DateFormat('dd/MM/yyyy hh:mm a').format(fecha)}",
+                Text("Fecha: ${DateFormat('dd/MM/yyyy hh:mm a').format(widget.fecha)}",
                     style: const TextStyle(fontSize: 13)),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: onContinuar,
+                  onPressed: isLoading ? null : _handleContinuar,
                   style: ElevatedButton.styleFrom(backgroundColor: primary),
                   child: const Text("Continuar", style: TextStyle(color: blanco)),
                 ),
