@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
@@ -32,16 +19,64 @@
   <link rel="manifest" href="manifest.json">
 
   <script>
-    // The value below is injected by flutter build, do not touch.
     const serviceWorkerVersion = null;
   </script>
-  <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
 </head>
 <body>
-  <script>
+
+<!-- 👇 Aquí debe ir el contenedor del reCAPTCHA -->
+<div id="recaptcha-container"></div>
+
+<style>
+  /* Estilo base para el botón de reCAPTCHA */
+  #recaptcha-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000;
+    background-color: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Oculta el contenedor cuando esté vacío */
+  #recaptcha-container:empty {
+    display: none;
+  }
+
+  /* Estilo adaptado para móviles */
+  @media (max-width: 600px) {
+    #recaptcha-container {
+      bottom: 10px;
+      right: 10px;
+      transform: scale(0.9);
+      transform-origin: bottom right;
+      width: auto;
+      max-width: 90vw;
+      box-sizing: border-box;
+    }
+
+    /* Corrige el challenge de imágenes de Google */
+    iframe[title="recaptcha challenge"] {
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      transform: translate(-50%, -50%) scale(0.9) !important;
+      transform-origin: center center !important;
+      z-index: 10001 !important;
+      max-width: 100vw;
+      max-height: 90vh;
+    }
+  }
+</style>
+
+
+
+
+<script>
     window.addEventListener('load', function(ev) {
-      // Download main.dart.js
       _flutter.loader.loadEntrypoint({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,

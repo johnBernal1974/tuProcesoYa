@@ -39,9 +39,9 @@ import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_d
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
-import 'Pages/forgot_password/forgot_password.dart';
 import 'Pages/landing_page/info_page.dart';
 import 'Pages/login/login.dart';
+import 'Pages/recuperar_cuenta/recuperar_cuenta.dart';
 import 'commons/wompi/checkout_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
@@ -139,7 +139,7 @@ class MyApp extends StatelessWidget {
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
-        'forgot_password': (context) => const ForgotPasswordPage(),
+        'forgot_password': (context) => const RecuperarCuentaPage(),
         'mis_redenciones': (context) => const HistorialRedencionesPage(),
         'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
         'checkout_wompi': (context) => const CheckoutPage(),

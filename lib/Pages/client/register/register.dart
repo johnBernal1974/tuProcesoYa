@@ -1,13 +1,23 @@
 
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
-
+import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import '../estamos_validando/estamos_validando.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide RecaptchaVerifier;
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart'; // para kIsWeb
+import 'dart:html' as html;
+
+
+
 
 class RegistroPage extends StatefulWidget {
   final DocumentSnapshot? doc; // 🔥 Agregar el parámetro opcional `doc`
@@ -32,8 +42,6 @@ class _RegistroPageState extends State<RegistroPage> {
   final _formKeyTdPPL = GlobalKey<FormState>();
   final _formKeyNuiPPL = GlobalKey<FormState>();
   final _formKeyPatioPPL = GlobalKey<FormState>();
-  final _formKeyCorreo = GlobalKey<FormState>();
-  final _formKeyPassword = GlobalKey<FormState>();
   int _currentPage = 0;
   int currentPageIndex = 0;
   List<Map<String, Object>> centrosReclusionTodos = [];
@@ -44,8 +52,6 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController nombreAcudienteController = TextEditingController();
   final TextEditingController apellidoAcudienteController = TextEditingController();
   final TextEditingController celularController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController emailConfirmarController = TextEditingController();
   final TextEditingController nombrePplController = TextEditingController();
   final TextEditingController apellidoPplController = TextEditingController();
   final TextEditingController numeroDocumentoPplController = TextEditingController();
@@ -55,6 +61,8 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController nuiPplController = TextEditingController();
   final TextEditingController patioPplController = TextEditingController();
   final TextEditingController direccionPplController = TextEditingController();
+  final TextEditingController otpController = TextEditingController();
+  final TextEditingController pinController = TextEditingController();
   String? selectedRegional;
   String? selectedCentro;
   String? departamentoSeleccionado;
@@ -71,47 +79,26 @@ class _RegistroPageState extends State<RegistroPage> {
   String? td;
   String? nui;
   String? patio;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
   bool _aceptaTerminos = false;
-
-  void _prevPage() {
-    // 🔥 Si estamos en la página 11 y la opción NO fue "En Reclusión", regresamos directamente a la 9
-    if (_currentPage == 11 && situacionActual != "En Reclusión") {
-      setState(() {
-        _currentPage = 9;
-      });
-      _pageController.jumpToPage(9);
-      return;
-    }
-
-    // 🔥 Si estamos en la página 10 y venimos directamente de la 7, regresamos a la 7
-    if (_currentPage == 10 && situacionActual == "En Reclusión") {
-      setState(() {
-        _currentPage = 7; // Regresar directamente a la página 7
-      });
-      _pageController.jumpToPage(7);
-      return;
-    }
-
-    // 🔥 Comportamiento normal para retroceder una página
-    if (_currentPage > 0) {
-      setState(() {
-        _currentPage--;
-      });
-      _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
-    }
-  }
-
-
+  String? _verificationId;
+  bool _otpEnviado = false;
+  late ConfirmationResult _confirmationResult;
+  RecaptchaVerifier? recaptchaVerifier;
 
   @override
   void initState() {
     super.initState();
-    _centrosFuture = _fetchTodosCentrosReclusion(); // ✅ Carga solo una vez
+
+    if (kIsWeb) {
+      recaptchaVerifier = RecaptchaVerifier(
+        container: 'recaptcha-container',
+        size: RecaptchaVerifierSize.normal,
+        theme: RecaptchaVerifierTheme.light,
+        auth: FirebaseAuthPlatform.instance, // ✅ ESTE es el tipo correcto
+      );
+    }
+
+    _centrosFuture = _fetchTodosCentrosReclusion();
   }
 
   @override
@@ -150,8 +137,9 @@ class _RegistroPageState extends State<RegistroPage> {
                     _buildPplTDLegalForm(),
                     _buildPplNUILegalForm(),
                     _buildPplPatioLegalForm(),
-                    _buildCuentaCorreoForm(),
-                    _buildCuentapasawordForm(),
+                    _buildVerificacionCelularOTPForm(), // Página 14: enviar código
+                    _buildIngresarOTPForm(),            // Página 15: ingresar código OTP
+                    _buildPinRespaldoForm(),            // 16 ← aquí va el nuevo
                   ],
                 ),
               ),
@@ -190,7 +178,7 @@ class _RegistroPageState extends State<RegistroPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 🔥 Menos padding
                           minimumSize: const Size(50, 25), // 🔥 Tamaño mínimo más pequeño
                         ),
-                        onPressed: _currentPage == 15 ? _submitForm : _validarYContinuar,
+                        onPressed: _currentPage == 15 ? _verificarOTP : _validarYContinuar,
                         child: Row(
                           children: [
                             Text(
@@ -212,6 +200,37 @@ class _RegistroPageState extends State<RegistroPage> {
         ),
       ),
     );
+  }
+
+  void _prevPage() {
+    // 🔥 Si estamos en la página 11 y la opción NO fue "En Reclusión", regresamos directamente a la 9
+    if (_currentPage == 11 && situacionActual != "En Reclusión") {
+      setState(() {
+        _currentPage = 9;
+      });
+      _pageController.jumpToPage(9);
+      return;
+    }
+
+    // 🔥 Si estamos en la página 10 y venimos directamente de la 7, regresamos a la 7
+    if (_currentPage == 10 && situacionActual == "En Reclusión") {
+      setState(() {
+        _currentPage = 7; // Regresar directamente a la página 7
+      });
+      _pageController.jumpToPage(7);
+      return;
+    }
+
+    // 🔥 Comportamiento normal para retroceder una página
+    if (_currentPage > 0) {
+      setState(() {
+        _currentPage--;
+      });
+      _pageController.previousPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   Widget _buildIntroduccion() {
@@ -352,7 +371,6 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
-
 
   Widget _buildIntroAcudienteForm() {
     return SingleChildScrollView(
@@ -866,7 +884,6 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-
   Widget _buildPplCentroReclusionLegalForm() {
     return Form(
       key: _formKeyLegalPPL,
@@ -1118,6 +1135,40 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
+  Widget _buildPinRespaldoForm() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "PIN de Seguridad",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            "Crea un PIN de 4 dígitos que te servirá para recuperar tu cuenta si pierdes acceso al número de celular.",
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 20),
+          TextFormField(
+            controller: pinController,
+            obscureText: true,
+            maxLength: 4,
+            keyboardType: TextInputType.number,
+            decoration: _buildInputDecoration("PIN de 4 dígitos"),
+            validator: (value) {
+              if (value == null || value.length != 4 || !RegExp(r'^\d{4}$').hasMatch(value)) {
+                return 'Ingresa un PIN válido de 4 números.';
+              }
+              return null;
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPplPatioLegalForm() {
     return Form(
       key: _formKeyPatioPPL,
@@ -1154,269 +1205,143 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-  Widget _buildCuentaCorreoForm() {
-    return Form(
-      key: _formKeyCorreo,
-      autovalidateMode: AutovalidateMode.onUserInteraction, // 🔥 Validación en tiempo real
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(10.0), // 🔥 Mismo padding que _buildAcudienteForm()
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "¡Ahora vamos a crear tu cuenta!",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, height: 1),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              "Por favor ingresa un correo electrónico válido, que esté activo y al cual tengas acceso, ya que allí "
-                  "se te estará enviando toda la información relacionada con el PPL.",
-              style: TextStyle(fontSize: 12),
-            ),
-            const SizedBox(height: 20),
-
-            // 🔹 Correo Electrónico
-            TextFormField(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: _buildInputDecoration('Correo Electrónico'),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Por favor ingresa un correo electrónico';
-                }
-                if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                  return 'Por favor ingresa un correo electrónico válido';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 15),
-
-            // 🔹 Confirmar Correo Electrónico
-            TextFormField(
-              autovalidateMode: AutovalidateMode.onUserInteraction,
-              controller: emailConfirmarController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: _buildInputDecoration('Confirmar Correo Electrónico'),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Por favor confirma tu correo electrónico';
-                }
-                if (value != emailController.text) {
-                  return 'Los correos electrónicos no coinciden';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCuentapasawordForm() {
-    return Form(
-      key: _formKeyPassword,
-      autovalidateMode: AutovalidateMode.onUserInteraction, // 🔥 Muestra errores en tiempo real
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                "Último paso",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, height: 1),
-              ),
-              const SizedBox(height: 20),
-              RichText(
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 12, color: Colors.black),
-                  children: [
-                    TextSpan(text: "Ten en cuenta que la contraseña que vas a crear debe tener "),
-                    TextSpan(
-                      text: "mínimo 6 caracteres",
-                      style: TextStyle(fontWeight: FontWeight.bold), // 🔥 Negrita
-                    ),
-                    TextSpan(text: ". Por la seguridad de tus datos, no la compartas con nadie."),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              // 🔹 Contraseña
-              TextFormField(
-                controller: passwordController,
-                obscureText: _obscurePassword,
-                decoration: _buildInputDecoration('Crear una Contraseña').copyWith(
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Por favor ingresa una contraseña';
-                  }
-                  if (value.length < 6) {
-                    return 'La contraseña debe tener al menos 6 caracteres';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 15),
-
-              // 🔹 Confirmar Contraseña
-              TextFormField(
-                controller: passwordConfirmarController,
-                obscureText: _obscureConfirmPassword,
-                decoration: _buildInputDecoration('Confirmar Contraseña').copyWith(
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
-                    },
-                  ),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Por favor confirma tu contraseña';
-                  }
-                  if (value.length < 6) {
-                    return 'La contraseña debe tener al menos 6 caracteres';
-                  }
-                  if (value != passwordController.text) {
-                    return 'Las contraseñas no coinciden';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
-            ],
+  Widget _buildVerificacionCelularOTPForm() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Verificación del número de celular",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
-        ),
+          const SizedBox(height: 16),
+          const Text(
+            "Vamos a enviarte un código de verificación por SMS al número que ingresaste anteriormente.",
+            style: TextStyle(fontSize: 14),
+          ),
+          const SizedBox(height: 20),
+
+          // Botón para enviar el código
+          ElevatedButton(
+            onPressed: _enviarCodigoOTP,
+            child: const Text("Enviar código de verificación"),
+          ),
+
+          const SizedBox(height: 30),
+
+          // Campo para ingresar el OTP
+          TextFormField(
+            controller: otpController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: "Código de verificación",
+              border: OutlineInputBorder(),
+            ),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Botón para verificar el OTP
+          ElevatedButton.icon(
+            icon: const Icon(Icons.verified),
+            label: const Text("Verificar código"),
+            onPressed: _verificarOTP,
+          ),
+        ],
       ),
     );
   }
 
-  void _submitForm() async {
-    final String password = passwordController.text.trim();
-    final String passwordConfirm = passwordConfirmarController.text.trim();
+  void _enviarCodigoOTP() async {
+    final celular = celularController.text.trim();
 
-    // 🔹 Si ambos campos están vacíos
-    if (password.isEmpty && passwordConfirm.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor ingresa una contraseña y la confirmación."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+    if (!RegExp(r'^[0-9]{10}$').hasMatch(celular)) {
+      _mostrarMensaje("Número de celular inválido. Debe tener 10 dígitos.");
       return;
     }
 
-    // 🔹 Si solo la contraseña está vacía
-    if (password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor crea una contraseña."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
 
-    // 🔹 Si solo la confirmación está vacía
-    if (passwordConfirm.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor confirma la contraseña."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // 🔹 Si la contraseña tiene menos de 6 caracteres
-    if (password.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("La contraseña debe tener al menos 6 caracteres."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // 🔹 Si la confirmación tiene menos de 6 caracteres
-    if (passwordConfirm.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("La confirmación debe tener al menos 6 caracteres."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // 🔹 Verifica si las contraseñas coinciden
-    if (password != passwordConfirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Las contraseñas no coinciden."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
-    // 🔥 **Si todas las validaciones pasan, intenta registrar al usuario**
     try {
+      print("🤖 reCAPTCHA renderizando...");
 
-      // 🔹 Muestra un indicador de carga
+      final recaptchaVerifier = RecaptchaVerifier(
+        auth: FirebaseAuthPlatform.instance,
+        container: 'recaptcha-container',
+        size: RecaptchaVerifierSize.normal,
+        theme: RecaptchaVerifierTheme.light,
+        onSuccess: () {
+          print("✅ reCAPTCHA verificado");
+          // 👉 Oculta visualmente el reCAPTCHA
+          html.document.getElementById('recaptcha-container')?.style.display = 'none';
+
+          // 🔥 Oculta visualmente el contenedor tras validación
+          final element = html.document.getElementById('recaptcha-container');
+          if (element != null) {
+            element.style.display = 'none';
+          }
+        },
+        onError: (FirebaseAuthException e) {
+          print("❌ Error reCAPTCHA: ${e.message}");
+          Navigator.of(context).pop();
+          _mostrarMensaje("Error al validar reCAPTCHA");
+        },
+        onExpired: () {
+          print("⚠️ reCAPTCHA expirado");
+          Navigator.of(context).pop();
+          _mostrarMensaje("El reCAPTCHA ha expirado");
+        },
+      );
+
+      final confirmationResult = await FirebaseAuth.instance.signInWithPhoneNumber(
+        "+57$celular",
+        recaptchaVerifier,
+      );
+
+      print("✅ Código enviado");
+      Navigator.of(context).pop(); // Cierra el loading
+
+      setState(() {
+        _confirmationResult = confirmationResult;
+        _currentPage = 15;
+      });
+      _pageController.jumpToPage(15);
+    } catch (e) {
+      Navigator.of(context).pop();
+      _mostrarMensaje("Error inesperado: ${e.toString()}");
+    }
+  }
+
+
+  void _guardarConPin() async {
+    final pin = pinController.text.trim();
+
+    if (pin.isEmpty || pin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(pin)) {
+      _mostrarMensaje("El PIN debe tener exactamente 4 dígitos.");
+      return;
+    }
+
+    try {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator()),
+        builder: (_) => const Center(child: CircularProgressIndicator()),
       );
 
-      // 🔹 Obtiene los datos ingresados por el usuario
-      String email = emailController.text.trim();
+      final userId = FirebaseAuth.instance.currentUser!.uid;
 
-      // 🔹 Registra el usuario en Firebase Authentication
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // 🔹 Obtiene el UID del usuario registrado
-      String userId = userCredential.user!.uid;
-      // 🔹 Crea un mapa con los datos del usuario
-      Map<String, dynamic> userData = {
+      final userData = {
         "id": userId,
         "nombre_acudiente": nombreAcudienteController.text.trim(),
         "apellido_acudiente": apellidoAcudienteController.text.trim(),
         "parentesco_representante": parentesco ?? "",
         "celular": celularController.text.trim(),
-        "email": email,
+        "email": "", // vacío si no se usa
         "nombre_ppl": nombrePplController.text.trim(),
         "apellido_ppl": apellidoPplController.text.trim(),
         "tipo_documento_ppl": tipoDocumento ?? "",
@@ -1445,50 +1370,77 @@ class _RegistroPageState extends State<RegistroPage> {
         "departamento": departamentoSeleccionado ?? "",
         "municipio": municipioSeleccionado ?? "",
         "situacion": situacionActual ?? "",
-        "direccion": direccionPplController.text.trim() ?? "",
+        "direccion": direccionPplController.text.trim(),
+        "pin_respaldo": sha256.convert(utf8.encode(pin)).toString(),
+
       };
 
-      // 🔹 Guarda los datos en Firestore
       await FirebaseFirestore.instance.collection("Ppl").doc(userId).set(userData);
-      // 🔹 Cierra el indicador de carga
-      if(context.mounted){
-        Navigator.of(context).pop();
 
-        // 🔹 Muestra un mensaje de éxito
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Registro completado con éxito."),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
       if (context.mounted) {
+        Navigator.of(context).pop(); // cierra loading
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
-              (Route<dynamic> route) => false, // 🔥 Elimina todas las páginas previas
+          MaterialPageRoute(builder: (_) => EstamosValidandoPage()),
+              (route) => false,
         );
       }
-
-    } on FirebaseAuthException catch (e) {
-      if(context.mounted){
-        Navigator.of(context).pop(); // Cierra el indicador de carga
-        if (kDebugMode) {
-          print('❌ Error en FirebaseAuth: ${e.code}');
-        }
-      }
-      _mostrarMensaje(_traducirErrorFirebase(e.code));
     } catch (e) {
-      if(context.mounted){
-        Navigator.of(context).pop(); // Cierra el indicador de carga
-      }
-
-      if (kDebugMode) {
-        print('❌ Error en el proceso de registro: $e');
-      }
-      _mostrarMensaje('Error al registrar el usuario: $e');
+      if (context.mounted) Navigator.of(context).pop();
+      _mostrarMensaje("Error al guardar el PIN y datos: ${e.toString()}");
     }
   }
+
+  Widget _buildIngresarOTPForm() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Ingresa el código de verificación",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: otpController,
+            keyboardType: TextInputType.number,
+            decoration: _buildInputDecoration("Código de 6 dígitos"),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _verificarOTP,
+            child: const Text("Verificar"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _verificarOTP() async {
+    final codigo = otpController.text.trim();
+
+    if (_confirmationResult == null || codigo.isEmpty) {
+      _mostrarMensaje("Código inválido.");
+      return;
+    }
+
+    try {
+      // Confirma el código con el objeto ConfirmationResult
+      final userCredential = await _confirmationResult!.confirm(codigo);
+
+      // ✅ Si fue exitoso, cambia a la página para ingresar el PIN
+      setState(() {
+        _currentPage = 16; // Página del PIN
+      });
+      _pageController.jumpToPage(16);
+    } on FirebaseAuthException catch (e) {
+      _mostrarMensaje("Código inválido o expirado. Intenta nuevamente.");
+    } catch (e) {
+      _mostrarMensaje("Error inesperado: ${e.toString()}");
+    }
+  }
+
+
   // Método auxiliar para mostrar mensajes
   void _mostrarMensaje(String mensaje) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1519,8 +1471,6 @@ class _RegistroPageState extends State<RegistroPage> {
 
   /// 🔥 **Método para validar y continuar a la siguiente página**
   void _validarYContinuar() {
-
-
     if (_currentPage == 0 && !_formKeyTerminosYCondiciones.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1843,61 +1793,51 @@ class _RegistroPageState extends State<RegistroPage> {
       }
     }
 
-    // Validación de email en la página 8
     if (_currentPage == 14) {
-      final String email = emailController.text.trim();
-      final String emailConfirmacion = emailConfirmarController.text.trim();
-      final RegExp emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+      final String celular = celularController.text.trim();
 
-      // 🔹 Verifica que ningún campo esté vacío
-      if (email.isEmpty || emailConfirmacion.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(email.isEmpty && emailConfirmacion.isEmpty
-                ? "Por favor ingresa un correo y la confirmación."
-                : email.isEmpty
-                ? "Por favor ingresa un correo."
-                : "Por favor ingresa el correo de confirmación."),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // 🔹 Validación del formato del correo
-      if (!emailRegExp.hasMatch(email) || !emailRegExp.hasMatch(emailConfirmacion)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(!emailRegExp.hasMatch(email)
-                ? "Por favor ingresa un correo válido."
-                : "El correo de confirmación no es válido."),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
-
-      // 🔹 Verifica que los correos coincidan exactamente
-      if (email.toLowerCase() != emailConfirmacion.toLowerCase()) {
+      if (!_formKeyCelularAcudiente.currentState!.validate()) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Los correos electrónicos no coinciden."),
+            content: Text("Por favor ingresa un número de celular válido."),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 2),
           ),
         );
         return;
       }
+      _enviarCodigoOTP(); // 👉 Función que ya tienes
+      return;
     }
 
+    if (_currentPage == 16) {
+      final pin = pinController.text.trim();
+
+      if (pin.isEmpty || pin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(pin)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Ingresa un PIN válido de 4 números."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      _guardarConPin(); // Ahora sí guarda los datos
+      return;
+    }
+
+
     // Avanzar solo si todas las validaciones se cumplen
-    if (_currentPage < 16) { // Ajusta el número máximo de páginas si es necesario
+    if (_currentPage < 16) {
       setState(() {
         _currentPage++;
       });
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
