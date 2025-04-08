@@ -1,11 +1,11 @@
 
 import 'dart:convert';
-
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
@@ -13,10 +13,7 @@ import '../../administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import '../estamos_validando/estamos_validando.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide RecaptchaVerifier;
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart'; // para kIsWeb
 import 'dart:html' as html;
-
-
 
 
 class RegistroPage extends StatefulWidget {
@@ -84,6 +81,14 @@ class _RegistroPageState extends State<RegistroPage> {
   bool _otpEnviado = false;
   late ConfirmationResult _confirmationResult;
   RecaptchaVerifier? recaptchaVerifier;
+  bool _otpCompleto = false;
+  bool _mostrarPin = false;
+  bool _verificandoOTP = false;
+  bool _recaptchaValidado = false;
+
+
+
+
 
   @override
   void initState() {
@@ -137,8 +142,7 @@ class _RegistroPageState extends State<RegistroPage> {
                     _buildPplTDLegalForm(),
                     _buildPplNUILegalForm(),
                     _buildPplPatioLegalForm(),
-                    _buildVerificacionCelularOTPForm(), // Página 14: enviar código
-                    _buildIngresarOTPForm(),            // Página 15: ingresar código OTP
+                    _buildVerificacionCelularOTPForm(),
                     _buildPinRespaldoForm(),            // 16 ← aquí va el nuevo
                   ],
                 ),
@@ -178,7 +182,7 @@ class _RegistroPageState extends State<RegistroPage> {
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // 🔥 Menos padding
                           minimumSize: const Size(50, 25), // 🔥 Tamaño mínimo más pequeño
                         ),
-                        onPressed: _currentPage == 15 ? _verificarOTP : _validarYContinuar,
+                        onPressed: (_currentPage == 14 && _otpCompleto) ? _verificarOTP : _validarYContinuar,
                         child: Row(
                           children: [
                             Text(
@@ -727,6 +731,58 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
+  Future<bool> _documentoYaRegistrado(String numeroDocumento) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Ppl')
+          .where('numero_documento_ppl', isEqualTo: numeroDocumento)
+          .get();
+
+      return snapshot.docs.isNotEmpty;
+    } catch (e) {
+      print("Error al verificar documento: $e");
+      return false;
+    }
+  }
+
+  Future<bool> _verificarDuplicadosFirestore({String? celular, String? documento}) async {
+    try {
+      if (celular != null && celular.isNotEmpty) {
+        final celularSnapshot = await FirebaseFirestore.instance
+            .collection('Ppl')
+            .where('celular', isEqualTo: celular)
+            .limit(1)
+            .get();
+
+        if (celularSnapshot.docs.isNotEmpty) {
+          _mostrarMensaje("El número de celular ya está registrado.");
+          return true;
+        }
+      }
+
+      if (documento != null && documento.isNotEmpty) {
+        final documentoSnapshot = await FirebaseFirestore.instance
+            .collection('Ppl')
+            .where('numero_documento_ppl', isEqualTo: documento)
+            .limit(1)
+            .get();
+
+        if (documentoSnapshot.docs.isNotEmpty) {
+          _mostrarMensaje("Este número de documento ya está registrado.");
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      _mostrarMensaje("Error al verificar duplicados: $e");
+      return true; // Por seguridad, detiene el flujo si hay error
+    }
+  }
+
+
+
+
   Widget _buildSituacionActualPplForm() {
     return Form(
       key: _formKeySituacionPPL,
@@ -1146,17 +1202,39 @@ class _RegistroPageState extends State<RegistroPage> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          const Text(
-            "Crea un PIN de 4 dígitos que te servirá para recuperar tu cuenta si pierdes acceso al número de celular.",
-            style: TextStyle(fontSize: 14),
+          const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.lock, color: Colors.black54, size: 20),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  "Crea un PIN de 4 dígitos que te servirá como clave de respaldo para recuperar tu cuenta en caso de que pierdas el acceso a tu número de celular. "
+                      "Este PIN es muy importante, ya que sin él no podrás recuperar tu cuenta si cambias de teléfono o número.",
+                  style: TextStyle(fontSize: 14),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           TextFormField(
             controller: pinController,
-            obscureText: true,
+            obscureText: !_mostrarPin,
             maxLength: 4,
             keyboardType: TextInputType.number,
-            decoration: _buildInputDecoration("PIN de 4 dígitos"),
+            decoration: _buildInputDecoration("PIN de 4 dígitos").copyWith(
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _mostrarPin ? Icons.visibility : Icons.visibility_off,
+                  color: Colors.grey,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _mostrarPin = !_mostrarPin;
+                  });
+                },
+              ),
+            ),
             validator: (value) {
               if (value == null || value.length != 4 || !RegExp(r'^\d{4}$').hasMatch(value)) {
                 return 'Ingresa un PIN válido de 4 números.';
@@ -1206,49 +1284,89 @@ class _RegistroPageState extends State<RegistroPage> {
   }
 
   Widget _buildVerificacionCelularOTPForm() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Verificación del número de celular",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            "Vamos a enviarte un código de verificación por SMS al número que ingresaste anteriormente.",
-            style: TextStyle(fontSize: 14),
-          ),
-          const SizedBox(height: 20),
-
-          // Botón para enviar el código
-          ElevatedButton(
-            onPressed: _enviarCodigoOTP,
-            child: const Text("Enviar código de verificación"),
-          ),
-
-          const SizedBox(height: 30),
-
-          // Campo para ingresar el OTP
-          TextFormField(
-            controller: otpController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: "Código de verificación",
-              border: OutlineInputBorder(),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Verificación del número de celular",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, height: 1.2),
             ),
-          ),
+            const SizedBox(height: 16),
+            const Text(
+              "Para continuar, necesitamos validar tu número de celular. Te enviaremos un código por mensaje de texto que deberás ingresar a continuación.",
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 20),
 
-          const SizedBox(height: 20),
+            // Botón para enviar el código
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: blanco,
+                side: const BorderSide(color: primary, width: 2),
+              ),
+              onPressed: _enviarCodigoOTP,
+              child: const Text("Enviar código de verificación"),
+            ),
+            if (_recaptchaValidado) ...[
+              const SizedBox(height: 30),
 
-          // Botón para verificar el OTP
-          ElevatedButton.icon(
-            icon: const Icon(Icons.verified),
-            label: const Text("Verificar código"),
-            onPressed: _verificarOTP,
-          ),
-        ],
+              // Campo para ingresar el OTP
+              PinCodeTextField(
+                appContext: context,
+                length: 6,
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                animationType: AnimationType.fade,
+                pinTheme: PinTheme(
+                  shape: PinCodeFieldShape.box,
+                  borderRadius: BorderRadius.circular(8),
+                  fieldHeight: 50,
+                  fieldWidth: 40,
+                  activeFillColor: Colors.white,
+                  selectedFillColor: Colors.white,
+                  inactiveFillColor: Colors.white,
+                  activeColor: primary,
+                  selectedColor: primary,
+                  inactiveColor: Colors.grey,
+                ),
+                cursorColor: primary,
+                animationDuration: const Duration(milliseconds: 300),
+                enableActiveFill: true,
+                onChanged: (value) {
+                  setState(() {
+                    _otpCompleto = value.length == 6;
+                  });
+                },
+              ),
+              const SizedBox(height: 20),
+              // Botón para verificar el OTP con estilo
+              ElevatedButton.icon(
+                icon: const Icon(Icons.verified, color: primary),
+                label: Text(
+                  _verificandoOTP ? "Validando código..." : "Verificar código",
+                  style: const TextStyle(color: primary),
+                ),
+                onPressed: (_otpCompleto && !_verificandoOTP)
+                    ? () async {
+                  setState(() => _verificandoOTP = true);
+                  _verificarOTP(); // tu función existente
+                  setState(() => _verificandoOTP = false);
+                }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: blanco,
+                  side: BorderSide(
+                    color: _otpCompleto ? primary : Colors.grey,
+                    width: 2,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
@@ -1280,6 +1398,10 @@ class _RegistroPageState extends State<RegistroPage> {
           // 👉 Oculta visualmente el reCAPTCHA
           html.document.getElementById('recaptcha-container')?.style.display = 'none';
 
+          setState(() {
+            _recaptchaValidado = true; // 👈 ahora sí se pueden mostrar los campos
+          });
+
           // 🔥 Oculta visualmente el contenedor tras validación
           final element = html.document.getElementById('recaptcha-container');
           if (element != null) {
@@ -1308,15 +1430,14 @@ class _RegistroPageState extends State<RegistroPage> {
 
       setState(() {
         _confirmationResult = confirmationResult;
-        _currentPage = 15;
+        _otpEnviado = true;
       });
-      _pageController.jumpToPage(15);
+
     } catch (e) {
       Navigator.of(context).pop();
       _mostrarMensaje("Error inesperado: ${e.toString()}");
     }
   }
-
 
   void _guardarConPin() async {
     final pin = pinController.text.trim();
@@ -1401,20 +1522,45 @@ class _RegistroPageState extends State<RegistroPage> {
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
-          TextFormField(
+          PinCodeTextField(
+            appContext: context,
+            length: 6,
             controller: otpController,
             keyboardType: TextInputType.number,
-            decoration: _buildInputDecoration("Código de 6 dígitos"),
+            animationType: AnimationType.fade,
+            pinTheme: PinTheme(
+              shape: PinCodeFieldShape.box,
+              borderRadius: BorderRadius.circular(8),
+              fieldHeight: 50,
+              fieldWidth: 40,
+              activeFillColor: Colors.white,
+              selectedFillColor: Colors.white,
+              inactiveFillColor: Colors.white,
+              activeColor: primary,
+              selectedColor: primary,
+              inactiveColor: Colors.grey,
+            ),
+            cursorColor: primary,
+            animationDuration: const Duration(milliseconds: 300),
+            enableActiveFill: true,
+            onChanged: (value) {
+              setState(() {}); // Para refrescar el botón si cambia la longitud
+            },
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _verificarOTP,
+            onPressed: otpController.text.length == 6 ? _verificarOTP : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: blanco,
+              side: const BorderSide(color: primary, width: 2),
+            ),
             child: const Text("Verificar"),
           ),
         ],
       ),
     );
   }
+
 
   void _verificarOTP() async {
     final codigo = otpController.text.trim();
@@ -1425,12 +1571,14 @@ class _RegistroPageState extends State<RegistroPage> {
     }
 
     try {
-      // Confirma el código con el objeto ConfirmationResult
-      final userCredential = await _confirmationResult!.confirm(codigo);
+      // Verifica el código ingresado
+      await _confirmationResult!.confirm(codigo);
 
-      // ✅ Si fue exitoso, cambia a la página para ingresar el PIN
+      print("✅ Código verificado correctamente");
+
+      // Lleva al usuario a la página para ingresar el PIN (ej. página 16)
       setState(() {
-        _currentPage = 16; // Página del PIN
+        _currentPage = 16;
       });
       _pageController.jumpToPage(16);
     } on FirebaseAuthException catch (e) {
@@ -1470,7 +1618,7 @@ class _RegistroPageState extends State<RegistroPage> {
   }
 
   /// 🔥 **Método para validar y continuar a la siguiente página**
-  void _validarYContinuar() {
+  Future<void> _validarYContinuar() async {
     if (_currentPage == 0 && !_formKeyTerminosYCondiciones.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -1494,16 +1642,25 @@ class _RegistroPageState extends State<RegistroPage> {
     }
 
     // Validación celular
-    if (_currentPage == 3 && !_formKeyCelularAcudiente.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor ingresa el número del celular antes de continuar."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+    if (_currentPage == 3) {
+      final celular = celularController.text.trim();
+
+      if (!_formKeyCelularAcudiente.currentState!.validate()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor ingresa el número del celular antes de continuar."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // 🔥 Validar si el número de celular ya está registrado
+      final yaExiste = await _verificarDuplicadosFirestore(celular: celular);
+      if (yaExiste) return; // 🛑 Detiene el avance si ya existe
     }
+
     // Validación parentesco
     if (_currentPage == 4 && !_formKeyParentescoAcudiente.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1585,7 +1742,13 @@ class _RegistroPageState extends State<RegistroPage> {
         );
         return;
       }
+
+      // 🔥 Validación de documento ya registrado en Firestore
+      final existeDocumento = await _verificarDuplicadosFirestore(documento: documento);
+      if (existeDocumento) return;
     }
+
+
 
     //para la situacion del ppl
     // 🔹 Validación de la situación actual del PPL (Página 7)
@@ -1806,9 +1969,15 @@ class _RegistroPageState extends State<RegistroPage> {
         );
         return;
       }
-      _enviarCodigoOTP(); // 👉 Función que ya tienes
+
+      // 🔥 Verificar si el celular ya está registrado
+      final existeCelular = await _verificarDuplicadosFirestore(celular: celular);
+      if (existeCelular) return;
+
+      _enviarCodigoOTP(); // Solo se llama si pasa la validación
       return;
     }
+
 
     if (_currentPage == 16) {
       final pin = pinController.text.trim();
