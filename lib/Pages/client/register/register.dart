@@ -11,8 +11,6 @@ import 'package:firebase_auth_platform_interface/firebase_auth_platform_interfac
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import '../estamos_validando/estamos_validando.dart';
-import 'package:firebase_auth/firebase_auth.dart' hide RecaptchaVerifier;
-import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:html' as html;
 
 
@@ -113,7 +111,7 @@ class _RegistroPageState extends State<RegistroPage> {
       backgroundColor: blanco,
       appBar: AppBar(
         backgroundColor: primary,
-        title: Text('Registro - Paso ${_currentPage + 1} de 16', style: const TextStyle(color: Colors.white)),
+        title: const Text('Proceso de registro', style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),
       body: Center(
@@ -122,7 +120,7 @@ class _RegistroPageState extends State<RegistroPage> {
           padding: const EdgeInsets.all(10.0), // Agrega espacio alrededor del contenido
           child: Column(
             children: [
-              LinearProgressIndicator(value: (_currentPage + 1) /16, backgroundColor: Colors.grey.shade300),
+              LinearProgressIndicator(value: (_currentPage + 1) /15, backgroundColor: Colors.grey.shade300),
               Expanded(
                 child: PageView(
                   controller: _pageController,
@@ -143,7 +141,7 @@ class _RegistroPageState extends State<RegistroPage> {
                     _buildPplNUILegalForm(),
                     _buildPplPatioLegalForm(),
                     _buildVerificacionCelularOTPForm(),
-                    _buildPinRespaldoForm(),            // 16 ← aquí va el nuevo
+                    _buildPinRespaldoForm(),
                   ],
                 ),
               ),
@@ -731,20 +729,6 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-  Future<bool> _documentoYaRegistrado(String numeroDocumento) async {
-    try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('Ppl')
-          .where('numero_documento_ppl', isEqualTo: numeroDocumento)
-          .get();
-
-      return snapshot.docs.isNotEmpty;
-    } catch (e) {
-      print("Error al verificar documento: $e");
-      return false;
-    }
-  }
-
   Future<bool> _verificarDuplicadosFirestore({String? celular, String? documento}) async {
     try {
       if (celular != null && celular.isNotEmpty) {
@@ -755,7 +739,7 @@ class _RegistroPageState extends State<RegistroPage> {
             .get();
 
         if (celularSnapshot.docs.isNotEmpty) {
-          _mostrarMensaje("El número de celular ya está registrado.");
+          _mostrarMensaje("Este número de celular ya está registrado.");
           return true;
         }
       }
@@ -779,9 +763,6 @@ class _RegistroPageState extends State<RegistroPage> {
       return true; // Por seguridad, detiene el flujo si hay error
     }
   }
-
-
-
 
   Widget _buildSituacionActualPplForm() {
     return Form(
@@ -1386,7 +1367,9 @@ class _RegistroPageState extends State<RegistroPage> {
     );
 
     try {
-      print("🤖 reCAPTCHA renderizando...");
+      if (kDebugMode) {
+        print("🤖 reCAPTCHA renderizando...");
+      }
 
       final recaptchaVerifier = RecaptchaVerifier(
         auth: FirebaseAuthPlatform.instance,
@@ -1394,7 +1377,9 @@ class _RegistroPageState extends State<RegistroPage> {
         size: RecaptchaVerifierSize.normal,
         theme: RecaptchaVerifierTheme.light,
         onSuccess: () {
-          print("✅ reCAPTCHA verificado");
+          if (kDebugMode) {
+            print("✅ reCAPTCHA verificado");
+          }
           // 👉 Oculta visualmente el reCAPTCHA
           html.document.getElementById('recaptcha-container')?.style.display = 'none';
 
@@ -1409,12 +1394,16 @@ class _RegistroPageState extends State<RegistroPage> {
           }
         },
         onError: (FirebaseAuthException e) {
-          print("❌ Error reCAPTCHA: ${e.message}");
+          if (kDebugMode) {
+            print("❌ Error reCAPTCHA: ${e.message}");
+          }
           Navigator.of(context).pop();
           _mostrarMensaje("Error al validar reCAPTCHA");
         },
         onExpired: () {
-          print("⚠️ reCAPTCHA expirado");
+          if (kDebugMode) {
+            print("⚠️ reCAPTCHA expirado");
+          }
           Navigator.of(context).pop();
           _mostrarMensaje("El reCAPTCHA ha expirado");
         },
@@ -1425,8 +1414,12 @@ class _RegistroPageState extends State<RegistroPage> {
         recaptchaVerifier,
       );
 
-      print("✅ Código enviado");
-      Navigator.of(context).pop(); // Cierra el loading
+      if (kDebugMode) {
+        print("✅ Código enviado");
+      }
+      if(context.mounted){
+        Navigator.of(context).pop(); // Cierra el loading
+      }
 
       setState(() {
         _confirmationResult = confirmationResult;
@@ -1434,8 +1427,10 @@ class _RegistroPageState extends State<RegistroPage> {
       });
 
     } catch (e) {
-      Navigator.of(context).pop();
-      _mostrarMensaje("Error inesperado: ${e.toString()}");
+      if(context.mounted){
+        Navigator.of(context).pop();
+        _mostrarMensaje("Error inesperado: ${e.toString()}");
+      }
     }
   }
 
@@ -1511,77 +1506,28 @@ class _RegistroPageState extends State<RegistroPage> {
     }
   }
 
-  Widget _buildIngresarOTPForm() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            "Ingresa el código de verificación",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          PinCodeTextField(
-            appContext: context,
-            length: 6,
-            controller: otpController,
-            keyboardType: TextInputType.number,
-            animationType: AnimationType.fade,
-            pinTheme: PinTheme(
-              shape: PinCodeFieldShape.box,
-              borderRadius: BorderRadius.circular(8),
-              fieldHeight: 50,
-              fieldWidth: 40,
-              activeFillColor: Colors.white,
-              selectedFillColor: Colors.white,
-              inactiveFillColor: Colors.white,
-              activeColor: primary,
-              selectedColor: primary,
-              inactiveColor: Colors.grey,
-            ),
-            cursorColor: primary,
-            animationDuration: const Duration(milliseconds: 300),
-            enableActiveFill: true,
-            onChanged: (value) {
-              setState(() {}); // Para refrescar el botón si cambia la longitud
-            },
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: otpController.text.length == 6 ? _verificarOTP : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: blanco,
-              side: const BorderSide(color: primary, width: 2),
-            ),
-            child: const Text("Verificar"),
-          ),
-        ],
-      ),
-    );
-  }
-
-
   void _verificarOTP() async {
     final codigo = otpController.text.trim();
 
-    if (_confirmationResult == null || codigo.isEmpty) {
+    if (codigo.isEmpty) {
       _mostrarMensaje("Código inválido.");
       return;
     }
 
     try {
       // Verifica el código ingresado
-      await _confirmationResult!.confirm(codigo);
+      await _confirmationResult.confirm(codigo);
 
-      print("✅ Código verificado correctamente");
+      if (kDebugMode) {
+        print("✅ Código verificado correctamente");
+      }
 
       // Lleva al usuario a la página para ingresar el PIN (ej. página 16)
       setState(() {
         _currentPage = 16;
       });
       _pageController.jumpToPage(16);
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       _mostrarMensaje("Código inválido o expirado. Intenta nuevamente.");
     } catch (e) {
       _mostrarMensaje("Error inesperado: ${e.toString()}");
@@ -1663,26 +1609,30 @@ class _RegistroPageState extends State<RegistroPage> {
 
     // Validación parentesco
     if (_currentPage == 4 && !_formKeyParentescoAcudiente.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor selecciona un parentesco antes de continuar."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+      if(context.mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona un parentesco antes de continuar."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
     }
 
     // Validación nombres ppl
     if (_currentPage == 5 && !_formKeyNombresPPL.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor ingresa los datos completos antes de continuar."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+      if(context.mounted){
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor ingresa los datos completos antes de continuar."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
     }
 
     // Validación documento ppl
@@ -1697,50 +1647,58 @@ class _RegistroPageState extends State<RegistroPage> {
 
       // 🔹 Validar si ambos campos están vacíos
       if (documento.isEmpty && (tipoDoc == null || tipoDoc.isEmpty)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor ingresa el número de documento y selecciona el tipo de documento."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor ingresa el número de documento y selecciona el tipo de documento."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
 
       // 🔹 Validar si solo el número de documento está vacío
       if (documento.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor ingresa el número de documento."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor ingresa el número de documento."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
 
       // 🔹 Validar si solo el tipo de documento no está seleccionado
       if (tipoDoc == null || tipoDoc.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor selecciona el tipo de documento."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor selecciona el tipo de documento."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
 
       // 🔹 Validar formato del número de documento (Debe ser de 8 o 10 dígitos)
       if (!RegExp(r'^\d{8}$|^\d{10}$').hasMatch(documento)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("El número de documento debe tener 8 o 10 dígitos."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("El número de documento debe tener 8 o 10 dígitos."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
 
       // 🔥 Validación de documento ya registrado en Firestore
@@ -1754,14 +1712,16 @@ class _RegistroPageState extends State<RegistroPage> {
     // 🔹 Validación de la situación actual del PPL (Página 7)
     if (_currentPage == 7) {
       if (situacionActual == null || situacionActual!.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor selecciona una opción."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor selecciona una opción."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
 
       // 🔥 Si la opción seleccionada es "En Reclusión", salta a la página 10 directamente
@@ -1784,39 +1744,46 @@ class _RegistroPageState extends State<RegistroPage> {
     //para la direccion
     if(_currentPage == 8){
       final String direccion = direccionPplController.text.trim();
-      if (direccion == null || direccion.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor ingresa la dirección."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+      if (direccion.isEmpty) {
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor ingresa la dirección."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
     }
     // 🔹 Validación de selección de Departamento y Municipio (Página 9)
     if (_currentPage == 9) {
       if (departamentoSeleccionado == null || departamentoSeleccionado!.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor selecciona un departamento."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor selecciona un departamento."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
 
       if (municipioSeleccionado == null || municipioSeleccionado!.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor selecciona un municipio."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor selecciona un municipio."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
       }
 
       // 🔥 Si el usuario seleccionó "En Reclusión", ir a la página 10
@@ -1830,9 +1797,9 @@ class _RegistroPageState extends State<RegistroPage> {
 
       // 🔥 Si el usuario seleccionó otra opción, saltar la página 10 e ir directo a la 11
       setState(() {
-        _currentPage = 11;
+        _currentPage = 13;
       });
-      _pageController.jumpToPage(11);
+      _pageController.jumpToPage(13);
       return;
     }
 
@@ -1848,25 +1815,30 @@ class _RegistroPageState extends State<RegistroPage> {
 
 
       if (!_formKeyLegalPPL.currentState!.validate()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor selecciona un Centro de Reclusión antes de continuar."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor selecciona un Centro de Reclusión antes de continuar."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
       }
 
       if (selectedCentro == null || selectedCentro!.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Debes seleccionar un Centro de Reclusión antes de continuar."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Debes seleccionar un Centro de Reclusión antes de continuar."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
     }
 
@@ -1881,27 +1853,32 @@ class _RegistroPageState extends State<RegistroPage> {
       // 🔹 Si todos los campos están vacíos
       if (td.isEmpty) {
         setState(() {}); // 🔥 Refresca la pantalla para que aparezcan los errores
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor ingresa el TD."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor ingresa el TD."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
+
       }
 
       // 🔹 Validar formato de TD (Debe ser solo números)
       if (!RegExp(r'^[0-9]+$').hasMatch(td)) {
         setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("El TD solo puede contener números."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("El TD solo puede contener números."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
     }
 
@@ -1960,16 +1937,18 @@ class _RegistroPageState extends State<RegistroPage> {
       final String celular = celularController.text.trim();
 
       if (!_formKeyCelularAcudiente.currentState!.validate()) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor ingresa un número de celular válido."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
-      }
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Por favor ingresa un número de celular válido."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
 
+      }
       // 🔥 Verificar si el celular ya está registrado
       final existeCelular = await _verificarDuplicadosFirestore(celular: celular);
       if (existeCelular) return;
@@ -1983,14 +1962,16 @@ class _RegistroPageState extends State<RegistroPage> {
       final pin = pinController.text.trim();
 
       if (pin.isEmpty || pin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(pin)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Ingresa un PIN válido de 4 números."),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        return;
+        if(context.mounted){
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Ingresa un PIN válido de 4 números."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+          return;
+        }
       }
 
       _guardarConPin(); // Ahora sí guarda los datos
