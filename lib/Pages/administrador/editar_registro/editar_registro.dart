@@ -261,11 +261,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           const SizedBox(height: 15),
           condenaPpl(),
           const SizedBox(height: 15),
-          tdPpl(),
-          const SizedBox(height: 15),
-          nuiPpl(),
-          const SizedBox(height: 15),
-          patioPpl(),
+
+          if (widget.doc['situacion'] == "En Reclusión") ...[
+            tdPpl(),
+            const SizedBox(height: 15),
+            nuiPpl(),
+            const SizedBox(height: 15),
+            patioPpl(),
+          ],
           const SizedBox(height: 30),
 
           // 🔹 Información del Acudiente
@@ -282,9 +285,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           const SizedBox(height: 15),
           celularAcudiente(),
           const SizedBox(height: 15),
-          emailAcudiente(),
-          const SizedBox(height: 50),
 
+          if (widget.doc['email'] != null && widget.doc['email'].toString().trim().isNotEmpty) ...[
+            emailAcudiente(),
+            const SizedBox(height: 15),
+          ],
+          const SizedBox(height: 50),
           // 🔹 Contenedor de acciones
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -1932,6 +1938,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+
+
   Widget tdPpl(){
     return textFormField(
       controller: _tdController,
@@ -1970,6 +1978,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
+
+
 
   Widget nombreAcudiente(){
     return textFormField(
@@ -2432,9 +2442,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           onPressed: () async {
             String adminFullName = await obtenerNombreAdmin();
             bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
-            if (!confirmar) return; // Si el usuario cancela, no hace nada
+            if (!confirmar) return;
 
-            // Primero, validar los campos de texto en el formulario
             if (!_formKey.currentState!.validate()) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -2449,11 +2458,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               return;
             }
 
-            // Lista de campos faltantes
             List<String> camposFaltantes = [];
 
-            // 🔹 Validaciones
-            if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
             if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
             if ((selectedRegional ?? widget.doc['regional']) == null) camposFaltantes.add("Regional");
             if ((selectedCiudad ?? widget.doc['ciudad']) == null) camposFaltantes.add("Ciudad");
@@ -2480,7 +2486,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               return;
             }
 
-            // 🔹 Obtener los correos del centro de reclusión
             Map<String, String> correosCentro = {
               'correo_direccion': '',
               'correo_juridica': '',
@@ -2506,11 +2511,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
             }
 
-            // Ocultar teclado
             SystemChannels.textInput.invokeMethod('TextInput.hide');
 
             try {
-              // 🔹 Guardar en Firestore
               await widget.doc.reference.update({
                 'nombre_ppl': _nombreController.text,
                 'apellido_ppl': _apellidoController.text,
@@ -2528,9 +2531,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'radicado': _radicadoController.text,
                 'tiempo_condena': tiempoCondena,
                 'fecha_captura': _fechaDeCapturaController.text,
-                'td': _tdController.text,
-                'nui': _nuiController.text,
-                'patio': _patioController.text,
+                'td': _tdController.text.isNotEmpty ? _tdController.text : '',
+                'nui': _nuiController.text.isNotEmpty ? _nuiController.text : '',
+                'patio': _patioController.text.isNotEmpty ? _patioController.text : '',
                 'nombre_acudiente': _nombreAcudienteController.text,
                 'apellido_acudiente': _apellidosAcudienteController.text,
                 'parentesco_representante': _parentescoAcudienteController.text,
@@ -2539,12 +2542,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'status': 'activado',
               });
 
-              // Guardar correos en la subcolección de Firestore
               await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
 
               String accion = widget.doc['status'] == 'registrado' ? 'activado' : 'actualización';
-              // 🔥 Registrar la actualización en el historial
-              // Guardar la acción en historial
               await widget.doc.reference.collection('historial_acciones').add({
                 'admin': adminFullName,
                 'accion': accion,
@@ -2560,28 +2560,26 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 );
               }
 
-              // 🔹 Redireccionar después de guardar
               Future.delayed(const Duration(seconds: 1), () {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
                 );
               });
-              if(context.mounted){
-                // Mostrar diálogo de confirmación de guardado
+
+              if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Se guardo la información de manera exitosa'),
+                    content: Text('Se guardó la información de manera exitosa'),
                     duration: Duration(seconds: 2),
                     backgroundColor: Colors.green,
                   ),
                 );
               }
 
-              // Enviar mensaje de WhatsApp
               validarYEnviarMensaje();
             } catch (error) {
-              if(context.mounted){
+              if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error al guardar: $error'),
@@ -2597,6 +2595,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
 
   /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
   Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {

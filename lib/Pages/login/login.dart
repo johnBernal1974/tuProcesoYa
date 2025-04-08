@@ -149,8 +149,6 @@ class _LoginPageState extends State<LoginPage> {
       );
   }
 
-
-
   void _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -169,23 +167,28 @@ class _LoginPageState extends State<LoginPage> {
           final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
           if (adminDoc.exists) {
+            // ✅ Validar si está bloqueado
+            final status = adminDoc.data()?['status']?.toString().trim();
+            if (status == 'bloqueado') {
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
+              }
+              return;
+            }
+
             // ✅ Cargar datos del administrador (incluyendo su rol)
             await AdminProvider().loadAdminData();
             String role = AdminProvider().rol ?? "";
-            print("Rol obtenido en login: $role"); // 📌 Depuración
+            print("Rol obtenido en login: $role");
 
-            // 🔥 Si es pasante 1 o pasante 2, redirigir a SolicitudesDerechoPeticionAdminPage
             if (role == "pasante 1" || role == "pasante 2") {
               if (context.mounted) {
-                print("Redirigiendo a SolicitudesDerechoPeticionAdminPage...");
                 Navigator.pushNamedAndRemoveUntil(context, 'historial_solicitudes_derecho_peticion_admin', (route) => false);
               }
               return;
             }
 
-            // 🔹 Redirigir otros roles de admin a HomeAdministradorPage
             if (context.mounted) {
-              print("Redirigiendo a HomeAdministradorPage...");
               Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
             }
             return;
@@ -197,23 +200,26 @@ class _LoginPageState extends State<LoginPage> {
           if (userDoc.exists) {
             final data = userDoc.data() as Map<String, dynamic>;
             final status = data['status']?.toString().trim() ?? "";
-            print("Estado del usuario en Ppl: $status"); // 📌 Depuración
+            print("Estado del usuario en Ppl: $status");
+
+            if (status == 'bloqueado') {
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
+              }
+              return;
+            }
 
             if (status == 'registrado') {
               if (context.mounted) {
-                print("Redirigiendo a EstamosValidandoPage...");
                 Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (route) => false);
               }
             } else {
               if (context.mounted) {
-                print("Redirigiendo a HomePage...");
                 Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
               }
             }
           } else {
-            // 🔹 Usuario no encontrado, redirigir a HomePage
             if (context.mounted) {
-              print("Usuario no encontrado, redirigiendo a HomePage...");
               Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
             }
           }
@@ -268,12 +274,24 @@ class _LoginPageState extends State<LoginPage> {
 
           if (userDoc.exists) {
             final data = userDoc.data()!;
-            final status = data['status'] ?? "";
+            final status = data['status']?.toString().trim() ?? "";
+
+            if (status == 'bloqueado') {
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, 'bloqueo_page', (_) => false);
+              }
+              return;
+            }
 
             if (status == 'registrado') {
-              Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (_) => false);
+              if(context.mounted){
+                Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (_) => false);
+              }
+
             } else {
-              Navigator.pushNamedAndRemoveUntil(context, 'home', (_) => false);
+              if(context.mounted){
+                Navigator.pushNamedAndRemoveUntil(context, 'home', (_) => false);
+              }
             }
           } else {
             _mostrarMensaje("Usuario no encontrado. Por favor regístrate.");
@@ -286,6 +304,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoadingOtp = false);
     }
   }
+
 
   void _mostrarMensaje(String mensaje, {Color color = Colors.black, int duracionSegundos = 3}) {
     ScaffoldMessenger.of(context).showSnackBar(

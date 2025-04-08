@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
 import '../administrador/home_admin/home_admin.dart';
+import '../bloqueado_page/bloqueado.dart';
 import '../client/estamos_validando/estamos_validando.dart';
 import '../client/home/home.dart';
 import '../landing_page/info_page.dart';
 import '../login/login.dart';
+
 
 class SplashPage extends StatefulWidget {
   @override
@@ -27,7 +29,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
     _controller.forward();
 
-    // Verificar autenticación después de una breve pausa
     Future.delayed(const Duration(seconds: 3), _checkAuthentication);
   }
 
@@ -37,18 +38,28 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
     if (user != null) {
       final userId = user.uid;
 
-      // 🔹 Verificar si el usuario es administrador
+      // 🔹 Verificar si es admin
       final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
-
       if (adminDoc.exists) {
-        // 🔹 Obtener el rol asegurando que no tenga espacios extra
-        String role = adminDoc.data()?['rol']?.toString().trim() ?? "";
-        print("Rol obtenido: $role"); // 📌 Depuración
+        final data = adminDoc.data()!;
+        final role = data['rol']?.toString().trim() ?? "";
+        final status = data['status']?.toString().trim() ?? "";
 
-        // 🔹 Verificar si es pasante 1 o pasante 2
+        print("Rol obtenido: $role");
+        print("Estado del admin: $status");
+
+        if (status == 'bloqueado') {
+          if (context.mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const BloqueadoPage()),
+            );
+          }
+          return;
+        }
+
         if (role == "pasante 1" || role == "pasante 2") {
           if (context.mounted) {
-            print("Redirigiendo a SolicitudesDerechoPeticionAdminPage...");
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const HistorialSolicitudesDerechoPeticionAdminPage()),
@@ -57,9 +68,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
           return;
         }
 
-        // 🔹 Redirigir otros roles a la página de administración
         if (context.mounted) {
-          print("Redirigiendo a HomeAdministradorPage...");
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
@@ -68,17 +77,23 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
         return;
       }
 
-      // 🔹 Si no es administrador, buscar en la colección 'Ppl'
+      // 🔹 Verificar si es PPL
       final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
 
       if (userDoc.exists) {
         final data = userDoc.data() as Map<String, dynamic>;
         final status = data['status']?.toString().trim() ?? "";
-        print("Estado del usuario en Ppl: $status"); // 📌 Depuración
+        print("Estado del usuario en Ppl: $status");
 
-        if (status == 'registrado') {
+        if (status == 'bloqueado') {
           if (context.mounted) {
-            print("Redirigiendo a EstamosValidandoPage...");
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const BloqueadoPage()),
+            );
+          }
+        } else if (status == 'registrado') {
+          if (context.mounted) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => EstamosValidandoPage()),
@@ -86,7 +101,6 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
           }
         } else {
           if (context.mounted) {
-            print("Redirigiendo a HomePage...");
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => const HomePage()),
@@ -94,9 +108,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
           }
         }
       } else {
-        // 🔹 Usuario no encontrado, redirigir a LoginPage
         if (context.mounted) {
-          print("Usuario no encontrado, redirigiendo a LoginPage...");
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => const LoginPage()),
@@ -104,9 +116,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
         }
       }
     } else {
-      // 🔹 Usuario no autenticado, redirigir a info page
       if (context.mounted) {
-        print("Usuario no autenticado, redirigiendo a infoPage...");
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const InfoPage()),

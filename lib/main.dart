@@ -25,6 +25,7 @@ import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admi
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import 'Pages/administrador/tutelas/derechos_tutelables_page.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
+import 'Pages/bloqueado_page/bloqueado.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
@@ -153,6 +154,7 @@ class MyApp extends StatelessWidget {
         'tutela': (context) => const TutelaPage(),
         'tutela_solicitud': (context) => const TutelaSolicitudPage(),
         'info': (context) => const InfoPage(),
+        'bloqueo_page': (context) => const BloqueadoPage(),
 
       },
         onGenerateRoute: (settings) {
