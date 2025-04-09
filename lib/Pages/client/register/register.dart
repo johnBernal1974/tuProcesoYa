@@ -111,6 +111,7 @@ class _RegistroPageState extends State<RegistroPage> {
       backgroundColor: blanco,
       appBar: AppBar(
         backgroundColor: primary,
+        iconTheme: const IconThemeData(color: Colors.white, size: 30),
         title: const Text('Proceso de registro', style: TextStyle(color: Colors.white)),
         centerTitle: true,
       ),

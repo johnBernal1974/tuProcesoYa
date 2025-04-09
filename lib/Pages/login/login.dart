@@ -45,6 +45,7 @@ class _LoginPageState extends State<LoginPage> {
           "Bienvenido",
           style: TextStyle(color: Colors.white),
         ),
+        centerTitle: true,
       ),
       backgroundColor: Colors.white,
       body: SingleChildScrollView(
@@ -94,52 +95,68 @@ class _LoginPageState extends State<LoginPage> {
                     formularioCorreoContrasena(),
                   const SizedBox(height: 20),
                   // LINK PARA REGISTRARSE
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  if (_isOtp)
+                    const SizedBox(height: 40),
+                  Column(
                     children: [
-                      const Text('¿No tienes cuenta?'),
-                      const SizedBox(width: 15),
+                      Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text('¿No tienes cuenta?', style: TextStyle(
+                            fontSize: 13
+                          ),),
+                          const SizedBox(width: 15),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isLoading = true;
+                              });
+                              Navigator.pushNamed(context, "register").then((_) {
+                                setState(() {
+                                  _isLoading = false;
+                                });
+                              });
+                            },
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                            )
+                                : Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.double_arrow, color: primary), // Puedes cambiar el ícono si lo deseas
+                                const SizedBox(width: 8),
+                                Text(
+                                  "Regístrate aquí",
+                                  style: TextStyle(
+                                    color: primary,
+                                    fontSize: screenWidth > 600 ? 18 : 20,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      // LINK "Olvidé mi contraseña"
                       GestureDetector(
                         onTap: () {
-                          setState(() {
-                            _isLoading = true;
-                          });
-                          Navigator.pushNamed(context, "register").then((_) {
-                            setState(() {
-                              _isLoading = false;
-                            });
-                          });
+                          Navigator.pushNamed(context, "forgot_password");
                         },
-                        child: _isLoading
-                            ? const CircularProgressIndicator(
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                        )
-                            : Text(
-                          "Regístrate aquí",
+                        child: Text(
+                          "¿Quieres recuperar tu cuenta?",
                           style: TextStyle(
-                            color: primary,
+                            color: gris,
                             fontSize: screenWidth > 600 ? 18 : 14,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
 
-                  // LINK "Olvidé mi contraseña"
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(context, "forgot_password");
-                    },
-                    child: Text(
-                      "¿Olvidaste tu contraseña?",
-                      style: TextStyle(
-                        color: primary,
-                        fontSize: screenWidth > 600 ? 18 : 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
+                    ],
                   ),
                 ],
               ),

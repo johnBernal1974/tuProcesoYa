@@ -452,3 +452,29 @@ exports.consultarProcesosPorCedula = functions.https.onRequest(async (req, res) 
     return res.status(500).json({ error: "Error al consultar", detalle: error.message });
   }
 });
+
+exports.eliminarUsuarioAuthHttp = functions.https.onRequest(async (req, res) => {
+  const { uid, token } = req.body;
+
+  // 🔐 Protege con un token secreto (muy simple pero útil)
+  const TOKEN_SECRETO = "clave-super-secreta-123"; // cámbialo por una más segura
+  if (token !== TOKEN_SECRETO) {
+    return res.status(403).json({ error: "No autorizado" });
+  }
+
+  if (!uid) {
+    return res.status(400).json({ error: "Falta el UID" });
+  }
+
+  try {
+    await admin.auth().deleteUser(uid);
+    console.log(`✅ Usuario eliminado correctamente (HTTP): ${uid}`);
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("❌ Error al eliminar usuario:", error);
+    return res.status(500).json({ error: "Error al eliminar usuario" });
+  }
+});
+
+
+

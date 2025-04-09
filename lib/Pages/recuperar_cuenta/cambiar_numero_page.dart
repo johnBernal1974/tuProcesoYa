@@ -1,8 +1,12 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../src/colors/colors.dart';
+import 'package:http/http.dart' as http;
+import 'dart:html' as html;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 
 class CambiarNumeroPage extends StatefulWidget {
   final String userId; // UID o ID del documento del usuario
@@ -36,6 +40,13 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
   }
 
 
+  @override
+  void dispose() {
+    _timer?.cancel(); // 👈 Cancelamos el Timer al salir de la pantalla
+    celularController.dispose();
+    otpController.dispose();
+    super.dispose();
+  }
 
   void _enviarOTP() async {
     final celular = celularController.text.trim();
@@ -45,27 +56,66 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
       return;
     }
 
-    setState(() => _loading = true);
+    if (mounted) setState(() => _loading = true);
 
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: "+57$celular",
-      timeout: const Duration(seconds: 60),
-      verificationCompleted: (_) {},
-      verificationFailed: (error) {
-        _mostrarMensaje("Error: ${error.message}");
-        setState(() => _loading = false);
-      },
-      codeSent: (verificationId, resendToken) {
-        setState(() {
-          _verificationId = verificationId;
-          _otpEnviado = true;
-          _loading = false;
+    try {
+      if (kIsWeb) {
+        final recaptchaVerifier = RecaptchaVerifier(
+          auth: FirebaseAuthPlatform.instance,
+          container: 'recaptcha-container',
+          size: RecaptchaVerifierSize.normal,
+          theme: RecaptchaVerifierTheme.light,
+          onSuccess: () {
+            html.document.getElementById('recaptcha-container')?.style.display = 'none';
+          },
+          onError: (error) {
+            _mostrarMensaje("Error con reCAPTCHA: $error");
+            setState(() => _loading = false);
+          },
+          onExpired: () {
+            _mostrarMensaje("El reCAPTCHA ha expirado");
+            setState(() => _loading = false);
+          },
+        );
+
+        await FirebaseAuth.instance.signInWithPhoneNumber("+57$celular", recaptchaVerifier).then((confirmationResult) {
+          if (!mounted) return;
+          setState(() {
+            _verificationId = confirmationResult.verificationId;
+            _otpEnviado = true;
+            _loading = false;
+          });
+          _iniciarTemporizador();
+          _mostrarMensaje("Código enviado correctamente.");
+          html.document.getElementById('recaptcha-container')?.style.display = 'none'; // 👈 Oculta después de usar
         });
-        _iniciarTemporizador();
-        _mostrarMensaje("Código enviado.");
-      },
-      codeAutoRetrievalTimeout: (_) {},
-    );
+      } else {
+        // Si no es web (ej. Android/iOS)
+        await FirebaseAuth.instance.verifyPhoneNumber(
+          phoneNumber: "+57$celular",
+          timeout: const Duration(seconds: 60),
+          verificationCompleted: (_) {},
+          verificationFailed: (error) {
+            _mostrarMensaje("Error: ${error.message}");
+            setState(() => _loading = false);
+          },
+          codeSent: (verificationId, resendToken) {
+            if (!mounted) return;
+            setState(() {
+              _verificationId = verificationId;
+              _otpEnviado = true;
+              _loading = false;
+            });
+            _iniciarTemporizador();
+            _mostrarMensaje("Código enviado.");
+          },
+          codeAutoRetrievalTimeout: (_) {},
+        );
+      }
+    } catch (e) {
+      _mostrarMensaje("Error inesperado: ${e.toString()}");
+      setState(() => _loading = false);
+    }
   }
 
 
@@ -77,27 +127,69 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
       return;
     }
 
+    setState(() => _loading = true); // 👈 Activar el loader
+
     try {
       final credential = PhoneAuthProvider.credential(
         verificationId: _verificationId!,
         smsCode: codigo,
       );
 
-      // Verifica el OTP (esto lanza excepción si es inválido)
-      await FirebaseAuth.instance.signInWithCredential(credential);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+      final nuevoUID = userCredential.user?.uid;
 
-      // Si el OTP fue válido, actualizamos en Firestore
-      final celular = celularController.text.trim();
-      await FirebaseFirestore.instance.collection('Ppl').doc(widget.userId).update({
-        'celular': celular,
-      });
+      if (nuevoUID == null) {
+        _mostrarMensaje("No se pudo obtener el nuevo UID.");
+        return;
+      }
 
-      _mostrarMensaje("✅ Número actualizado exitosamente.");
-      if (context.mounted) Navigator.of(context).pop(); // Puedes redirigir si lo deseas
-    } on FirebaseAuthException catch (_) {
-      _mostrarMensaje("Código inválido o expirado.");
+      final originalDocRef = FirebaseFirestore.instance.collection('Ppl').doc(widget.userId);
+      final newDocRef = FirebaseFirestore.instance.collection('Ppl').doc(nuevoUID);
+
+      final originalSnapshot = await originalDocRef.get();
+      if (!originalSnapshot.exists) {
+        _mostrarMensaje("El usuario original no existe.");
+        return;
+      }
+
+      final data = originalSnapshot.data();
+      data?['celular'] = celularController.text.trim();
+
+      await newDocRef.set(data!);
+      await originalDocRef.delete();
+
+      await eliminarUsuarioAnteriorHttp(widget.userId);
+
+      _mostrarMensaje("✅ Número de celular actualizado.");
+
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, 'home', (_) => false);
+      }
     } catch (e) {
       _mostrarMensaje("Error inesperado: ${e.toString()}");
+    } finally {
+      if (mounted) setState(() => _loading = false); // 👈 Desactivar el loader
+    }
+  }
+
+
+
+
+  Future<void> eliminarUsuarioAnteriorHttp(String uid) async {
+    try {
+      final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/eliminarUsuarioAuthHttp");
+      final response = await http.post(url, body: {
+        "uid": uid,
+        "token": "clave-super-secreta-123", // 👈 Reemplaza esto por un valor seguro y privado
+      });
+
+      if (response.statusCode == 200) {
+        print("✅ Usuario anterior eliminado vía HTTP");
+      } else {
+        print("⚠️ Error al eliminar usuario anterior: ${response.body}");
+      }
+    } catch (e) {
+      print("❌ Error al llamar a la función HTTP: $e");
     }
   }
 
@@ -108,45 +200,136 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Actualizar número de celular")),
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            TextField(
-              controller: celularController,
-              decoration: const InputDecoration(labelText: "Nuevo número de celular"),
-              keyboardType: TextInputType.phone,
-              maxLength: 10,
-            ),
-            const SizedBox(height: 20),
-            if (_otpEnviado)
+      appBar: AppBar(
+        iconTheme: const IconThemeData(color: Colors.white, size: 30),
+        backgroundColor: primary,
+        centerTitle: true,
+        title: const Text("Actualizar celular", style: TextStyle(color: Colors.white)),
+      ),
+      backgroundColor: Colors.white,
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 600),
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            children: [
+              const SizedBox(height: 15),
+              const Text("Ingresa a continuación tu nuevo número de celular"),
+              const SizedBox(height: 20),
               TextField(
-                controller: otpController,
-                decoration: const InputDecoration(labelText: "Código OTP"),
-                keyboardType: TextInputType.number,
-                maxLength: 6,
+                controller: celularController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                decoration: InputDecoration(
+                  labelText: "Nuevo número de celular",
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  labelStyle: const TextStyle(color: gris),
+                  floatingLabelStyle: const TextStyle(color: primary, fontSize: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: gris, width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: gris, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: primary, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.red, width: 2),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.red, width: 2),
+                  ),
+                  prefixIcon: const Icon(Icons.phone),
+                ),
               ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loading
-                  ? null
-                  : _otpEnviado
-                  ? _verificarOTP
-                  : _enviarOTP,
-              child: Text(_otpEnviado ? "Verificar código" : "Enviar OTP"),
-            ),
-            if (_otpEnviado && _segundosRestantes <= 0)
-              TextButton(
-                onPressed: _enviarOTP,
-                child: const Text("Reenviar código"),
-              )
-            else if (_otpEnviado)
-              Text("Puedes reenviar el código en $_segundosRestantes segundos", style: const TextStyle(fontSize: 12)),
-
-          ],
+              const SizedBox(height: 20),
+              if (_otpEnviado)
+                TextField(
+                  controller: otpController,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  decoration: InputDecoration(
+                    labelText: "Código de verificación",
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    labelStyle: const TextStyle(color: gris),
+                    floatingLabelStyle: const TextStyle(color: primary, fontSize: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: gris, width: 1),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: gris, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: primary, width: 2),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: Colors.red, width: 2),
+                    ),
+                    prefixIcon: const Icon(Icons.sms),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  elevation: _loading ? 0 : 4,
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _loading
+                    ? null
+                    : (_otpEnviado ? _verificarOTP : _enviarOTP),
+                child: AnimatedOpacity(
+                  opacity: _loading ? 0.6 : 1.0,
+                  duration: const Duration(milliseconds: 300),
+                  child: _loading
+                      ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : Text(
+                    _otpEnviado ? "Verificar código" : "Solicitar código",
+                    style: const TextStyle(color: blanco),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12), // 👈 espacio entre botón y el texto de reenvío
+              if (_otpEnviado && _segundosRestantes <= 0)
+                TextButton(
+                  onPressed: _enviarOTP,
+                  child: const Text("Reenviar código"),
+                )
+              else if (_otpEnviado)
+                Text(
+                  "Puedes reenviar el código en $_segundosRestantes segundos",
+                  style: const TextStyle(fontSize: 12),
+                ),
+            ],
+          ),
         ),
       ),
     );
   }
+
+
 }
