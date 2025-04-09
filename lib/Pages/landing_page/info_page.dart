@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
+import '../../widgets/redes_sociales.dart';
+
 class InfoPage extends StatelessWidget {
   const InfoPage({super.key});
 
@@ -30,6 +32,15 @@ class InfoPage extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
+              ),
+            ),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              color: blanco,
+              child: const Center(
+                child: RedesSocialesWidget(),
               ),
             ),
 
@@ -253,57 +264,5 @@ class InfoPage extends StatelessWidget {
         ),
       );
     }).toList();
-  }
-
-  Widget _buildSection(BuildContext context, {required String title, required String imageUrl, required String description}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
-      color: Colors.grey.shade100,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-          ),
-          const SizedBox(height: 16),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(imageUrl, height: 200, width: double.infinity, fit: BoxFit.cover),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            description,
-            style: const TextStyle(fontSize: 16, color: Colors.black87),
-            textAlign: TextAlign.justify,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCard({required String title, required String content, required Color color}) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.deepPurple),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            content,
-            style: const TextStyle(fontSize: 16, color: Colors.black87),
-            textAlign: TextAlign.justify,
-          ),
-        ],
-      ),
-    );
   }
 }
