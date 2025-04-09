@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
+import 'package:mime/mime.dart';
 import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../../commons/admin_provider.dart';
@@ -97,8 +98,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   DateTime? fechaAsignadoP2;
   String? textoGeneradoIA; // A nivel de clase (State)
   bool mostrarCardIA = false;
-
-
 
   @override
   void initState() {
@@ -1027,11 +1026,16 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
 
     if (fetchedData != null) {
-      DocumentReference centroDoc = FirebaseFirestore.instance
-          .collection('centros_reclusion')
-          .doc(fetchedData.centroReclusion);
+      Map<String, String> correos = {};
 
-      Map<String, String> correos = await obtenerCorreosCentro(centroDoc);
+      // 🔹 Solo obtenemos correos si está en reclusión
+      if (fetchedData.situacion?.trim() == 'En Reclusión') {
+        DocumentReference centroDoc = FirebaseFirestore.instance
+            .collection('centros_reclusion')
+            .doc(fetchedData.centroReclusion);
+
+        correos = await obtenerCorreosCentro(centroDoc);
+      }
 
       if (mounted) {
         setState(() {
@@ -1041,7 +1045,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             correosCentro = correos;
           }
 
-          // 🔹 Inicializamos el derechoPeticion
           derechoPeticion = DerechoPeticionTemplate(
             dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
             entidad: userData?.centroReclusion ?? "",
@@ -1056,9 +1059,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             emailUsuario: userData?.email?.trim() ?? "",
             td: userData?.td?.trim() ?? "",
             nui: userData?.nui?.trim() ?? "",
-            numeroSeguimiento: widget.numeroSeguimiento, // 👈 asegúrate que esta variable exista
+            numeroSeguimiento: widget.numeroSeguimiento,
           );
-
 
           isLoading = false;
         });
@@ -1072,6 +1074,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
+
 
   void fetchDocumentoDerechoPeticion() async {
     try {
@@ -1504,24 +1507,24 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     );
   }
 
-  Future<void> enviarCorreoMailersend() async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithMailerSend");
+  Future<void> enviarCorreoResend() async {
+    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     var derechoPeticion = DerechoPeticionTemplate(
-      dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: userData?.centroReclusion ?? "",
-      referencia: '${widget.categoria} - ${widget.subcategoria}',
-      nombrePpl: userData?.nombrePpl.trim() ?? "",
-      apellidoPpl: userData?.apellidoPpl.trim() ?? "",
-      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-      centroPenitenciario: userData?.centroReclusion ?? "",
-      consideraciones: consideraciones,
-      fundamentosDeDerecho: fundamentosDeDerecho,
-      peticionConcreta: peticionConcreta,
-      emailUsuario: userData?.email.trim() ?? "",
-      nui: userData?.nui.trim() ?? "",
-      td: userData?.td.trim() ?? "",
-      numeroSeguimiento: widget.numeroSeguimiento
+        dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+        entidad: userData?.centroReclusion ?? "",
+        referencia: '${widget.categoria} - ${widget.subcategoria}',
+        nombrePpl: userData?.nombrePpl.trim() ?? "",
+        apellidoPpl: userData?.apellidoPpl.trim() ?? "",
+        identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+        centroPenitenciario: userData?.centroReclusion ?? "",
+        consideraciones: consideraciones,
+        fundamentosDeDerecho: fundamentosDeDerecho,
+        peticionConcreta: peticionConcreta,
+        emailUsuario: userData?.email.trim() ?? "",
+        nui: userData?.nui.trim() ?? "",
+        td: userData?.td.trim() ?? "",
+        numeroSeguimiento: widget.numeroSeguimiento
     );
 
     String mensajeHtml = derechoPeticion.generarTextoHtml();
@@ -1533,7 +1536,11 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         final response = await http.get(Uri.parse(archivoUrl));
         if (response.statusCode == 200) {
           String base64String = base64Encode(response.bodyBytes);
-          archivosBase64.add({"nombre": nombreArchivo, "base64": base64String});
+          archivosBase64.add({
+            "nombre": nombreArchivo,
+            "base64": base64String,
+            "tipo": lookupMimeType(nombreArchivo) ?? "application/octet-stream",
+          });
         } else {
           if (kDebugMode) {
             print("❌ No se pudo descargar el archivo: $nombreArchivo (Error ${response.statusCode})");
@@ -1582,10 +1589,11 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       });
     } else {
       if (kDebugMode) {
-        print("❌ Error al enviar el correo con Mailersend: ${response.body}");
+        print("❌ Error al enviar el correo con Resend: ${response.body}");
       }
     }
   }
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1654,7 +1662,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             );
           }
 
-          await enviarCorreoMailersend();
+          await enviarCorreoResend();
           // ⬇️ Generar y subir PDF del correo enviado
           final html = derechoPeticion.generarTextoHtml();
           await subirHtmlCorreoADocumento(
