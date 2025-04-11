@@ -37,50 +37,37 @@ app.post("/", async (req, res) => {
   try {
     const event = req.body;
 
+    console.log("📩 Evento recibido de Resend:");
+    console.log(JSON.stringify(event, null, 2));
+
     if (!event || !event.type || !event.data) {
+      console.warn("❌ Evento inválido: falta type o data");
       return res.status(400).json({ error: "Evento inválido" });
     }
 
     const { type, data } = event;
-    const messageId = data?.message?.id;
-    const recipient = data?.recipient?.email;
     const timestamp = new Date();
 
-    // Solo procesar eventos relevantes
+    const messageId = data?.email_id || null;
+    const recipient = Array.isArray(data?.to) ? data.to[0] : null;
+
+    console.log(`📌 Tipo: ${type} | MessageID: ${messageId} | Destinatario: ${recipient}`);
+
     const eventosPermitidos = ["email.sent", "email.delivered", "email.bounced"];
     if (!eventosPermitidos.includes(type)) {
-      console.log(`⚠️ Evento ignorado: ${type}`);
+      console.log(`⚠️ Evento ignorado por tipo no permitido: ${type}`);
       return res.status(200).json({ ignored: true });
     }
 
-    if (!messageId || !recipient) {
-      return res.status(400).json({ error: "Faltan datos del mensaje o destinatario" });
-    }
+    await db.collection("resend_eventos_basico").add({
+      type,
+      messageId,
+      email: recipient,
+      timestamp,
+      tipo: "to",
+    });
 
-    // Buscar en cualquier subcolección "log_correos" por messageId
-    const logsSnapshot = await db
-      .collectionGroup("log_correos")
-      .where("messageId", "==", messageId)
-      .get();
-
-    if (logsSnapshot.empty) {
-      console.warn(`⚠️ No se encontró log de correo con messageId: ${messageId}`);
-    } else {
-      for (const doc of logsSnapshot.docs) {
-        // Actualizar el estado principal
-        await doc.ref.update({
-          estado: type,
-          actualizado: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        // Guardar historial del evento
-        await doc.ref.collection("eventos_resend").add({
-          tipo: type,
-          data,
-          recibidoEn: timestamp,
-        });
-      }
-    }
+    console.log("📦 Evento guardado en 'resend_eventos_basico'");
 
     return res.status(200).json({ success: true });
   } catch (error) {
@@ -90,6 +77,8 @@ app.post("/", async (req, res) => {
 });
 
 exports.resendWebhook = functions.https.onRequest(app);
+
+
 
 exports.getFirestoreConfig = onRequest({
   cors: true,

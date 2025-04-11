@@ -17,6 +17,8 @@ import '../../../src/colors/colors.dart';
 import 'dart:io'; // Necesario para manejar archivos en almacenamiento local
 import 'package:universal_html/html.dart' as html;
 
+import '../../../widgets/email_status_widget.dart';
+
 class DerechoSPeticionEnviadosPorCorreoPage extends StatefulWidget {
   final String status;
   final String idDocumento;
@@ -143,7 +145,7 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                   _buildWarningMessage(),
                                   const SizedBox(height: 10),
                                   if (rol != "pasante 1") _buildTutelaButton(context),
-                                  SizedBox(height: 15)
+                                  const SizedBox(height: 15)
                                 ],
                               )
 
@@ -192,34 +194,49 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      "📬 Historial de correos",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 10),
-                                    historialCorreosTable(),
-                                    const SizedBox(height: 20),
-                                    if (pantallazoCorreoEnviado.isEmpty)
-                                      adjuntarPantallazoCorreoEnviado(),
+                                    // const Text(
+                                    //   "📬 Historial de correos",
+                                    //   style: TextStyle(
+                                    //     fontSize: 16,
+                                    //     fontWeight: FontWeight.bold,
+                                    //   ),
+                                    // ),
+                                    // const SizedBox(height: 10),
+                                    // historialCorreosTable(),
+                                    // const SizedBox(height: 20),
+                                    // if (pantallazoCorreoEnviado.isEmpty)
+                                    //   adjuntarPantallazoCorreoEnviado(),
+                                    // const SizedBox(height: 30),
+                                    // const Text(
+                                    //   "Pantallazo del correo enviado",
+                                    //   style: TextStyle(fontWeight: FontWeight.bold),
+                                    // ),
+                                    // pantallazoCorreoEnviado.isNotEmpty
+                                    //     ? ArchivoViewerWeb(
+                                    //   archivos: [pantallazoCorreoEnviado],
+                                    // )
+                                    //     : const Text(
+                                    //   "Aún no se ha tomado el pantallazo del correo enviado",
+                                    //   style: TextStyle(
+                                    //     fontSize: 16,
+                                    //     fontWeight: FontWeight.w500,
+                                    //     color: Colors.red,
+                                    //   ),
+                                    //
+                                    // ),
                                     const SizedBox(height: 30),
                                     const Text(
-                                      "Pantallazo del correo enviado",
+                                      "📡 Estado del envío",
                                       style: TextStyle(fontWeight: FontWeight.bold),
                                     ),
-                                    pantallazoCorreoEnviado.isNotEmpty
-                                        ? ArchivoViewerWeb(
-                                      archivos: [pantallazoCorreoEnviado],
-                                    )
-                                        : const Text(
-                                      "Aún no se ha tomado el pantallazo del correo enviado",
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.red,
+                                    SizedBox(
+                                      height: 300, // o el valor que consideres adecuado
+                                      child:
+                                      ListaCorreosWidget(
+                                        solicitudId: widget.idDocumento,
+                                        onTapCorreo: _mostrarDetalleCorreo,
                                       ),
+
                                     ),
                                   ],
                                 ),
@@ -253,35 +270,48 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  const Text(
-                                    "📬 Historial de correos",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  historialCorreosTable(),
-                                  const SizedBox(height: 20),
-                                  if (pantallazoCorreoEnviado.isEmpty)
-                                    adjuntarPantallazoCorreoEnviado(),
+                                  // const Text(
+                                  //   "📬 Historial de correos",
+                                  //   style: TextStyle(
+                                  //     fontSize: 16,
+                                  //     fontWeight: FontWeight.bold,
+                                  //   ),
+                                  // ),
+                                  // const SizedBox(height: 10),
+                                  // historialCorreosTable(),
+                                  // const SizedBox(height: 20),
+                                  // if (pantallazoCorreoEnviado.isEmpty)
+                                  //   adjuntarPantallazoCorreoEnviado(),
+                                  // const SizedBox(height: 30),
+                                  // const Text(
+                                  //   "Pantallazo del correo enviado",
+                                  //   style: TextStyle(fontWeight: FontWeight.bold),
+                                  // ),
+                                  // pantallazoCorreoEnviado.isNotEmpty
+                                  //     ? ArchivoViewerWeb(archivos: [pantallazoCorreoEnviado])
+                                  //     : const Text(
+                                  //   "Aún no se ha tomado el pantallazo del correo enviado",
+                                  //   style: TextStyle(
+                                  //     fontSize: 16,
+                                  //     fontWeight: FontWeight.w500,
+                                  //     color: Colors.red,
+                                  //   ),
+                                  // ),
                                   const SizedBox(height: 30),
                                   const Text(
-                                    "Pantallazo del correo enviado",
+                                    "📡 Estado del envío",
                                     style: TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                  pantallazoCorreoEnviado.isNotEmpty
-                                      ? ArchivoViewerWeb(
-                                    archivos: [pantallazoCorreoEnviado],
-                                  )
-                                      : const Text(
-                                    "Aún no se ha tomado el pantallazo del correo enviado",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.red,
+                                  SizedBox(
+                                    height: 300, // o el valor que consideres adecuado
+                                    child:
+                                    ListaCorreosWidget(
+                                      solicitudId: widget.idDocumento,
+                                      onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+
                                   ),
+
                                 ],
                               ),
                             ),
@@ -754,8 +784,6 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
       ],
     );
   }
-
-
   /// 🔹 Widget de fila con título y valor
   Widget _buildRow(String title, String value) {
     return Padding(
@@ -978,8 +1006,8 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
               Container(
                 color: Colors.grey.shade100,
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                child: Row(
-                  children: const [
+                child: const Row(
+                  children: [
                     Expanded(
                       flex: 3,
                       child: Text("Tipo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),

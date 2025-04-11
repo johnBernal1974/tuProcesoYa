@@ -2700,7 +2700,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             "Tu cuenta ha sido activada exitosamente. Desde ahora podrás gestionar solicitudes y hacer seguimiento a la situación de tu ser querido PPL de forma rápida y sencilla.\n\n"
             "Contarás con *7 días completamente gratis* para explorar todas las funcionalidades de nuestra plataforma.\n\n"
             "Pasado ese tiempo, deberás activar tu suscripción para seguir disfrutando de nuestros servicios y de los *precios especiales* diseñados para ti.\n\n"
-            "Ingresa a la aplicación aquí: https://tu-proceso-ya-fe845.web.app\n\n"
+            "Ingresa a la aplicación aquí: https://www.tuprocesoya.com\n\n"
             "Gracias por confiar en nosotros.\n\n"
             "Cordialmente,\n*El equipo de soporte de Tu Proceso Ya*"
     );
