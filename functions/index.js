@@ -230,84 +230,148 @@ exports.sendEmailWithResend = onRequest({
   res.set("Access-Control-Allow-Headers", "Content-Type");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
 
-  if (req.method === "OPTIONS") {
-    return res.status(204).send("");
-  }
+  if (req.method === "OPTIONS") return res.status(204).send("");
 
   try {
     const { to, cc, subject, html, archivos, idDocumento, enviadoPor } = req.body;
 
     if (!to || !subject || !html || !idDocumento || !enviadoPor) {
-      return res.status(400).json({ error: "Faltan campos obligatorios: to, subject, html, idDocumento, enviadoPor" });
+      return res.status(400).json({ error: "Faltan campos obligatorios" });
     }
 
-    const normalizeEmails = (field) => Array.isArray(field) ? field : field ? [field] : [];
-    const toAddresses = normalizeEmails(to);
-    const ccAddresses = normalizeEmails(cc);
+    const normalize = val => Array.isArray(val) ? val : val ? [val] : [];
+    const toList = normalize(to);
+    const ccList = normalize(cc);
 
-    const attachments = (archivos || []).map((archivo) => ({
-      content: archivo.base64,
-      filename: archivo.nombre,
-      type: archivo.tipo || "application/octet-stream",
+    const attachments = (archivos || []).map(a => ({
+      content: a.base64,
+      filename: a.nombre,
+      type: a.tipo || "application/octet-stream"
     }));
 
     const payload = {
       from: "Tu Proceso Ya <peticiones@tuprocesoya.com>",
-      to: toAddresses,
-      cc: ccAddresses.length > 0 ? ccAddresses : undefined,
+      to: toList,
+      cc: ccList.length ? ccList : undefined,
       subject,
       html,
-      attachments,
+      attachments
     };
 
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(payload)
     });
 
-    const rawText = await response.text();
-    if (!response.ok) {
-      console.error("❌ Resend API error:", rawText);
-      return res.status(500).json({ error: rawText });
-    }
+    const raw = await response.text();
+    if (!response.ok) return res.status(500).json({ error: raw });
 
-    let responseData = {};
-    if (rawText?.trim()) {
-      try {
-        responseData = JSON.parse(rawText);
-      } catch (parseErr) {
-        console.warn("⚠️ Respuesta no JSON:", rawText);
-      }
-    }
+    let result = {};
+    try { result = JSON.parse(raw); } catch {}
 
     const bucket = admin.storage().bucket();
     const timestamp = new Date().toISOString();
 
     const htmlPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
     await bucket.file(htmlPath).save(Buffer.from(html, "utf-8"), {
-      metadata: { contentType: "text/html; charset=utf-8" },
+      metadata: { contentType: "text/html; charset=utf-8" }
     });
     await bucket.file(htmlPath).makePublic();
     const htmlUrl = `https://storage.googleapis.com/${bucket.name}/${htmlPath}`;
-    console.log("✅ HTML subido y guardado con URL:", htmlUrl);
 
     let pdfUrl = null;
     try {
-      console.log("📄 Generando PDF desde HTML...");
-      const pdfBuffer = await pdf.generatePdf({ content: html }, { format: "A4" });
+      const fechaEnvioTexto = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const listaAdjuntos = archivos?.length
+        ? `<div class="adjuntos"><b>Archivos adjuntos:</b><ul>${archivos.map(a => `<li>${a.nombre}</li>`).join('')}</ul></div>`
+        : "";
+
+      const styledHtml = `
+        <html>
+        <head>
+          <meta charset="utf-8" />
+          <style>
+            @page {
+              margin: 100px 100px 120px 100px;
+            }
+            body {
+              font-family: Arial, sans-serif;
+              font-size: 13px;
+              color: #333;
+              line-height: 1.6;
+              padding-top: 20px;
+            }
+            .header {
+              margin-bottom: 30px;
+            }
+            .dato {
+              font-size: 12px;
+              font-weight: bold;
+              margin-bottom: 4px;
+            }
+            .dato span {
+              font-weight: normal;
+            }
+            .asunto {
+              font-size: 15px;
+              font-weight: bold;
+              margin: 6px 0;
+            }
+            .fecha {
+              color: #444;
+              font-size: 12px;
+            }
+            .divider {
+              border-bottom: 1px solid #ccc;
+              margin: 15px 0;
+            }
+            .adjuntos {
+              margin-top: 10px;
+              font-size: 13px;
+            }
+            .adjuntos ul {
+              padding-left: 20px;
+              margin-top: 4px;
+            }
+            footer {
+              font-size: 11px;
+              color: #666;
+              text-align: center;
+              position: fixed;
+              bottom: 30px;
+              left: 60px;
+              right: 60px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="dato">De: <span>Tu Proceso Ya &lt;peticiones@tuprocesoya.com&gt;</span></div>
+            <div class="dato">Para: <span>${toList.join(', ')}</span></div>
+            ${ccList.length ? `<div class="dato">CC: <span>${ccList.join(', ')}</span></div>` : ""}
+            <div class="asunto">${subject}</div>
+            <div class="fecha">Fecha de envío: ${fechaEnvioTexto}</div>
+            <div class="divider"></div>
+          </div>
+          ${html}
+          ${listaAdjuntos}
+          <footer>www.tuprocesoya.com • Documento generado por Tu Proceso Ya</footer>
+        </body>
+        </html>
+      `;
+
+
+      const pdfBuffer = await pdf.generatePdf({ content: styledHtml }, { format: 'Legal' });
       const pdfPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.pdf`;
-      await bucket.file(pdfPath).save(pdfBuffer, {
-        metadata: { contentType: "application/pdf" },
-      });
+      await bucket.file(pdfPath).save(pdfBuffer, { metadata: { contentType: "application/pdf" } });
       await bucket.file(pdfPath).makePublic();
       pdfUrl = `https://storage.googleapis.com/${bucket.name}/${pdfPath}`;
-      console.log("✅ PDF generado y subido:", pdfUrl);
     } catch (err) {
-      console.warn("⚠️ Error generando o subiendo el PDF:", err);
+      console.warn("⚠️ PDF error:", err);
     }
 
     await db
@@ -315,22 +379,22 @@ exports.sendEmailWithResend = onRequest({
       .doc(idDocumento)
       .collection("log_correos")
       .add({
-        to: toAddresses,
-        cc: ccAddresses,
+        to: toList,
+        cc: ccList,
         subject,
         html,
         htmlUrl,
         pdfUrl,
         archivos: archivos?.map(a => ({ nombre: a.nombre })),
         enviadoPor,
-        messageId: responseData.id || null,
-        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        messageId: result.id || null,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
       });
 
     return res.status(200).json({ success: true });
-  } catch (error) {
-    console.error("❌ Error enviando correo Resend:", error);
-    return res.status(500).json({ error: "Error enviando correo Resend" });
+  } catch (err) {
+    console.error("❌ Error:", err);
+    return res.status(500).json({ error: "Error enviando correo" });
   }
 });
 
@@ -423,42 +487,6 @@ ${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
   }
 });
 
-
-
-exports.consultarProcesosPorCedula = functions.https.onRequest(async (req, res) => {
-  const cedula = req.body.cedula;
-
-  if (!cedula) {
-    return res.status(400).json({ error: "Debes enviar una cédula" });
-  }
-
-  try {
-    const puppeteer = require("puppeteer");
-
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
-
-    const page = await browser.newPage();
-    await page.goto("https://consultaprocesos.ramajudicial.gov.co/", {
-      waitUntil: "networkidle2",
-    });
-
-    // Aquí aún falta adaptar el selector correcto para cédula
-    const contenido = await page.evaluate(() => {
-      return document.body.innerText;
-    });
-
-    await browser.close();
-
-    return res.status(200).json({ textoExtraido: contenido });
-
-  } catch (error) {
-    console.error("❌ Error:", error);
-    return res.status(500).json({ error: "Error al consultar", detalle: error.message });
-  }
-});
 
 exports.eliminarUsuarioAuthHttp = functions.https.onRequest(async (req, res) => {
   const { uid, token } = req.body;

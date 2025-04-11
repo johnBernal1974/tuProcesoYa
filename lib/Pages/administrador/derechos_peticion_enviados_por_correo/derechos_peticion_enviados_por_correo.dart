@@ -194,36 +194,6 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
-                                    // const Text(
-                                    //   "📬 Historial de correos",
-                                    //   style: TextStyle(
-                                    //     fontSize: 16,
-                                    //     fontWeight: FontWeight.bold,
-                                    //   ),
-                                    // ),
-                                    // const SizedBox(height: 10),
-                                    // historialCorreosTable(),
-                                    // const SizedBox(height: 20),
-                                    // if (pantallazoCorreoEnviado.isEmpty)
-                                    //   adjuntarPantallazoCorreoEnviado(),
-                                    // const SizedBox(height: 30),
-                                    // const Text(
-                                    //   "Pantallazo del correo enviado",
-                                    //   style: TextStyle(fontWeight: FontWeight.bold),
-                                    // ),
-                                    // pantallazoCorreoEnviado.isNotEmpty
-                                    //     ? ArchivoViewerWeb(
-                                    //   archivos: [pantallazoCorreoEnviado],
-                                    // )
-                                    //     : const Text(
-                                    //   "Aún no se ha tomado el pantallazo del correo enviado",
-                                    //   style: TextStyle(
-                                    //     fontSize: 16,
-                                    //     fontWeight: FontWeight.w500,
-                                    //     color: Colors.red,
-                                    //   ),
-                                    //
-                                    // ),
                                     const SizedBox(height: 30),
                                     const Text(
                                       "📡 Estado del envío",
@@ -242,7 +212,6 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                 ),
                               ),
                             ),
-
                           ],
                         )
                       else
@@ -270,33 +239,6 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  // const Text(
-                                  //   "📬 Historial de correos",
-                                  //   style: TextStyle(
-                                  //     fontSize: 16,
-                                  //     fontWeight: FontWeight.bold,
-                                  //   ),
-                                  // ),
-                                  // const SizedBox(height: 10),
-                                  // historialCorreosTable(),
-                                  // const SizedBox(height: 20),
-                                  // if (pantallazoCorreoEnviado.isEmpty)
-                                  //   adjuntarPantallazoCorreoEnviado(),
-                                  // const SizedBox(height: 30),
-                                  // const Text(
-                                  //   "Pantallazo del correo enviado",
-                                  //   style: TextStyle(fontWeight: FontWeight.bold),
-                                  // ),
-                                  // pantallazoCorreoEnviado.isNotEmpty
-                                  //     ? ArchivoViewerWeb(archivos: [pantallazoCorreoEnviado])
-                                  //     : const Text(
-                                  //   "Aún no se ha tomado el pantallazo del correo enviado",
-                                  //   style: TextStyle(
-                                  //     fontSize: 16,
-                                  //     fontWeight: FontWeight.w500,
-                                  //     color: Colors.red,
-                                  //   ),
-                                  // ),
                                   const SizedBox(height: 30),
                                   const Text(
                                     "📡 Estado del envío",
