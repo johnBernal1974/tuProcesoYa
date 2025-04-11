@@ -78,8 +78,6 @@ app.post("/", async (req, res) => {
 
 exports.resendWebhook = functions.https.onRequest(app);
 
-
-
 exports.getFirestoreConfig = onRequest({
   cors: true,
   secrets: [
@@ -220,8 +218,13 @@ exports.wompiCheckoutUrl = onRequest({
   }
 });
 
+const pdf = require("html-pdf-node");
+
 exports.sendEmailWithResend = onRequest({
   secrets: ["RESEND_API_KEY"],
+  runtime: "nodejs22",
+  memory: "512MiB",
+  timeoutSeconds: 60,
 }, async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Headers", "Content-Type");
@@ -245,7 +248,7 @@ exports.sendEmailWithResend = onRequest({
     const attachments = (archivos || []).map((archivo) => ({
       content: archivo.base64,
       filename: archivo.nombre,
-      type: archivo.tipo || "application/octet-stream", // Puedes ajustar el tipo si sabes el MIME
+      type: archivo.tipo || "application/octet-stream",
     }));
 
     const payload = {
@@ -267,7 +270,6 @@ exports.sendEmailWithResend = onRequest({
     });
 
     const rawText = await response.text();
-
     if (!response.ok) {
       console.error("❌ Resend API error:", rawText);
       return res.status(500).json({ error: rawText });
@@ -282,18 +284,33 @@ exports.sendEmailWithResend = onRequest({
       }
     }
 
-    const firestore = getFirestore();
     const bucket = admin.storage().bucket();
     const timestamp = new Date().toISOString();
-    const htmlPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
 
+    const htmlPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
     await bucket.file(htmlPath).save(Buffer.from(html, "utf-8"), {
       metadata: { contentType: "text/html; charset=utf-8" },
     });
+    await bucket.file(htmlPath).makePublic();
+    const htmlUrl = `https://storage.googleapis.com/${bucket.name}/${htmlPath}`;
+    console.log("✅ HTML subido y guardado con URL:", htmlUrl);
 
-    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${htmlPath}`;
+    let pdfUrl = null;
+    try {
+      console.log("📄 Generando PDF desde HTML...");
+      const pdfBuffer = await pdf.generatePdf({ content: html }, { format: "A4" });
+      const pdfPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.pdf`;
+      await bucket.file(pdfPath).save(pdfBuffer, {
+        metadata: { contentType: "application/pdf" },
+      });
+      await bucket.file(pdfPath).makePublic();
+      pdfUrl = `https://storage.googleapis.com/${bucket.name}/${pdfPath}`;
+      console.log("✅ PDF generado y subido:", pdfUrl);
+    } catch (err) {
+      console.warn("⚠️ Error generando o subiendo el PDF:", err);
+    }
 
-    await firestore
+    await db
       .collection("derechos_peticion_solicitados")
       .doc(idDocumento)
       .collection("log_correos")
@@ -302,7 +319,8 @@ exports.sendEmailWithResend = onRequest({
         cc: ccAddresses,
         subject,
         html,
-        htmlUrl: publicUrl,
+        htmlUrl,
+        pdfUrl,
         archivos: archivos?.map(a => ({ nombre: a.nombre })),
         enviadoPor,
         messageId: responseData.id || null,
