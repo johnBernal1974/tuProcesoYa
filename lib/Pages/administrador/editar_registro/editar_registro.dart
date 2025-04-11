@@ -2693,18 +2693,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         print("Error obteniendo nombre del acudiente: $e");
       }
     }
+
+    // Obtener días de prueba desde configuración
+    int diasPrueba = 7; // Valor por defecto
+    try {
+      final configSnap = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+      if (configSnap.docs.isNotEmpty) {
+        diasPrueba = configSnap.docs.first.data()['tiempoDePrueba'] ?? 7;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error obteniendo configuración: $e");
+      }
+    }
+
     // Construir el mensaje
     String mensaje = Uri.encodeComponent(
         "Hola *$nombreAcudiente*,\n\n"
             "¡Nos alegra darte la bienvenida a *Tu Proceso Ya*! \n\n"
             "Tu cuenta ha sido activada exitosamente. Desde ahora podrás gestionar solicitudes y hacer seguimiento a la situación de tu ser querido PPL de forma rápida y sencilla.\n\n"
-            "Contarás con *7 días completamente gratis* para explorar todas las funcionalidades de nuestra plataforma.\n\n"
+            "Contarás con *$diasPrueba días completamente gratis* para explorar todas las funcionalidades de nuestra plataforma.\n\n"
             "Pasado ese tiempo, deberás activar tu suscripción para seguir disfrutando de nuestros servicios y de los *precios especiales* diseñados para ti.\n\n"
             "Ingresa a la aplicación aquí: https://www.tuprocesoya.com\n\n"
             "Gracias por confiar en nosotros.\n\n"
             "Cordialmente,\n*El equipo de soporte de Tu Proceso Ya*"
     );
-
 
     String whatsappBusinessUri = "whatsapp://send?phone=$celular&text=$mensaje"; // WhatsApp Business
     String webUrl = "https://wa.me/$celular?text=$mensaje"; // WhatsApp Web
@@ -2717,6 +2730,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
     }
   }
+
 
   Future<void> validarYEnviarMensaje() async
   {
