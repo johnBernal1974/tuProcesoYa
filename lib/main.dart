@@ -40,6 +40,7 @@ import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_d
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
+import 'Pages/detalle_de_correo_page/detalle_de_correo_page.dart';
 import 'Pages/landing_page/info_page.dart';
 import 'Pages/login/login.dart';
 import 'Pages/recuperar_cuenta/recuperar_cuenta.dart';
@@ -146,6 +147,7 @@ class MyApp extends StatelessWidget {
         'checkout_wompi': (context) => const CheckoutPage(),
         'mis_transacciones': (context) => const MisTransaccionesPage(),
 
+
         //general
         'login': (context) => const LoginPage(),
         'splash': (context) => SplashPage(),
@@ -228,6 +230,15 @@ class MyApp extends StatelessWidget {
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
 
 
+              ),
+            );
+          }
+          else if (settings.name == 'detalle_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
               ),
             );
           }

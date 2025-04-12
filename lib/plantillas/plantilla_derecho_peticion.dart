@@ -39,8 +39,8 @@ class DerechoPeticionTemplate {
       <body>        
         <b>$dirigido</b><br>
         <b>$entidad</b><br><br>
-        Asunto: <b>DERECHO FUNDAMENTAL DE PETICIÓN - $numeroSeguimiento</b>.<br>
-        Referencia: <b>$referencia</b>.<br><br>
+        Asunto: <b>Derecho de petición - $numeroSeguimiento</b>.<br>
+        Ref: <b>$referencia</b>.<br><br>
         Me dirijo a ustedes en representación de <b>$nombrePpl $apellidoPpl</b>, con número de identificación <b>$identificacionPpl</b>, NUI : <b>$nui</b>, TD : <b>$td</b>, actualmente recluido en <b>$centroPenitenciario</b>, actuando en ejercicio del derecho de petición consagrado en el artículo 85 de la Constitución Política y la Ley 1755 de 2015, de manera respetuosa elevo a ustedes lo siguiente:<br><br>
         <b>I. Consideraciones</b><br>
         $consideraciones<br><br>
