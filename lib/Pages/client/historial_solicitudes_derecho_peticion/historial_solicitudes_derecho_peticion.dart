@@ -187,15 +187,41 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildDatoFila("Subcategoría", data['subcategoria'] ?? "Desconocida"),
-                const Divider(),
-                const Text("\ud83d\udcdc Preguntas y respuestas:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                _buildPreguntasRespuestas(data['preguntas_respuestas']),
-                const Divider(),
-                const Text("\ud83d\udccc Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                archivosAdjuntos.isNotEmpty
-                    ? ArchivoViewerWeb(archivos: archivos)
-                    : const Text("El usuario no compartió ningún archivo"),
-                const SizedBox(height: 20),
+                const Divider(color: gris),
+                Card(
+                  surfaceTintColor: Colors.amber.shade700,
+                  margin: const EdgeInsets.only(top: 20),
+                  elevation: 3,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Información y archivos que enviaste en la solicitud",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: negro),
+                        ),
+                        const SizedBox(height: 15),
+                        const Text("\ud83d\udcdc Preguntas y respuestas:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        const SizedBox(height: 10),
+                        _buildPreguntasRespuestas(data['preguntas_respuestas']),
+                        const Divider(color: gris),
+                        const Text(
+                          "📎 Archivos adjuntos:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        archivosAdjuntos.isNotEmpty
+                            ? ArchivoViewerWeb(archivos: archivos)
+                            : const Text("El usuario no compartió ningún archivo"),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                const Text("Informe de Diligencias realizadas"),
+
                 FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
                       .collection("derechos_peticion_solicitados")
@@ -208,7 +234,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Text("No hay correos enviados para esta solicitud.");
+                      return const Text("Aún no hay correos enviados a la autoridad competente para esta solicitud.");
                     }
 
                     final correos = snapshot.data!.docs;
@@ -226,16 +252,16 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                             child: const Row(
                               children: [
                                 Expanded(
-                                  flex: 3,
-                                  child: Text("Estado", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  flex: 2,
+                                  child: Text("Estado", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                 ),
                                 Expanded(
                                   flex: 4,
-                                  child: Text("Fecha", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  child: Text("Fecha", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                 ),
                                 Expanded(
                                   flex: 3,
-                                  child: Text("Ver", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                  child: Text("Ver", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
                                 ),
                               ],
                             ),
@@ -256,12 +282,12 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                                   child: Row(
                                     children: [
                                       Expanded(
-                                        flex: 3,
-                                        child: Text(estado, style: const TextStyle(fontSize: 12)),
+                                        flex: 2,
+                                        child: Text(estado, style: const TextStyle(fontSize: 11)),
                                       ),
                                       Expanded(
                                         flex: 4,
-                                        child: Text(fechaTexto, style: const TextStyle(fontSize: 12)),
+                                        child: Text(fechaTexto, style: const TextStyle(fontSize: 10)),
                                       ),
                                       Expanded(
                                         flex: 3,
@@ -281,7 +307,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                                             child: const Text(
                                               "Ver el correo",
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: 11,
                                                 color: primary,
                                                 fontWeight: FontWeight.w500,
                                               ),
