@@ -170,14 +170,14 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                 ],
               ),
             ),
-            _buildDatoFila("Número de seguimiento", data['numero_seguimiento'] ?? 'N/A'),
+            _buildDatoFila2("Número de seguimiento", data['numero_seguimiento'] ?? 'N/A'),
             _buildDatoFila(
               "Fecha de solicitud",
               data['fecha'] != null
                   ? DateFormat("d 'de' MMMM 'de' y", 'es').format((data['fecha'] as Timestamp).toDate())
                   : 'Sin fecha',
             ),
-            _buildDatoFila("Categoría", data['categoria'] ?? 'Desconocida'),
+            _buildDatoColumna("Categoría", data['categoria'] ?? 'Desconocida'),
           ],
         ),
         children: [
@@ -323,6 +323,44 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
           Text(
             valor,
             style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatoFila2(String titulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            titulo,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          Text(
+            valor,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDatoColumna(String titulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            titulo,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+          ),
+          Text(
+            valor,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black),
           ),
         ],
       ),

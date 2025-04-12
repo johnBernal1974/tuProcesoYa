@@ -48,7 +48,7 @@ class DerechoPeticionTemplate {
         $fundamentosDeDerecho<br><br>
         <b>III. Petición concreta</b><br>
         $peticionConcreta<br><br><br>
-        Por favor enviar las notificaciones a las siguientes direcciones electrónicas:<br>
+        Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
         $emailAlternativo<br>
         $emailUsuario<br><br><br>
         Agradezco enormemente su colaboración y respuesta rápida y satisfactoria.,<br><br>
