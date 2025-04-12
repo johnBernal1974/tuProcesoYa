@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/main_layaout.dart';
@@ -81,7 +82,8 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                     }
                   }
 
-                  return _buildSolicitudCard(data, archivos);
+                  return _buildSolicitudCard(solicitud.id, data, archivos);
+
                 },
               );
             },
@@ -91,7 +93,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     );
   }
 
-  Widget _buildSolicitudCard(Map<String, dynamic> data, List<String> archivos) {
+  Widget _buildSolicitudCard(String idDocumento, Map<String, dynamic> data, List<String> archivos) {
     List<Map<String, String>> archivosAdjuntos = archivos.map((archivo) {
       return {
         "nombre": obtenerNombreArchivo(archivo),
@@ -145,6 +147,32 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                 archivosAdjuntos.isNotEmpty
                     ? ArchivoViewerWeb(archivos: archivos)
                     : const Text("El usuario no compartió ningún archivo"),
+                TextButton(
+                  onPressed: () async {
+                    final snapshot = await FirebaseFirestore.instance
+                        .collection("derechos_peticion_solicitados")
+                        .doc(idDocumento)
+                        .collection("log_correos")
+                        .orderBy("timestamp", descending: true)
+                        .limit(1)
+                        .get();
+
+                    if (snapshot.docs.isNotEmpty) {
+                      final correoId = snapshot.docs.first.id;
+                      _mostrarDetalleCorreo(idDocumento, correoId);
+                    } else {
+                      if (!context.mounted) return;
+                      showDialog(
+                        context: context,
+                        builder: (context) => const AlertDialog(
+                          title: Text("Correo no disponible"),
+                          content: Text("No se encontró ningún correo enviado para esta solicitud."),
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text("Ver correo enviado"),
+                ),
               ],
             ),
           ),
@@ -206,5 +234,88 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     String decodedUrl = Uri.decodeFull(url);
     List<String> partes = decodedUrl.split('/');
     return partes.last.split('?').first;
+  }
+
+  void _mostrarDetalleCorreo(String idDocumento, String correoId) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+
+            return Container(
+              color: blanco,
+              width: isMobile ? double.infinity : 1000,
+              padding: const EdgeInsets.all(20),
+              child: FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('derechos_peticion_solicitados')
+                    .doc(idDocumento)
+                    .collection('log_correos')
+                    .doc(correoId)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return const Text("No se encontró información del correo.");
+                  }
+
+                  final data = snapshot.data!.data() as Map<String, dynamic>;
+                  final to = (data['to'] as List).join(', ');
+                  final cc = (data['cc'] as List?)?.join(', ') ?? '';
+                  final subject = data['subject'] ?? '';
+                  final htmlContent = data['html'] ?? '';
+                  final archivos = data['archivos'] as List?;
+                  final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+                  final fechaEnvio = timestamp != null
+                      ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
+                      : 'Fecha no disponible';
+
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Text("Para: ", style: TextStyle(fontSize: 13)),
+                            Text(to, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                        if (cc.isNotEmpty)
+                          Text("CC: $cc", style: const TextStyle(fontSize: 13)),
+                        const SizedBox(height: 10),
+                        Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text("📅 Fecha de envío: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                        const Divider(),
+                        Html(data: htmlContent),
+                        if (archivos != null && archivos.isNotEmpty) ...[
+                          const Divider(),
+                          const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ...archivos.map((a) => Text("- ${a['nombre']}"))
+                        ],
+                        const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            child: const Text("Cerrar"),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        )
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }

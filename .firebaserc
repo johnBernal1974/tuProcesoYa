@@ -4,7 +4,11 @@
   },
   "targets": {
     "tu-proceso-ya-fe845": {
-      "hosting": {}
+      "hosting": {
+        "doc": [
+          "doc-tuprocesoya-com"
+        ]
+      }
     }
   },
   "etags": {},

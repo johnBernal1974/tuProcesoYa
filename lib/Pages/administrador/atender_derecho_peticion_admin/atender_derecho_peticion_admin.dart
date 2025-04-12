@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/ia_backend_service/IASuggestionCard.dart';
@@ -1641,12 +1642,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         );
 
         if (confirmacion ?? false) {
-
-          if(context.mounted){
-            // 🟢 Mostramos alerta de "Enviando correo..."
+          if (context.mounted) {
             showDialog(
               context: context,
-              barrierDismissible: false, // Evita que el usuario lo cierre
+              barrierDismissible: false,
               builder: (context) => const AlertDialog(
                 backgroundColor: blanco,
                 title: Text("Enviando correo..."),
@@ -1655,7 +1654,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                   children: [
                     Text("Espere mientras se envía el correo."),
                     SizedBox(height: 20),
-                    CircularProgressIndicator(), // Indicador de carga
+                    CircularProgressIndicator(),
                   ],
                 ),
               ),
@@ -1663,44 +1662,63 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           }
 
           await enviarCorreoResend();
-          // ⬇️ Generar y subir PDF del correo enviado
+
           final html = derechoPeticion.generarTextoHtml();
           await subirHtmlCorreoADocumento(
             idDocumento: widget.idDocumento,
             htmlContent: html,
           );
 
-          if (mounted) {
-            // 🟢 Cerramos la alerta de "Enviando correo..."
-            Navigator.of(context).pop();
+          const urlApp = "https://www.tuprocesoya.com";
+          final numeroSeguimiento = derechoPeticion.numeroSeguimiento;
 
-            // 🟢 Mostramos alerta de éxito
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: blanco,
-                title: const Text("Correo enviado"),
-                content: const Text("El correo ha sido enviado con éxito."),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.pushReplacementNamed(
-                        context,
-                        'historial_solicitudes_derecho_peticion_admin',
-                      );
-                    },
-                    child: const Text("OK"),
-                  ),
-                ],
-              ),
-            );
+          if (context.mounted) {
+            Navigator.of(context).pop(); // Cerrar loading
+
+            if (urlApp != null) {
+              final enviar = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: blanco,
+                  title: const Text("¿Enviar Notificación?"),
+                  content: const Text("¿Deseas notificar al usuario del envio del correo por WhatsApp?"),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text("No"),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      child: const Text("Sí, enviar"),
+                    ),
+                  ],
+                ),
+              );
+
+              if (enviar == true) {
+                final celular = "+57${userData!.celular}";
+                final mensaje = Uri.encodeComponent(
+                    "Hola *${userData!.nombreAcudiente}*,\n\n"
+                    "Hemos enviado tu derecho de petición número *$numeroSeguimiento* a la autoridad competente.\n\n"
+                        "Recuerda que la entidad tiene un tiempo aproximado de 20 días para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
+                        "Ingresa a la aplicacón y ve al historial derechos de petición. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                        "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
+                );
+                final link = "https://wa.me/$celular?text=$mensaje";
+                await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
+              }
+            }
+            if(context.mounted){
+              Navigator.pushReplacementNamed(context, 'historial_solicitudes_derecho_peticion_admin');
+            }
           }
         }
       },
       child: const Text("Enviar por correo"),
     );
   }
+
+
 
   Future<void> subirHtmlCorreoADocumento({
     required String idDocumento,
