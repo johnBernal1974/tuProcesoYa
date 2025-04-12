@@ -121,8 +121,17 @@ class _HomePageState extends State<HomePage> {
 
 
   Future<void> _calcularTiempoDePrueba(Timestamp fechaRegistro) async {
-    final configDoc = await FirebaseFirestore.instance.collection('configuraciones').doc('global').get();
-    int tiempoDePrueba = configDoc.exists ? configDoc['tiempoDePrueba'] ?? 7 : 7;
+    final snapshot = await FirebaseFirestore.instance
+        .collection('configuraciones')
+        .limit(1)
+        .get();
+
+    int tiempoDePrueba = 7; // Valor por defecto
+
+    if (snapshot.docs.isNotEmpty) {
+      final data = snapshot.docs.first.data();
+      tiempoDePrueba = data['tiempoDePrueba'] ?? 7;
+    }
 
     DateTime fechaActual = DateTime.now();
     DateTime fechaRegistroDate = fechaRegistro.toDate();
@@ -134,6 +143,7 @@ class _HomePageState extends State<HomePage> {
       _isLoading = false;
     });
   }
+
 
 
   @override
