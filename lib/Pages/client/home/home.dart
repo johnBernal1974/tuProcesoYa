@@ -465,43 +465,37 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: [
         if(_ppl!.situacion == "En Reclusión")
-        _buildBeneficioFila(
-          'Permiso de 72h',
-          33.33,
-          'salir del centro de reclusión por un periodo de 72 horas.',
-        ),
+          _buildBeneficioFila("Permiso de 72h", 33.33, "el permiso de 72 horas.", "permiso de 72 horas"),
+
 
         if(_ppl!.situacion == "En Reclusión")
-        _buildBeneficioFila(
-          'Prisión Domiciliaria',
-          50,
-          'cumplir el resto de la condena en su domicilio bajo vigilancia.',
-        ),
+          _buildBeneficioFila(
+            'Prisión Domiciliaria',
+            50,
+            'el beneficio para cumplir el resto de la condena en su domicilio bajo vigilancia.',
+            'prision_domiciliaria',
+          ),
         if(_ppl!.situacion == "En Reclusión" || _ppl!.situacion == "En Prisión domiciliaria")
-        _buildBeneficioFila(
-          'Libertad Condicional',
-          60,
-          'obtener la libertad bajo ciertas condiciones y supervisión.',
-        ),
-        const Divider(color: gris),
-        _buildBeneficioFila(
+          _buildBeneficioFila("Libertad Condicional", 60, "el beneficio para salir del lugar de reclusión bajo libertad condicional", "libertad_condicional"),
+          _buildBeneficioFila(
           'Extinción de la Pena',
           100,
           'obtener su libertad definitiva.',
+          'extincion_pena', // 👈 ID interno
         ),
       ],
     );
   }
 
   // para idPaid true
-  Widget _buildBeneficioFila(String titulo, double porcentajeRequerido, String accion) {
+  Widget _buildBeneficioFila(String titulo, double porcentajeRequerido, String accion, String idBeneficio) {
+    final List<String> beneficios = _ppl?.beneficiosAdquiridos.map((e) => e.toLowerCase().trim()).toList() ?? [];
+    final bool adquirido = beneficios.contains(idBeneficio.toLowerCase().trim()) || beneficios.contains(titulo.toLowerCase().trim());
+
     double porcentaje = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
     int tiempo = _calculoCondenaController.tiempoCondena ?? 0;
-
     bool cumple = porcentaje >= porcentajeRequerido;
     int diasFaltantes = ((porcentajeRequerido - porcentaje) / 100 * tiempo * 30).ceil();
-
-    print("🔍 Beneficio: $titulo - porcentaje: $porcentaje% - Condena: $tiempo meses");
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -511,8 +505,8 @@ class _HomePageState extends State<HomePage> {
           Row(
             children: [
               Icon(
-                cumple ? Icons.check_circle : Icons.warning,
-                color: cumple ? Colors.green : Colors.red,
+                adquirido ? Icons.verified : cumple ? Icons.check_circle : Icons.warning,
+                color: adquirido ? Colors.blue : cumple ? Colors.green : Colors.red,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -522,11 +516,11 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: cumple ? Colors.green : Colors.red,
+                    color: adquirido ? Colors.blue : cumple ? Colors.green : Colors.red,
                   ),
                 ),
               ),
-              if (!cumple)
+              if (!adquirido && !cumple)
                 Text(
                   "Restan: $diasFaltantes días",
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
@@ -538,19 +532,21 @@ class _HomePageState extends State<HomePage> {
             children: [
               Expanded(
                 child: Text(
-                  cumple
-                      ? "Ya se puede solicitar para $accion"
+                  adquirido
+                      ?  "Según los registros encontrados en la rama judicial y relacionados  con el PPL, ya le fue otorgado previamente el beneficio de $titulo."
+                      : cumple
+                      ? "Ya se puede solicitar $accion"
                       : "No se ha cumplido el tiempo establecido para obtener este beneficio.",
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: cumple ? Colors.black : Colors.grey,
+                    color: adquirido ? Colors.black : cumple ? Colors.black : Colors.grey,
                   ),
                 ),
               ),
             ],
           ),
-          if (cumple)
+          if (!adquirido && cumple)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Align(
@@ -563,9 +559,7 @@ class _HomePageState extends State<HomePage> {
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
                       textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onPressed: () {
                       print("Se ha solicitado el beneficio de $titulo");
@@ -580,6 +574,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
 
   //para isPaid en false
   Widget _buildPorcentajeCard(double porcentaje, {bool oculto = false}) {

@@ -9,8 +9,10 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/drop_delitos.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
+import '../../../commons/editar_beneficios_ppl.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../models/ppl.dart';
 import '../../../providers/ppl_provider.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
@@ -108,6 +110,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
 
   bool _isLoadingJuzgados = false; //
+  late Ppl ppl;
+
 
   /// opciones de documento de identidad
   final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte', 'Tarjeta de Identidad'];
@@ -122,6 +126,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         isLoading = false; // Cambia el estado después de que se verifiquen los valores
       });
     });
+    ppl = Ppl.fromJson(widget.doc.data() as Map<String, dynamic>);
     _obtenerDatos();
     _asignarDocumento(); // Bloquea el documento al abrirlo
     _adminProvider.loadAdminData(); // 🔥 Cargar info del admin
@@ -333,6 +338,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               widget.doc["situacion"] == "En libertad condicional")
             infoPplNoRecluido(),
           const SizedBox(height: 20),
+          EditarBeneficiosWidget(
+            pplId: widget.doc["id"],
+            beneficiosAdquiridosInicial: ppl.beneficiosAdquiridos,
+          ),
+
           agregarRedenciones(),
           const SizedBox(height: 20),
           Container(

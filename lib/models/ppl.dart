@@ -43,6 +43,7 @@ class Ppl {
   final String municipio;
   final String direccion;
   final String situacion;
+  final List<String> beneficiosAdquiridos;
 
   // Constructor
   Ppl({
@@ -80,6 +81,7 @@ class Ppl {
     required this.municipio,
     required this.direccion,
     required this.situacion,
+    required this.beneficiosAdquiridos,
   });
 
   // Factory para crear una instancia de Ppl desde JSON
@@ -131,6 +133,7 @@ class Ppl {
     municipio: json["municipio"] ?? '',
     direccion: json["direccion"] ?? '',
     situacion: json["situacion"] ?? '',
+    beneficiosAdquiridos: List<String>.from(json["beneficiosAdquiridos"] ?? []),
 
   );
 
@@ -170,5 +173,6 @@ class Ppl {
     "municipio": municipio,
     "direccion": direccion,
     "situacion": situacion,
+    "beneficiosAdquiridos": beneficiosAdquiridos,
   };
 }
