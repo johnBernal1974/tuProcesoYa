@@ -1701,7 +1701,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                     "Hola *${userData!.nombreAcudiente}*,\n\n"
                     "Hemos enviado tu derecho de petición número *$numeroSeguimiento* a la autoridad competente.\n\n"
                         "Recuerda que la entidad tiene un tiempo aproximado de 20 días para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
-                        "Ingresa a la aplicacón / menu/ Historiales/ Tus Solicitudes derecho petición. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                        "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes derecho petición. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                         "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
                 );
                 final link = "https://wa.me/$celular?text=$mensaje";

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import '../src/colors/colors.dart';
+
 class EditarBeneficiosWidget extends StatefulWidget {
   final String pplId;
   final List<String> beneficiosAdquiridosInicial;
@@ -54,6 +56,7 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
   @override
   Widget build(BuildContext context) {
     return Card(
+      surfaceTintColor: Colors.amber.shade600,
       margin: const EdgeInsets.only(bottom: 20),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 4,
@@ -66,7 +69,7 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
               "Actualizar Beneficios Adquiridos",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const Divider(),
+            const Divider(color: gris),
             ..._beneficiosDisponibles.map((beneficio) => CheckboxListTile(
               title: Text(beneficio),
               value: _beneficiosSeleccionados.contains(beneficio),
@@ -82,11 +85,11 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
             )),
             const SizedBox(height: 10),
             SizedBox(
-              width: double.infinity,
+              width: 250,
               child: ElevatedButton(
                 onPressed: _guardarCambios,
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text("Guardar Cambios"),
+                child: const Text("Guardar Cambios", style: TextStyle(color: blanco)),
               ),
             )
           ],
