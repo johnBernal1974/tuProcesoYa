@@ -61,8 +61,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
-
   Future<void> _loadData() async {
     final pplData = await _pplProvider.getById(_uid);
 
@@ -95,7 +93,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDiasRedimidos = 0;
 
@@ -118,7 +115,6 @@ class _HomePageState extends State<HomePage> {
 
     return totalDiasRedimidos;
   }
-
 
   Future<void> _calcularTiempoDePrueba(Timestamp fechaRegistro) async {
     final snapshot = await FirebaseFirestore.instance
@@ -235,10 +231,7 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-
-
               _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
-
               const SizedBox(height: 20)
             ],
           ),
@@ -561,9 +554,7 @@ class _HomePageState extends State<HomePage> {
                       textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
-                    onPressed: () {
-                      print("Se ha solicitado el beneficio de $titulo");
-                    },
+                    onPressed: () => _navegarASolicitud(idBeneficio),
                     child: const Text("Solicitar"),
                   ),
                 ),
@@ -574,6 +565,28 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+  void _navegarASolicitud(String idBeneficio) {
+    switch (idBeneficio.toLowerCase().trim()) {
+      case 'permiso de 72 horas':
+        Navigator.pushNamed(context, 'solicitud_72h');
+        break;
+      case 'prision_domiciliaria':
+        Navigator.pushNamed(context, 'solicitud_domiciliaria_page');
+        break;
+      case 'libertad_condicional':
+        Navigator.pushNamed(context, 'solicitud_condicional');
+        break;
+      case 'extincion_pena':
+        Navigator.pushNamed(context, 'solicitud_extincion_pena');
+        break;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Ruta de beneficio no reconocida"))
+        );
+    }
+  }
+
+
 
 
   //para isPaid en false

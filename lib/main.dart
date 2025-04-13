@@ -37,6 +37,7 @@ import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
 import 'Pages/client/register/register.dart';
 import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
+import 'Pages/client/solicitudes_beneficios/solicitud_domiciliaria_page.dart';
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
@@ -146,6 +147,8 @@ class MyApp extends StatelessWidget {
         'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
         'checkout_wompi': (context) => const CheckoutPage(),
         'mis_transacciones': (context) => const MisTransaccionesPage(),
+        'solicitud_72h_page': (context) => const MisTransaccionesPage(),
+        'solicitud_domiciliaria_page': (context) => const SolicitudDomiciliariaPage(),
 
 
         //general
