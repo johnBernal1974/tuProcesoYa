@@ -381,8 +381,8 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
                   context,
                   MaterialPageRoute(
                     builder: (_) => CheckoutPage(
-                      esPagoDerechoPeticion: true,
-                      valorDerecho: valorDerechoPeticion.toInt(),
+                      tipoPago: 'derecho_peticion',
+                      valor: valorDerechoPeticion.toInt(),
                       onTransaccionAprobada: () async {
                         final user = FirebaseAuth.instance.currentUser;
                         if (user == null) return;
@@ -394,9 +394,8 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
                         final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
                         final double valorDerechoPeticion = (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
 
-                        // 👇 Sumar y restar para compensar
+                        // 👇 Sumar y restar para mantener el saldo actualizado
                         final double nuevoSaldo = saldoActual + valorDerechoPeticion - valorDerechoPeticion;
-
                         await userRef.update({'saldo': nuevoSaldo});
 
                         // 👇 Luego continuar con la solicitud
@@ -404,6 +403,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
                       },
                     ),
                   ),
+
                 );
               },
               child: const Text("Pagar"),

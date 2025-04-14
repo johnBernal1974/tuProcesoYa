@@ -118,9 +118,13 @@ class _WompiWebViewState extends State<WompiWebView> {
               );
               break;
 
-
             default:
-              Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+            // 👇 Nuevos tipos como prision_domiciliaria, permiso_72h, etc.
+              if (widget.onTransaccionAprobada != null) {
+                widget.onTransaccionAprobada?.call();
+              } else {
+                Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+              }
           }
         }
 
@@ -159,11 +163,12 @@ class _WompiWebViewState extends State<WompiWebView> {
               break;
             default:
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text("Tipo de transacción no reconocido"),
+                content: Text("El pago fue rechazado. Por favor, intenta nuevamente."),
               ));
           }
         }
       }
     });
   }
+
 }

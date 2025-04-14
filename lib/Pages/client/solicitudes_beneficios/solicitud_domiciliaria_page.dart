@@ -1,7 +1,16 @@
-import 'package:flutter/material.dart';
 
+import 'dart:math';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
+import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
+import '../solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
 
 class SolicitudDomiciliariaPage extends StatefulWidget {
   const SolicitudDomiciliariaPage({super.key});
@@ -20,6 +29,9 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
   String? archivoDeclaracion;
   String? departamentoSeleccionado;
   String? municipioSeleccionado;
+
+  List<PlatformFile> _selectedFiles = [];
+  List<String> archivosUrls = [];
 
   @override
   Widget build(BuildContext context) {
@@ -89,12 +101,21 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                     fontWeight: FontWeight.bold
                 )),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.upload_file, color: Colors.deepPurple),
-                    const SizedBox(width: 8),
-                    Text(archivoRecibo ?? 'Subir archivo'),
-                  ],
+                GestureDetector(
+                  onTap: () => pickSingleFile('recibo'),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      const SizedBox(width: 8),
+                      Text(
+                        archivoRecibo ?? 'Subir archivo',
+                        style: const TextStyle(
+                          decoration: TextDecoration.underline,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
@@ -104,12 +125,21 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                     fontWeight: FontWeight.bold
                 )),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Icon(Icons.upload_file, color: Colors.deepPurple),
-                    const SizedBox(width: 8),
-                    Text(archivoDeclaracion ?? 'Subir archivo'),
-                  ],
+                GestureDetector(
+                  onTap: () => pickSingleFile('declaracion'),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      const SizedBox(width: 8),
+                      Text(
+                        archivoDeclaracion ?? 'Subir archivo',
+                        style: const TextStyle(
+                          decoration: TextDecoration.underline,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
@@ -159,9 +189,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary
                   ),
-                  onPressed: () {
-                    // Validación y envío aquí
-                  },
+                  onPressed: validarYEnviar,
                   child: const Text('Enviar solicitud', style: TextStyle(
                     color: blanco
                   )),
@@ -174,4 +202,222 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       ),
     );
   }
+
+
+  Future<void> pickSingleFile(String tipo) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          final nombreArchivo = result.files.first.name;
+
+          if (tipo == 'recibo') {
+            archivoRecibo = nombreArchivo;
+          } else if (tipo == 'declaracion') {
+            archivoDeclaracion = nombreArchivo;
+          }
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error al seleccionar archivo: $e");
+      }
+    }
+  }
+  void validarYEnviar() async {
+    if (_direccionController.text.trim().isEmpty ||
+        departamentoSeleccionado == null ||
+        municipioSeleccionado == null ||
+        archivoRecibo == null ||
+        archivoDeclaracion == null ||
+        _nombreResponsableController.text.trim().isEmpty ||
+        _cedulaResponsableController.text.trim().isEmpty ||
+        _celularResponsableController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Por favor, completa todos los campos y sube los documentos requeridos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    await verificarSaldoYEnviarSolicitud();
+  }
+
+  Future<void> verificarSaldoYEnviarSolicitud() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+    final double valorDomiciliaria = (configSnapshot.docs.first.data()['valor_domiciliaria'] ?? 0).toDouble();
+
+    if (saldo < valorDomiciliaria) {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Pago requerido"),
+          content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutPage(
+                      tipoPago: 'prision_domiciliaria',
+                      valor: valorDomiciliaria.toInt(),
+                      onTransaccionAprobada: () async {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) return;
+
+                        final userRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
+                        final userDoc = await userRef.get();
+                        final double saldoActual = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+                        final nuevoSaldo = saldoActual - valorDomiciliaria;
+                        await userRef.update({'saldo': nuevoSaldo});
+
+                        await enviarSolicitudPrisionDomiciliaria();
+                      },
+                    ),
+                  ),
+
+                );
+              },
+              child: const Text("Pagar"),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    await enviarSolicitudPrisionDomiciliaria();
+  }
+
+  Future<void> enviarSolicitudPrisionDomiciliaria() async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+    final double valorDomiciliaria = (configSnapshot.docs.first.data()['valor_domiciliaria'] ?? 0).toDouble();
+
+    if (!context.mounted) return;
+
+    bool confirmarEnvio = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Confirmar envío"),
+        content: const Text("¿Deseas enviar esta solicitud de prisión domiciliaria?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar")),
+        ],
+      ),
+    );
+
+    if (!confirmarEnvio) return;
+
+    if(context.mounted){
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          backgroundColor: blancoCards,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text("Subiendo información..."),
+            ],
+          ),
+        ),
+      );
+    }
+
+    try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      FirebaseStorage storage = FirebaseStorage.instance;
+
+      String docId = firestore.collection('solicitudes_prision_domiciliaria').doc().id;
+      String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
+
+      List<String> urls = [];
+
+      for (PlatformFile file in _selectedFiles) {
+        try {
+          String filePath = 'solicitudes_domiciliaria/$docId/${file.name}';
+          Reference storageRef = storage.ref(filePath);
+          UploadTask uploadTask = kIsWeb
+              ? storageRef.putData(file.bytes!)
+              : storageRef.putFile(File(file.path!));
+          TaskSnapshot snapshot = await uploadTask;
+          String downloadUrl = await snapshot.ref.getDownloadURL();
+          archivosUrls.add(downloadUrl);
+        } catch (_) {}
+      }
+
+      await firestore.collection('solicitudes_prision_domiciliaria').doc(docId).set({
+        'id': docId,
+        'idUser': user.uid,
+        'numero_seguimiento': numeroSeguimiento,
+        'direccion': _direccionController.text.trim(),
+        'departamento': departamentoSeleccionado,
+        'municipio': municipioSeleccionado,
+        'archivo_recibo': archivoRecibo,
+        'archivo_declaracion': archivoDeclaracion,
+        'nombre_responsable': _nombreResponsableController.text.trim(),
+        'cedula_responsable': _cedulaResponsableController.text.trim(),
+        'celular_responsable': _celularResponsableController.text.trim(),
+        'archivos_adicionales': urls,
+        'fecha': FieldValue.serverTimestamp(),
+        'estado': 'Solicitado',
+      });
+
+      await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).update({
+        'saldo': saldo - valorDomiciliaria,
+      });
+
+      if (context.mounted) {
+        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SolicitudExitosaDomiciliariaPage(numeroSeguimiento: numeroSeguimiento),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Error"),
+            content: const Text("Hubo un problema al guardar la solicitud."),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Aceptar")),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+
+
 }

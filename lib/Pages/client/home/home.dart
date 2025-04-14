@@ -38,13 +38,25 @@ class _HomePageState extends State<HomePage> {
   late CalculoCondenaController _calculoCondenaController;
   bool _isTrial = false;
   int _diasRestantesPrueba = 0;
+  int? _subscriptionValue;
+
 
   @override
   void initState() {
     super.initState();
     _myAuthProvider = MyAuthProvider();
+    _cargarValorSuscripcion();
     _calculoCondenaController = CalculoCondenaController(PplProvider()); // 🔥 Instanciar el controlador
     _loadUid();
+  }
+
+  Future<void> _cargarValorSuscripcion() async {
+    final config = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+    if (config.docs.isNotEmpty) {
+      setState(() {
+        _subscriptionValue = config.docs.first.data()['valor_subscripcion'];
+      });
+    }
   }
 
   Future<void> _loadUid() async {
@@ -139,7 +151,6 @@ class _HomePageState extends State<HomePage> {
       _isLoading = false;
     });
   }
-
 
 
   @override
@@ -239,7 +250,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   /// Contenido si el usuario **ha pagado**
   Widget _buildPaidContent() {
@@ -369,28 +379,32 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(height: 40),
         ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: primary, // Color de fondo del botón
+            backgroundColor: primary,
           ),
           onPressed: () async {
-            // Navegar a la pantalla CheckoutWompi y permitir volver
             final result = await Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => CheckoutPage()),
-            );
-
-            // Verificar si el usuario regresó con algún resultado
-            if (result != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("Regresaste de CheckoutWompi: $result"),
-                  duration: Duration(seconds: 2),
+              MaterialPageRoute(
+                builder: (_) => CheckoutPage(
+                  tipoPago: 'suscripcion',
+                  valor: _subscriptionValue ?? 0,
+                  onTransaccionAprobada: () async {
+                    // Lógica adicional después del pago exitoso
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("¡Pago realizado con éxito!"),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    // Puedes refrescar estado o navegar si es necesario
+                    setState(() {});
+                  },
                 ),
-              );
-            }
+              ),
+            );
           },
           child: const Text('Realizar pago', style: TextStyle(color: blanco)),
         ),
-
       ],
     );
   }
@@ -585,9 +599,6 @@ class _HomePageState extends State<HomePage> {
         );
     }
   }
-
-
-
 
   //para isPaid en false
   Widget _buildPorcentajeCard(double porcentaje, {bool oculto = false}) {

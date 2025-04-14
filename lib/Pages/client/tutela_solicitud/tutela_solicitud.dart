@@ -188,8 +188,8 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
         context,
         MaterialPageRoute(
           builder: (_) => CheckoutPage(
-            esPagoTutela: true,
-            valorTutela: valor.toInt(),
+            tipoPago: 'tutela',
+            valor: valor.toInt(),
             onTransaccionAprobada: () async {
               final confirmar = await showDialog(
                 context: context,

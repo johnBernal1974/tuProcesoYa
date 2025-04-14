@@ -37,6 +37,7 @@ import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
 import 'Pages/client/register/register.dart';
 import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
+import 'Pages/client/solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
 import 'Pages/client/solicitudes_beneficios/solicitud_domiciliaria_page.dart';
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
@@ -145,7 +146,7 @@ class MyApp extends StatelessWidget {
         'forgot_password': (context) => const RecuperarCuentaPage(),
         'mis_redenciones': (context) => const HistorialRedencionesPage(),
         'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
-        'checkout_wompi': (context) => const CheckoutPage(),
+        //'checkout_wompi': (context) => const CheckoutPage(),
         'mis_transacciones': (context) => const MisTransaccionesPage(),
         'solicitud_72h_page': (context) => const MisTransaccionesPage(),
         'solicitud_domiciliaria_page': (context) => const SolicitudDomiciliariaPage(),
@@ -180,7 +181,16 @@ class MyApp extends StatelessWidget {
                 numeroSeguimiento: numeroSeguimiento,
               ),
             );
-          } else if (settings.name == 'atender_derecho_peticion_page') {
+          }
+          else if (settings.name == 'solicitud_exitosa_prision_domiciliaria') {
+            final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
+            return MaterialPageRoute(
+              builder: (context) => SolicitudExitosaDomiciliariaPage(
+                numeroSeguimiento: numeroSeguimiento,
+              ),
+            );
+          }
+          else if (settings.name == 'atender_derecho_peticion_page') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => AtenderDerechoPeticionPage(
@@ -194,8 +204,6 @@ class MyApp extends StatelessWidget {
                 archivos: List<String>.from(args['archivos'] ?? []),
                 preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
-
-
               ),
             );
           }
@@ -231,8 +239,6 @@ class MyApp extends StatelessWidget {
                 archivos: List<String>.from(args['archivos'] ?? []),
                 preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
-
-
               ),
             );
           }
@@ -242,6 +248,17 @@ class MyApp extends StatelessWidget {
               builder: (context) => DetalleCorreoPage(
                 idDocumento: args['idDocumento'],
                 correoId: args['correoId'],
+              ),
+            );
+          }
+          else if (settings.name == '/checkout_wompi') {
+            final args = settings.arguments as Map<String, dynamic>;
+
+            return MaterialPageRoute(
+              builder: (_) => CheckoutPage(
+                tipoPago: args['tipoPago'],
+                valor: args['valor'],
+                onTransaccionAprobada: args['onTransaccionAprobada'],
               ),
             );
           }

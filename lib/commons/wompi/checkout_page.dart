@@ -12,22 +12,16 @@ import 'package:uuid/uuid.dart';
 import '../../helper/pago_helper.dart';
 
 class CheckoutPage extends StatefulWidget {
-  final bool esPagoDerechoPeticion;
-  final int? valorDerecho;
-  final String? referenciaDerecho;
+  final String tipoPago; // 'derecho_peticion', 'tutela', 'prision_domiciliaria', etc.
+  final int valor;
+  final String? referencia;
   final VoidCallback? onTransaccionAprobada;
-  final bool esPagoTutela;
-  final int? valorTutela;
-  final String? referenciaTutela;
 
   const CheckoutPage({
     super.key,
-    this.esPagoDerechoPeticion = false,
-    this.valorDerecho,
-    this.referenciaDerecho,
-    this.esPagoTutela = false,
-    this.valorTutela,
-    this.referenciaTutela,
+    required this.tipoPago,
+    required this.valor,
+    this.referencia,
     this.onTransaccionAprobada,
   });
 
@@ -103,8 +97,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-
-
   void iniciarPagoRecarga() async {
     User? user = _auth.currentUser;
 
@@ -129,13 +121,24 @@ class _CheckoutPageState extends State<CheckoutPage> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    if (widget.esPagoDerechoPeticion && widget.valorDerecho != null) {
+    // Si es un pago por algún servicio específico
+    final tiposPagos = {
+      'derecho_peticion': 'DERECHO DE PETICIÓN',
+      'tutela': 'TUTELA',
+      'prision_domiciliaria': 'PRISIÓN DOMICILIARIA',
+      'permiso_72h': 'PERMISO DE 72 HORAS',
+      'libertad_condicional': 'LIBERTAD CONDICIONAL',
+      'extincion_pena': 'EXTINCIÓN DE LA PENA'
+    };
+
+    if (tiposPagos.containsKey(widget.tipoPago)) {
+      String nombre = tiposPagos[widget.tipoPago]!;
+      String referencia = widget.referencia ?? "${widget.tipoPago}_${_auth.currentUser?.uid}_${_uuid.v4()}";
+
       return MainLayout(
-        pageTitle: "Pago por derecho de petición",
+        pageTitle: "Pago por $nombre",
         content: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -144,15 +147,15 @@ class _CheckoutPageState extends State<CheckoutPage> {
               const SizedBox(height: 30),
               RichText(
                 textAlign: TextAlign.center,
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 14, color: Colors.black),
+                text: TextSpan(
+                  style: const TextStyle(fontSize: 14, color: Colors.black),
                   children: [
-                    TextSpan(text: "Para enviar tu solicitud de "),
+                    const TextSpan(text: "Para enviar tu solicitud de "),
                     TextSpan(
-                      text: "DERECHO DE PETICIÓN",
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      text: nombre,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    TextSpan(text: ", debes realizar el pago del servicio."),
+                    const TextSpan(text: ", debes realizar el pago del servicio."),
                   ],
                 ),
               ),
@@ -173,14 +176,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 ),
                 child: Column(
                   children: [
-                    const Text(
-                      "Valor",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      " \$${_formatter.format(widget.valorDerecho)}",
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                    ),
+                    const Text("Valor", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    Text(" \$${_formatter.format(widget.valor)}", style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
                   ],
                 ),
               ),
@@ -188,9 +185,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: primary),
                 onPressed: () async {
-                  String referencia = widget.referenciaDerecho ?? "peticion_${_auth.currentUser?.uid}_${_uuid.v4()}";
-                  int centavos = widget.valorDerecho! * 100;
-
+                  int centavos = widget.valor * 100;
                   await PagoHelper.iniciarFlujoPago(
                     context: context,
                     centavos: centavos,
@@ -198,85 +193,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     buildCheckoutWidget: (url) => WompiWebView(
                       url: url,
                       referencia: referencia,
-                      esPagoDerechoPeticion: true,
-                      onTransaccionAprobada: widget.onTransaccionAprobada,
-                    ),
-                  );
-                },
-                child: const Text("Pagar ahora", style: TextStyle(color: blanco)),
-              )
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (widget.esPagoTutela && widget.valorTutela != null) {
-      return MainLayout(
-        pageTitle: "Pago por tutela",
-        content: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 30),
-              RichText(
-                textAlign: TextAlign.center,
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 14, color: Colors.black),
-                  children: [
-                    TextSpan(text: "Para enviar tu solicitud de "),
-                    TextSpan(
-                      text: "TUTELA",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(text: ", debes realizar el pago del servicio."),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: primary),
-                  color: blanco,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      offset: const Offset(0, 2),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    const Text(
-                      "Valor",
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Text(
-                      " \$${_formatter.format(widget.valorTutela)}",
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 30),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: primary),
-                onPressed: () async {
-                  String referencia = widget.referenciaTutela ?? "tutela_${_auth.currentUser?.uid}_${_uuid.v4()}";
-                  int centavos = widget.valorTutela! * 100;
-
-                  await PagoHelper.iniciarFlujoPago(
-                    context: context,
-                    centavos: centavos,
-                    referencia: referencia,
-                    buildCheckoutWidget: (url) => WompiWebView(
-                      url: url,
-                      referencia: referencia,
-                      esPagoDerechoPeticion: false,
+                      esPagoDerechoPeticion: widget.tipoPago == 'derecho_peticion',
                       onTransaccionAprobada: widget.onTransaccionAprobada,
                     ),
                   );
@@ -305,14 +222,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 20),
-              const Text("Gracias por confiar en nosotros y esperamos que hayas disfrutado de tus 7 días de suscripción gratis.", style:
-                  TextStyle(fontWeight: FontWeight.w900, fontSize: 18, height: 1.2), textAlign: TextAlign.center),
+              const Text("Gracias por confiar en nosotros y esperamos que hayas disfrutado de tus días de suscripción gratis.",
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, height: 1.2), textAlign: TextAlign.center),
               const SizedBox(height: 10),
-              const Text("Para que puedas acceder a los bajos precios de nuestros servicios, es necesario "
-                  "que te suscribas.", style: TextStyle(fontSize: 14, height: 1.2), textAlign: TextAlign.center),
+              const Text("Para que puedas acceder a los bajos precios de nuestros servicios, es necesario que te suscribas.",
+                  style: TextStyle(fontSize: 14, height: 1.2), textAlign: TextAlign.center),
               const SizedBox(height: 10),
-              const Text("¡Este valor se paga una única vez!", style: TextStyle(fontWeight: FontWeight.w900),
-              textAlign: TextAlign.center),
+              const Text("¡Este valor se paga una única vez!",
+                  style: TextStyle(fontWeight: FontWeight.w900), textAlign: TextAlign.center),
               const SizedBox(height: 40),
               if (_subscriptionValue != null)
                 Container(
@@ -320,7 +237,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: gris),
-                    color: Colors.green
+                    color: Colors.green,
                   ),
                   child: Column(
                     children: [
@@ -377,7 +294,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     _seleccionarMonto(monto);
                     _controller.clear();
                   },
-                  child: Text("\\${_formatter.format(monto)}"),
+                  child: Text("\$${_formatter.format(monto)}"),
                 );
               }).toList(),
             ),
@@ -398,5 +315,4 @@ class _CheckoutPageState extends State<CheckoutPage> {
       ),
     );
   }
-
 }

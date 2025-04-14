@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tuprocesoya/commons/wompi/checkout_page.dart';
 import '../../providers/auth_provider.dart';
 import '../src/colors/colors.dart';
 import 'admin_provider.dart';
@@ -46,21 +47,31 @@ class _SideBarState extends State<SideBar> {
   Future<void> _validateTrialPeriod(Timestamp? fechaRegistro) async {
     if (fechaRegistro == null) return;
 
-    final configDoc = await FirebaseFirestore.instance.collection(
-        'configuraciones').doc('general').get();
-    final int tiempoDePrueba = configDoc.data()?['tiempoDePrueba'] ??
-        7; // 🔹 Default 7 días
+    try {
+      final configSnapshot = await FirebaseFirestore.instance
+          .collection('configuraciones')
+          .limit(1)
+          .get();
 
-    final DateTime fechaRegistroDT = fechaRegistro.toDate();
-    final DateTime fechaActual = DateTime.now();
-    final int diasTranscurridos = fechaActual
-        .difference(fechaRegistroDT)
-        .inDays;
+      final configData = configSnapshot.docs.firstOrNull?.data();
 
-    setState(() {
-      _isTrial = diasTranscurridos < tiempoDePrueba;
-    });
+      final int tiempoDePrueba = configData?['tiempoDePrueba'] ?? 7;
+
+      final DateTime fechaRegistroDT = fechaRegistro.toDate();
+      final DateTime fechaActual = DateTime.now();
+      final int diasTranscurridos =
+          fechaActual.difference(fechaRegistroDT).inDays;
+
+      setState(() {
+        _isTrial = diasTranscurridos < tiempoDePrueba;
+      });
+    } catch (e) {
+      setState(() {
+        _isTrial = false; // Fallback: No trial si falla la config
+      });
+    }
   }
+
 
   Future<void> _checkIfAdmin() async {
     final prefs = await SharedPreferences.getInstance();
@@ -398,6 +409,7 @@ class _SideBarState extends State<SideBar> {
               _showPaymentDialog(context);
               return;
             }
+            print('isPaid: $isPaid, isTrial: $_isTrial, isAdmin: $_isAdmin');
 
             if (ModalRoute
                 .of(context)
@@ -437,23 +449,51 @@ class _SideBarState extends State<SideBar> {
   void _showPaymentDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
           backgroundColor: blanco,
           title: const Text("Acceso restringido"),
           content: const Text(
-              "Para acceder a esta sección, debes pagar la suscripción."),
+            "Para acceder a esta sección, debes pagar la suscripción.",
+          ),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(dialogContext).pop(); // ✅ Usa el context del diálogo
               },
               child: const Text("Cancelar"),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushNamed(context, 'checkout_wompi');
+              onPressed: () async {
+                Navigator.of(dialogContext).pop(); // ✅ Usa el context del diálogo
+
+                // 🔽 Luego usa el context externo, que sigue montado
+                final configSnapshot = await FirebaseFirestore.instance
+                    .collection('configuraciones')
+                    .limit(1)
+                    .get();
+
+                final int valorSuscripcion =
+                (configSnapshot.docs.first.data()['valor_subscripcion'] ?? 0).toInt();
+
+                if (!context.mounted) return;
+
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutPage(
+                      tipoPago: 'suscripcion',
+                      valor: valorSuscripcion,
+                      onTransaccionAprobada: () async {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("¡Pago realizado con éxito!"),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                );
               },
               child: const Text("Realizar pago"),
             ),
@@ -462,6 +502,8 @@ class _SideBarState extends State<SideBar> {
       },
     );
   }
+
+
 
   Widget _buildLogoutTile(BuildContext context) {
     return DrawerListTitle(
