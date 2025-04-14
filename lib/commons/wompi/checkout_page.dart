@@ -125,9 +125,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget build(BuildContext context) {
     // Si es un pago por algún servicio específico
     final tiposPagos = {
-      'derecho_peticion': 'DERECHO DE PETICIÓN',
+      'peticion': 'DERECHO DE PETICIÓN',
       'tutela': 'TUTELA',
-      'prision_domiciliaria': 'PRISIÓN DOMICILIARIA',
+      'domiciliaria': 'PRISIÓN DOMICILIARIA',
       'permiso_72h': 'PERMISO DE 72 HORAS',
       'libertad_condicional': 'LIBERTAD CONDICIONAL',
       'extincion_pena': 'EXTINCIÓN DE LA PENA'
@@ -194,6 +194,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       url: url,
                       referencia: referencia,
                       esPagoDerechoPeticion: widget.tipoPago == 'derecho_peticion',
+                      valorDerecho: widget.valor,
                       onTransaccionAprobada: widget.onTransaccionAprobada,
                     ),
                   );

@@ -1,14 +1,21 @@
-// lib/commons/wompi/webview.dart
 import 'package:flutter/material.dart';
+import 'package:tuprocesoya/commons/wompi/pagoExitosoCondicional.dart';
+import 'package:tuprocesoya/commons/wompi/pagoExitosoDomiciliaria.dart';
+import 'package:tuprocesoya/commons/wompi/pagoExitosoPermiso72h.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitoso_suscripcion.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitoso_tutela.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_extiocion_pena.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_72h.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_condicional.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_peticion.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_subscripcion.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_tutela.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExistoso_peticion.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_domiciliaria.dart';
 import '../../src/colors/colors.dart';
+import 'PagoExitosoExtincionPena.dart';
 
 class WompiWebView extends StatefulWidget {
   final String url;
@@ -57,10 +64,20 @@ class _WompiWebViewState extends State<WompiWebView> {
   }
 
   void _monitorearTransaccion(String referencia) {
-    _firestore.collection("recargas").where("reference", isEqualTo: referencia).snapshots().listen((event) async {
+    _firestore
+        .collection("recargas")
+        .where("reference", isEqualTo: referencia)
+        .snapshots()
+        .listen((event) async {
       if (event.docs.isNotEmpty && !_callbackEjecutado) {
-        var transaction = event.docs.first;
-        String status = transaction["status"];
+        final transaction = event.docs.first;
+        final String status = transaction["status"];
+        final DateTime fechaCreacion = (transaction["createdAt"] as Timestamp).toDate();
+        final int segundosTranscurridos = DateTime.now().difference(fechaCreacion).inSeconds;
+
+        if (status == "DECLINED" && segundosTranscurridos > 60) {
+          return;
+        }
 
         if (status == "APPROVED") {
           _callbackEjecutado = true;
@@ -72,59 +89,88 @@ class _WompiWebViewState extends State<WompiWebView> {
 
           switch (tipo) {
             case 'peticion':
-              if (widget.onTransaccionAprobada != null) {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PagoExitosoDerechoPeticionPage(
-                      montoPagado: amount,
-                      transaccionId: transaccionId,
-                      fecha: fecha,
-                      onContinuar: () async {
-                        widget.onTransaccionAprobada?.call();
-                      },
-                    ),
-                  ),
-                );
-              }
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => PagoExitosoDerechoPeticionPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
+                  onContinuar: () async {
+                    widget.onTransaccionAprobada?.call();
+                  },
+                ),
+              ));
               break;
-
             case 'suscripcion':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PagoExitosoSuscripcionPage(
-                    montoPagado: amount,
-                    transaccionId: transaccionId,
-                    fecha: fecha,
-                  ),
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => PagoExitosoSuscripcionPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
                 ),
-              );
+              ));
               break;
-
             case 'tutela':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PagoExitosoTutelaPage(
-                    montoPagado: amount,
-                    transaccionId: transaccionId,
-                    fecha: fecha,
-                    onContinuar: () async {
-                      widget.onTransaccionAprobada?.call();
-                    },
-                  ),
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => PagoExitosoTutelaPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
+                  onContinuar: () async {
+                    widget.onTransaccionAprobada?.call();
+                  },
                 ),
-              );
+              ));
               break;
-
+            case 'domiciliaria':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => PagoExitosoPrisionDomiciliariaPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
+                  onContinuar: () async {
+                    widget.onTransaccionAprobada?.call();
+                  },
+                ),
+              ));
+              break;
+            case 'permiso':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => PagoExitosoPermiso72hPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
+                  onContinuar: () async {
+                    widget.onTransaccionAprobada?.call();
+                  },
+                ),
+              ));
+              break;
+            case 'libertad':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => PagoExitosoLibertadCondicionalPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
+                  onContinuar: () async {
+                    widget.onTransaccionAprobada?.call();
+                  },
+                ),
+              ));
+              break;
+            case 'extincion':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => PagoExitosoExtincionPenaPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
+                  onContinuar: () async {
+                    widget.onTransaccionAprobada?.call();
+                  },
+                ),
+              ));
+              break;
             default:
-            // 👇 Nuevos tipos como prision_domiciliaria, permiso_72h, etc.
-              if (widget.onTransaccionAprobada != null) {
-                widget.onTransaccionAprobada?.call();
-              } else {
-                Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-              }
+              widget.onTransaccionAprobada?.call();
           }
         }
 
@@ -134,37 +180,75 @@ class _WompiWebViewState extends State<WompiWebView> {
 
           switch (tipo) {
             case 'peticion':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => ReintentoPagoPeticionPage(
+                  referencia: referencia,
+                  valorDerecho: widget.valorDerecho,
+                  onTransaccionAprobada: widget.onTransaccionAprobada,
+                ),
+              ));
+              break;
+            case 'suscripcion':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => ReintentoPagoSuscripcionPage(
+                  referencia: referencia,
+                ),
+              ));
+              break;
+            case 'tutela':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => ReintentoPagoTutelaPage(
+                  referencia: referencia,
+                ),
+              ));
+              break;
+            case 'domiciliaria':
+              print("📢 Reintento para domiciliaria con valor: ${widget.valorDerecho}");
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => ReintentoPagoPeticionPage(
+                  builder: (_) => ReintentoPagoPrisionDomiciliariaPage(
                     referencia: referencia,
-                    valorDerecho: widget.valorDerecho,
+                    valor: widget.valorDerecho,
                     onTransaccionAprobada: widget.onTransaccionAprobada,
                   ),
                 ),
               );
               break;
-            case 'suscripcion':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ReintentoPagoSuscripcionPage(referencia: referencia),
+
+            case 'permiso':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => ReintentoPagoPermiso72hPage(
+                  referencia: referencia,
+                  valor: widget.valorDerecho,
+                  onTransaccionAprobada: widget.onTransaccionAprobada,
                 ),
-              );
+              ));
               break;
-            case 'tutela':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => ReintentoPagoTutelaPage(referencia: referencia),
+            case 'libertad':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => ReintentoPagoLibertadCondicionalPage(
+                  referencia: referencia,
+                  valor: widget.valorDerecho,
+                  onTransaccionAprobada: widget.onTransaccionAprobada,
                 ),
-              );
+              ));
+              break;
+            case 'extincion':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => ReintentoPagoExtincionPenaPage(
+                  referencia: referencia,
+                  valor: widget.valorDerecho,
+                  onTransaccionAprobada: widget.onTransaccionAprobada,
+                ),
+              ));
               break;
             default:
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                content: Text("El pago fue rechazado. Por favor, intenta nuevamente."),
-              ));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("El pago fue rechazado. Por favor, intenta nuevamente."),
+                ),
+              );
           }
         }
       }

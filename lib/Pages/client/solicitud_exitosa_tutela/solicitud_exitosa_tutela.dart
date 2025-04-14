@@ -1,9 +1,9 @@
 // 📄 Página de éxito tras enviar solicitud de tutela
 
 import 'package:flutter/material.dart';
+import 'package:tuprocesoya/Pages/client/home/home.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
-import '../historial_solicitudes_tutela/historial_solicitudes_tutela.dart';
 
 class SolicitudExitosaTutelaPage extends StatelessWidget {
   final String numeroSeguimiento;
@@ -101,7 +101,7 @@ class SolicitudExitosaTutelaPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const HistorialSolicitudesTutelaPage()),
+                    MaterialPageRoute(builder: (context) => const HomePage()),
                   );
                 },
                 style: ElevatedButton.styleFrom(

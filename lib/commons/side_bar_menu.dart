@@ -335,7 +335,7 @@ class _SideBarState extends State<SideBar> {
               child: _buildDrawerTile(
                   context, "Tus Solicitudes de tutelas",
                   Icons.history_edu_outlined,
-                  'historial_solicitudes_tutelas'),
+                  'home'),
             ),
             Padding(
               padding: const EdgeInsets.only(left: 16.0),

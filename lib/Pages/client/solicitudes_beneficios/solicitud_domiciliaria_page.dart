@@ -27,6 +27,8 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
   String? archivoRecibo;
   String? archivoDeclaracion;
+  String? urlArchivoRecibo;
+  String? urlArchivoDeclaracion;
   String? departamentoSeleccionado;
   String? municipioSeleccionado;
 
@@ -209,13 +211,28 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       FilePickerResult? result = await FilePicker.platform.pickFiles();
 
       if (result != null && result.files.isNotEmpty) {
+        PlatformFile file = result.files.first;
         setState(() {
-          final nombreArchivo = result.files.first.name;
-
           if (tipo == 'recibo') {
-            archivoRecibo = nombreArchivo;
+            archivoRecibo = file.name;
           } else if (tipo == 'declaracion') {
-            archivoDeclaracion = nombreArchivo;
+            archivoDeclaracion = file.name;
+          }
+        });
+
+        String docId = FirebaseFirestore.instance.collection('solicitudes_prision_domiciliaria').doc().id;
+        String path = 'solicitudes_prision_domiciliaria/$docId/${file.name}';
+
+        Reference storageRef = FirebaseStorage.instance.ref(path);
+        UploadTask uploadTask = kIsWeb ? storageRef.putData(file.bytes!) : storageRef.putFile(File(file.path!));
+        TaskSnapshot snapshot = await uploadTask;
+        String downloadUrl = await snapshot.ref.getDownloadURL();
+
+        setState(() {
+          if (tipo == 'recibo') {
+            urlArchivoRecibo = downloadUrl;
+          } else if (tipo == 'declaracion') {
+            urlArchivoDeclaracion = downloadUrl;
           }
         });
       }
@@ -225,6 +242,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       }
     }
   }
+
   void validarYEnviar() async {
     if (_direccionController.text.trim().isEmpty ||
         departamentoSeleccionado == null ||
@@ -273,7 +291,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => CheckoutPage(
-                      tipoPago: 'prision_domiciliaria',
+                      tipoPago: 'domiciliaria',
                       valor: valorDomiciliaria.toInt(),
                       onTransaccionAprobada: () async {
                         final user = FirebaseAuth.instance.currentUser;
@@ -351,8 +369,6 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      FirebaseStorage storage = FirebaseStorage.instance;
-
       String docId = firestore.collection('solicitudes_prision_domiciliaria').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
@@ -360,11 +376,9 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
       for (PlatformFile file in _selectedFiles) {
         try {
-          String filePath = 'solicitudes_domiciliaria/$docId/${file.name}';
-          Reference storageRef = storage.ref(filePath);
-          UploadTask uploadTask = kIsWeb
-              ? storageRef.putData(file.bytes!)
-              : storageRef.putFile(File(file.path!));
+          String filePath = 'solicitudes_prision_domiciliaria/$docId/${file.name}';
+          Reference storageRef = FirebaseStorage.instance.ref(filePath);
+          UploadTask uploadTask = kIsWeb ? storageRef.putData(file.bytes!) : storageRef.putFile(File(file.path!));
           TaskSnapshot snapshot = await uploadTask;
           String downloadUrl = await snapshot.ref.getDownloadURL();
           archivosUrls.add(downloadUrl);
@@ -378,12 +392,12 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         'direccion': _direccionController.text.trim(),
         'departamento': departamentoSeleccionado,
         'municipio': municipioSeleccionado,
-        'archivo_recibo': archivoRecibo,
-        'archivo_declaracion': archivoDeclaracion,
+        'archivo_recibo': urlArchivoRecibo,
+        'archivo_declaracion': urlArchivoDeclaracion,
         'nombre_responsable': _nombreResponsableController.text.trim(),
         'cedula_responsable': _cedulaResponsableController.text.trim(),
         'celular_responsable': _celularResponsableController.text.trim(),
-        'archivos_adicionales': urls,
+        'archivos_adicionales': archivosUrls,
         'fecha': FieldValue.serverTimestamp(),
         'estado': 'Solicitado',
       });
@@ -417,7 +431,5 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       }
     }
   }
-
-
 
 }

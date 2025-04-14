@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../src/colors/colors.dart';
 
-class PagoExitosoDerechoPeticionPage extends StatefulWidget {
+class PagoExitosoPrisionDomiciliariaPage extends StatefulWidget {
   final Future<void> Function() onContinuar;
   final double montoPagado;
   final String transaccionId;
   final DateTime fecha;
 
-  const PagoExitosoDerechoPeticionPage({
+  const PagoExitosoPrisionDomiciliariaPage({
     super.key,
     required this.onContinuar,
     required this.montoPagado,
@@ -17,10 +17,10 @@ class PagoExitosoDerechoPeticionPage extends StatefulWidget {
   });
 
   @override
-  State<PagoExitosoDerechoPeticionPage> createState() => _PagoExitosoDerechoPeticionPageState();
+  State<PagoExitosoPrisionDomiciliariaPage> createState() => _PagoExitosoPrisionDomiciliariaPageState();
 }
 
-class _PagoExitosoDerechoPeticionPageState extends State<PagoExitosoDerechoPeticionPage> {
+class _PagoExitosoPrisionDomiciliariaPageState extends State<PagoExitosoPrisionDomiciliariaPage> {
   bool isLoading = false;
 
   Future<void> _handleContinuar() async {
@@ -29,9 +29,9 @@ class _PagoExitosoDerechoPeticionPageState extends State<PagoExitosoDerechoPetic
       SnackBar(
         backgroundColor: Colors.black87,
         duration: const Duration(seconds: 2),
-        content: Row(
+        content: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.hourglass_empty, color: Colors.white),
             SizedBox(width: 8),
             Text("Espera un momento..."),
@@ -65,7 +65,7 @@ class _PagoExitosoDerechoPeticionPageState extends State<PagoExitosoDerechoPetic
             children: [
               const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
               const SizedBox(height: 20),
-              const Text("¡Pago de derecho de petición realizado con éxito!", textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text("¡Pago de solicitud de prisión domiciliaria realizado con éxito!", textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               Text("Monto: \$${formatter.format(widget.montoPagado)}", style: const TextStyle(fontSize: 16)),
               const SizedBox(height: 8),

@@ -29,9 +29,9 @@ class _PagoExitosoTutelaPageState extends State<PagoExitosoTutelaPage> {
       SnackBar(
         backgroundColor: Colors.black87,
         duration: const Duration(seconds: 2),
-        content: Row(
+        content: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
+          children: [
             Icon(Icons.hourglass_empty, color: Colors.white),
             SizedBox(width: 8),
             Text("Espera un momento..."),

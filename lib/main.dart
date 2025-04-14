@@ -17,6 +17,7 @@ import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_ad
 import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
+import 'Pages/administrador/historial_solicitudes_tutela_admin/historial_solicitudes_tutela_admin.dart';
 import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
@@ -30,7 +31,6 @@ import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
-import 'Pages/client/historial_solicitudes_tutela/historial_solicitudes_tutela.dart';
 import 'Pages/client/home/home.dart';
 import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
@@ -125,7 +125,7 @@ class MyApp extends StatelessWidget {
         'home_admin': (context) => const HomeAdministradorPage(),
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
         'historial_solicitudes_derecho_peticion_admin': (context) => const HistorialSolicitudesDerechoPeticionAdminPage(),
-        'historial_solicitudes_tutelas_admin': (context) => const HistorialSolicitudesTutelaPage(),
+        'historial_solicitudes_tutelas_admin': (context) => const HistorialSolicitudesTutelaPageAdmin(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -139,7 +139,6 @@ class MyApp extends StatelessWidget {
         'nosotros': (context) => const NosotrosPage(),
         'derecho_peticion_solicitud': (context) => const DerechoDePeticionSolicitudPage(),
         'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
-        'historial_solicitudes_tutelas': (context) => const HistorialSolicitudesTutelaPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
