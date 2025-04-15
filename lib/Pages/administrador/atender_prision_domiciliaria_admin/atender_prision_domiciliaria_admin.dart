@@ -17,6 +17,7 @@ import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_derecho_peticion.dart';
+import '../../../plantillas/plantilla_domiciliaria.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -102,7 +103,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   DateTime? fechaRevision;
   List<String> archivos = [];
   String rol = AdminProvider().rol ?? "";
-  late DerechoPeticionTemplate derechoPeticion;
+  late PrisionDomiciliariaTemplate prisionDomiciliaria;
   String asignadoA_P2 = '';
   String asignadoNombreP2 = '';
   DateTime? fechaAsignadoP2;
@@ -110,7 +111,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   bool mostrarCardIA = false;
   late final String? urlArchivoCedulaResponsable;
   late final List<String> urlsArchivosHijos;
-
+  Map<String, dynamic>? solicitudData;
 
   @override
   void initState() {
@@ -148,12 +149,12 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     _consideracionesController.addListener(_actualizarAltura);
     _fundamentosDerechoController.addListener(_actualizarAltura);
     _peticionConcretaController.addListener(_actualizarAltura);
-    DocumentReference userDoc = FirebaseFirestore.instance.collection('Ppl').doc(widget.idUser);
-    obtenerCorreosCentro(userDoc).then((correos) {
-      setState(() {
-        correosCentro = correos;
-      });
-    });
+    // DocumentReference userDoc = FirebaseFirestore.instance.collection('Ppl').doc(widget.idUser);
+    // obtenerCorreosCentro(userDoc).then((correos) {
+    //   setState(() {
+    //     correosCentro = correos;
+    //   });
+    // });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       cargarConsideraciones(widget.idDocumento);
       cargarFundamentosDeDerecho(widget.idDocumento);
@@ -233,7 +234,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       ),
     );
   }
-
 
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
@@ -401,7 +401,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
                 ),
               ),
               const SizedBox(height: 30),
-              //ingresarConsideraciones(),
+              ingresarConsideraciones(),
               const SizedBox(height: 30),
               ingresarFundamentosDeDerecho(),
               const SizedBox(height: 30),
@@ -460,7 +460,33 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
           ),
 
         if (_mostrarVistaPrevia)
-          vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
+          StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('prision_domiciliaria_solicitudas')
+                .doc(widget.idDocumento)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final data = snapshot.data!.data() as Map<String, dynamic>;
+
+              return vistaPreviaPrisionDomiciliaria(
+                userData,
+                consideraciones,
+                fundamentosDeDerecho,
+                peticionConcreta,
+                data['direccion'] ?? '',
+                data['municipio'] ?? '',
+                data['departamento'] ?? '',
+                data['nombre_responsable'] ?? '',
+                data['cedula_responsable'] ?? '',
+                data['celular_responsable'] ?? '',
+              );
+            },
+          )
+
       ],
     );
   }
@@ -476,7 +502,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     TextStyle valueStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.bold);
 
     return Card(
-      surfaceTintColor: Colors.amber.shade600,
+      surfaceTintColor: blanco,
       elevation: 5,
       margin: const EdgeInsets.symmetric(vertical: 16),
       child: Padding(
@@ -539,8 +565,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     );
   }
 
-
-
   Future<void> cargarCorreos() async {
     Map<String, String> correos = await obtenerCorreosCentro(userDoc);
     if (mounted) {
@@ -591,14 +615,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
   String obtenerTituloCorreo(String? nombreCorreo) {
     switch (nombreCorreo) {
-      case 'Director':
-        return 'Señor\nDirector';
-      case 'Jurídica':
-        return 'Señores Oficina Jurídica';
-      case 'Principal':
-        return 'Señores';
-      case 'Sanidad':
-        return 'Señores Oficina de Sanidad';
       case 'Correo JEP':
         return 'Señor(a) Juez';
       case 'Correo JDC':
@@ -765,6 +781,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       ),
     );
   }
+
   Widget _buildAccion(String label, String usuario, DateTime? fecha, bool isMobile) {
     final fechaTexto = _formatFecha(fecha);
     if (isMobile) {
@@ -882,18 +899,18 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             ],
           ),
           const SizedBox(height: 15),
-          if (estaEnReclusion) ...[
-            const Divider(color: primary),
-            const SizedBox(height: 10),
-            const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
-            Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-            const SizedBox(height: 10),
-            const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
-            correoConBoton('Principal', correosCentro['correo_principal']),
-            correoConBoton('Director', correosCentro['correo_direccion']),
-            correoConBoton('Jurídica', correosCentro['correo_juridica']),
-            correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-          ],
+          // if (estaEnReclusion) ...[
+          //   const Divider(color: primary),
+          //   const SizedBox(height: 10),
+          //   const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //   Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
+          //   const SizedBox(height: 10),
+          //   const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //   correoConBoton('Principal', correosCentro['correo_principal']),
+          //   correoConBoton('Director', correosCentro['correo_direccion']),
+          //   correoConBoton('Jurídica', correosCentro['correo_juridica']),
+          //   correoConBoton('Sanidad', correosCentro['correo_sanidad']),
+          // ],
 
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
@@ -1072,9 +1089,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   }
 
   String obtenerEntidad(String nombre) {
-    if (["Principal", "Director", "Jurídica", "Sanidad"].contains(nombre)) {
-      return userData?.centroReclusion ?? "";
-    } else if (nombre == "Correo JEP") {
+    if (nombre == "Correo JEP") {
       return userData?.juzgadoEjecucionPenas ?? "";
     } else if (nombre == "Correo JDC") {
       return userData?.juzgadoQueCondeno ?? "";
@@ -1135,53 +1150,46 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   void fetchUserData() async {
     Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
 
-    if (fetchedData != null) {
-      Map<String, String> correos = {};
+    // 🔹 Obtener la solicitud de prisión domiciliaria
+    final doc = await FirebaseFirestore.instance
+        .collection('prision_domiciliaria_solicitudas')
+        .doc(widget.idDocumento)
+        .get();
 
-      // 🔹 Solo obtenemos correos si está en reclusión
-      if (fetchedData.situacion?.trim() == 'En Reclusión') {
-        DocumentReference centroDoc = FirebaseFirestore.instance
-            .collection('centros_reclusion')
-            .doc(fetchedData.centroReclusion);
+    final latestData = doc.data(); // ✅ Esta es la línea corregida
 
-        correos = await obtenerCorreosCentro(centroDoc);
-      }
+    if (fetchedData != null && latestData != null && mounted) {
+      setState(() {
+        userData = fetchedData;
 
-      if (mounted) {
-        setState(() {
-          userData = fetchedData;
+        prisionDomiciliaria = PrisionDomiciliariaTemplate(
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: fetchedData.centroReclusion ?? "",
+          nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
+          apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
+          identificacionPpl: fetchedData.numeroDocumentoPpl ?? "",
+          centroPenitenciario: fetchedData.centroReclusion ?? "",
+          consideraciones: consideraciones,
+          fundamentosDeDerecho: fundamentosDeDerecho,
+          peticionConcreta: peticionConcreta,
+          emailUsuario: fetchedData.email?.trim() ?? "",
+          numeroSeguimiento: widget.numeroSeguimiento,
+          direccionDomicilio: latestData['direccion'] ?? '',
+          municipio: latestData['municipio'] ?? '',
+          departamento: latestData['departamento'] ?? '',
+          nombreResponsable: latestData['nombre_responsable'] ?? '',
+          cedulaResponsable: latestData['cedula_responsable'] ?? '',
+          celularResponsable: latestData['celular_responsable'] ?? '',
+          referencia: "Beneficios penitenciarios - Prisión domiciliaria",
+        );
 
-          if (correos.isNotEmpty && correos.values.any((correo) => correo != 'No disponible')) {
-            correosCentro = correos;
-          }
-
-          derechoPeticion = DerechoPeticionTemplate(
-            dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-            entidad: userData?.centroReclusion ?? "",
-            referencia: "Beneficios penitenciarios - Prisión domiciliaria",
-            nombrePpl: userData?.nombrePpl?.trim() ?? "",
-            apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
-            identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-            centroPenitenciario: userData?.centroReclusion ?? "",
-            consideraciones: consideraciones,
-            fundamentosDeDerecho: fundamentosDeDerecho,
-            peticionConcreta: peticionConcreta,
-            emailUsuario: userData?.email?.trim() ?? "",
-            td: userData?.td?.trim() ?? "",
-            nui: userData?.nui?.trim() ?? "",
-            numeroSeguimiento: widget.numeroSeguimiento,
-          );
-
-          isLoading = false;
-        });
-      }
-    } else {
-      if (mounted) {
-        setState(() {
-          userData = fetchedData;
-          isLoading = false;
-        });
-      }
+        isLoading = false;
+      });
+    } else if (mounted) {
+      setState(() {
+        userData = fetchedData;
+        isLoading = false;
+      });
     }
   }
 
@@ -1355,33 +1363,27 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     );
   }
 
-  // Future<void> generarTextoIAExtendido() async {
-  //   try {
-  //     final resultado = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
-  //       categoria: widget.categoria,
-  //       subcategoria: widget.subcategoria,
-  //       respuestasUsuario: widget.respuestas,
-  //     );
-  //
-  //     print("🔹 Consideraciones: ${resultado['consideraciones']}");
-  //     print("🔹 Fundamentos: ${resultado['fundamentos']}");
-  //     print("🔹 Petición: ${resultado['peticion']}");
-  //
-  //     setState(() {
-  //       _consideracionesController.text = resultado['consideraciones'] ?? '';
-  //       _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-  //       _peticionConcretaController.text = resultado['peticion'] ?? '';
-  //     });
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("❌ Error: $e")),
-  //     );
-  //   }
-  // }
+  // 🔹 Cloud Function para generar texto automático para prisión domiciliaria
+  Future<void> generarTextoIAParaDomiciliaria() async {
+    try {
+      final resultado = await IABackendService.generarTextoPrisionDomiciliaria(); // ✅ Nombre correcto del método
+
+      setState(() {
+        _consideracionesController.text = resultado['consideraciones'] ?? '';
+        _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
+        _peticionConcretaController.text = resultado['peticion'] ?? '';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Error: $e")),
+      );
+    }
+  }
+
 
   // corregido full
   Future<void> cargarConsideraciones(String docId) async {
@@ -1465,42 +1467,42 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     }
   }
 
-  // corregido full - autollenado por IA o se puede escribir igualmente
-  // Widget ingresarConsideraciones() {
-  //   return Column(
-  //     crossAxisAlignment: CrossAxisAlignment.start,
-  //     children: [
-  //       IASuggestionCard(
-  //         categoria: "Beneficios penitenciarios",
-  //         subcategoria: "Prisión domiciliaria",
-  //         respuestasUsuario: widget.respuestas,
-  //         consideracionesController: _consideracionesController,
-  //         fundamentosController: _fundamentosDerechoController,
-  //         peticionController: _peticionConcretaController,
-  //       ),
-  //       const SizedBox(height: 5),
-  //       TextField(
-  //         controller: _consideracionesController,
-  //         minLines:1,
-  //         maxLines: null,
-  //         decoration: InputDecoration(
-  //           filled: true,
-  //           fillColor: Colors.grey.shade100, // Fondo gris claro
-  //           enabledBorder: OutlineInputBorder(
-  //             borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
-  //           ),
-  //           focusedBorder: OutlineInputBorder(
-  //             borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
-  //           ),
-  //           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-  //         ),
-  //         style: const TextStyle(fontSize: 14),
-  //         onChanged: (_) => verificarVistaPrevia(),
-  //       )
-  //     ],
-  //   );
-  // }
-  // corregido full - autollenado por IA o se puede escribir igualmente
+  //corregido full - autollenado por IA o se puede escribir igualmente
+  Widget ingresarConsideraciones() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        IASuggestionCard(
+          categoria: "Beneficios penitenciarios",
+          subcategoria: "Prisión domiciliaria",
+          consideracionesController: _consideracionesController,
+          fundamentosController: _fundamentosDerechoController,
+          peticionController: _peticionConcretaController,
+          respuestasUsuario: [], // No hay respuestas, pero igual se necesita enviar
+        ),
+        const SizedBox(height: 5),
+        TextField(
+          controller: _consideracionesController,
+          minLines: 1,
+          maxLines: null,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100,
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade600),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+          style: const TextStyle(fontSize: 14),
+          onChanged: (_) => verificarVistaPrevia(),
+        )
+      ],
+    );
+  }
+
   Widget ingresarFundamentosDeDerecho() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1563,29 +1565,43 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     );
   }
 
-  Widget vistaPreviaDerechoPeticion(userData, String consideraciones, String fundamentosDeDerecho, String peticionConcreta) {
-    var derechoPeticion = DerechoPeticionTemplate(
-        dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-        entidad: entidad,
-        referencia: "Beneficios penitenciarios - Prisión domiciliaria",
-        nombrePpl: userData?.nombrePpl?.trim() ?? "",
-        apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
-        identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-        centroPenitenciario: userData?.centroReclusion ?? "",
-        consideraciones: consideraciones,
-        fundamentosDeDerecho: fundamentosDeDerecho,
-        peticionConcreta: peticionConcreta,
-        emailUsuario: userData?.email?.trim() ?? "",
-        td: userData?.td?.trim() ?? "",
-        nui: userData?.nui?.trim() ?? "",
-        numeroSeguimiento: widget.numeroSeguimiento
+  Widget vistaPreviaPrisionDomiciliaria(
+      userData,
+      String consideraciones,
+      String fundamentosDeDerecho,
+      String peticionConcreta,
+      String direccion,
+      String municipio,
+      String departamento,
+      String nombreResponsable,
+      String cedulaResponsable,
+      String celularResponsable,
+      ) {
+    final plantilla = PrisionDomiciliariaTemplate(
+      dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+      entidad: entidad,
+      referencia: "Beneficios penitenciarios - Prisión domiciliaria",
+      nombrePpl: userData?.nombrePpl?.trim() ?? "",
+      apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
+      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+      centroPenitenciario: userData?.centroReclusion ?? "",
+      consideraciones: consideraciones,
+      fundamentosDeDerecho: fundamentosDeDerecho,
+      peticionConcreta: peticionConcreta,
+      emailUsuario: userData?.email?.trim() ?? "",
+      numeroSeguimiento: widget.numeroSeguimiento,
+      nombreResponsable: nombreResponsable,
+      cedulaResponsable: cedulaResponsable,
+      celularResponsable: celularResponsable,
+      direccionDomicilio: direccion,
+      municipio: municipio,
+      departamento: departamento,
     );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Vista previa de la solicitd de prisión domiciliaria",
+          "Vista previa de la solicitud de prisión domiciliaria",
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
@@ -1595,19 +1611,15 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             color: Colors.grey[200],
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Html(
-            data: derechoPeticion.generarTextoHtml(),
-          ),
+          child: Html(data: plantilla.generarTextoHtml()),
         ),
         const SizedBox(height: 50),
         Wrap(
           children: [
-            if (widget.status == "Solicitado") ...[
-              guardarVistaPrevia(widget.idDocumento),
-            ],
+            if (widget.status == "Solicitado") guardarVistaPrevia(widget.idDocumento),
             if ((widget.status == "Diligenciado" || widget.status == "Revisado") && rol != "pasante 1") ...[
               guardarRevisado(widget.idDocumento),
-              const SizedBox(width: 20), // Espaciado entre botones
+              const SizedBox(width: 20),
               botonEnviarCorreo(),
             ],
           ],
@@ -1617,28 +1629,45 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     );
   }
 
+
   Future<void> enviarCorreoResend() async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
-    var derechoPeticion = DerechoPeticionTemplate(
-        dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-        entidad: userData?.centroReclusion ?? "",
-        referencia: "Beneficios penitenciarios - Prisión domiciliaria",
-        nombrePpl: userData?.nombrePpl.trim() ?? "",
-        apellidoPpl: userData?.apellidoPpl.trim() ?? "",
-        identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-        centroPenitenciario: userData?.centroReclusion ?? "",
-        consideraciones: consideraciones,
-        fundamentosDeDerecho: fundamentosDeDerecho,
-        peticionConcreta: peticionConcreta,
-        emailUsuario: userData?.email.trim() ?? "",
-        nui: userData?.nui.trim() ?? "",
-        td: userData?.td.trim() ?? "",
-        numeroSeguimiento: widget.numeroSeguimiento
+    // 🔹 Obtener los datos de la solicitud desde Firestore
+    final doc = await FirebaseFirestore.instance
+        .collection('prision_domiciliaria_solicitudas')
+        .doc(widget.idDocumento)
+        .get();
+
+    final latestData = doc.data();
+    if (latestData == null || userData == null) return;
+
+    // 🔹 Crear plantilla con todos los datos necesarios
+    final prisionDomiciliaria = PrisionDomiciliariaTemplate(
+      dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+      entidad: userData?.centroReclusion ?? "",
+      nombrePpl: userData?.nombrePpl.trim() ?? "",
+      apellidoPpl: userData?.apellidoPpl.trim() ?? "",
+      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+      centroPenitenciario: userData?.centroReclusion ?? "",
+      consideraciones: consideraciones,
+      fundamentosDeDerecho: fundamentosDeDerecho,
+      peticionConcreta: peticionConcreta,
+      emailUsuario: userData?.email.trim() ?? "",
+      numeroSeguimiento: widget.numeroSeguimiento,
+      direccionDomicilio: latestData['direccion'] ?? '',
+      municipio: latestData['municipio'] ?? '',
+      departamento: latestData['departamento'] ?? '',
+      nombreResponsable: latestData['nombre_responsable'] ?? '',
+      cedulaResponsable: latestData['cedula_responsable'] ?? '',
+      celularResponsable: latestData['celular_responsable'] ?? '',
+      referencia: "Beneficios penitenciarios - Prisión domiciliaria",
     );
 
-    String mensajeHtml = derechoPeticion.generarTextoHtml();
+    // 🔹 HTML generado
+    String mensajeHtml = prisionDomiciliaria.generarTextoHtml();
 
+    // 🔹 Procesar archivos adjuntos
     List<Map<String, String>> archivosBase64 = [];
     for (String archivoUrl in widget.archivos) {
       try {
@@ -1651,19 +1680,14 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             "base64": base64String,
             "tipo": lookupMimeType(nombreArchivo) ?? "application/octet-stream",
           });
-        } else {
-          if (kDebugMode) {
-            print("❌ No se pudo descargar el archivo: $nombreArchivo (Error ${response.statusCode})");
-          }
         }
       } catch (e) {
-        if (kDebugMode) {
-          print("❌ Error al procesar archivo: $e");
-        }
+        if (kDebugMode) print("❌ Error archivo: $e");
       }
     }
 
-    String asuntoCorreo = "Derecho de Petición - ${widget.numeroSeguimiento}";
+    // 🔹 Correo y copia
+    final asuntoCorreo = "Solicitud de Prisión Domiciliaria - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
@@ -1672,6 +1696,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       correosCC.add(userData!.email.trim());
     }
 
+    // 🔹 Enviar correo
     final body = jsonEncode({
       "to": correoSeleccionado,
       "cc": correosCC,
@@ -1703,6 +1728,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       }
     }
   }
+
 
 
   Widget botonEnviarCorreo() {
@@ -1769,17 +1795,15 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
               ),
             );
           }
-
           await enviarCorreoResend();
-
-          final html = derechoPeticion.generarTextoHtml();
+          final html = prisionDomiciliaria.generarTextoHtml();
           await subirHtmlCorreoADocumento(
             idDocumento: widget.idDocumento,
             htmlContent: html,
           );
 
           const urlApp = "https://www.tuprocesoya.com";
-          final numeroSeguimiento = derechoPeticion.numeroSeguimiento;
+          final numeroSeguimiento = prisionDomiciliaria.numeroSeguimiento;
 
           if (context.mounted) {
             Navigator.of(context).pop(); // Cerrar loading
@@ -1808,9 +1832,9 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
                 final celular = "+57${userData!.celular}";
                 final mensaje = Uri.encodeComponent(
                     "Hola *${userData!.nombreAcudiente}*,\n\n"
-                        "Hemos enviado tu derecho de petición número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                        "Recuerda que la entidad tiene un tiempo aproximado de 20 días para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
-                        "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes derecho petición. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                        "Hemos enviado tu solicitud de prisón domiciliaria número *$numeroSeguimiento* a la autoridad competente.\n\n"
+                        "Recuerda que la entidad tiene un tiempo aproximado de 30 días para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
+                        "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes beneficios penitenciarios. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                         "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
                 );
                 final link = "https://wa.me/$celular?text=$mensaje";
@@ -1818,7 +1842,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
               }
             }
             if(context.mounted){
-              Navigator.pushReplacementNamed(context, 'historial_solicitudes_derecho_peticion_admin');
+              Navigator.pushReplacementNamed(context, 'historial_solicitudes_prision_domiciliaria_admin');
             }
           }
         }
@@ -1826,8 +1850,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       child: const Text("Enviar por correo"),
     );
   }
-
-
 
   Future<void> subirHtmlCorreoADocumento({
     required String idDocumento,

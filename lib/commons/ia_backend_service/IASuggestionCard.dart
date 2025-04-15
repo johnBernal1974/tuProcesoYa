@@ -4,7 +4,7 @@ import '../../commons/ia_backend_service/ia_backend_service.dart';
 class IASuggestionCard extends StatefulWidget {
   final String categoria;
   final String subcategoria;
-  final List<String> respuestasUsuario;
+  final List<String>? respuestasUsuario; // Ahora puede ser null
   final TextEditingController consideracionesController;
   final TextEditingController fundamentosController;
   final TextEditingController peticionController;
@@ -13,7 +13,7 @@ class IASuggestionCard extends StatefulWidget {
     super.key,
     required this.categoria,
     required this.subcategoria,
-    required this.respuestasUsuario,
+    this.respuestasUsuario, // Puede omitirse si no hay respuestas
     required this.consideracionesController,
     required this.fundamentosController,
     required this.peticionController,
@@ -33,14 +33,14 @@ class _IASuggestionCardState extends State<IASuggestionCard> {
   Future<void> _generarTextoExtendido() async {
     setState(() {
       cargando = true;
-      mostrarSugerencias = false; // Oculta sugerencias anteriores al generar nuevas
+      mostrarSugerencias = false;
     });
 
     try {
       final resultado = await IABackendService.generarTextoExtendidoDesdeCloudFunction(
         categoria: widget.categoria,
         subcategoria: widget.subcategoria,
-        respuestasUsuario: widget.respuestasUsuario,
+        respuestasUsuario: widget.respuestasUsuario ?? [],
       );
 
       setState(() {
@@ -63,9 +63,8 @@ class _IASuggestionCardState extends State<IASuggestionCard> {
     widget.consideracionesController.text = consideracion ?? '';
     widget.fundamentosController.text = fundamentos ?? '';
     widget.peticionController.text = peticion ?? '';
-
     setState(() {
-      mostrarSugerencias = false; // Oculta la tarjeta al usar los textos
+      mostrarSugerencias = false;
     });
   }
 

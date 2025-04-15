@@ -404,22 +404,23 @@ exports.generarTextoIAExtendido = onRequest({
   secrets: [OPENAI_API_KEY],
 }, async (req, res) => {
   try {
-    const { categoria, subcategoria, respuestasUsuario } = req.body;
+    const { categoria, subcategoria, respuestasUsuario = [] } = req.body;
 
-    if (
-      typeof categoria !== 'string' || categoria.trim() === '' ||
-      typeof subcategoria !== 'string' || subcategoria.trim() === '' ||
-      !Array.isArray(respuestasUsuario) || respuestasUsuario.length === 0
-    ) {
+    if (typeof categoria !== 'string' || categoria.trim() === '' ||
+        typeof subcategoria !== 'string' || subcategoria.trim() === '') {
       return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
-    const prompt = `
+    let prompt = '';
+
+    if (respuestasUsuario.length > 0) {
+      // 🔹 Prompt tradicional para derechos de petición con narrativa del acudiente
+      prompt = `
 Redacta el cuerpo de un derecho de petición en Colombia para una persona privada de la libertad.
 
 🔒 Ya existe un encabezado con nombre, documento y centro penitenciario: **no repitas esos datos**.
 
-🧠 El relato fue escrito por un acudiente (familiar, amigo o persona de confianza), quien describe la situación del PPL en primera persona ("mi hermano", "mi padre", etc.). Interpreta correctamente el texto: **todo lo que se menciona se refiere exclusivamente a la persona privada de la libertad, no al acudiente.** Es decir, si el acudiente escribe "mi primo tiene dolor", debes redactar: "La persona privada de la libertad presenta dolor", **no**: "El primo de la persona privada de la libertad".
+🧠 El relato fue escrito por un acudiente (familiar, amigo o persona de confianza), quien describe la situación del PPL en primera persona ("mi hermano", "mi padre", etc.). Interpreta correctamente el texto: **todo lo que se menciona se refiere exclusivamente a la persona privada de la libertad, no al acudiente.**
 
 🧠 Usa toda la información proporcionada para construir una sección sólida de “Consideraciones”, redactada en tercera persona, con lenguaje técnico, claro y sin adornos personales.
 
@@ -432,16 +433,108 @@ Petición concreta
 📌 Fundamentos de derecho debe incluir:
 - Fundamento en la Constitución Política (con número de artículo y descripción).
 - Fundamento en la Ley 65 de 1993 o normas penitenciarias pertinentes.
-- Otras normas que respalden el caso.
 - Jurisprudencia relevante: cita número de sentencia, año y criterio aplicable.
 
 📌 En la Petición concreta:
 - Redacta con precisión y claridad.
 - Incluye si hay otro derecho que también esté en riesgo o se vulnera.
 
-Respuestas dadas por el acudiente (relatan lo que vive la persona privada de la libertad):
+Respuestas dadas por el acudiente:
 ${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
-    `.trim();
+      `.trim();
+    } else {
+      // 🔹 Prompt adaptado según subcategoría sin respuestas
+      switch (subcategoria.toLowerCase()) {
+        case 'prisión domiciliaria':
+          // Prompt dentro del Cloud Function:
+          prompt = `
+          Redacta un documento jurídico en Colombia que respalde una solicitud de prisión domiciliaria para una persona privada de la libertad (PPL), exclusivamente por **cumplimiento del tiempo de condena** como requisito legal.
+
+          🔒 Ya existe un encabezado con los datos del solicitante: no repitas nombre, número de documento ni centro de reclusión.
+
+          ✒️ Estructura el texto legal con los siguientes títulos, escritos tal cual y separados con una línea en blanco entre secciones:
+
+          Consideraciones
+
+          Fundamentos de derecho
+
+          Petición concreta
+
+          📌 Consideraciones:
+          - Señala que el PPL ha cumplido con más del 50% de la condena impuesta, requisito exigido por la legislación para acceder a este beneficio.
+          - Indica que el delito por el cual fue condenado **no se encuentra excluido** de los beneficios establecidos en el artículo 38G del Código Penal u otras normas restrictivas.
+          - Expón que el PPL cuenta con un lugar de residencia fijo y un entorno familiar que respalda su proceso de resocialización y compromiso con la justicia.
+          - Señala que se adjuntan los documentos de soporte que acreditan la viabilidad de la medida, tales como:
+            - Dirección exacta del domicilio donde cumpliría la medida,
+            - Nombre y documento de identidad de la persona responsable en el hogar,
+            - Declaración juramentada que acredita su voluntad de asumir dicha responsabilidad.
+          - Usa un lenguaje técnico, claro y en tercera persona, sin adornos ni elementos personales.
+
+          📌 Fundamentos de derecho:
+          - Incluye fundamentos en la Constitución Política de Colombia (artículos relevantes).
+          - Incluye la Ley 65 de 1993 (Código Penitenciario y Carcelario) y sus reglamentos aplicables.
+          - Cita jurisprudencia de la Corte Constitucional y Corte Suprema relacionada con prisión domiciliaria y sustitución de la pena.
+          - Si aplica, incluye normas internacionales o tratados ratificados por Colombia que respalden el respeto por los derechos del PPL.
+
+          📌 Petición concreta:
+          - Solicita expresamente la sustitución de la pena privativa de la libertad por prisión domiciliaria, de forma clara, precisa y técnica.
+          - No incluyas despedidas, agradecimientos, firmas, nombres ni frases como "en espera de respuesta" o "atentamente".
+
+          🔎 No incluyas asteriscos (*), saltos de página, adornos innecesarios ni repitas datos ya conocidos del solicitante.
+          `.trim();
+
+          break;
+
+        case 'libertad condicional':
+          prompt = `
+Redacta un documento jurídico en Colombia para una **solicitud de libertad condicional** para una persona privada de la libertad (PPL), conforme a los requisitos legales y penitenciarios.
+
+Estructura el contenido con los siguientes apartados:
+
+Consideraciones
+Fundamentos de derecho
+Petición concreta
+
+📌 Consideraciones:
+- Argumenta por qué el PPL ha cumplido con los requisitos de tiempo, conducta y resocialización.
+
+📌 Fundamentos de derecho:
+- Constitución Política, Ley 65 de 1993 y otras normas penitenciarias aplicables.
+- Jurisprudencia que respalde la concesión de este beneficio.
+
+📌 Petición concreta:
+- Solicita formalmente la libertad condicional indicando el cumplimiento de requisitos legales.
+          `.trim();
+          break;
+
+        case 'permiso de 72 horas':
+          prompt = `
+Redacta un documento jurídico en Colombia que sustente una **solicitud de permiso de 72 horas** para una persona privada de la libertad (PPL).
+
+🔒 No repitas encabezado ni datos básicos del solicitante.
+
+Estructura el texto con estos apartados:
+
+Consideraciones
+Fundamentos de derecho
+Petición concreta
+
+📌 Consideraciones:
+- Expón los motivos humanitarios, familiares o médicos que justifican el permiso.
+- Usa lenguaje técnico y claro.
+
+📌 Fundamentos de derecho:
+- Cita la Ley 65 de 1993, reglamentos y sentencias que permitan este permiso.
+
+📌 Petición concreta:
+- Solicita de forma clara la autorización del permiso de 72 horas y su duración.
+          `.trim();
+          break;
+
+        default:
+          return res.status(400).json({ error: "Subcategoría no soportada" });
+      }
+    }
 
     const OpenAI = require("openai");
     const openai = new OpenAI({ apiKey: OPENAI_API_KEY.value() });
@@ -457,12 +550,6 @@ ${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
     });
 
     const texto = completion.choices[0].message.content ?? '';
-
-    // 🔍 Separar en partes
-    const seccion = (label, source) => {
-      const regex = new RegExp(`${label}[:\\s]*`, 'i');
-      return source.split(regex)[1]?.split(/\n(?=\w)/)?.[0]?.trim() ?? '';
-    };
 
     const consideraciones = texto.split(/Fundamentos de derecho/i)[0]
       ?.replace(/Consideraciones[:\s]*/i, '')
@@ -486,7 +573,6 @@ ${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
     });
   }
 });
-
 
 exports.eliminarUsuarioAuthHttp = functions.https.onRequest(async (req, res) => {
   const { uid, token } = req.body;

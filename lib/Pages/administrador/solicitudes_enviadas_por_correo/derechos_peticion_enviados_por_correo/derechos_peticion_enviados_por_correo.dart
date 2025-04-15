@@ -8,17 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
-import '../../../commons/admin_provider.dart';
-import '../../../commons/archivoViewerWeb.dart';
-import '../../../commons/main_layaout.dart';
-import '../../../models/ppl.dart';
-import '../../../plantillas/plantilla_derecho_peticion.dart';
-import '../../../src/colors/colors.dart';
 import 'dart:io'; // Necesario para manejar archivos en almacenamiento local
 import 'package:universal_html/html.dart' as html;
 
-import '../../../widgets/email_status_widget.dart';
-
+import '../../../../commons/admin_provider.dart';
+import '../../../../commons/archivoViewerWeb.dart';
+import '../../../../commons/main_layaout.dart';
+import '../../../../models/ppl.dart';
+import '../../../../src/colors/colors.dart';
+import '../../../../widgets/email_status_widget.dart';
 class DerechoSPeticionEnviadosPorCorreoPage extends StatefulWidget {
   final String status;
   final String idDocumento;

@@ -15,7 +15,6 @@ import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_petic
 import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
-import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
@@ -25,6 +24,8 @@ import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/prision_domiciliaria_enviada_por_correo/prision_domiciliaria_enviada_por_correo.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import 'Pages/administrador/tutelas/derechos_tutelables_page.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
@@ -224,6 +225,23 @@ class MyApp extends StatelessWidget {
                 preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
                 sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
+          else if (settings.name == 'solicitudes_prision_domiciliaria_enviadas_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'] ?? "Beneficios penitenciarios",
+                subcategoria: args['subcategoria'] ?? "Prisión domiciliaria",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                urlArchivoCedulaResponsable: args['archivo_cedula_responsable'],
+                urlsArchivosHijos: List<String>.from(args['documentos_hijos'] ?? []),
               ),
             );
           }
