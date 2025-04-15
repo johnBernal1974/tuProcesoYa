@@ -203,28 +203,82 @@ class _SideBarState extends State<SideBar> {
         items.addAll([
           _buildDrawerTile(
               context, "Página principal", Icons.home_filled, 'home_admin'),
+          _buildDrawerTile(context, "Configuraciones", Icons.settings,
+              'configuraciones'),
+          ExpansionTile(
+            leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
+            title: const Text("Historial de solicitudes",
+                style: TextStyle(color: Colors.black, fontSize: 13)),
+            iconColor: Colors.black,
+            // 🔥 Color del icono cuando se expande
+            collapsedIconColor: Colors.black,
+            // 🔥 Color cuando está colapsado
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes de derechos petición",
+                    Icons.double_arrow_outlined,
+                    'historial_solicitudes_derecho_peticion_admin'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes de tutela",
+                    Icons.double_arrow_outlined,
+                    'historial_solicitudes_tutelas_admin'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes permiso 72 horas",
+                    Icons.double_arrow_outlined,
+                    'home_admin'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes de prisión domiciliaria",
+                    Icons.double_arrow_outlined,
+                    'historial_solicitudes_prision_domiciliaria_admin'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes de Libertad condicional",
+                    Icons.double_arrow_outlined,
+                    'home_admin'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes de Extinción de pena",
+                    Icons.double_arrow_outlined,
+                    'home_admin'),
+              ),
+            ],
+          ),
+          _buildDrawerTile(context, " Historial Transacciones", Icons.monitor_heart_rounded,
+              'admin_transacciones'),
           _buildDrawerTile(
               context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
               'buzon_sugerencias_administrador',
               showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(context, "Configuraciones", Icons.settings,
-              'configuraciones'),
-          _buildDrawerTile(context, "atender tutela", Icons.settings,
-              'atender_tutela'),
-          _buildDrawerTile(context, "pa las tutelas", Icons.settings,
-              'derechos_tutelables_page'),
-          _buildDrawerTile(context, "Historial Solicitudes derechos petición",
-              Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
-          _buildDrawerTile(context, "Historial Solicitudes de tutela",
-              Icons.abc_rounded, 'historial_solicitudes_tutelas_admin'),
+
           _buildDrawerTile(
               context, "Registrar Operadores", Icons.app_registration,
               'registrar_operadores'),
           _buildDrawerTile(
               context, "Operadores", Icons.account_box, 'operadores_page'),
-          _buildDrawerTile(context, " Historial Transacciones", Icons.account_box,
-              'admin_transacciones'),
         ]);
+
+
       } else if (rol == "master") {
         items.addAll([
           _buildDrawerTile(

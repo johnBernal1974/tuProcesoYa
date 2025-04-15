@@ -71,6 +71,10 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
     if (reference.startsWith("recarga")) return "Recarga";
     if (reference.startsWith("peticion")) return "Derecho petición";
     if (reference.startsWith("tutela")) return "Tutela";
+    if (reference.startsWith("domiciliaria")) return "Solicitud domiciliaria";
+    if (reference.startsWith("permiso_72h")) return "Permiso 72h";
+    if (reference.startsWith("libertad_condicional")) return "Libertad Condicional";
+    if (reference.startsWith("extincion_pena")) return "Extinción de pena";
     return "Otro";
   }
 

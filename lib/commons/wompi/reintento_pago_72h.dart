@@ -1,5 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../../src/colors/colors.dart';
+import 'checkout_page.dart';
 
 class ReintentoPagoPermiso72hPage extends StatelessWidget {
   final String referencia;
@@ -54,21 +57,47 @@ class ReintentoPagoPermiso72hPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          '/checkout',
-                          arguments: {
-                            'tipoPago': 'permiso_72h',
-                            'valor': valor,
-                            'referencia': referencia,
-                            'onTransaccionAprobada': onTransaccionAprobada,
-                          },
+                    onPressed: () async {
+                      print("🔁 Intentando reintentar el pago...");
+
+                      final user = FirebaseAuth.instance.currentUser;
+
+                      if (user == null) {
+                        print("⚠️ Usuario no autenticado");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
+                            backgroundColor: Colors.red,
+                          ),
                         );
+                        return;
                       }
+
+                      if (valor == null) {
+                        print("⚠️ Valor no definido");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("El valor del pago no está disponible."),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      final nuevaReferencia = 'permiso_72h_${user.uid}_${const Uuid().v4()}';
+                      print("📌 Nueva referencia generada: $nuevaReferencia");
+
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckoutPage(
+                            tipoPago: 'permiso_72h',
+                            valor: valor!,
+                            referencia: nuevaReferencia,
+                            onTransaccionAprobada: onTransaccionAprobada,
+                          ),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,

@@ -12,11 +12,13 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
+import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
+import 'Pages/administrador/historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
 import 'Pages/administrador/historial_solicitudes_tutela_admin/historial_solicitudes_tutela_admin.dart';
 import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
@@ -126,6 +128,7 @@ class MyApp extends StatelessWidget {
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
         'historial_solicitudes_derecho_peticion_admin': (context) => const HistorialSolicitudesDerechoPeticionAdminPage(),
         'historial_solicitudes_tutelas_admin': (context) => const HistorialSolicitudesTutelaPageAdmin(),
+        'historial_solicitudes_prision_domiciliaria_admin': (context) => const HistorialSolicitudesDomiciliariaAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -238,6 +241,25 @@ class MyApp extends StatelessWidget {
                 archivos: List<String>.from(args['archivos'] ?? []),
                 preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
+              ),
+            );
+          }
+          else if (settings.name == 'atender_solicitud_prision_domiciliaria_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderPrisionDomiciliariaPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numero_seguimiento'] ?? "Sin seguimiento",
+                direccion: args['direccion'] ?? "",
+                departamento: args['departamento'] ?? "",
+                municipio: args['municipio'] ?? "",
+                nombreResponsable: args['nombre_responsable'] ?? "",
+                cedulaResponsable: args['cedula_responsable'] ?? "",
+                celularResponsable: args['celular_responsable'] ?? "",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
               ),
             );
           }
