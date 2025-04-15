@@ -565,7 +565,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         } catch (_) {}
       }
 
-      await firestore.collection('prision_domiciliaria_solicitudas').doc(docId).set({
+      await firestore.collection('prision_domiciliaria_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
         'numero_seguimiento': numeroSeguimiento,

@@ -17,6 +17,7 @@ import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
 import '../../../../widgets/email_status_widget.dart';
+
 class DerechoSPeticionEnviadosPorCorreoPage extends StatefulWidget {
   final String status;
   final String idDocumento;

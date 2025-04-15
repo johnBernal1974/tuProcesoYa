@@ -17,6 +17,8 @@ import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
 import '../../../../widgets/email_status_widget.dart';
+
+
 class SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage extends StatefulWidget {
   final String status;
   final String idDocumento;
@@ -90,28 +92,8 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
     fetchUserData();
   }
 
-  String obtenerTituloCorreo(String? nombreCorreo) {
-    switch (nombreCorreo) {
-      case 'Director':
-        return 'Señor\nDirector';
-      case 'Jurídica':
-        return 'Señores Oficina Jurídica';
-      case 'Principal':
-        return 'Señores';
-      case 'Sanidad':
-        return 'Señores Oficina de Sanidad';
-      case 'Correo JEP':
-        return 'Señor(a) Juez';
-      case 'Correo JDC':
-        return 'Señor(a) Juez';
-      default:
-        return '';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-
     return MainLayout(
       pageTitle: 'Prisión Domiciliaria Enviada',
       content: SingleChildScrollView(
@@ -548,7 +530,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
       }
 
       // ⚡ Actualizar el documento en Firestore con un solo string en lugar de un array
-      await firestore.collection('derechos_peticion_solicitados').doc(docId).update({
+      await firestore.collection('prision_domiciliaria_solicitudas').doc(docId).update({
         "correoEnviadoPantallazo": imagenUrl ?? "Error al obtener imagen",
         "fecha_guardado_pantallazo": Timestamp.now(), // ✅ Agrega la fecha actual
       });
@@ -608,7 +590,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                   ),
                 ),
                 Text(
-                  "Derecho de petición - Enviado",
+                  "Prisión domiciliaria - Enviada",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: fontSize,
@@ -791,7 +773,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
 
       // 🔥 Obtener documento de Firestore
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
+          .collection('prision_domiciliaria_solicitudas')
           .doc(widget.idDocumento)
           .get();
 
@@ -861,7 +843,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
   Widget historialCorreosTable() {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
+          .collection('prision_domiciliaria_solicitudas')
           .doc(widget.idDocumento)
           .collection('log_correos')
           .orderBy('timestamp', descending: true)
@@ -983,7 +965,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
               padding: const EdgeInsets.all(20),
               child: FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance
-                    .collection('derechos_peticion_solicitados')
+                    .collection('prision_domiciliaria_solicitudas')
                     .doc(widget.idDocumento)
                     .collection('log_correos')
                     .doc(correoId)

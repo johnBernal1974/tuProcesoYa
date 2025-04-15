@@ -462,7 +462,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
         if (_mostrarVistaPrevia)
           StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance
-                .collection('prision_domiciliaria_solicitudas')
+                .collection('prision_domiciliaria_solicitados')
                 .doc(widget.idDocumento)
                 .snapshots(),
             builder: (context, snapshot) {
@@ -1152,7 +1152,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
     // 🔹 Obtener la solicitud de prisión domiciliaria
     final doc = await FirebaseFirestore.instance
-        .collection('prision_domiciliaria_solicitudas')
+        .collection('prision_domiciliaria_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -1959,7 +1959,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
         try {
           await FirebaseFirestore.instance
-              .collection('prision_domiciliaria_solicitudas')
+              .collection('prision_domiciliaria_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Diligenciado",
@@ -2008,7 +2008,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
         try {
           await FirebaseFirestore.instance
-              .collection('prision_domiciliaria_solicitudas')
+              .collection('prision_domiciliaria_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Revisado",
