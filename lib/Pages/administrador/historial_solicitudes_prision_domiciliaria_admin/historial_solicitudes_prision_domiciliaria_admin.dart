@@ -576,7 +576,12 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
           'fecha': latestData['fecha'] != null ? latestData['fecha'].toDate().toString() : "Fecha no disponible",
           'idUser': latestData['idUser'] ?? "Desconocido",
           'archivos': latestData.containsKey('archivos') ? List<String>.from(latestData['archivos']) : [],
-          // 🟣 Añadimos estos campos que requiere AtenderPrisionDomiciliariaPage
+
+          // 🟣 Campos nuevos que faltaban
+          'urlArchivoCedulaResponsable': latestData['archivo_cedula_responsable'] ?? "",
+          'urlsArchivosHijos': List<String>.from(latestData['documentos_hijos'] ?? []),
+
+          // 📌 Datos básicos
           'direccion': latestData['direccion'] ?? "",
           'departamento': latestData['departamento'] ?? "",
           'municipio': latestData['municipio'] ?? "",

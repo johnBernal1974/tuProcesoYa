@@ -246,6 +246,7 @@ class MyApp extends StatelessWidget {
           }
           else if (settings.name == 'atender_solicitud_prision_domiciliaria_page') {
             final args = settings.arguments as Map<String, dynamic>;
+
             return MaterialPageRoute(
               builder: (context) => AtenderPrisionDomiciliariaPage(
                 status: args['status'] ?? "Diligenciado",
@@ -260,9 +261,14 @@ class MyApp extends StatelessWidget {
                 fecha: args['fecha'],
                 idUser: args['idUser'],
                 archivos: List<String>.from(args['archivos'] ?? []),
+
+                // 🟣 Estos dos campos son los que antes faltaban
+                urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable']?.toString(),
+                urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
               ),
             );
           }
+
           else if (settings.name == 'detalle_correo') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(

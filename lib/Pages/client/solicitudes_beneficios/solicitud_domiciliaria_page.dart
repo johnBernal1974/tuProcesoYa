@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../../../commons/archivo _uplouder.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
@@ -344,6 +345,8 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
       if (result != null && result.files.isNotEmpty) {
         PlatformFile file = result.files.first;
+
+        // Mostrar el nombre inmediatamente
         setState(() {
           if (tipo == 'recibo') {
             archivoRecibo = file.name;
@@ -354,23 +357,25 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
           }
         });
 
-        String docId = FirebaseFirestore.instance.collection('solicitudes_prision_domiciliaria').doc().id;
-        String path = 'solicitudes_prision_domiciliaria/$docId/${file.name}';
+        docIdSolicitud ??= FirebaseFirestore.instance.collection('solicitudes_prision_domiciliaria').doc().id;
+        String path = 'solicitudes_prision_domiciliaria/$docIdSolicitud/${file.name}';
 
-        Reference storageRef = FirebaseStorage.instance.ref(path);
-        UploadTask uploadTask = kIsWeb ? storageRef.putData(file.bytes!) : storageRef.putFile(File(file.path!));
-        TaskSnapshot snapshot = await uploadTask;
-        String downloadUrl = await snapshot.ref.getDownloadURL();
+        String? downloadUrl = await ArchivoUploader.subirArchivo(
+          file: file,
+          rutaDestino: path,
+        );
 
-        setState(() {
-          if (tipo == 'recibo') {
-            urlArchivoRecibo = downloadUrl;
-          } else if (tipo == 'declaracion') {
-            urlArchivoDeclaracion = downloadUrl;
-          } else if (tipo == 'cedula_responsable') {
-            urlArchivoCedulaResponsable = downloadUrl;
-          }
-        });
+        if (downloadUrl != null) {
+          setState(() {
+            if (tipo == 'recibo') {
+              urlArchivoRecibo = downloadUrl;
+            } else if (tipo == 'declaracion') {
+              urlArchivoDeclaracion = downloadUrl;
+            } else if (tipo == 'cedula_responsable') {
+              urlArchivoCedulaResponsable = downloadUrl;
+            }
+          });
+        }
       }
     } catch (e) {
       if (kDebugMode) {
@@ -380,28 +385,28 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
   }
 
 
+
   Future<void> pickMultipleFilesHijos() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null && result.files.isNotEmpty) {
-        // 🔐 Inicializa el docId si aún no se ha generado
         docIdSolicitud ??= FirebaseFirestore.instance.collection('solicitudes_prision_domiciliaria').doc().id;
 
         for (PlatformFile file in result.files) {
-          // 👉 Evita archivos duplicados
           if (!archivosHijos.any((f) => f.name == file.name)) {
             archivosHijos.add(file);
 
             String path = 'solicitudes_prision_domiciliaria/$docIdSolicitud/hijos/${file.name}';
-            Reference storageRef = FirebaseStorage.instance.ref(path);
-            UploadTask uploadTask = kIsWeb
-                ? storageRef.putData(file.bytes!)
-                : storageRef.putFile(File(file.path!));
-            TaskSnapshot snapshot = await uploadTask;
-            String downloadUrl = await snapshot.ref.getDownloadURL();
 
-            urlsArchivosHijos.add(downloadUrl);
+            String? downloadUrl = await ArchivoUploader.subirArchivo(
+              file: file,
+              rutaDestino: path,
+            );
+
+            if (downloadUrl != null) {
+              urlsArchivosHijos.add(downloadUrl);
+            }
           }
         }
 
@@ -413,6 +418,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       }
     }
   }
+
 
 
   void validarYEnviar() async {
@@ -513,7 +519,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       builder: (context) => AlertDialog(
         backgroundColor: blanco,
         title: const Text("Confirmar envío"),
-        content: const Text("¿Deseas enviar esta solicitud de prisión domiciliaria?"),
+        content: const Text("Ya puedes enviar tu solicitud de Prisión domiciliaria"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar")),

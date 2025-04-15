@@ -326,12 +326,62 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
         const SizedBox(height: 30),
 
         /// 📂 **Mostramos los archivos aquí**
-        archivosAdjuntos.isNotEmpty
-            ? ArchivoViewerWeb(archivos: archivos)
-            : const Text(
-          "El usuario no compartió ningún archivo",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.archivos.isNotEmpty) ...[
+              const Text("📄 Recibo de servicios y 📝 Declaración extrajuicio",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ArchivoViewerWeb(
+                archivos: widget.archivos,
+              ),
+              const SizedBox(height: 20),
+            ],
+            if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) ...[
+              const Text("🪪 Cédula del responsable", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ArchivoViewerWeb(
+                archivos: [widget.urlArchivoCedulaResponsable!],
+              ),
+              const SizedBox(height: 20),
+            ],
+            if (widget.urlsArchivosHijos.isNotEmpty) ...[
+              const Text("👶 Documentos de identidad de los hijos",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ArchivoViewerWeb(
+                archivos: widget.urlsArchivosHijos,
+              ),
+              const SizedBox(height: 20),
+            ],
+            if (archivosAdjuntos.length > widget.archivos.length +
+                (widget.urlArchivoCedulaResponsable != null ? 1 : 0) +
+                widget.urlsArchivosHijos.length) ...[
+              const Text("📎 Otros archivos adjuntos",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ArchivoViewerWeb(
+                archivos: archivosAdjuntos
+                    .map((e) => e['contenido']!)
+                    .toList()
+                    .where((url) =>
+                !widget.archivos.contains(url) &&
+                    url != widget.urlArchivoCedulaResponsable &&
+                    !widget.urlsArchivosHijos.contains(url))
+                    .toList(),
+              ),
+            ],
+            if (widget.archivos.isEmpty &&
+                (widget.urlArchivoCedulaResponsable?.isEmpty ?? true) &&
+                widget.urlsArchivosHijos.isEmpty)
+              const Text(
+                "El usuario no compartió ningún archivo",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
+              ),
+          ],
         ),
+
         const SizedBox(height: 30),
         const Divider(color: gris),
         if (((widget.status == "Diligenciado" ||
