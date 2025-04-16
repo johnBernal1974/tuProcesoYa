@@ -606,6 +606,14 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
   String obtenerTituloCorreo(String? nombreCorreo) {
     switch (nombreCorreo) {
+      case 'Director':
+        return 'Señor\nDirector';
+      case 'Jurídica':
+        return 'Señores Oficina Jurídica';
+      case 'Principal':
+        return 'Señores';
+      case 'Sanidad':
+        return 'Señores Oficina de Sanidad';
       case 'Correo JEP':
         return 'Señor(a) Juez';
       case 'Correo JDC':
@@ -1080,7 +1088,9 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   }
 
   String obtenerEntidad(String nombre) {
-    if (nombre == "Correo JEP") {
+    if (["Principal", "Director", "Jurídica", "Sanidad"].contains(nombre)) {
+      return userData?.centroReclusion ?? "";
+    } else if (nombre == "Correo JEP") {
       return userData?.juzgadoEjecucionPenas ?? "";
     } else if (nombre == "Correo JDC") {
       return userData?.juzgadoQueCondeno ?? "";
@@ -1632,7 +1642,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
     final prisionDomiciliaria = PrisionDomiciliariaTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: userData?.centroReclusion ?? "",
+      entidad: entidad ?? "",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",

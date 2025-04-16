@@ -279,7 +279,7 @@ class MyApp extends StatelessWidget {
               builder: (context) => AtenderPrisionDomiciliariaPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
-                numeroSeguimiento: args['numero_seguimiento'] ?? "Sin seguimiento",
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
                 direccion: args['direccion'] ?? "",
                 departamento: args['departamento'] ?? "",
                 municipio: args['municipio'] ?? "",
