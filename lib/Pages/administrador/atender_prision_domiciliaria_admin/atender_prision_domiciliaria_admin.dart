@@ -16,7 +16,6 @@ import '../../../commons/ia_backend_service/IASuggestionCard.dart';
 import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
-import '../../../plantillas/plantilla_derecho_peticion.dart';
 import '../../../plantillas/plantilla_domiciliaria.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
@@ -1157,7 +1156,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
         .doc(widget.idDocumento)
         .get();
 
-    final latestData = doc.data(); // ✅ Esta es la línea corregida
+    final latestData = doc.data(); // ✅ Línea correcta
 
     if (fetchedData != null && latestData != null && mounted) {
       setState(() {
@@ -1166,6 +1165,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
         prisionDomiciliaria = PrisionDomiciliariaTemplate(
           dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
           entidad: fetchedData.centroReclusion ?? "",
+          referencia: "Beneficios penitenciarios - Prisión domiciliaria",
           nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
           apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
           identificacionPpl: fetchedData.numeroDocumentoPpl ?? "",
@@ -1173,15 +1173,23 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
           consideraciones: consideraciones,
           fundamentosDeDerecho: fundamentosDeDerecho,
           peticionConcreta: peticionConcreta,
-          emailUsuario: fetchedData.email?.trim() ?? "",
-          numeroSeguimiento: widget.numeroSeguimiento,
           direccionDomicilio: latestData['direccion'] ?? '',
           municipio: latestData['municipio'] ?? '',
           departamento: latestData['departamento'] ?? '',
           nombreResponsable: latestData['nombre_responsable'] ?? '',
+          parentesco: fetchedData.parentescoRepresentante ?? "",
           cedulaResponsable: latestData['cedula_responsable'] ?? '',
           celularResponsable: latestData['celular_responsable'] ?? '',
-          referencia: "Beneficios penitenciarios - Prisión domiciliaria",
+          emailUsuario: fetchedData.email?.trim() ?? "",
+          nui: fetchedData.nui ?? "",
+          td: fetchedData.td ?? "",
+          patio: fetchedData.patio ?? "",
+          radicado: fetchedData.radicado ?? "",
+          delito: fetchedData.delito ?? "",
+          condena: "${fetchedData.tiempoCondena ?? ''}",
+          purgado: "$mesesEjecutado", // usa la variable que ya calculas
+          jdc: fetchedData.juzgadoQueCondeno ?? "",
+          numeroSeguimiento: widget.numeroSeguimiento,
         );
 
         isLoading = false;
@@ -1193,6 +1201,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       });
     }
   }
+
 
   void fetchDocumentoPrisionDomiciliaria() async {
     try {
@@ -1589,13 +1598,23 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       peticionConcreta: peticionConcreta,
       emailUsuario: userData?.email?.trim() ?? "",
       numeroSeguimiento: widget.numeroSeguimiento,
-      nombreResponsable: nombreResponsable,
-      cedulaResponsable: cedulaResponsable,
-      celularResponsable: celularResponsable,
       direccionDomicilio: direccion,
       municipio: municipio,
       departamento: departamento,
+      nombreResponsable: nombreResponsable,
+      parentesco: userData?.parentescoRepresentante ?? "", // 🔹 NUEVO
+      cedulaResponsable: cedulaResponsable,
+      celularResponsable: celularResponsable,
+      nui: userData?.nui ?? "", // 🔹 NUEVO
+      td: userData?.td ?? "", // 🔹 NUEVO
+      patio: userData?.patio ?? "", // 🔹 NUEVO
+      radicado: userData?.radicado ?? "", // 🔹 NUEVO
+      delito: userData?.delito ?? "", // 🔹 NUEVO
+      condena: "${userData?.tiempoCondena ?? ''}", // 🔹 NUEVO (meses)
+      purgado: "${mesesEjecutado}", // 🔹 NUEVO (calculado en tu controlador)
+      jdc: userData?.juzgadoQueCondeno ?? "", // 🔹 NUEVO
     );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1629,6 +1648,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   }
 
 
+
   Future<void> enviarCorreoResend() async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
@@ -1643,6 +1663,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     final prisionDomiciliaria = PrisionDomiciliariaTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad ?? "",
+      referencia: "Beneficios penitenciarios - Prisión domiciliaria",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
@@ -1650,16 +1671,25 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       consideraciones: consideraciones,
       fundamentosDeDerecho: fundamentosDeDerecho,
       peticionConcreta: peticionConcreta,
-      emailUsuario: userData?.email.trim() ?? "",
-      numeroSeguimiento: widget.numeroSeguimiento,
       direccionDomicilio: latestData['direccion'] ?? '',
       municipio: latestData['municipio'] ?? '',
       departamento: latestData['departamento'] ?? '',
       nombreResponsable: latestData['nombre_responsable'] ?? '',
+      parentesco: userData?.parentescoRepresentante ?? '',
       cedulaResponsable: latestData['cedula_responsable'] ?? '',
       celularResponsable: latestData['celular_responsable'] ?? '',
-      referencia: "Beneficios penitenciarios - Prisión domiciliaria",
+      emailUsuario: userData?.email.trim() ?? '',
+      nui: userData?.nui ?? '',
+      td: userData?.td ?? '',
+      patio: userData?.patio ?? '',
+      radicado: userData?.radicado ?? '',
+      delito: userData?.delito ?? '',
+      condena: "${userData?.tiempoCondena ?? 0}",
+      purgado: "${mesesEjecutado + (diasEjecutadoExactos / 30).floor()}",
+      jdc: userData?.juzgadoQueCondeno ?? '',
+      numeroSeguimiento: widget.numeroSeguimiento,
     );
+
 
     String mensajeHtml = prisionDomiciliaria.generarTextoHtml();
 
