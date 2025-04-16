@@ -157,9 +157,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                         const Divider(color: Colors.red, height: 1),
                                       ],
                                     ),
-
                                   ),
-
                                 ],
                               );
                             },

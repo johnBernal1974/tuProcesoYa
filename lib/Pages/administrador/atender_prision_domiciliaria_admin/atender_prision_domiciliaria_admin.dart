@@ -1622,7 +1622,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   Future<void> enviarCorreoResend() async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
-    // 🔹 Obtener los datos de la solicitud desde Firestore
     final doc = await FirebaseFirestore.instance
         .collection('prision_domiciliaria_solicitados')
         .doc(widget.idDocumento)
@@ -1631,7 +1630,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-    // 🔹 Crear plantilla con todos los datos necesarios
     final prisionDomiciliaria = PrisionDomiciliariaTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: userData?.centroReclusion ?? "",
@@ -1653,15 +1651,15 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       referencia: "Beneficios penitenciarios - Prisión domiciliaria",
     );
 
-    // 🔹 HTML generado
     String mensajeHtml = prisionDomiciliaria.generarTextoHtml();
 
-    // 🔹 Procesar archivos adjuntos
     List<Map<String, String>> archivosBase64 = [];
-    for (String archivoUrl in widget.archivos) {
+
+    // Función auxiliar para procesar cualquier archivo por URL
+    Future<void> procesarArchivo(String urlArchivo) async {
       try {
-        String nombreArchivo = obtenerNombreArchivo(archivoUrl);
-        final response = await http.get(Uri.parse(archivoUrl));
+        String nombreArchivo = obtenerNombreArchivo(urlArchivo);
+        final response = await http.get(Uri.parse(urlArchivo));
         if (response.statusCode == 200) {
           String base64String = base64Encode(response.bodyBytes);
           archivosBase64.add({
@@ -1671,11 +1669,25 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
           });
         }
       } catch (e) {
-        if (kDebugMode) print("❌ Error archivo: $e");
+        if (kDebugMode) print("❌ Error al procesar archivo $urlArchivo: $e");
       }
     }
 
-    // 🔹 Correo y copia
+    // 🔹 Archivos principales
+    for (String archivoUrl in widget.archivos) {
+      await procesarArchivo(archivoUrl);
+    }
+
+    // 🔹 Cédula del responsable
+    if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) {
+      await procesarArchivo(widget.urlArchivoCedulaResponsable!);
+    }
+
+    // 🔹 Documentos de los hijos
+    for (String archivoHijo in widget.urlsArchivosHijos) {
+      await procesarArchivo(archivoHijo);
+    }
+
     final asuntoCorreo = "Solicitud de Prisión Domiciliaria - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
@@ -1685,7 +1697,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       correosCC.add(userData!.email.trim());
     }
 
-    // 🔹 Enviar correo
     final body = jsonEncode({
       "to": correoSeleccionado,
       "cc": correosCC,
@@ -1718,6 +1729,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       }
     }
   }
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
