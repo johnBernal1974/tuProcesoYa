@@ -240,10 +240,20 @@ class MyApp extends StatelessWidget {
                 fecha: args['fecha'],
                 idUser: args['idUser'],
                 archivos: List<String>.from(args['archivos'] ?? []),
-                urlArchivoCedulaResponsable: args['archivo_cedula_responsable'],
-                urlsArchivosHijos: List<String>.from(args['documentos_hijos'] ?? []),
+                urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable'],
+                urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
+
+                // 🟢 Usa las claves correctas aquí
+                direccion: args['direccion'] ?? "",
+                municipio: args['municipio'] ?? "",
+                departamento: args['departamento'] ?? "",
+                nombreResponsable: args['nombreResponsable'] ?? "", // <== ✅ aquí cambia
+                cedulaResponsable: args['cedulaResponsable'] ?? "", // <== ✅ aquí cambia
+                celularResponsable: args['celularResponsable'] ?? "",
+                sinRespuesta: args['sinRespuesta'] ?? false,
               ),
             );
+
           }
           else if (settings.name == 'atender_tutela_page') {
             final args = settings.arguments as Map<String, dynamic>;

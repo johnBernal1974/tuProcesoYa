@@ -203,9 +203,9 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                       child:
                                       ListaCorreosWidget(
                                         solicitudId: widget.idDocumento,
+                                        nombreColeccion: "derechos_peticion_solicitados",
                                         onTapCorreo: _mostrarDetalleCorreo,
-                                      ),
-
+                                      )
                                     ),
                                   ],
                                 ),
@@ -248,9 +248,9 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                     child:
                                     ListaCorreosWidget(
                                       solicitudId: widget.idDocumento,
+                                      nombreColeccion: "derechos_peticion_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
-                                    ),
-
+                                    )
                                   ),
 
                                 ],

@@ -549,7 +549,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      String docId = firestore.collection('solicitudes_prision_domiciliaria').doc().id;
+      String docId = firestore.collection('prision_domiciliaria_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
       List<String> urls = [];

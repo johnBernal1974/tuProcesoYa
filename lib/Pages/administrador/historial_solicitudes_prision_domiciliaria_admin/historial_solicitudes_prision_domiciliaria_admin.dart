@@ -538,13 +538,20 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
     try {
       // 🔹 Obtener el primer documento (con ID aleatorio) de la colección "configuraciones"
       QuerySnapshot configCollection = await FirebaseFirestore.instance.collection("configuraciones").get();
+      print("📁 Documentos encontrados en 'configuraciones': ${configCollection.docs.length}");
 
       if (configCollection.docs.isNotEmpty) {
-        DocumentSnapshot configDoc = configCollection.docs.first; // Obtener el primer documento disponible
+        DocumentSnapshot configDoc = configCollection.docs.first;
+        final data = configDoc.data() as Map<String, dynamic>;
+        print("📄 Datos del primer documento: $data");
 
         // 🔥 Extraer el valor del tiempo de respuesta
-        if (configDoc.data() != null && (configDoc.data() as Map<String, dynamic>).containsKey("tiempo_respuesta_prision_domiciliaria")) {
-          return (configDoc["tiempo_respuesta_prision_domiciliaria"] as num).toInt();
+        if (data.containsKey("tiempo_respuesta_prision_domiciliaria")) {
+          final valor = (data["tiempo_respuesta_prision_domiciliaria"] as num).toInt();
+          print("✅ Tiempo configurado: $valor días");
+          return valor;
+        } else {
+          print("⚠️ Nodo 'tiempo_respuesta_prision_domiciliaria' no encontrado.");
         }
       }
 
@@ -556,6 +563,7 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
   }
 
 
+
   /// 🔹 Navegar a la página correspondiente
   void _navegarAPagina(Map<String, dynamic> latestData, String idDocumento, List<String> preguntas, List<String> respuestas) async {
     final String rutaDestino = obtenerRutaSegunStatus(latestData['status'] ?? "Pendiente");
@@ -563,6 +571,12 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
     DateTime fechaEnvio = latestData['fechaEnvio']?.toDate() ?? DateTime.now();
     DateTime fechaLimite = fechaEnvio.add(Duration(days: tiempoPermitido));
     bool sinRespuesta = DateTime.now().isAfter(fechaLimite);
+    print("📆 Fecha de envío: $fechaEnvio");
+    print("📆 Fecha límite: $fechaLimite");
+    print("📆 Hoy: ${DateTime.now()}");
+    print("📌 ¿Sin respuesta? $sinRespuesta");
+
+
     if (context.mounted) {
       Navigator.pushNamed(
         context,
@@ -570,28 +584,40 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
         arguments: {
           'status': latestData['status'] ?? "Pendiente",
           'idDocumento': idDocumento,
-          'numero_seguimiento': latestData['numero_seguimiento'] ?? "Sin número",
+          'numeroSeguimiento': latestData['numero_seguimiento'] ?? "Sin número",
           'categoria': "Beneficios penitenciarios",
           'subcategoria': "Solicitud prisión domiciliaria",
-          'fecha': latestData['fecha'] != null ? latestData['fecha'].toDate().toString() : "Fecha no disponible",
+          'fecha': latestData['fecha'] != null
+              ? latestData['fecha'].toDate().toString()
+              : "Fecha no disponible",
           'idUser': latestData['idUser'] ?? "Desconocido",
-          'archivos': latestData.containsKey('archivos') ? List<String>.from(latestData['archivos']) : [],
+          'archivos': latestData.containsKey('archivos')
+              ? List<String>.from(latestData['archivos'])
+              : [],
 
-          // 🟣 Campos nuevos que faltaban
+          // Nuevos campos específicos de domiciliaria
           'urlArchivoCedulaResponsable': latestData['archivo_cedula_responsable'] ?? "",
           'urlsArchivosHijos': List<String>.from(latestData['documentos_hijos'] ?? []),
 
-          // 📌 Datos básicos
+          // Datos del responsable
           'direccion': latestData['direccion'] ?? "",
           'departamento': latestData['departamento'] ?? "",
           'municipio': latestData['municipio'] ?? "",
-          'nombre_responsable': latestData['nombre_responsable'] ?? "",
-          'cedula_responsable': latestData['cedula_responsable'] ?? "",
-          'celular_responsable': latestData['celular_responsable'] ?? "",
+          'nombreResponsable': latestData['nombre_responsable'] ?? "",
+          'cedulaResponsable': latestData['cedula_responsable'] ?? "",
+          'celularResponsable': latestData['celular_responsable'] ?? "",
+
+          // Estado de la respuesta
+          'sinRespuesta': sinRespuesta,
+
+          // Si quieres incluir las preguntas y respuestas de IA (por si se usa luego)
+          'preguntas': preguntas,
+          'respuestas': respuestas,
         },
       );
     }
   }
+
 
 
   Widget _buildFechaRevision(String? titulo, Timestamp? fecha) {

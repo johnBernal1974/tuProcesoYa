@@ -233,7 +233,7 @@ exports.sendEmailWithResend = onRequest({
   if (req.method === "OPTIONS") return res.status(204).send("");
 
   try {
-    const { to, cc, subject, html, archivos, idDocumento, enviadoPor } = req.body;
+    const { to, cc, subject, html, archivos, idDocumento, enviadoPor, tipo = "derecho_peticion" } = req.body;
 
     if (!to || !subject || !html || !idDocumento || !enviadoPor) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
@@ -276,7 +276,7 @@ exports.sendEmailWithResend = onRequest({
     const bucket = admin.storage().bucket();
     const timestamp = new Date().toISOString();
 
-    const htmlPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
+    const htmlPath = `${tipo}/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
     await bucket.file(htmlPath).save(Buffer.from(html, "utf-8"), {
       metadata: { contentType: "text/html; charset=utf-8" }
     });
@@ -364,9 +364,8 @@ exports.sendEmailWithResend = onRequest({
         </html>
       `;
 
-
       const pdfBuffer = await pdf.generatePdf({ content: styledHtml }, { format: 'Legal' });
-      const pdfPath = `derechos_peticion/${idDocumento}/correos_enviados/correo-${timestamp}.pdf`;
+      const pdfPath = `${tipo}/${idDocumento}/correos_enviados/correo-${timestamp}.pdf`;
       await bucket.file(pdfPath).save(pdfBuffer, { metadata: { contentType: "application/pdf" } });
       await bucket.file(pdfPath).makePublic();
       pdfUrl = `https://storage.googleapis.com/${bucket.name}/${pdfPath}`;
@@ -375,7 +374,7 @@ exports.sendEmailWithResend = onRequest({
     }
 
     await db
-      .collection("derechos_peticion_solicitados")
+      .collection(`${tipo}_solicitados`)
       .doc(idDocumento)
       .collection("log_correos")
       .add({
@@ -397,6 +396,7 @@ exports.sendEmailWithResend = onRequest({
     return res.status(500).json({ error: "Error enviando correo" });
   }
 });
+
 
 
 exports.generarTextoIAExtendido = onRequest({

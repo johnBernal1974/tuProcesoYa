@@ -565,15 +565,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     );
   }
 
-  Future<void> cargarCorreos() async {
-    Map<String, String> correos = await obtenerCorreosCentro(userDoc);
-    if (mounted) {
-      setState(() {
-        correosCentro = correos;
-      });
-    }
-  }
-
   void _actualizarAltura() {
     int lineas = '\n'.allMatches(_consideracionesController.text).length + 1;
     setState(() {
@@ -1193,11 +1184,10 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     }
   }
 
-
   void fetchDocumentoPrisionDomiciliaria() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitudas')
+          .collection('prision_domiciliaria_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -1384,12 +1374,11 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     }
   }
 
-
   // corregido full
   Future<void> cargarConsideraciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitudas')
+          .collection('prision_domiciliaria_solicitados')
           .doc(docId)
           .get();
 
@@ -1416,7 +1405,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   Future<void> cargarFundamentosDeDerecho(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitudas')
+          .collection('prision_domiciliaria_solicitados')
           .doc(docId)
           .get();
 
@@ -1443,7 +1432,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   Future<void> cargarPeticionConcreta(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitudas')
+          .collection('prision_domiciliaria_solicitados')
           .doc(docId)
           .get();
 
@@ -1635,7 +1624,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
     // 🔹 Obtener los datos de la solicitud desde Firestore
     final doc = await FirebaseFirestore.instance
-        .collection('prision_domiciliaria_solicitudas')
+        .collection('prision_domiciliaria_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -1705,6 +1694,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
+      "tipo": "prision_domiciliaria",
     });
 
     final response = await http.post(
@@ -1715,7 +1705,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
     if (response.statusCode == 200) {
       await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitudas')
+          .collection('prision_domiciliaria_solicitados')
           .doc(widget.idDocumento)
           .update({
         "status": "Enviado",
@@ -1728,8 +1718,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       }
     }
   }
-
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1897,38 +1885,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     } else {
       return "$metaCharset\n$html";
     }
-  }
-
-  Future<Map<String, String>> obtenerCorreosCentro(DocumentReference userDoc) async {
-    try {
-      DocumentSnapshot correoDoc = await userDoc.collection('correos_centro_reclusion').doc('emails').get();
-
-      if (correoDoc.exists && correoDoc.data() != null) {
-        var data = correoDoc.data() as Map<String, dynamic>;
-
-        Map<String, String> correos = {
-          'correo_direccion': data['correo_direccion'] ?? 'No disponible',
-          'correo_juridica': data['correo_juridica'] ?? 'No disponible',
-          'correo_principal': data['correo_principal'] ?? 'No disponible',
-          'correo_sanidad': data['correo_sanidad'] ?? 'No disponible',
-        };
-
-        // Obtener y mostrar los nombres de las claves
-        List<String> nombresCorreos = correos.keys.toList();
-        return correos;
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error obteniendo correos: $e");
-      }
-    }
-
-    return {
-      'correo_direccion': 'No disponible',
-      'correo_juridica': 'No disponible',
-      'correo_principal': 'No disponible',
-      'correo_sanidad': 'No disponible',
-    };
   }
 
   void actualizarSolicitud(String docId, Map<String, dynamic> datosActualizar) {

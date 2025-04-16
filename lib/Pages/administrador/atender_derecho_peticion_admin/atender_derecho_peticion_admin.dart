@@ -1571,6 +1571,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
+      "tipo": "derechos_peticion",
     });
 
     final response = await http.post(

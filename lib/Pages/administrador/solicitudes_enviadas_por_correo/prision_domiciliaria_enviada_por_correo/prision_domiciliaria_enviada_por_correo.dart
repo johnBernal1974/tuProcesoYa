@@ -27,6 +27,12 @@ class SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage extends StatefulWidget
   final String subcategoria;
   final String fecha;
   final String idUser;
+  final String direccion;
+  final String municipio;
+  final String departamento;
+  final String nombreResponsable;
+  final String cedulaResponsable;
+  final String celularResponsable;
 
   // Archivos adjuntos generales
   final List<String> archivos;
@@ -34,6 +40,7 @@ class SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage extends StatefulWidget
   // Nuevos campos específicos de prisión domiciliaria
   final String? urlArchivoCedulaResponsable;
   final List<String> urlsArchivosHijos;
+  final bool sinRespuesta;
 
   const SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage({
     super.key,
@@ -47,13 +54,20 @@ class SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage extends StatefulWidget
     required this.archivos,
     this.urlArchivoCedulaResponsable,
     this.urlsArchivosHijos = const [],
+    required this.direccion,
+    required this.municipio,
+    required this.departamento,
+    required this.nombreResponsable,
+    required this.cedulaResponsable,
+    required this.celularResponsable,
+    required this.sinRespuesta,
+
   });
+
 
   @override
   State<SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage> createState() => _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState();
 }
-
-
 
 class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage> {
   late PplProvider _pplProvider;
@@ -121,24 +135,31 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                     child: isMobile
                                         ? Column( // En móviles, disposición en columna
                                       children: [
+                                        if (widget.sinRespuesta)
                                         _buildWarningMessage(),
                                         const SizedBox(height: 10),
-                                        if (rol != "pasante 1") _buildTutelaButton(context),
+                                        if (widget.sinRespuesta && rol != "pasante 1") _buildTutelaButton(context),
                                         const SizedBox(height: 15)
                                       ],
                                     )
 
-                                        : Row( // En PC, mantener disposición en fila
+                                        : Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       crossAxisAlignment: CrossAxisAlignment.center,
                                       children: [
-                                        Flexible(child: _buildWarningMessage()), // Asegurar que el contenedor se renderice en PC
+                                        if (widget.sinRespuesta)
+                                          Flexible(child: _buildWarningMessage()),
+
                                         const SizedBox(width: 50),
-                                        if (rol != "pasante 1") SizedBox(width: 200, child: _buildTutelaButton(context)), // Definir tamaño del botón
+
+                                        if (widget.sinRespuesta && rol != "pasante 1")
+                                          SizedBox(width: 200, child: _buildTutelaButton(context)),
+                                        const Divider(color: Colors.red, height: 1),
                                       ],
                                     ),
+
                                   ),
-                                  const Divider(color: Colors.red, height: 1),
+
                                 ],
                               );
                             },
@@ -183,9 +204,9 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                       child:
                                       ListaCorreosWidget(
                                         solicitudId: widget.idDocumento,
+                                        nombreColeccion: "prision_domiciliaria_solicitados",
                                         onTapCorreo: _mostrarDetalleCorreo,
-                                      ),
-
+                                      )
                                     ),
                                   ],
                                 ),
@@ -228,9 +249,9 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                     child:
                                     ListaCorreosWidget(
                                       solicitudId: widget.idDocumento,
+                                      nombreColeccion: "prision_domiciliaria_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
-                                    ),
-
+                                    )
                                   ),
 
                                 ],
@@ -611,6 +632,15 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
         ),
         const SizedBox(height: 15),
         _buildDetallesSolicitud(),
+        const SizedBox(height: 15),
+       _buildInformacionUsuarioWidget(
+          direccion: widget.direccion,
+          departamento: widget.departamento,
+          municipio: widget.municipio,
+          nombreResponsable: widget.nombreResponsable,
+          cedulaResponsable: widget.cedulaResponsable,
+          celularResponsable: widget.celularResponsable,
+        ),
         const SizedBox(height: 30),
         const Row(
           children: [
@@ -628,6 +658,20 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
         ),
         const SizedBox(height: 30),
+        if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) ...[
+          const Text("🪪 Cédula del responsable", style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ArchivoViewerWeb(archivos: [widget.urlArchivoCedulaResponsable!]),
+          const SizedBox(height: 20),
+        ],
+
+        if (widget.urlsArchivosHijos.isNotEmpty) ...[
+          const Text("👶 Documentos de identidad de los hijos", style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          ArchivoViewerWeb(archivos: widget.urlsArchivosHijos),
+          const SizedBox(height: 20),
+        ],
+
         const Divider(color: gris),
         const SizedBox(height: 50),
         datosDeLaborAdmin()
@@ -635,6 +679,82 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
       ],
     );
   }
+
+  Widget _buildInformacionUsuarioWidget({
+    required String direccion,
+    required String departamento,
+    required String municipio,
+    required String nombreResponsable,
+    required String cedulaResponsable,
+    required String celularResponsable,
+  }) {
+    TextStyle labelStyle = const TextStyle(fontSize: 13);
+    TextStyle valueStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.bold);
+
+    return Card(
+      surfaceTintColor: blanco,
+      elevation: 5,
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Información suministrada por el Usuario",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 16),
+            const Text("Lugar donde cumplirá la prisión domiciliaria"),
+            // Dirección
+            Row(
+              children: [
+                Text("Dirección: ", style: labelStyle),
+                Expanded(
+                  child: Text(
+                    '$direccion, $municipio, $departamento',
+                    style: valueStyle,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Responsable
+            const Divider(height: 20, color: gris),
+            const Text(
+              "Persona que se hace responsable en el Domicilio",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+
+            Row(
+              children: [
+                Text("Nombres y apellidos: ", style: labelStyle),
+                Expanded(child: Text(nombreResponsable, style: valueStyle)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Text("Numero de identificación: ", style: labelStyle),
+                Expanded(child: Text(cedulaResponsable, style: valueStyle)),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            Row(
+              children: [
+                Text("Teléfono Celular: ", style: labelStyle),
+                Expanded(child: Text(celularResponsable, style: valueStyle)),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
   /// 📅 Muestra la fecha de hoy en formato adecuado
   Widget _buildFechaHoy() {
@@ -758,8 +878,6 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
     );
   }
 
-
-
   /// 📆 Función para manejar errores en la conversión de fechas
   String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
     if (fecha == null) return "";
@@ -773,7 +891,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
 
       // 🔥 Obtener documento de Firestore
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitudas')
+          .collection('prision_domiciliaria_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -839,116 +957,6 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
   void abrirHtmlParaImprimir(String url) {
     html.window.open(url, '_blank');
   }
-
-  Widget historialCorreosTable() {
-    return FutureBuilder<QuerySnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitudas')
-          .doc(widget.idDocumento)
-          .collection('log_correos')
-          .orderBy('timestamp', descending: true)
-          .get(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text("No hay registros de correos disponibles."),
-          );
-        }
-
-        final correos = snapshot.data!.docs;
-
-        return Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            children: [
-              Container(
-                color: Colors.grey.shade100,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                child: const Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text("Tipo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Text("Fecha", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    ),
-                    Expanded(
-                      flex: 3,
-                      child: Text("Ver", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(height: 1, color: Colors.grey),
-
-              ...correos.map((doc) {
-                final data = doc.data() as Map<String, dynamic>;
-                final tipo = data['tipo'] ?? 'Enviado';
-                final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
-                final fecha = timestamp != null
-                    ? DateFormat("dd/MM/yyyy - hh:mm a", 'es').format(timestamp)
-                    : 'Sin fecha';
-
-                return Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 3,
-                            child: Text(tipo, style: const TextStyle(fontSize: 12)),
-                          ),
-                          Expanded(
-                            flex: 4,
-                            child: Text(fecha, style: const TextStyle(fontSize: 12)),
-                          ),
-                          Expanded(
-                            flex: 3,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: TextButton(
-                                onPressed: () {
-                                  _mostrarDetalleCorreo(doc.id);
-                                },
-                                child: const Text(
-                                  "Ver el correo",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: primary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Divider(height: 1, color: Colors.grey),
-                  ],
-                );
-              }).toList(),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   void _mostrarDetalleCorreo(String correoId) {
     showDialog(
       context: context,
@@ -965,7 +973,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
               padding: const EdgeInsets.all(20),
               child: FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance
-                    .collection('prision_domiciliaria_solicitudas')
+                    .collection('prision_domiciliaria_solicitados')
                     .doc(widget.idDocumento)
                     .collection('log_correos')
                     .doc(correoId)

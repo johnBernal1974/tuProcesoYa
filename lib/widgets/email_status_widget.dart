@@ -4,13 +4,14 @@ import 'package:intl/intl.dart';
 
 class ListaCorreosWidget extends StatelessWidget {
   final String solicitudId;
+  final String nombreColeccion;
   final void Function(String correoId) onTapCorreo;
 
-  const ListaCorreosWidget({super.key, required this.solicitudId, required this.onTapCorreo});
+  const ListaCorreosWidget({super.key, required this.solicitudId, required this.onTapCorreo, required this.nombreColeccion});
 
-  Future<List<Map<String, dynamic>>> _obtenerCorreosConEstado(String solicitudId) async {
+  Future<List<Map<String, dynamic>>> _obtenerCorreosConEstado() async {
     final correosSnapshot = await FirebaseFirestore.instance
-        .collection("derechos_peticion_solicitados")
+        .collection(nombreColeccion) // ✅ Se usa el parámetro aquí
         .doc(solicitudId)
         .collection("log_correos")
         .orderBy("timestamp", descending: true)
@@ -99,7 +100,7 @@ class ListaCorreosWidget extends StatelessWidget {
     final isMobile = MediaQuery.of(context).size.width < 600;
 
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _obtenerCorreosConEstado(solicitudId),
+      future: _obtenerCorreosConEstado(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
