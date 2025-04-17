@@ -1825,6 +1825,20 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
           ),
           child: Html(data: plantilla.generarTextoHtml()),
         ),
+        const SizedBox(height: 50),
+        Wrap(
+          children: [
+            if (widget.status == "Solicitado") ...[
+              guardarVistaPrevia(widget.idDocumento),
+            ],
+            if ((widget.status == "Diligenciado" || widget.status == "Revisado") && rol != "pasante 1") ...[
+              guardarRevisado(widget.idDocumento),
+              const SizedBox(width: 20), // Espaciado entre botones
+              botonEnviarCorreo(),
+            ],
+          ],
+        ),
+        const SizedBox(height: 150),
       ],
     );
   }
