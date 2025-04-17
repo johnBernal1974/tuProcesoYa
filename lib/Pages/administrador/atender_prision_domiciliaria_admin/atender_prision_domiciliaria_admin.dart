@@ -81,14 +81,14 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   final TextEditingController _sinopsisController = TextEditingController();
   final TextEditingController _consideracionesController = TextEditingController();
   final TextEditingController _pretencionesController = TextEditingController();
-  final TextEditingController _pruebasController = TextEditingController();
+  final TextEditingController _anexosController = TextEditingController();
   final TextEditingController _fundamentosDerechoController = TextEditingController();
   final AtenderDerechoPeticionAdminController _controller = AtenderDerechoPeticionAdminController();
   String sinopsis = "";
   String consideraciones = "";
   String fundamentosDeDerecho = "";
   String pretenciones = "";
-  String pruebas = "";
+  String anexos = "";
   bool _mostrarVistaPrevia = false;
   bool _mostrarBotonVistaPrevia = false;
   Map<String, String> correosCentro = {};
@@ -100,7 +100,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   bool _isFundamentosLoaded = false; // Bandera para evitar sobrescribir
   bool _isConsideracionesLoaded = false; // Bandera para evitar sobrescribir
   bool _isPretencionesLoaded = false; // Bandera para evitar sobrescribir
-  bool _ispruebasLoaded = false; // Bandera para evitar sobrescribir
+  bool _isAnexosLoaded = false; // Bandera para evitar sobrescribir
   String adminFullName="";
   String entidad= "";
   String diligencio = '';
@@ -158,15 +158,15 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     _consideracionesController.addListener(_actualizarAltura);
     _fundamentosDerechoController.addListener(_actualizarAltura);
     _pretencionesController.addListener(_actualizarAltura);
-    _pruebasController.addListener(_actualizarAltura);
+    _anexosController.addListener(_actualizarAltura);
 
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       cargarSinopsis(widget.idDocumento);
-      cargarFundamentosDeDerecho(widget.idDocumento);
       cargarConsideraciones(widget.idDocumento);
+      cargarFundamentosDeDerecho(widget.idDocumento);
       cargarPretenciones(widget.idDocumento);
-      cargarPruebas(widget.idDocumento);
+      cargarAnexos(widget.idDocumento);
     });
     adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
     if (adminFullName.isEmpty) {
@@ -461,7 +461,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
                     consideraciones = _consideracionesController.text.trim();
                     fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
                     pretenciones = _pretencionesController.text.trim();
-                    pruebas = _pruebasController.text.trim();
+                    anexos = _anexosController.text.trim();
                     _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
                   });
                 },
@@ -480,7 +480,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             consideraciones: consideraciones,
             fundamentosDeDerecho: fundamentosDeDerecho,
             pretenciones: pretenciones,
-            pruebas: pruebas,
+            anexos: anexos,
             direccion: widget.direccion,
             municipio: widget.municipio,
             departamento: widget.departamento,
@@ -580,7 +580,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   void _guardarDatosEnVariables() {
     if ( _sinopsisController.text.isEmpty || _fundamentosDerechoController.text.isEmpty || _consideracionesController.text.isEmpty
         || _pretencionesController.text.isEmpty
-    || _pruebasController.text.isEmpty ) {
+    || _anexosController.text.isEmpty ) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("⚠️ Todos los campos deben estar llenos."),
@@ -598,7 +598,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       consideraciones = _consideracionesController.text;
       fundamentosDeDerecho = _fundamentosDerechoController.text;
       pretenciones = _pretencionesController.text;
-      pruebas = _pruebasController.text;
+      anexos = _anexosController.text;
     });
     _mostrarBotonVistaPrevia = true;
   }
@@ -609,12 +609,12 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     _consideracionesController.removeListener(_actualizarAltura);
     _fundamentosDerechoController.removeListener(_actualizarAltura);
     _pretencionesController.removeListener(_actualizarAltura);
-    _pruebasController.removeListener(_actualizarAltura);
+    _anexosController.removeListener(_actualizarAltura);
     _sinopsisController.dispose();
     _consideracionesController.dispose();
     _fundamentosDerechoController.dispose();
     _pretencionesController.dispose();
-    _pruebasController.dispose();
+    _anexosController.dispose();
     super.dispose();
   }
 
@@ -825,7 +825,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
           _sinopsisController.text.trim().isNotEmpty && _consideracionesController.text.trim().isNotEmpty &&
               _fundamentosDerechoController.text.trim().isNotEmpty &&
               _pretencionesController.text.trim().isNotEmpty &&
-              _pruebasController.text.trim().isNotEmpty;
+              _anexosController.text.trim().isNotEmpty;
     });
   }
 
@@ -1179,20 +1179,20 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
         _sinopsisController.text = generarTextoSinopsisDesdeDatos(fetchedData);
         _isSinopsisLoaded = true;
       }
-      // if (!_isConsideracionesLoaded) {
-      //   _consideracionesController.text = generarTextoConsideracionesDesdeDatos(fetchedData);
-      //   _isConsideracionesLoaded = true;
-      // }
+
       if (!_isFundamentosLoaded) {
-        _fundamentosDerechoController.text = generarTextoFundamentosDesdeDatos(fetchedData, latestData);
+        _fundamentosDerechoController.text =
+            generarTextoFundamentosDesdeDatos(fetchedData, latestData);
         _isFundamentosLoaded = true;
       }
+
       if (!_isPretencionesLoaded) {
         _pretencionesController.text = generarTextoPretencionesDesdeDatos(fetchedData);
         _isPretencionesLoaded = true;
       }
-      if (!_ispruebasLoaded) {
-        _pruebasController.text = """
+
+      if (!_isAnexosLoaded) {
+        _anexosController.text = """
 1. Declaración extrajuicio de la persona que me acogerá en el sitio de domicilio.
 
 2. Certificación de insolvencia económica.
@@ -1203,14 +1203,43 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
 5. Registro civil de mis hijos.
 """;
-        _ispruebasLoaded = true;
+        _isAnexosLoaded = true;
       }
 
       setState(() {
         userData = fetchedData;
 
-        // 🧠 Extra: Puedes guardar latestData en una variable de estado si lo necesitas luego
-        // this.latestData = latestData;
+        prisionDomiciliaria = PrisionDomiciliariaTemplate(
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: fetchedData.centroReclusion ?? "",
+          referencia: "Beneficios penitenciarios - Prisión domiciliaria",
+          nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
+          apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
+          identificacionPpl: fetchedData.numeroDocumentoPpl ?? "",
+          centroPenitenciario: fetchedData.centroReclusion ?? "",
+          sinopsis: _sinopsisController.text.trim(),
+          consideraciones: _consideracionesController.text.trim(),
+          fundamentosDeDerecho: _fundamentosDerechoController.text.trim(),
+          pretenciones: _pretencionesController.text.trim(),
+          anexos: _anexosController.text.trim(),
+          direccionDomicilio: latestData['direccion'] ?? "",
+          municipio: latestData['municipio'] ?? "",
+          departamento: latestData['departamento'] ?? "",
+          nombreResponsable: latestData['nombre_responsable'] ?? "",
+          parentesco: fetchedData.parentescoRepresentante ?? "",
+          cedulaResponsable: latestData['cedula_responsable'] ?? "",
+          celularResponsable: latestData['celular_responsable'] ?? "",
+          emailUsuario: fetchedData.email?.trim() ?? "",
+          nui: fetchedData.nui ?? "",
+          td: fetchedData.td ?? "",
+          patio: fetchedData.patio ?? "",
+          radicado: fetchedData.radicado ?? "",
+          delito: fetchedData.delito ?? "",
+          condena: "${fetchedData.tiempoCondena ?? 0}",
+          purgado: "$mesesEjecutado",
+          jdc: fetchedData.juzgadoQueCondeno ?? "",
+          numeroSeguimiento: widget.numeroSeguimiento,
+        );
 
         isLoading = false;
       });
@@ -1223,26 +1252,31 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   }
 
 
+  String formatearFechaCaptura(String fechaString) {
+    try {
+      final fecha = DateTime.parse(fechaString); // convierte el string en DateTime
+      final formato = DateFormat("d 'de' MMMM 'de' y", 'es'); // formato en español
+      return formato.format(fecha);
+    } catch (e) {
+      return 'Fecha inválida';
+    }
+  }
+
   String generarTextoSinopsisDesdeDatos(Ppl userData) {
     final jdc = userData.juzgadoQueCondeno ?? '';
     final condena = userData.tiempoCondena?.toString() ?? '';
     final captura = userData.fechaCaptura?.toString() ?? '';
     final delito = userData.delito ?? '';
     final purgado = "$mesesEjecutado";
+    final fechaFormateada = formatearFechaCaptura(captura);
 
-    return "Mi condena fue proferida mediante sentencia por el $jdc a una pena de $condena meses de prisión, por el delito de $delito. Fui capturado el dia $captura, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, por lo cual ya he superado el 50% de la pena impuesta.";
+    return "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, por lo cual ya he superado el 50% de la pena impuesta.";
   }
 
   String generarTextoPretencionesDesdeDatos(Ppl userData) {
-    final jdc = userData.juzgadoQueCondeno ?? '';
-    final condena = userData.tiempoCondena?.toString() ?? '';
-    final captura = userData.fechaCaptura?.toString() ?? '';
-    final delito = userData.delito ?? '';
-    final purgado = "$mesesEjecutado";
-
     return """
-PRIMERO: Solicitar al establecimiento penitenciario y carcelario, area de juridica, emitan la documentacion inherente para el sustitutivo, Prisión domiciliaria.\n
-SEGUNDO: Otorgar el sustitutivo de Prisión Domiciliaria como lo cita el articulo 38G del C.P.P.;
+PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite del sustituto de prisión domiciliaria.\n
+SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido en el artículo 38G del Código de Procedimiento Penal.
 """;
   }
 
@@ -1469,7 +1503,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       if (doc.exists && !_isSinopsisLoaded) {
         final data = doc.data() as Map<String, dynamic>?;
 
-        final texto = data?['hechos'];
+        final texto = data?['sinopsis'];
         if (texto != null && texto is String) {
           setState(() {
             _sinopsisController.text = texto;
@@ -1481,7 +1515,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       }
     } catch (e) {
       if (kDebugMode) {
-        print("❌ Error cargando hechos: $e");
+        print("❌ Error cargando sinopsis: $e");
       }
     }
   }
@@ -1496,10 +1530,10 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       if (doc.exists && !_isConsideracionesLoaded) {
         final data = doc.data() as Map<String, dynamic>?;
 
-        final texto = data?['hechos'];
+        final texto = data?['consideraciones'];
         if (texto != null && texto is String) {
           setState(() {
-            _sinopsisController.text = texto;
+            _consideracionesController.text = texto;
             _isConsideracionesLoaded = true;
           });
 
@@ -1508,7 +1542,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       }
     } catch (e) {
       if (kDebugMode) {
-        print("❌ Error cargando hechos: $e");
+        print("❌ Error cargando consideraciones: $e");
       }
     }
   }
@@ -1568,21 +1602,21 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
     }
   }
   //corregido full
-  Future<void> cargarPruebas(String docId) async {
+  Future<void> cargarAnexos(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
           .collection('prision_domiciliaria_solicitados')
           .doc(docId)
           .get();
 
-      if (doc.exists && !_ispruebasLoaded) {
+      if (doc.exists && !_isAnexosLoaded) {
         final data = doc.data() as Map<String, dynamic>?;
 
-        final texto = data?['pruebas'];
+        final texto = data?['anexos'];
         if (texto != null && texto is String) {
           setState(() {
-            _pruebasController.text = texto;
-            _ispruebasLoaded = true;
+            _anexosController.text = texto;
+            _isAnexosLoaded = true;
           });
 
           verificarVistaPrevia();
@@ -1590,7 +1624,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       }
     } catch (e) {
       if (kDebugMode) {
-        print("❌ Error cargando pruebas: $e");
+        print("❌ Error cargando anexos: $e");
       }
     }
   }
@@ -1739,7 +1773,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
         ),
         const SizedBox(height: 5),
         TextField(
-          controller: _pruebasController,
+          controller: _anexosController,
           minLines:1,
           maxLines: null,
           decoration: InputDecoration(
@@ -1767,7 +1801,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
     required String consideraciones,
     required String fundamentosDeDerecho,
     required String pretenciones,
-    required String pruebas,
+    required String anexos,
     required String direccion,
     required String municipio,
     required String departamento,
@@ -1788,7 +1822,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       consideraciones: convertirSaltosDeLinea(consideraciones),
       fundamentosDeDerecho: convertirSaltosDeLinea(fundamentosDeDerecho),
       pretenciones: convertirSaltosDeLinea(pretenciones),
-      pruebas: convertirSaltosDeLinea(pruebas),
+      anexos: convertirSaltosDeLinea(anexos),
       direccionDomicilio: direccion,
       municipio: municipio,
       departamento: departamento,
@@ -1859,7 +1893,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-    final prisionDomiciliaria = PrisionDomiciliariaTemplate(
+      prisionDomiciliaria = PrisionDomiciliariaTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad ?? "",
       referencia: "Beneficios penitenciarios - Prisión domiciliaria",
@@ -1871,7 +1905,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       consideraciones: consideraciones,
       fundamentosDeDerecho: fundamentosDeDerecho,
       pretenciones: pretenciones,
-      pruebas: pruebas,
+      anexos: anexos,
       direccionDomicilio: latestData['direccion'] ?? '',
       municipio: latestData['municipio'] ?? '',
       departamento: latestData['departamento'] ?? '',
@@ -2038,7 +2072,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
           }
           await enviarCorreoResend();
           final html = prisionDomiciliaria.generarTextoHtml();
-          await subirHtmlCorreoADocumento(
+          await subirHtmlCorreoADocumentoDomiciliaria(
             idDocumento: widget.idDocumento,
             htmlContent: html,
           );
@@ -2074,7 +2108,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
                 final mensaje = Uri.encodeComponent(
                     "Hola *${userData!.nombreAcudiente}*,\n\n"
                         "Hemos enviado tu solicitud de prisón domiciliaria número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                        "Recuerda que la entidad tiene un tiempo aproximado de 20 días para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
+                        "Recuerda que la entidad tiene un tiempo aproximado de 30 días para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
                         "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes beneficios penitenciarios. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                         "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
                 );
@@ -2092,7 +2126,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
     );
   }
 
-  Future<void> subirHtmlCorreoADocumento({
+  Future<void> subirHtmlCorreoADocumentoDomiciliaria({
     required String idDocumento,
     required String htmlContent,
   }) async {
@@ -2103,7 +2137,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "derechos_peticion/$idDocumento/correos/$fileName";
+      final filePath = "solicitudes_prision_domiciliaria/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
@@ -2116,18 +2150,19 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
 
       // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("derechos_peticion_solicitados")
+          .collection("prision_domiciliaria_solicitados") // 🟣 Cambiar colección
           .doc(idDocumento)
           .update({
         "correoHtmlUrl": downloadUrl,
         "fechaHtmlCorreo": FieldValue.serverTimestamp(),
       });
 
-      print("✅ HTML subido y guardado con URL: $downloadUrl");
+      print("✅ HTML de domiciliaria subido y guardado con URL: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo: $e");
+      print("❌ Error al subir HTML del correo de domiciliaria: $e");
     }
   }
+
 
   /// 💡 Corrige el HTML para asegurar que tenga codificación UTF-8
   String htmlUtf8Compatible(String html) {
@@ -2178,7 +2213,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
             "consideraciones": _consideracionesController.text,
             "fundamentos_de_derecho": _fundamentosDerechoController.text,
             "pretenciones": _pretencionesController.text,
-            "pruebas": _pruebasController.text,
+            "anexos": _anexosController.text,
           });
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(
@@ -2225,6 +2260,10 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
             "status": "Revisado",
             "reviso": adminFullName, // Guarda el nombre del admin
             "fecha_revision": FieldValue.serverTimestamp(),
+            "consideraciones": _consideracionesController.text,
+            "fundamentos_de_derecho": _fundamentosDerechoController.text,
+            "pretenciones": _pretencionesController.text,
+            "anexos": _anexosController.text,
           });
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(

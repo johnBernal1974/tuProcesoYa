@@ -10,7 +10,7 @@ class PrisionDomiciliariaTemplate {
   final String consideraciones;
   final String fundamentosDeDerecho;
   final String pretenciones;
-  final String pruebas;
+  final String anexos;
   final String direccionDomicilio;
   final String municipio;
   final String departamento;
@@ -42,7 +42,7 @@ class PrisionDomiciliariaTemplate {
     required this.consideraciones,
     required this.fundamentosDeDerecho,
     required this.pretenciones,
-    required this.pruebas,
+    required this.anexos,
     required this.direccionDomicilio,
     required this.municipio,
     required this.departamento,
@@ -63,6 +63,13 @@ class PrisionDomiciliariaTemplate {
     required this.numeroSeguimiento,
   });
 
+  String convertirParrafos(String texto) {
+    return texto
+        .split('\n\n')
+        .map((p) => '<p>${p.replaceAll('\n', '<br>')}</p>')
+        .join();
+  }
+
   String generarTextoHtml() {
     return """
     <html>
@@ -80,46 +87,30 @@ class PrisionDomiciliariaTemplate {
               
         yo, <b>$nombrePpl $apellidoPpl</b>, identificado con el número de cédula <b>$identificacionPpl</b>, actualmente recluido en <b>$centroPenitenciario</b>, con el NUI : <b>$nui</b> y TD : <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.<br><br>
 
-        <span style="font-size: 18px;">
-        <b>I. SINOPSIS PROCESAL</b><br>
-        </span>
-        
-        $sinopsis<br><br>  
-        
-        <span style="font-size: 18px;">
-        <b>II. CONSIDERACIONES</b><br>
-        </span>
-        
-        $consideraciones<br><br>              
+        <span style="font-size: 18px;"><b>I. SINOPSIS PROCESAL</b></span><br>
+        ${convertirParrafos(sinopsis)}<br><br>
 
-        <span style="font-size: 18px;">
-        <b>III. FUNDAMENTOS DE DERECHO</b><br>
-        </span>
-        
-        $fundamentosDeDerecho<br><br>        
+        <span style="font-size: 18px;"><b>II. CONSIDERACIONES</b></span><br>
+        ${convertirParrafos(consideraciones)}<br><br>
 
-        <span style="font-size: 18px;">
-        <b>IV. PRETENCIONES</b><br>
-        </span>
-        
-        $pretenciones<br><br>
-        
-        
-        <span style="font-size: 18px;">
-        <b>IV. ANEXOS</b><br>
-        </span>
-        
-        $pruebas<br><br>       
+        <span style="font-size: 18px;"><b>III. FUNDAMENTOS DE DERECHO</b></span><br>
+        ${convertirParrafos(fundamentosDeDerecho)}<br><br>
+
+        <span style="font-size: 18px;"><b>IV. PRETENCIONES</b></span><br>
+        ${convertirParrafos(pretenciones)}<br><br>
+
+        <span style="font-size: 18px;"><b>V. ANEXOS</b></span><br>
+        ${convertirParrafos(anexos)}<br><br>
 
         <b>Información del domicilio donde se cumpliría la medida:</b><br>
-      <span style="font-size: 13px;">
-      Dirección: <b>$direccionDomicilio</b>, <b>$municipio</b> - <b>$departamento</b><br>
-      Nombre de la persona responsable: <b>$nombreResponsable</b><br>
-      Número de identificación: <b>$cedulaResponsable</b><br>
-      Número de celular: <b>$celularResponsable</b><br><br><br><br>
-      </span>
+        <span style="font-size: 13px;">
+        Dirección: <b>$direccionDomicilio</b>, <b>$municipio</b> - <b>$departamento</b><br>
+        Nombre de la persona responsable: <b>$nombreResponsable</b><br>
+        Número de identificación: <b>$cedulaResponsable</b><br>
+        Número de celular: <b>$celularResponsable</b><br><br><br><br>
+        </span>
 
-      Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
+        Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
         $emailAlternativo<br>
         $emailUsuario<br><br><br>
 
@@ -129,15 +120,13 @@ class PrisionDomiciliariaTemplate {
         <div style=\"margin-top: 80px;\">
           <img src=\"https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635\" width=\"150\" height=\"50\"><br>
         </div>
+
+        <b>NOTA IMPORTANTE</b><br>
+        <p style="font-size: 13px;">
+          El presente correo será copiado a la oficina jurídica de la <strong>$centroPenitenciario</strong>, para que queden informados de la presente diligencia y adelanten los trámites respectivos.
+        </p>
       </body>
     </html>
-    
-    <b>NOTA IMPORTANTE</b><br>
-    
-    <p style="font-size: 13px;">
-  El presente correo será copiado a la oficina jurídica de la <strong>$centroPenitenciario</strong>, para que queden informados de la presente diligencia y adelanten los trámites respectivos.
-</p>
-
     """;
   }
 }
