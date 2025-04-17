@@ -85,7 +85,7 @@ class SolicitudExitosaDomiciliariaPage extends StatelessWidget {
                     "2. Una vez radicada la presente solicitud, el juez debe emitir una decisión en un plazo máximo de ",
                   ),
                   TextSpan(
-                    text: "10 días hábiles.",
+                    text: "20 días hábiles.",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   TextSpan(

@@ -8,6 +8,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../../commons/archivo _uplouder.dart';
+import '../../../commons/base_textfield.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
@@ -28,8 +29,10 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
   String? archivoRecibo;
   String? archivoDeclaracion;
+  String? archivoInsolvencia;
   String? urlArchivoRecibo;
   String? urlArchivoDeclaracion;
+  String? urlArchivoInsolvencia;
   String? departamentoSeleccionado;
   String? municipioSeleccionado;
 
@@ -42,6 +45,13 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
   List<PlatformFile> archivosHijos = [];
   List<String> urlsArchivosHijos = [];
   String? docIdSolicitud;
+
+  //nuevos campos para los hijos
+  List<Map<String, String>> hijos = [];
+  final TextEditingController _nombreHijoController = TextEditingController();
+  final TextEditingController _edadHijoController = TextEditingController();
+
+  bool tieneHijosConvivientes = false;
 
 
   @override
@@ -169,7 +179,38 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
-                const Text('4. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
+                const Text(
+                    '4. Sube la certificación de insolvencia económica en un solo documento:', style: TextStyle(
+                    fontWeight: FontWeight.bold
+                )),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => pickSingleFile('insolvencia'),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          archivoInsolvencia ?? 'Subir archivo',
+                          style: const TextStyle(
+                            decoration: TextDecoration.underline,
+                            color: Colors.deepPurple,
+                          ),
+                        ),
+                      ),
+                      if (archivoInsolvencia != null)
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                          onPressed: () => eliminarArchivo('insolvencia'),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Divider(color: negroLetras, height: 1),
+                const SizedBox(height: 24),
+                const Text('5. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
                     fontWeight: FontWeight.bold
                 )),
                 const SizedBox(height: 10),
@@ -214,7 +255,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                  '5. Sube la fotocopia de la cédula de la persona responsable:',
+                  '6. Sube la fotocopia de la cédula de la persona responsable:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -242,55 +283,83 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-              // 👶 Documentos de los hijos
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
-                const Text(
-                  '6. Si el PPL tiene hijos, adjuntar sus documentos de identidad (Opcional)',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: pickMultipleFilesHijos,
-                  child: const Row(
-                    children: [
-                      Icon(Icons.upload_file, color: Colors.deepPurple),
-                      SizedBox(width: 8),
-                      Text(
-                        'Subir archivos de los hijos',
-                        style: TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: Colors.deepPurple,
-                        ),
-                      ),
-                    ],
+                CheckboxListTile(
+                  value: tieneHijosConvivientes,
+                  onChanged: (value) {
+                    setState(() {
+                      tieneHijosConvivientes = value ?? false;
+                    });
+                  },
+                  title: const Text(
+                    '¿Vivirá con sus hijos mientras cumple el beneficio de prisión domiciliaria? Solo aplica para hijos menores de 18 años.',
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
                 ),
-                const SizedBox(height: 8),
-                if (archivosHijos.isNotEmpty)
+
+                if (tieneHijosConvivientes) ...[
+                  const SizedBox(height: 24),
+                  const Divider(color: negroLetras, height: 1),
+                  const SizedBox(height: 24),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: archivosHijos.map((file) {
-                      return Row(
-                        children: [
-                          const Icon(Icons.upload_file, color: Colors.deepPurple, size: 18),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              file.name,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 14),
+                    children: [
+                      formularioHijos(),
+                      const SizedBox(height: 24),
+                      const Divider(color: negroLetras, height: 1),
+                      const SizedBox(height: 24),
+                      const Text(
+                        '8. Adjuntar los documentos de identidad de los hijos',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: pickMultipleFilesHijos,
+                        child: const Row(
+                          children: [
+                            Icon(Icons.upload_file, color: Colors.deepPurple),
+                            SizedBox(width: 8),
+                            Text(
+                              'Subir archivos de los hijos',
+                              style: TextStyle(
+                                decoration: TextDecoration.underline,
+                                color: Colors.deepPurple,
+                              ),
                             ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                            tooltip: "Eliminar archivo",
-                            onPressed: () => eliminarArchivoHijo(file),
-                          ),
-                        ],
-                      );
-                    }).toList(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      if (archivosHijos.isNotEmpty)
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: archivosHijos.map((file) {
+                            return Row(
+                              children: [
+                                const Icon(Icons.upload_file, color: Colors.deepPurple, size: 18),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    file.name,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                                  tooltip: "Eliminar archivo",
+                                  onPressed: () => eliminarArchivoHijo(file),
+                                ),
+                              ],
+                            );
+                          }).toList(),
+                        ),
+                    ],
                   ),
+                ],
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
@@ -323,6 +392,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       }
     });
   }
+
   void eliminarArchivo(String tipo) {
     setState(() {
       if (tipo == 'recibo') {
@@ -335,9 +405,12 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         archivoCedulaResponsable = null;
         urlArchivoCedulaResponsable = null;
       }
+      else if (tipo == 'insolvencia') {
+        archivoInsolvencia = null;
+        urlArchivoInsolvencia = null;
+      }
     });
   }
-
 
   Future<void> pickSingleFile(String tipo) async {
     try {
@@ -355,9 +428,12 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
           } else if (tipo == 'cedula_responsable') {
             archivoCedulaResponsable = file.name;
           }
+          else if (tipo == 'insolvencia') {
+            archivoInsolvencia = file.name;
+          }
         });
 
-        docIdSolicitud ??= FirebaseFirestore.instance.collection('solicitudes_prision_domiciliaria').doc().id;
+        docIdSolicitud ??= FirebaseFirestore.instance.collection('prision_domiciliaria_solicitados').doc().id;
         String path = 'solicitudes_prision_domiciliaria/$docIdSolicitud/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
@@ -373,8 +449,28 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
               urlArchivoDeclaracion = downloadUrl;
             } else if (tipo == 'cedula_responsable') {
               urlArchivoCedulaResponsable = downloadUrl;
+            } else if (tipo == 'insolvencia') {
+              urlArchivoInsolvencia = downloadUrl;
             }
           });
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Archivo subido exitosamente."),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("No se pudo subir el archivo, intenta nuevamente."),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -384,14 +480,12 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
     }
   }
 
-
-
   Future<void> pickMultipleFilesHijos() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null && result.files.isNotEmpty) {
-        docIdSolicitud ??= FirebaseFirestore.instance.collection('solicitudes_prision_domiciliaria').doc().id;
+        docIdSolicitud ??= FirebaseFirestore.instance.collection('prision_domiciliaria_solicitados').doc().id;
 
         for (PlatformFile file in result.files) {
           if (!archivosHijos.any((f) => f.name == file.name)) {
@@ -419,15 +513,14 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
     }
   }
 
-
-
   void validarYEnviar() async {
     if (_direccionController.text.trim().isEmpty ||
         departamentoSeleccionado == null ||
         municipioSeleccionado == null ||
         archivoRecibo == null ||
         archivoDeclaracion == null ||
-        archivoCedulaResponsable == null || // ✅ Ahora obligatorio
+        archivoCedulaResponsable == null ||
+        archivoInsolvencia == null ||
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
         _celularResponsableController.text.trim().isEmpty) {
@@ -440,8 +533,38 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       return;
     }
 
+    // 🔹 Validar datos de hijos solo si el usuario indicó que vivirá con ellos
+    if (tieneHijosConvivientes) {
+      if (hijos.isEmpty || archivosHijos.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor, agrega los datos de los hijos y sube sus documentos."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      for (var hijo in hijos) {
+        final nombre = hijo['nombre']?.trim() ?? '';
+        final edadStr = hijo['edad'] ?? '0';
+        final edad = int.tryParse(edadStr) ?? 0;
+
+        if (nombre.isEmpty || edad <= 0 || edad >= 18) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Verifica que cada hijo tenga nombre y una edad válida menor de 18 años."),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
+        }
+      }
+    }
+
     await verificarSaldoYEnviarSolicitud();
   }
+
 
 
   Future<void> verificarSaldoYEnviarSolicitud() async {
@@ -577,15 +700,18 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         'celular_responsable': _celularResponsableController.text.trim(),
         'fecha': FieldValue.serverTimestamp(),
         'status': 'Solicitado',
-        'asignadoA': "", // 🟣 Necesario para la asignación
+        'asignadoA': "",
         'archivos': [
           if (urlArchivoRecibo != null) urlArchivoRecibo!,
           if (urlArchivoDeclaracion != null) urlArchivoDeclaracion!,
+          if (urlArchivoInsolvencia != null) urlArchivoInsolvencia!,
           ...archivosUrls,
         ],
         'archivo_cedula_responsable': urlArchivoCedulaResponsable,
-        'documentos_hijos': urlsArchivosHijos,
+        if (tieneHijosConvivientes) 'hijos': hijos,
+        if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
       });
+
 
       await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).update({
         'saldo': saldo - valorDomiciliaria,
@@ -615,6 +741,68 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         );
       }
     }
+  }
+
+  Widget formularioHijos(){
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "7. Información de los Hijos",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: CampoTextoGris(
+                label: "Nombre del hijo",
+                controller: _nombreHijoController,
+                keyboardType: TextInputType.name,
+              ),
+            ),
+            const SizedBox(width: 10),
+            SizedBox(
+              width: 100,
+              child: CampoTextoGris(
+                label: "Edad",
+                controller: _edadHijoController,
+                keyboardType: TextInputType.number,
+              ),
+            ),
+            const SizedBox(width: 10),
+            ElevatedButton(
+              onPressed: () {
+                final nombre = _nombreHijoController.text.trim();
+                final edad = _edadHijoController.text.trim();
+                if (nombre.isNotEmpty && edad.isNotEmpty) {
+                  setState(() {
+                    hijos.add({"nombre": nombre, "edad": edad});
+                    _nombreHijoController.clear();
+                    _edadHijoController.clear();
+                  });
+                }
+              },
+              child: const Icon(Icons.add),
+            )
+          ],
+        ),
+        const SizedBox(height: 10),
+        // Lista de hijos agregados
+        ...hijos.map((hijo) => ListTile(
+          title: Text(hijo['nombre'] ?? ''),
+          subtitle: Text("Edad: ${hijo['edad']} años"),
+          trailing: IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () {
+              setState(() {
+                hijos.remove(hijo);
+              });
+            },
+          ),
+        )),
+      ],
+    );
   }
 
 }

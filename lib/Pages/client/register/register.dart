@@ -84,10 +84,6 @@ class _RegistroPageState extends State<RegistroPage> {
   bool _verificandoOTP = false;
   bool _recaptchaValidado = false;
 
-
-
-
-
   @override
   void initState() {
     super.initState();
