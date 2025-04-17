@@ -577,8 +577,6 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
     print("📌 ¿Sin respuesta? $sinRespuesta");
     print("📌 Número de seguimiento: ${latestData['numero_seguimiento']}");
 
-
-
     if (context.mounted) {
       Navigator.pushNamed(
         context,
