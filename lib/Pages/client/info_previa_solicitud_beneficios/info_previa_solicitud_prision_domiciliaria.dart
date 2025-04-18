@@ -78,8 +78,36 @@ class RequisitosPrisionDomiciliariaPage extends StatelessWidget {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 16),
                 ),
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, 'solicitud_domiciliaria_page');
+                onPressed: () async {
+                  final confirmar = await showDialog<bool>(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: blanco,
+                      title: const Text("¿Tienes todos los documentos listos?"),
+                      content: const Text(
+                        "Antes de continuar, asegúrate de tener preparados en formato PDF los documentos requeridos: "
+                            "declaración extrajuicio del responsable, certificado de insolvencia, cédula del responsable, "
+                            "recibo de servicios públicos y documentos de identidad de los hijos (si aplica).",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text("Cancelar"),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                          child: const Text("Sí, continuar", style: TextStyle(color: blanco),),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if(context.mounted){
+                    if (confirmar == true) {
+                      Navigator.pushReplacementNamed(context, 'solicitud_domiciliaria_page');
+                    }
+                  }
                 },
                 child: const Text('Tengo los documentos, comenzar solicitud'),
               ),
