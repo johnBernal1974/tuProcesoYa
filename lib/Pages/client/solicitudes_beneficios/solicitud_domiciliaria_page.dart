@@ -35,6 +35,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
   String? urlArchivoInsolvencia;
   String? departamentoSeleccionado;
   String? municipioSeleccionado;
+  String? parentescoSeleccionado;
 
   List<PlatformFile> _selectedFiles = [];
   List<String> archivosUrls = [];
@@ -252,11 +253,88 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                // 🪪 Cédula del Responsable
+                const Text(
+                  "6. Por favor selecciona qué relación tiene la persona responsable con el PPL (persona privada de la libertad)",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  "Ejemplo: la persona responsable es la Madre, el Esposo, la Hermana, el Amigo, etc.",
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  dropdownColor: blanco,
+                  decoration: const InputDecoration(
+                    labelText: 'Parentesco del responsable con el PPL',
+                    border: OutlineInputBorder(),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                  value: parentescoSeleccionado,
+                  items: const [
+                    // 👨‍👩‍👧‍👦 Familia directa
+                    DropdownMenuItem(value: 'Madre', child: Text('Madre')),
+                    DropdownMenuItem(value: 'Padre', child: Text('Padre')),
+                    DropdownMenuItem(value: 'Hija', child: Text('Hija')),
+                    DropdownMenuItem(value: 'Hijo', child: Text('Hijo')),
+                    DropdownMenuItem(value: 'Esposa', child: Text('Esposa')),
+                    DropdownMenuItem(value: 'Esposo', child: Text('Esposo')),
+
+                    // 👵👴 Abuelos
+                    DropdownMenuItem(value: 'Abuela', child: Text('Abuela')),
+                    DropdownMenuItem(value: 'Abuelo', child: Text('Abuelo')),
+
+                    // 👧👦 Nietos
+                    DropdownMenuItem(value: 'Nieta', child: Text('Nieta')),
+                    DropdownMenuItem(value: 'Nieto', child: Text('Nieto')),
+
+                    // 🧍‍♂️🧍‍♀️ Hermanos
+                    DropdownMenuItem(value: 'Hermana', child: Text('Hermana')),
+                    DropdownMenuItem(value: 'Hermano', child: Text('Hermano')),
+
+                    // 👨‍👧‍👦 Tíos y primos
+                    DropdownMenuItem(value: 'Tía', child: Text('Tía')),
+                    DropdownMenuItem(value: 'Tío', child: Text('Tío')),
+                    DropdownMenuItem(value: 'Prima', child: Text('Prima')),
+                    DropdownMenuItem(value: 'Primo', child: Text('Primo')),
+
+                    // 👨‍❤️‍👨 Pareja no conyugal
+                    DropdownMenuItem(value: 'Compañera', child: Text('Compañera')),
+                    DropdownMenuItem(value: 'Compañero', child: Text('Compañero')),
+
+                    // 👨‍👧‍👦 Familia política
+                    DropdownMenuItem(value: 'Cuñada', child: Text('Cuñada')),
+                    DropdownMenuItem(value: 'Cuñado', child: Text('Cuñado')),
+                    DropdownMenuItem(value: 'Suegra', child: Text('Suegra')),
+                    DropdownMenuItem(value: 'Suegro', child: Text('Suegro')),
+                    DropdownMenuItem(value: 'Nuera', child: Text('Nuera')),
+                    DropdownMenuItem(value: 'Yerno', child: Text('Yerno')),
+
+                    // 👧👦 Sobrinos
+                    DropdownMenuItem(value: 'Sobrina', child: Text('Sobrina')),
+                    DropdownMenuItem(value: 'Sobrino', child: Text('Sobrino')),
+
+                    // 👥 Amistades
+                    DropdownMenuItem(value: 'Amiga', child: Text('Amiga')),
+                    DropdownMenuItem(value: 'Amigo', child: Text('Amigo')),
+
+                    // ❓ Otro
+                    DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+                  ],
+
+                  onChanged: (value) {
+                    setState(() {
+                      parentescoSeleccionado = value;
+                    });
+                  },
+                ),
+                const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                  '6. Sube la fotocopia de la cédula de la persona responsable:',
+                  '7. Sube la fotocopia de la cédula de la persona responsable:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -313,7 +391,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                       const Divider(color: negroLetras, height: 1),
                       const SizedBox(height: 24),
                       const Text(
-                        '8. Adjuntar los documentos de identidad de los hijos',
+                        '9. Adjuntar los documentos de identidad de los hijos',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
@@ -524,7 +602,8 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         archivoInsolvencia == null ||
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
-        _celularResponsableController.text.trim().isEmpty) {
+        _celularResponsableController.text.trim().isEmpty ||
+        parentescoSeleccionado == null || parentescoSeleccionado!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Por favor, completa todos los campos y sube los documentos requeridos."),
@@ -565,8 +644,6 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
     await verificarSaldoYEnviarSolicitud();
   }
-
-
 
   Future<void> verificarSaldoYEnviarSolicitud() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -699,6 +776,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         'nombre_responsable': _nombreResponsableController.text.trim(),
         'cedula_responsable': _cedulaResponsableController.text.trim(),
         'celular_responsable': _celularResponsableController.text.trim(),
+        'parentesco': parentescoSeleccionado,
         'fecha': FieldValue.serverTimestamp(),
         'status': 'Solicitado',
         'asignadoA': "",
@@ -749,7 +827,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "7. Información de los Hijos",
+          "8. Información de los Hijos",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
