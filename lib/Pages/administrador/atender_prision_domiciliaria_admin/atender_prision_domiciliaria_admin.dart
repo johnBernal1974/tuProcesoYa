@@ -1212,7 +1212,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
 
       if (!_isFundamentosLoaded) {
         _fundamentosDerechoController.text =
-            generarTextoFundamentosDesdeDatos(fetchedData, latestData);
+            generarTextoFundamentosDesdeDatos(fetchedData, latestData, widget.parentesco);
         _isFundamentosLoaded = true;
       }
 
@@ -1256,7 +1256,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
           municipio: latestData['municipio'] ?? "",
           departamento: latestData['departamento'] ?? "",
           nombreResponsable: latestData['nombre_responsable'] ?? "",
-          parentesco: fetchedData.parentescoRepresentante ?? "",
+          parentesco: widget.parentesco,
           cedulaResponsable: latestData['cedula_responsable'] ?? "",
           celularResponsable: latestData['celular_responsable'] ?? "",
           emailUsuario: fetchedData.email?.trim() ?? "",
@@ -1310,12 +1310,15 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
 """;
   }
 
-  String generarTextoFundamentosDesdeDatos(Ppl userData, Map<String, dynamic> latestData) {
+  String generarTextoFundamentosDesdeDatos(
+      Ppl userData,
+      Map<String, dynamic> latestData,
+      String parentesco,
+      ) {
     final direccion = latestData['direccion'] ?? '';
     final municipio = latestData['municipio'] ?? '';
     final departamento = latestData['departamento'] ?? '';
     final nombreResponsable = latestData['nombre_responsable'] ?? '';
-    final parentesco = userData.parentescoRepresentante ?? '';
 
     return """
 1. El precepto 38G versa sobre el cumplimiento de la pena privativa de la libertad en el lugar de residencia o morada del condenado siempre que haya purgado la mitad (½) de la pena; satisfaga los numerales 3° y 4° del artículo 38B del Estatuto Punitivo, es decir que se demuestre su arraigo familiar y social y se garantice a través de caución el cumplimiento de las obligaciones legales; el penado no pertenezca al grupo familiar de la víctima y no haya sido sentenciado por uno de los delitos exceptuados por el propio artículo 38G.
@@ -1331,6 +1334,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
 4. No he sido sentenciado por uno de los delitos exceptuados por el propio artículo 38G.
 """;
   }
+
 
   void fetchDocumentoPrisionDomiciliaria() async {
     try {
@@ -1863,7 +1867,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       municipio: municipio,
       departamento: departamento,
       nombreResponsable: nombreResponsable,
-      parentesco: parentesco,
+      parentesco: widget.parentesco,
       cedulaResponsable: cedulaResponsable,
       celularResponsable: celularResponsable,
       emailUsuario: userData?.email ?? "",
@@ -1948,7 +1952,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       municipio: latestData['municipio'] ?? '',
       departamento: latestData['departamento'] ?? '',
       nombreResponsable: latestData['nombre_responsable'] ?? '',
-      parentesco: userData?.parentescoRepresentante ?? '',
+      parentesco: widget.parentesco,
       cedulaResponsable: latestData['cedula_responsable'] ?? '',
       celularResponsable: latestData['celular_responsable'] ?? '',
       emailUsuario: userData?.email.trim() ?? '',

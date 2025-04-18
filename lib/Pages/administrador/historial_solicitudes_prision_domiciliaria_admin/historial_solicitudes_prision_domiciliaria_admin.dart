@@ -606,10 +606,9 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
           'nombreResponsable': latestData['nombre_responsable'] ?? "",
           'cedulaResponsable': latestData['cedula_responsable'] ?? "",
           'celularResponsable': latestData['celular_responsable'] ?? "",
-
+          'parentesco': latestData['parentesco'] ?? "",
           // Estado de la respuesta
           'sinRespuesta': sinRespuesta,
-
           // Si quieres incluir las preguntas y respuestas de IA (por si se usa luego)
           'preguntas': preguntas,
           'respuestas': respuestas,
@@ -617,8 +616,6 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
       );
     }
   }
-
-
 
   Widget _buildFechaRevision(String? titulo, Timestamp? fecha) {
     if (fecha == null) return const SizedBox(); // Si no hay fecha, no mostrar nada
