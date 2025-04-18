@@ -121,6 +121,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   late final List<String> urlsArchivosHijos;
   Map<String, dynamic>? solicitudData;
 
+
   @override
   void initState() {
     // TODO: implement initState
@@ -319,8 +320,11 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
                 nombreResponsable: widget.nombreResponsable,
                 cedulaResponsable: widget.cedulaResponsable,
                 celularResponsable: widget.celularResponsable,
+                hijos: solicitudData?.containsKey('hijos') == true
+                    ? List<Map<String, String>>.from(
+                    solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
+                    : [],
               ),
-
             ],
           ),
 
@@ -488,9 +492,20 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             cedulaResponsable: widget.cedulaResponsable,
             celularResponsable: widget.celularResponsable,
             parentesco: widget.parentesco,
+            hijos: solicitudData?.containsKey('hijos') == true
+                ? List<Map<String, String>>.from(
+              (solicitudData!['hijos'] as List).map(
+                    (hijo) => Map<String, String>.from(
+                  (hijo as Map),
+                ),
+              ),
+            )
+                : [],
 
+            documentosHijos: solicitudData?.containsKey('documentos_hijos') == true
+                ? List<String>.from(solicitudData!['documentos_hijos'])
+                : [],
           )
-
       ],
     );
   }
@@ -502,6 +517,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     required String nombreResponsable,
     required String cedulaResponsable,
     required String celularResponsable,
+    List<Map<String, String>> hijos = const [], // ← Añadido por defecto
   }) {
     TextStyle labelStyle = const TextStyle(fontSize: 13);
     TextStyle valueStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.bold);
@@ -521,7 +537,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             ),
             const SizedBox(height: 16),
             const Text("Lugar donde cumplirá la prisión domiciliaria"),
-            // Dirección
             Row(
               children: [
                 Text("Dirección: ", style: labelStyle),
@@ -534,15 +549,12 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
               ],
             ),
             const SizedBox(height: 12),
-
-            // Responsable
             const Divider(height: 20, color: gris),
             const Text(
               "Persona que se hace responsable en el Domicilio",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-
             Row(
               children: [
                 Text("Nombres y apellidos: ", style: labelStyle),
@@ -552,23 +564,41 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             const SizedBox(height: 4),
             Row(
               children: [
-                Text("Numero de identificación: ", style: labelStyle),
+                Text("Número de identificación: ", style: labelStyle),
                 Expanded(child: Text(cedulaResponsable, style: valueStyle)),
               ],
             ),
             const SizedBox(height: 4),
-
             Row(
               children: [
                 Text("Teléfono Celular: ", style: labelStyle),
                 Expanded(child: Text(celularResponsable, style: valueStyle)),
               ],
             ),
+
+            // 👶 Sección adicional si hay hijos
+            if (hijos.isNotEmpty) ...[
+              const Divider(height: 20, color: gris),
+              const Text(
+                "Hijos que convivirán en el domicilio",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...hijos.map((hijo) {
+                final nombre = hijo['nombre'] ?? '';
+                final edad = hijo['edad'] ?? '';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text("• $nombre - $edad años", style: valueStyle),
+                );
+              }).toList(),
+            ],
           ],
         ),
       ),
     );
   }
+
 
   void _actualizarAltura() {
     int lineas = '\n'.allMatches(_sinopsisController.text).length + 1;
@@ -1312,6 +1342,8 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       if (documentSnapshot.exists) {
         Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
 
+        solicitudData = data; // ✅ Ahora sí podemos asignarla
+
         if (data != null && mounted) {
           setState(() {
             diligencio = data['diligencio'] ?? 'No Diligenciado';
@@ -1336,6 +1368,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       }
     }
   }
+
 
   //Para los tiempos de los beneficios
   Future<void> calcularTiempo(String id) async {
@@ -1809,6 +1842,9 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
     required String cedulaResponsable,
     required String celularResponsable,
     required String parentesco,
+    required List<Map<String, String>>? hijos,
+    required List<String>? documentosHijos,
+
   }) {
     final plantilla = PrisionDomiciliariaTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
@@ -1840,6 +1876,8 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       purgado: "$mesesEjecutado",
       jdc: userData?.juzgadoQueCondeno ?? "",
       numeroSeguimiento: widget.numeroSeguimiento,
+      hijos:hijos,
+      documentosHijos: documentosHijos,
     );
 
 
@@ -1923,6 +1961,12 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       purgado: "${mesesEjecutado} meses y ${diasEjecutadoExactos} días",
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
+        hijos: solicitudData?.containsKey('hijos') == true
+            ? List<Map<String, String>>.from(solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
+            : [],
+        documentosHijos: solicitudData?.containsKey('documentos_hijos') == true
+            ? List<String>.from(solicitudData!['documentos_hijos'])
+            : [],
     );
 
 
@@ -2108,7 +2152,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
                 final mensaje = Uri.encodeComponent(
                     "Hola *${userData!.nombreAcudiente}*,\n\n"
                         "Hemos enviado tu solicitud de prisón domiciliaria número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                        "Recuerda que la entidad tiene un tiempo aproximado de 30 días para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
+                        "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
                         "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes beneficios penitenciarios. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                         "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
                 );

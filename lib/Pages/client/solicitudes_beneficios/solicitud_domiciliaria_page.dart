@@ -62,6 +62,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       backgroundColor: blanco,
       appBar: AppBar(
           title: const Text('Nueva Solicitud', style: TextStyle(color: blanco)),
+          iconTheme: const IconThemeData(color: Colors.white, size: 30),
       backgroundColor: primary),
 
       body: Padding(

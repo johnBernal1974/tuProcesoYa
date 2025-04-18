@@ -95,6 +95,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
   String rol = AdminProvider().rol ?? "";
 
   List<PlatformFile> _selectedFiles = [];
+  Map<String, dynamic>? solicitudData;
 
 
   @override
@@ -104,6 +105,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
     _pplProvider = PplProvider();
     archivos = List<String>.from(widget.archivos); // Copia los archivos una vez
     fetchUserData();
+
   }
 
   @override
@@ -631,13 +633,17 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
         const SizedBox(height: 15),
         _buildDetallesSolicitud(),
         const SizedBox(height: 15),
-       _buildInformacionUsuarioWidget(
+        _buildInformacionUsuarioWidget(
           direccion: widget.direccion,
           departamento: widget.departamento,
           municipio: widget.municipio,
           nombreResponsable: widget.nombreResponsable,
           cedulaResponsable: widget.cedulaResponsable,
           celularResponsable: widget.celularResponsable,
+          hijos: solicitudData?.containsKey('hijos') == true
+              ? List<Map<String, String>>.from(
+              solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
+              : [],
         ),
         const SizedBox(height: 30),
         const Row(
@@ -685,6 +691,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
     required String nombreResponsable,
     required String cedulaResponsable,
     required String celularResponsable,
+    List<Map<String, String>> hijos = const [], // ← Añadido por defecto
   }) {
     TextStyle labelStyle = const TextStyle(fontSize: 13);
     TextStyle valueStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.bold);
@@ -704,7 +711,6 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
             ),
             const SizedBox(height: 16),
             const Text("Lugar donde cumplirá la prisión domiciliaria"),
-            // Dirección
             Row(
               children: [
                 Text("Dirección: ", style: labelStyle),
@@ -717,15 +723,12 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
               ],
             ),
             const SizedBox(height: 12),
-
-            // Responsable
             const Divider(height: 20, color: gris),
             const Text(
               "Persona que se hace responsable en el Domicilio",
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-
             Row(
               children: [
                 Text("Nombres y apellidos: ", style: labelStyle),
@@ -735,18 +738,35 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
             const SizedBox(height: 4),
             Row(
               children: [
-                Text("Numero de identificación: ", style: labelStyle),
+                Text("Número de identificación: ", style: labelStyle),
                 Expanded(child: Text(cedulaResponsable, style: valueStyle)),
               ],
             ),
             const SizedBox(height: 4),
-
             Row(
               children: [
                 Text("Teléfono Celular: ", style: labelStyle),
                 Expanded(child: Text(celularResponsable, style: valueStyle)),
               ],
             ),
+
+            // 👶 Sección adicional si hay hijos
+            if (hijos.isNotEmpty) ...[
+              const Divider(height: 20, color: gris),
+              const Text(
+                "Hijos que convivirán en el domicilio",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ...hijos.map((hijo) {
+                final nombre = hijo['nombre'] ?? '';
+                final edad = hijo['edad'] ?? '';
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text("• $nombre - $edad años", style: valueStyle),
+                );
+              }).toList(),
+            ],
           ],
         ),
       ),
@@ -902,6 +922,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
           if (mounted) {
             setState(() {
               userData = fetchedData;
+              solicitudData = data;
               isLoading = false;
 
               // ✅ Asignar valores de Firestore o definir valores por defecto si no existen

@@ -29,6 +29,8 @@ class PrisionDomiciliariaTemplate {
   final String purgado;
   final String jdc;
   final String numeroSeguimiento;
+  final List<Map<String, String>>? hijos;
+  final List<String>? documentosHijos;
 
   PrisionDomiciliariaTemplate({
     required this.entidad,
@@ -61,6 +63,8 @@ class PrisionDomiciliariaTemplate {
     required this.purgado,
     required this.jdc,
     required this.numeroSeguimiento,
+    this.hijos,
+    this.documentosHijos,
   });
 
   String convertirParrafos(String texto) {
@@ -71,20 +75,22 @@ class PrisionDomiciliariaTemplate {
   }
 
   String generarTextoHtml() {
-    return """
+    final buffer = StringBuffer();
+
+    buffer.writeln("""
     <html>
       <body>
         <b>$dirigido</b><br>
         <b>$entidad</b><br><br>
-        
+
         Condenado: <b>$nombrePpl $apellidoPpl</b>.<br>
         Radicado del proceso: <b>$radicado</b>.<br>
         Delito: <b>$delito</b>.<br>
         Asunto: <b>Solicitud de prisión domiciliaria - $numeroSeguimiento</b>.<br><br>
-        
+
         “Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.”<br><br>
         E.S.D<br><br>
-              
+
         yo, <b>$nombrePpl $apellidoPpl</b>, identificado con el número de cédula <b>$identificacionPpl</b>, actualmente recluido en <b>$centroPenitenciario</b>, con el NUI : <b>$nui</b> y TD : <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.<br><br>
 
         <span style="font-size: 18px;"><b>I. SINOPSIS PROCESAL</b></span><br>
@@ -107,26 +113,52 @@ class PrisionDomiciliariaTemplate {
         Dirección: <b>$direccionDomicilio</b>, <b>$municipio</b> - <b>$departamento</b><br>
         Nombre de la persona responsable: <b>$nombreResponsable</b><br>
         Número de identificación: <b>$cedulaResponsable</b><br>
-        Número de celular: <b>$celularResponsable</b><br><br><br><br>
+        Número de celular: <b>$celularResponsable</b><br><br><br>
         </span>
+    """);
 
+    if (hijos != null && hijos!.isNotEmpty) {
+      buffer.writeln("""
+    <h4 style="margin-bottom: 0;">Hijos que convivirán conmigo durante el beneficio de prisión domiciliaria:</h4>
+    <div style="font-size: 13px; margin-top: 2px;">
+  """);
+
+      for (var hijo in hijos!) {
+        final nombre = hijo['nombre'] ?? '';
+        final edad = hijo['edad'] ?? '';
+        buffer.writeln('<div>- $nombre ($edad años)</div>');
+      }
+
+      buffer.writeln("""
+    <p style="margin-top: 6px;">Se adjuntaron los documentos de identidad de mis hijos.</p>
+    </div><br><br><br>
+  """);
+    }
+
+
+    buffer.writeln("""    
+        Agradezco enormemente la atención prestada a la presente.<br><br><br>
         Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
         $emailAlternativo<br>
         $emailUsuario<br><br><br>
 
-        Agradezco enormemente la atención prestada a la presente.<br><br>
+        
 
-        Atentamente,<br>
-        <div style=\"margin-top: 80px;\">
-          <img src=\"https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635\" width=\"150\" height=\"50\"><br>
+        Atentamente,<br><br><br>
+        <b>$nombrePpl $apellidoPpl</b><br>
+        CC. $identificacionPpl<br>
+        <div style="margin-top: 50px;">
+          <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="150" height="50"><br>
         </div>
 
         <b>NOTA IMPORTANTE</b><br>
         <p style="font-size: 13px;">
-          El presente correo será copiado a la oficina jurídica de la <strong>$centroPenitenciario</strong>, para que queden informados de la presente diligencia y adelanten los trámites respectivos.
+          Este mensaje también será enviado a la Oficina Jurídica del establecimiento <strong>$centroPenitenciario</strong>, con el fin de dejar constancia formal de esta solicitud y facilitar el inicio oportuno de los trámites correspondientes.
         </p>
       </body>
     </html>
-    """;
+  """);
+
+    return buffer.toString();
   }
 }
