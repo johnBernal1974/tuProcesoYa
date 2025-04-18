@@ -35,6 +35,7 @@ import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 import 'Pages/client/home/home.dart';
+import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_prision_domiciliaria.dart';
 import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
@@ -153,6 +154,7 @@ class MyApp extends StatelessWidget {
         'mis_transacciones': (context) => const MisTransaccionesPage(),
         'solicitud_72h_page': (context) => const MisTransaccionesPage(),
         'solicitud_domiciliaria_page': (context) => const SolicitudDomiciliariaPage(),
+        'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
 
 
         //general

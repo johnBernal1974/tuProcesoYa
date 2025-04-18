@@ -568,7 +568,7 @@ class _HomePageState extends State<HomePage> {
                       textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
-                    onPressed: () => _navegarASolicitud(idBeneficio),
+                    onPressed: () => _navegarAInfoPreviaSolicitud(idBeneficio),
                     child: const Text("Solicitar"),
                   ),
                 ),
@@ -579,6 +579,8 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  // pendiente por usar
   void _navegarASolicitud(String idBeneficio) {
     switch (idBeneficio.toLowerCase().trim()) {
       case 'permiso de 72 horas':
@@ -586,6 +588,27 @@ class _HomePageState extends State<HomePage> {
         break;
       case 'prision_domiciliaria':
         Navigator.pushNamed(context, 'solicitud_domiciliaria_page');
+        break;
+      case 'libertad_condicional':
+        Navigator.pushNamed(context, 'solicitud_condicional');
+        break;
+      case 'extincion_pena':
+        Navigator.pushNamed(context, 'solicitud_extincion_pena');
+        break;
+      default:
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Ruta de beneficio no reconocida"))
+        );
+    }
+  }
+
+  void _navegarAInfoPreviaSolicitud(String idBeneficio) {
+    switch (idBeneficio.toLowerCase().trim()) {
+      case 'permiso de 72 horas':
+        Navigator.pushNamed(context, 'solicitud_72h');
+        break;
+      case 'prision_domiciliaria':
+        Navigator.pushNamed(context, 'info_previa_solicitud_domiciliaria_page');
         break;
       case 'libertad_condicional':
         Navigator.pushNamed(context, 'solicitud_condicional');
