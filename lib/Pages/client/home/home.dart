@@ -590,7 +590,7 @@ class _HomePageState extends State<HomePage> {
         Navigator.pushNamed(context, 'solicitud_domiciliaria_page');
         break;
       case 'libertad_condicional':
-        Navigator.pushNamed(context, 'solicitud_condicional');
+        Navigator.pushNamed(context, 'solicitud_condicional_page');
         break;
       case 'extincion_pena':
         Navigator.pushNamed(context, 'solicitud_extincion_pena');
@@ -611,7 +611,7 @@ class _HomePageState extends State<HomePage> {
         Navigator.pushNamed(context, 'info_previa_solicitud_domiciliaria_page');
         break;
       case 'libertad_condicional':
-        Navigator.pushNamed(context, 'solicitud_condicional');
+        Navigator.pushNamed(context, 'info_previa_libertad_condicional_page');
         break;
       case 'extincion_pena':
         Navigator.pushNamed(context, 'solicitud_extincion_pena');

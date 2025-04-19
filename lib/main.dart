@@ -35,6 +35,7 @@ import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 import 'Pages/client/home/home.dart';
+import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_libertad_condicional.dart';
 import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_prision_domiciliaria.dart';
 import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
@@ -42,7 +43,9 @@ import 'Pages/client/mis_transacciones/mis_transacciones.dart';
 import 'Pages/client/register/register.dart';
 import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
 import 'Pages/client/solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
+import 'Pages/client/solicitud_exitosa_libertad_condicional/solicitud_exitosa_libertad_condicional.dart';
 import 'Pages/client/solicitudes_beneficios/solicitud_domiciliaria_page.dart';
+import 'Pages/client/solicitudes_beneficios/solicitud_libertad_condicional.dart';
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
@@ -154,7 +157,9 @@ class MyApp extends StatelessWidget {
         'mis_transacciones': (context) => const MisTransaccionesPage(),
         'solicitud_72h_page': (context) => const MisTransaccionesPage(),
         'solicitud_domiciliaria_page': (context) => const SolicitudDomiciliariaPage(),
+        'solicitud_condicional_page': (context) => const SolicitudLibertadCondicionalPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
+        'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
 
 
         //general
@@ -191,6 +196,14 @@ class MyApp extends StatelessWidget {
             final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
             return MaterialPageRoute(
               builder: (context) => SolicitudExitosaDomiciliariaPage(
+                numeroSeguimiento: numeroSeguimiento,
+              ),
+            );
+          }
+          else if (settings.name == 'solicitud_exitosa_libertad_condicional') {
+            final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
+            return MaterialPageRoute(
+              builder: (context) => SolicitudExitosaLibertadCondicionalPage(
                 numeroSeguimiento: numeroSeguimiento,
               ),
             );

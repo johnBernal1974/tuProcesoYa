@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:uuid/uuid.dart';
 import '../../src/colors/colors.dart';
+import 'checkout_page.dart'; // Asegúrate que esta ruta esté bien
 
 class ReintentoPagoLibertadCondicionalPage extends StatelessWidget {
   final String referencia;
@@ -54,21 +57,43 @@ class ReintentoPagoLibertadCondicionalPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          '/checkout',
-                          arguments: {
-                            'tipoPago': 'libertad_condicional',
-                            'valor': valor,
-                            'referencia': referencia,
-                            'onTransaccionAprobada': onTransaccionAprobada,
-                          },
+                    onPressed: () async {
+                      final user = FirebaseAuth.instance.currentUser;
+
+                      if (user == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
+                            backgroundColor: Colors.red,
+                          ),
                         );
+                        return;
                       }
+
+                      if (valor == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("El valor del pago no está disponible."),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      final nuevaReferencia = 'condicional_${user.uid}_${const Uuid().v4()}';
+                      print("📌 Nueva referencia generada: $nuevaReferencia");
+
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckoutPage(
+                            tipoPago: 'condicional',
+                            valor: valor!,
+                            referencia: nuevaReferencia,
+                            onTransaccionAprobada: onTransaccionAprobada,
+                          ),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,

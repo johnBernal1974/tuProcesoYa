@@ -145,7 +145,7 @@ class _WompiWebViewState extends State<WompiWebView> {
                 ),
               ));
               break;
-            case 'libertad':
+            case 'condicional':
               Navigator.pushReplacement(context, MaterialPageRoute(
                 builder: (_) => PagoExitosoLibertadCondicionalPage(
                   montoPagado: amount,
@@ -225,7 +225,7 @@ class _WompiWebViewState extends State<WompiWebView> {
                 ),
               ));
               break;
-            case 'libertad':
+            case 'condicional':
               Navigator.pushReplacement(context, MaterialPageRoute(
                 builder: (_) => ReintentoPagoLibertadCondicionalPage(
                   referencia: referencia,

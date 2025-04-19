@@ -129,7 +129,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'tutela': 'TUTELA',
       'domiciliaria': 'PRISIÓN DOMICILIARIA',
       'permiso_72h': 'PERMISO DE 72 HORAS',
-      'libertad_condicional': 'LIBERTAD CONDICIONAL',
+      'condicional': 'LIBERTAD CONDICIONAL',
       'extincion_pena': 'EXTINCIÓN DE LA PENA'
     };
 
