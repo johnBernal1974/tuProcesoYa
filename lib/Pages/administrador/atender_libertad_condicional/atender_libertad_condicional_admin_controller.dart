@@ -2,13 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class AtenderPrisionDomiciliariaAdminController {
+class AtenderLibertadCondicionalAdminController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 
   Future<void> actualizarSolicitud(BuildContext context, String docId, Map<String, dynamic> nuevosDatos) async {
     try {
-      await _firestore.collection('prision_domiciliaria_solicitados').doc(docId).update(nuevosDatos);
+      await _firestore.collection('libertad_condicional_solicitados').doc(docId).update(nuevosDatos);
       print("✅ Solicitud actualizada correctamente");
 
       // Mostrar mensaje de éxito

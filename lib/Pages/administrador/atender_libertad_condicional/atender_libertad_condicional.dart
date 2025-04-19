@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
-import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
@@ -15,11 +14,12 @@ import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_condicional.dart';
-import '../../../plantillas/plantilla_domiciliaria.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
+import 'atender_libertad_condicional_admin_controller.dart';
 
 class AtenderLibertadCondicionalPage extends StatefulWidget {
   final String status;
@@ -82,7 +82,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
   final TextEditingController _pretencionesController = TextEditingController();
   final TextEditingController _anexosController = TextEditingController();
   final TextEditingController _fundamentosDerechoController = TextEditingController();
-  final AtenderDerechoPeticionAdminController _controller = AtenderDerechoPeticionAdminController();
+  final AtenderLibertadCondicionalAdminController _controller = AtenderLibertadCondicionalAdminController();
   String sinopsis = "";
   String consideraciones = "";
   String fundamentosDeDerecho = "";
@@ -266,7 +266,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    "libertad Condicional",
+                    "Libertad Condicional",
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 20, // Reduce tamaño en móviles
@@ -294,7 +294,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
                   : Row( // En pantallas grandes, mantiene la fila
                 children: [
                   Text(
-                    "libertad Condicional - ${widget.status}",
+                    "Libertad Condicional - ${widget.status}",
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 28,
@@ -420,7 +420,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
               const SizedBox(height: 30),
               ingresarPretenciones(),
               const SizedBox(height: 30),
-              ingresarPruebas(),
+              ingresarAnexos(),
               const SizedBox(height: 30),
             ],
           ),
@@ -479,11 +479,11 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
         if (_mostrarVistaPrevia)
           vistaPreviaLibertadCondicional(
             userData: userData,
-            sinopsis: sinopsis,
-            consideraciones: consideraciones,
-            fundamentosDeDerecho: fundamentosDeDerecho,
-            pretenciones: pretenciones,
-            anexos: anexos,
+            sinopsis: _sinopsisController.text,
+            consideraciones: _consideracionesController.text,
+            fundamentosDeDerecho: _fundamentosDerechoController.text,
+            pretenciones: _pretencionesController.text,
+            anexos: _anexosController.text,
             direccion: widget.direccion,
             municipio: widget.municipio,
             departamento: widget.departamento,
@@ -1205,9 +1205,12 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     if (fetchedData != null && latestData != null && mounted) {
       // 🔹 Precargar campos solo si no están ya cargados
       if (!_isSinopsisLoaded) {
-        _sinopsisController.text = generarTextoSinopsisDesdeDatos(fetchedData);
+        _sinopsisController.text = generarTextoSinopsisDesdeDatos(
+          fetchedData,
+          fetchedData.situacion ?? 'En Reclusión',        );
         _isSinopsisLoaded = true;
       }
+
 
       if (!_isFundamentosLoaded) {
         _fundamentosDerechoController.text =
@@ -1216,22 +1219,30 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
       }
 
       if (!_isPretencionesLoaded) {
-        _pretencionesController.text = generarTextoPretencionesDesdeDatos(fetchedData);
+        _pretencionesController.text = generarTextoPretencionesDesdeDatos(fetchedData.situacion ?? 'En Reclusión');
         _isPretencionesLoaded = true;
       }
 
       if (!_isAnexosLoaded) {
-        _anexosController.text = """
-1. Declaración extrajuicio de la persona que me acogerá en el sitio de domicilio.
+        final tieneHijosYDocumentos = latestData.containsKey('hijos') &&
+            latestData['hijos'] is List &&
+            latestData['hijos'].isNotEmpty &&
+            latestData.containsKey('documentos_hijos') &&
+            latestData['documentos_hijos'] is List &&
+            latestData['documentos_hijos'].isNotEmpty;
 
-2. Certificación de insolvencia económica.
+        final listaHijos = tieneHijosYDocumentos
+            ? (latestData['hijos'] as List<dynamic>)
+            .whereType<Map>() // 🔹 Asegura que cada ítem sea un Map
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList()
+            : <Map<String, dynamic>>[];
+        _anexosController.text = generarTextoAnexos(
+          fetchedData.situacion ?? 'En Reclusión',
+          incluirPuntoHijos: tieneHijosYDocumentos,
+          hijos: listaHijos,
+        );
 
-3. Fotocopia de la cédula de ciudadanía de la persona que me acogerá.
-
-4. Fotocopia de un recibo de servicios públicos.
-
-5. Registro civil de mis hijos.
-""";
         _isAnexosLoaded = true;
       }
 
@@ -1268,6 +1279,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           purgado: "$mesesEjecutado",
           jdc: fetchedData.juzgadoQueCondeno ?? "",
           numeroSeguimiento: widget.numeroSeguimiento,
+          situacion: fetchedData.situacion
         );
 
         isLoading = false;
@@ -1291,7 +1303,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     }
   }
 
-  String generarTextoSinopsisDesdeDatos(Ppl userData) {
+  String generarTextoSinopsisDesdeDatos(Ppl userData, String situacion) {
     final jdc = userData.juzgadoQueCondeno ?? '';
     final condena = userData.tiempoCondena?.toString() ?? '';
     final captura = userData.fechaCaptura?.toString() ?? '';
@@ -1299,13 +1311,28 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     final purgado = "$mesesEjecutado";
     final fechaFormateada = formatearFechaCaptura(captura);
 
-    return "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, por lo cual ya he superado el 50% de la pena impuesta.";
+    if (situacion == "En Prisión domiciliaria") {
+      return "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. Actualmente me encuentro cumpliendo dicha condena bajo el beneficio de prisión domiciliaria. Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la pena, incluyendo redenciones obtenidas conforme a la ley, por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito exigido para solicitar el beneficio de libertad condicional.";
+    }
+
+    // Default (En Reclusión)
+    return "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, lo que me permite acceder al beneficio de libertad condicional según la ley.";
   }
 
-  String generarTextoPretencionesDesdeDatos(Ppl userData) {
+  String generarTextoPretencionesDesdeDatos(String situacion) {
+    if (situacion == "En Prisión domiciliaria") {
+      return """
+PRIMERO: Que se reconozca que actualmente me encuentro cumpliendo mi condena bajo el beneficio de prisión domiciliaria, y se evalúe la procedencia de concederme la libertad condicional conforme a la normatividad vigente.
+
+SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 de la Ley 65 de 1993, teniendo en cuenta el cumplimiento de los requisitos exigidos, incluyendo el tiempo purgado, la buena conducta y el entorno familiar de arraigo.
+""";
+    }
+
+    // Default (En Reclusión)
     return """
-PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite del sustituto de prisión domiciliaria.\n
-SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido en el artículo 38G del Código de Procedimiento Penal.
+PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite de libertad condicional.
+
+SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de las tres quintas partes de la pena, la buena conducta y el entorno familiar favorable.
 """;
   }
 
@@ -1318,22 +1345,86 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
     final municipio = latestData['municipio'] ?? '';
     final departamento = latestData['departamento'] ?? '';
     final nombreResponsable = latestData['nombre_responsable'] ?? '';
+    final situacion = userData.situacion ?? 'En Reclusión';
 
+    if (situacion == "En Prisión domiciliaria") {
+      return """
+1. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es una forma de cumplimiento de la pena privativa de la libertad fuera del establecimiento carcelario, bajo vigilancia del Estado, cuando el condenado haya cumplido las tres quintas partes de la pena y demostrado buena conducta.
+
+2. En mi caso, ya me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria, lo que implica una forma anticipada de resocialización, con arraigo demostrado en el entorno familiar y social.
+
+3. Actualmente convivo en la $direccion, del municipio de $municipio - $departamento, bajo el cuidado y responsabilidad de $nombreResponsable, quien es mi $parentesco. Esta situación refleja estabilidad, arraigo, y compromiso con las condiciones impuestas por la justicia.
+
+4. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos del beneficio.
+
+""";
+    }
+
+    // Situación por defecto: En Reclusión
     return """
-1. El precepto 38G versa sobre el cumplimiento de la pena privativa de la libertad en el lugar de residencia o morada del condenado siempre que haya purgado la mitad (½) de la pena; satisfaga los numerales 3° y 4° del artículo 38B del Estatuto Punitivo, es decir que se demuestre su arraigo familiar y social y se garantice a través de caución el cumplimiento de las obligaciones legales; el penado no pertenezca al grupo familiar de la víctima y no haya sido sentenciado por uno de los delitos exceptuados por el propio artículo 38G.
+1. Conforme al artículo 64 de la Ley 65 de 1993 (Código Penitenciario), tengo derecho a la libertad condicional, beneficio que procede cuando el condenado ha cumplido las tres quintas partes de la pena y ha observado buena conducta durante su reclusión.
 
-2. He satisfecho los numerales 3° y 4° del artículo 38B del Estatuto Punitivo, es decir demuestro mi arraigo familiar y social, como lo reafirma lo siguiente:
+2. He cumplido más del 60% de la pena impuesta, y durante mi permanencia en el centro penitenciario he demostrado conducta ejemplar, compromiso con procesos de resocialización y respeto por las normas internas.
 
-2.1. Estaré cumpliendo con mi condena bajo el beneficio de prisión domiciliaria en la $direccion, $municipio - $departamento, al lado de $nombreResponsable quien es mi $parentesco.
+3. Cuento con arraigo familiar y social, y tengo un lugar digno y estable donde continuar el cumplimiento de la pena, conforme a la normatividad vigente.
 
-Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a una comunidad, a un trabajo o actividad, o la posesión de bienes…” en los términos que ha indicado la jurisprudencia de la Corte Suprema de justicia en sentencia de Casación Penal, Radicado 46930 de 2017, p. 25, citando a Sentencia de Casación Penal, Radicado 46647 de 2016, M.P. José Leónidas Bustos Martínez.
+3.1. En caso de ser concedido el beneficio, residiré en la $direccion, del municipio de $municipio - $departamento, en compañía de $nombreResponsable, el cual es mi $parentesco y ha manifestado su disposición y compromiso como persona responsable de mi acogida.
 
-3. No pertenezco al grupo familiar de la víctima.
-
-4. No he sido sentenciado por uno de los delitos exceptuados por el propio artículo 38G.
+4. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos que excluyan este beneficio.
 """;
   }
 
+  String generarTextoAnexos(
+      String situacion, {
+        required bool incluirPuntoHijos,
+        List<Map<String, dynamic>> hijos = const [],
+        int cantidadDocumentos = 0,
+      }) {
+    String punto5 = '';
+
+    if (incluirPuntoHijos && hijos.isNotEmpty) {
+      final pluralDocs = cantidadDocumentos > 1;
+      final pluralHijos = hijos.length > 1;
+      final verboConvivir = situacion == 'En Prisión domiciliaria'
+          ? (pluralHijos ? 'conviven' : 'convive')
+          : (pluralHijos ? 'convivirán' : 'convivirá');
+
+      final titulo =
+          "5. Documento${pluralDocs ? 's' : ''} de mi ${pluralHijos ? 'hijos' : 'hijo'} que $verboConvivir conmigo durante el cumplimiento de la pena.";
+
+      final listaHijos = hijos.map((h) {
+        final nombre = h['nombre'] ?? 'Nombre no registrado';
+        final edad = h['edad'] ?? 'Edad desconocida';
+        return '• $nombre, de $edad años';
+      }).join('\n');
+
+      punto5 = "$titulo\n$listaHijos";
+    }
+
+    if (situacion == "En Prisión domiciliaria") {
+      return """
+1. Declaración extrajuicio de la persona con la que convivo actualmente durante el beneficio de prisión domiciliaria, y quien continuará como responsable en caso de otorgarse la libertad condicional.
+
+2. Certificación de insolvencia económica que acredite la imposibilidad de contratar defensa particular o asumir otros costos procesales.
+
+3. Fotocopia de la cédula de ciudadanía de la persona responsable.
+
+4. Fotocopia de un recibo de servicios públicos que demuestre la dirección de residencia.
+${punto5.isNotEmpty ? '\n$punto5' : ''}
+""";
+    }
+
+    return """
+1. Declaración extrajuicio de la persona que me acogerá en el sitio de domicilio durante el beneficio de libertad condicional.
+
+2. Certificación de insolvencia económica que acredite la imposibilidad de contratar defensa particular o asumir otros costos procesales.
+
+3. Fotocopia de la cédula de ciudadanía de la persona responsable.
+
+4. Fotocopia de un recibo de servicios públicos que demuestre la dirección de residencia.
+${punto5.isNotEmpty ? '\n$punto5' : ''}
+""";
+  }
 
   void fetchDocumentoLibertadCondicional() async {
     try {
@@ -1675,15 +1766,6 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 5),
-        // IASuggestionCard(
-        //   categoria: "Beneficios penitenciarios",
-        //   subcategoria: "Prisión domiciliaria",
-        //   consideracionesController: _consideracionesController,
-        //   fundamentosController: _fundamentosDerechoController,
-        //   peticionController: _peticionConcretaController,
-        //   respuestasUsuario: [], // No hay respuestas, pero igual se necesita enviar
-        // ),
-        const SizedBox(height: 5),
         TextField(
           controller: _sinopsisController,
           minLines: 1,
@@ -1799,7 +1881,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
     );
   }
 
-  Widget ingresarPruebas() {
+  Widget ingresarAnexos() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1850,7 +1932,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
 
   }) {
     //usamos la misma plantilla que domiciliaria ya que es igual**
-    final plantilla = PrisionDomiciliariaTemplate(
+    final plantilla = LibertadCondicionalTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad,
       referencia: "Beneficios penitenciarios - Libertad condicional",
@@ -1858,11 +1940,11 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       apellidoPpl: userData?.apellidoPpl ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
       centroPenitenciario: userData?.centroReclusion ?? "",
-      sinopsis: convertirSaltosDeLinea(sinopsis),
-      consideraciones: convertirSaltosDeLinea(consideraciones),
-      fundamentosDeDerecho: convertirSaltosDeLinea(fundamentosDeDerecho),
-      pretenciones: convertirSaltosDeLinea(pretenciones),
-      anexos: convertirSaltosDeLinea(anexos),
+      sinopsis: convertirSaltosDeLinea(_sinopsisController.text),
+      consideraciones: convertirSaltosDeLinea(_consideracionesController.text),
+      fundamentosDeDerecho: convertirSaltosDeLinea(_fundamentosDerechoController.text),
+      pretenciones: convertirSaltosDeLinea(_pretencionesController.text),
+      anexos: convertirSaltosDeLinea(_anexosController.text),
       direccionDomicilio: direccion,
       municipio: municipio,
       departamento: departamento,
@@ -1882,6 +1964,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       numeroSeguimiento: widget.numeroSeguimiento,
       hijos:hijos,
       documentosHijos: documentosHijos,
+      situacion: userData?.situacion ?? 'En Reclusión',
     );
 
 
@@ -1962,7 +2045,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       radicado: userData?.radicado ?? '',
       delito: userData?.delito ?? '',
       condena: "${userData?.tiempoCondena ?? 0}",
-      purgado: "${mesesEjecutado} meses y ${diasEjecutadoExactos} días",
+      purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
       hijos: solicitudData?.containsKey('hijos') == true
@@ -1971,7 +2054,9 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       documentosHijos: solicitudData?.containsKey('documentos_hijos') == true
           ? List<String>.from(solicitudData!['documentos_hijos'])
           : [],
+      situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
     );
+
 
     String mensajeHtml = libertadCondicional.generarTextoHtml();
 
@@ -2099,6 +2184,15 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
         );
 
         if (confirmacion ?? false) {
+          // 🔄 Sincronizar los datos actualizados antes de enviar
+          setState(() {
+            sinopsis = _sinopsisController.text.trim();
+            consideraciones = _consideracionesController.text.trim();
+            fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
+            pretenciones = _pretencionesController.text.trim();
+            anexos = _anexosController.text.trim();
+          });
+
           if (context.mounted) {
             showDialog(
               context: context,
@@ -2117,7 +2211,9 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
               ),
             );
           }
+
           await enviarCorreoResend();
+
           final html = libertadCondicional.generarTextoHtml();
           await subirHtmlCorreoADocumentoCondicional(
             idDocumento: widget.idDocumento,
@@ -2130,48 +2226,46 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
           if (context.mounted) {
             Navigator.of(context).pop(); // Cerrar loading
 
-            if (urlApp != null) {
-              final enviar = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: blanco,
-                  title: const Text("¿Enviar Notificación?"),
-                  content: const Text("¿Deseas notificar al usuario del envio del correo por WhatsApp?"),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text("No"),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text("Sí, enviar"),
-                    ),
-                  ],
-                ),
-              );
+            final enviar = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                backgroundColor: blanco,
+                title: const Text("¿Enviar Notificación?"),
+                content: const Text("¿Deseas notificar al usuario del envío del correo por WhatsApp?"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text("No"),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text("Sí, enviar"),
+                  ),
+                ],
+              ),
+            );
 
-              if (enviar == true) {
-                final celular = "+57${userData!.celular}";
-                final mensaje = Uri.encodeComponent(
-                    "Hola *${userData!.nombreAcudiente}*,\n\n"
-                        "Hemos enviado tu solicitud de prisón domiciliaria número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                        "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
-                        "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes beneficios penitenciarios. Allí podrás ver el correo enviado:\n$urlApp\n\n"
-                        "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
-                );
-                final link = "https://wa.me/$celular?text=$mensaje";
-                await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
-              }
+            if (enviar == true) {
+              final celular = "+57${userData!.celular}";
+              final mensaje = Uri.encodeComponent(
+                  "Hola *${userData!.nombreAcudiente}*,\n\n"
+                      "Hemos enviado tu solicitud de libertad condicional número *$numeroSeguimiento* a la autoridad competente.\n\n"
+                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n"
+                      "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes beneficios penitenciarios. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                      "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
+              );
+              final link = "https://wa.me/$celular?text=$mensaje";
+              await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
-            if(context.mounted){
-              Navigator.pushReplacementNamed(context, 'historial_solicitudes_prision_domiciliaria_admin');
-            }
+
+            Navigator.pushReplacementNamed(context, 'historial_solicitudes_prision_domiciliaria_admin');
           }
         }
       },
       child: const Text("Enviar por correo"),
     );
   }
+
 
   Future<void> subirHtmlCorreoADocumentoCondicional({
     required String idDocumento,
@@ -2235,12 +2329,12 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
   Widget guardarVistaPrevia(String idDocumento) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-        backgroundColor: Colors.white, // Fondo blanco
-        foregroundColor: Colors.black, // Letra en negro
+        side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       ),
       onPressed: () async {
-        adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
+        adminFullName = AdminProvider().adminFullName ?? "";
         if (adminFullName.isEmpty) {
           if (kDebugMode) {
             print("❌ No se pudo obtener el nombre del administrador.");
@@ -2254,7 +2348,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
               .doc(idDocumento)
               .update({
             "status": "Diligenciado",
-            "diligencio": adminFullName, // Guarda el nombre del admin
+            "diligencio": adminFullName,
             "fecha_diligenciamiento": FieldValue.serverTimestamp(),
             "sinopsis": _sinopsisController.text,
             "consideraciones": _consideracionesController.text,
@@ -2262,19 +2356,37 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
             "pretenciones": _pretencionesController.text,
             "anexos": _anexosController.text,
           });
-          if(context.mounted){
+
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Solicitud marcada como diligenciada"))
+              const SnackBar(content: Text("Solicitud marcada como diligenciada")),
             );
 
+            // ✅ Transición deslizante hacia la página de historial
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 300),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(1.0, 0.0), // Desde la derecha
+                    end: Offset.zero,
+                  ).animate(animation);
+
+                  return SlideTransition(position: offsetAnimation, child: child);
+                },
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return const HistorialSolicitudesCondicionalAdminPage();
+                },
+              ),
+            );
           }
         } catch (e) {
           if (kDebugMode) {
             print("❌ Error al actualizar la solicitud: $e");
           }
-          if(context.mounted){
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Error al actualizar la solicitud"))
+              const SnackBar(content: Text("Error al actualizar la solicitud")),
             );
           }
         }
@@ -2283,15 +2395,16 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
     );
   }
 
+
   Widget guardarRevisado(String idDocumento) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-        backgroundColor: Colors.white, // Fondo blanco
-        foregroundColor: Colors.black, // Letra en negro
+        side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       ),
       onPressed: () async {
-        String adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
+        String adminFullName = AdminProvider().adminFullName ?? "";
         if (adminFullName.isEmpty) {
           if (kDebugMode) {
             print("❌ No se pudo obtener el nombre del administrador.");
@@ -2305,25 +2418,43 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
               .doc(idDocumento)
               .update({
             "status": "Revisado",
-            "reviso": adminFullName, // Guarda el nombre del admin
+            "reviso": adminFullName,
             "fecha_revision": FieldValue.serverTimestamp(),
+            "sinopsis": _sinopsisController.text,
             "consideraciones": _consideracionesController.text,
             "fundamentos_de_derecho": _fundamentosDerechoController.text,
             "pretenciones": _pretencionesController.text,
             "anexos": _anexosController.text,
           });
-          if(context.mounted){
+
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Solicitud guardada como 'Revisado'"))
+              const SnackBar(content: Text("Solicitud guardada como 'Revisado'")),
+            );
+
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 300),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(1.0, 0.0),
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return SlideTransition(position: offsetAnimation, child: child);
+                },
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return const HistorialSolicitudesCondicionalAdminPage();
+                },
+              ),
             );
           }
         } catch (e) {
           if (kDebugMode) {
             print("❌ Error al actualizar la solicitud: $e");
           }
-          if(context.mounted){
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Error al actualizar la solicitud"))
+              const SnackBar(content: Text("Error al actualizar la solicitud")),
             );
           }
         }
@@ -2331,5 +2462,6 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
       child: const Text("Marcar como Revisado"),
     );
   }
+
 
 }

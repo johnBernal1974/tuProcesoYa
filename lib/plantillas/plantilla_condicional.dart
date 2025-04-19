@@ -29,6 +29,7 @@ class LibertadCondicionalTemplate {
   final String purgado;
   final String jdc;
   final String numeroSeguimiento;
+  final String situacion;
   final List<Map<String, String>>? hijos;
   final List<String>? documentosHijos;
 
@@ -63,6 +64,7 @@ class LibertadCondicionalTemplate {
     required this.purgado,
     required this.jdc,
     required this.numeroSeguimiento,
+    required this.situacion,
     this.hijos,
     this.documentosHijos,
   });
@@ -90,9 +92,19 @@ class LibertadCondicionalTemplate {
 
         “Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.”<br><br>
         E.S.D<br><br>
+    """);
 
-        yo, <b>$nombrePpl $apellidoPpl</b>, identificado con el número de cédula <b>$identificacionPpl</b>, actualmente recluido en <b>$centroPenitenciario</b>, con el NUI : <b>$nui</b> y TD : <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.<br><br>
+    if (situacion == "En Prisión domiciliaria") {
+      buffer.writeln("""
+        yo, <b>$nombrePpl $apellidoPpl</b>, identificado con cédula <b>$identificacionPpl</b>, actualmente cumplo mi condena en prisión domiciliaria en la dirección $direccionDomicilio, municipio de $municipio - $departamento, bajo la responsabilidad de $nombreResponsable, quien convive conmigo en dicho domicilio.<br><br>
+      """);
+    } else {
+      buffer.writeln("""
+        yo, <b>$nombrePpl $apellidoPpl</b>, identificado con el número de cédula <b>$identificacionPpl</b>, actualmente recluido en la $centroPenitenciario , con el NUI : <b>$nui</b> y TD : <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.<br><br>
+      """);
+    }
 
+    buffer.writeln("""
         <span style="font-size: 18px;"><b>I. SINOPSIS PROCESAL</b></span><br>
         ${convertirParrafos(sinopsis)}<br><br>
 
@@ -102,7 +114,7 @@ class LibertadCondicionalTemplate {
         <span style="font-size: 18px;"><b>III. FUNDAMENTOS DE DERECHO</b></span><br>
         ${convertirParrafos(fundamentosDeDerecho)}<br><br>
 
-        <span style="font-size: 18px;"><b>IV. PRETENCIONES</b></span><br>
+        <span style="font-size: 18px;"><b>IV. PRETENSIONES</b></span><br>
         ${convertirParrafos(pretenciones)}<br><br>
 
         <span style="font-size: 18px;"><b>V. ANEXOS</b></span><br>
@@ -118,10 +130,14 @@ class LibertadCondicionalTemplate {
     """);
 
     if (hijos != null && hijos!.isNotEmpty) {
+      final textoHijos = situacion == "En Prisión domiciliaria"
+          ? "Hijos que conviven conmigo actualmente y que lo seguirán haciendo durante el beneficio de libertad condicional:"
+          : "Hijos que convivirán conmigo durante el beneficio de libertad condicional:";
+
       buffer.writeln("""
-    <h4 style="margin-bottom: 0;">Hijos que convivirán conmigo durante el beneficio de prisión domiciliaria:</h4>
-    <div style="font-size: 13px; margin-top: 2px;">
-  """);
+        <h4 style="margin-bottom: 0;">$textoHijos</h4>
+        <div style="font-size: 13px; margin-top: 2px;">
+      """);
 
       for (var hijo in hijos!) {
         final nombre = hijo['nombre'] ?? '';
@@ -130,11 +146,10 @@ class LibertadCondicionalTemplate {
       }
 
       buffer.writeln("""
-    <p style="margin-top: 6px;">Se adjuntaron los documentos de identidad de mis hijos.</p>
-    </div><br><br><br>
-  """);
+        <p style="margin-top: 6px;">Se adjuntan los documentos de identidad.</p>
+        </div><br><br><br>
+      """);
     }
-
 
     buffer.writeln("""    
         Agradezco enormemente la atención prestada a la presente.<br><br><br>
@@ -155,7 +170,7 @@ class LibertadCondicionalTemplate {
         </p>
       </body>
     </html>
-  """);
+    """);
 
     return buffer.toString();
   }

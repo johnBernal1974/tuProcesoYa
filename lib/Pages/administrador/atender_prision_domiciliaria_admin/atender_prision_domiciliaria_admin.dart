@@ -21,6 +21,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
 
 class AtenderPrisionDomiciliariaPage extends StatefulWidget {
   final String status;
@@ -2236,12 +2237,12 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
   Widget guardarVistaPrevia(String idDocumento) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-        backgroundColor: Colors.white, // Fondo blanco
-        foregroundColor: Colors.black, // Letra en negro
+        side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       ),
       onPressed: () async {
-        adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
+        adminFullName = AdminProvider().adminFullName ?? "";
         if (adminFullName.isEmpty) {
           if (kDebugMode) {
             print("❌ No se pudo obtener el nombre del administrador.");
@@ -2255,7 +2256,7 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
               .doc(idDocumento)
               .update({
             "status": "Diligenciado",
-            "diligencio": adminFullName, // Guarda el nombre del admin
+            "diligencio": adminFullName,
             "fecha_diligenciamiento": FieldValue.serverTimestamp(),
             "sinopsis": _sinopsisController.text,
             "consideraciones": _consideracionesController.text,
@@ -2263,19 +2264,37 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
             "pretenciones": _pretencionesController.text,
             "anexos": _anexosController.text,
           });
-          if(context.mounted){
+
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Solicitud marcada como diligenciada"))
+              const SnackBar(content: Text("Solicitud marcada como diligenciada")),
             );
 
+            // ✅ Transición deslizante hacia la página de historial
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 300),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(1.0, 0.0), // Desde la derecha
+                    end: Offset.zero,
+                  ).animate(animation);
+
+                  return SlideTransition(position: offsetAnimation, child: child);
+                },
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return const HistorialSolicitudesDomiciliariaAdminPage();
+                },
+              ),
+            );
           }
         } catch (e) {
           if (kDebugMode) {
             print("❌ Error al actualizar la solicitud: $e");
           }
-          if(context.mounted){
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Error al actualizar la solicitud"))
+              const SnackBar(content: Text("Error al actualizar la solicitud")),
             );
           }
         }
@@ -2287,12 +2306,12 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
   Widget guardarRevisado(String idDocumento) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
-        side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-        backgroundColor: Colors.white, // Fondo blanco
-        foregroundColor: Colors.black, // Letra en negro
+        side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
       ),
       onPressed: () async {
-        String adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
+        String adminFullName = AdminProvider().adminFullName ?? "";
         if (adminFullName.isEmpty) {
           if (kDebugMode) {
             print("❌ No se pudo obtener el nombre del administrador.");
@@ -2306,25 +2325,43 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
               .doc(idDocumento)
               .update({
             "status": "Revisado",
-            "reviso": adminFullName, // Guarda el nombre del admin
+            "reviso": adminFullName,
             "fecha_revision": FieldValue.serverTimestamp(),
+            "sinopsis": _sinopsisController.text,
             "consideraciones": _consideracionesController.text,
             "fundamentos_de_derecho": _fundamentosDerechoController.text,
             "pretenciones": _pretencionesController.text,
             "anexos": _anexosController.text,
           });
-          if(context.mounted){
+
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Solicitud guardada como 'Revisado'"))
+              const SnackBar(content: Text("Solicitud guardada como 'Revisado'")),
+            );
+
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                transitionDuration: const Duration(milliseconds: 300),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(1.0, 0.0),
+                    end: Offset.zero,
+                  ).animate(animation);
+                  return SlideTransition(position: offsetAnimation, child: child);
+                },
+                pageBuilder: (context, animation, secondaryAnimation) {
+                  return const HistorialSolicitudesDomiciliariaAdminPage();
+                },
+              ),
             );
           }
         } catch (e) {
           if (kDebugMode) {
             print("❌ Error al actualizar la solicitud: $e");
           }
-          if(context.mounted){
+          if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("Error al actualizar la solicitud"))
+              const SnackBar(content: Text("Error al actualizar la solicitud")),
             );
           }
         }
