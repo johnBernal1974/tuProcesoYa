@@ -13,7 +13,7 @@ class RequisitosLibertadCondicionalPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: blanco,
       appBar: AppBar(
-        title: const Text('Requisitos para Libertad condicional'),
+        title: const Text('Libertad condicional'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
@@ -28,35 +28,34 @@ class RequisitosLibertadCondicionalPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-
             _buildRequisito(
-              icon: Icons.account_balance,
+              icon: Icons.double_arrow_outlined,
               titulo: 'Declaración extrajuicio de la persona responsable',
               descripcion: 'Documento notariado donde la persona que recibirá al Ppl en su domicilio, declara que se compromete a ser responsable durante la condena. Se consigue en cualquier notaría con la cédula del responsable.',
               costo: 'Costo estimado: \$25.000 - \$35.000 COP',
             ),
 
             _buildRequisito(
-              icon: Icons.receipt_long,
+              icon: Icons.double_arrow_outlined,
               titulo: 'Certificado de insolvencia económica',
               descripcion: 'Documento expedido por entidades como la Cámara de comercio, Secretaria de tránsito y transporte local que certifica que no tienes ingresos suficientes. Debes llevar la fotocopia de la cédula del Ppl y una carta solicitando el certificado.',
               costo: 'Costo estimado: \$15.000 - \$35.000 COP',
             ),
 
             _buildRequisito(
-              icon: Icons.home,
+              icon: Icons.double_arrow_outlined,
               titulo: 'Recibo de servicios públicos',
               descripcion: 'Sirve para verificar la dirección donde se estará cumpliendo la condena. Puedes descargarlo de internet o conseguirlo en físico. Preferiblemente a nombre del responsable.',
             ),
 
             _buildRequisito(
-              icon: Icons.badge,
+              icon: Icons.double_arrow_outlined,
               titulo: 'Fotocopia de la cédula de la persona responsable',
               descripcion: 'Es indispensable para validar la identidad de quien acogerá al Ppl.',
             ),
 
             _buildRequisito(
-              icon: Icons.child_friendly,
+              icon: Icons.double_arrow_outlined,
               titulo: 'Documentos de identidad de los hijos (si vivirán con el Ppl)',
               descripcion: 'Puede ser registro civil o tarjeta de identidad. Esto demuestra el arraigo familiar y que el entorno donde se vivirá es adecuado. Esto solo aplica para hijos menores de 18 años',
             ),
@@ -109,7 +108,7 @@ class RequisitosLibertadCondicionalPage extends StatelessWidget {
                     }
                   }
                 },
-                child: const Text('Tengo los documentos, comenzar solicitud'),
+                child: const Text('Comenzar solicitud'),
               ),
             ),
             const SizedBox(height: 50),

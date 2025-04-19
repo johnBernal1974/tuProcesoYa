@@ -73,7 +73,7 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
     if (reference.startsWith("tutela")) return "Tutela";
     if (reference.startsWith("domiciliaria")) return "Solicitud domiciliaria";
     if (reference.startsWith("permiso_72h")) return "Permiso 72h";
-    if (reference.startsWith("libertad_condicional")) return "Libertad Condicional";
+    if (reference.startsWith("condicional")) return "Libertad Condicional";
     if (reference.startsWith("extincion_pena")) return "Extinción de pena";
     return "Otro";
   }
@@ -96,33 +96,6 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
             padding: const EdgeInsets.all(0.0),
             child: Column(
               children: [
-                // // 🔥 SECCIÓN DEL SALDO ACTUAL 🔥
-                // Container(
-                //   width: double.infinity,
-                //   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                //   margin: const EdgeInsets.only(bottom: 15),
-                //   decoration: BoxDecoration(
-                //     color: Colors.white,
-                //     borderRadius: BorderRadius.circular(12),
-                //     border: Border.all(color: gris, width: 2),
-                //   ),
-                //   child: Column(
-                //     children: [
-                //       const Text(
-                //         "Saldo Actual",
-                //         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
-                //       ),
-                //       Text(
-                //         _saldo != null
-                //             ? "\$${NumberFormat("#,###", "es_CO").format(_saldo)}"
-                //             : "Cargando...",
-                //         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black),
-                //       ),
-                //     ],
-                //   ),
-                // ),
-
-                // 🔥 LISTA DE TRANSACCIONES 🔥
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
                     stream: _userId.isNotEmpty
@@ -159,15 +132,27 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
                             surfaceTintColor: blanco,
                             margin: const EdgeInsets.symmetric(vertical: 8),
                             child: ListTile(
-                              title: Text(
-                                "\$${NumberFormat("#,###", "es_CO").format(amount)}",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                  color: estado == "Rechazado" ? Colors.red : Colors.black,
-                                  decoration:
-                                  estado == "Rechazado" ? TextDecoration.lineThrough : null,
-                                ),
+                              title: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    "\$${NumberFormat("#,###", "es_CO").format(amount)}",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: estado == "Rechazado" ? Colors.red : Colors.black,
+                                      decoration: estado == "Rechazado" ? TextDecoration.lineThrough : null,
+                                    ),
+                                  ),
+                                  Text(
+                                    estado,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: estado == "Aprobado" ? Colors.green : Colors.red,
+                                    ),
+                                  ),
+                                ],
                               ),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,13 +179,6 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
                                     style: const TextStyle(fontSize: 10, color: Colors.grey),
                                   ),
                                 ],
-                              ),
-                              trailing: Text(
-                                estado,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: estado == "Aprobado" ? Colors.green : Colors.red,
-                                ),
                               ),
                             ),
                           );

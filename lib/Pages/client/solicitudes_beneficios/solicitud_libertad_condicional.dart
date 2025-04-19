@@ -613,7 +613,31 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
       return;
     }
 
-    // 🔹 Validar datos de hijos solo si el usuario indicó que vivirá con ellos
+    // ✅ Validar número de celular
+    final celular = _celularResponsableController.text.trim();
+    if (celular.length != 10 || !RegExp(r'^\d+$').hasMatch(celular)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("El número de celular debe tener exactamente 10 dígitos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // ✅ Validar número de cédula
+    final cedula = _cedulaResponsableController.text.trim();
+    if (cedula.length < 7 || cedula.length > 10 || !RegExp(r'^\d+$').hasMatch(cedula)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("La cédula debe tener entre 7 y 10 dígitos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // 🔹 Validar hijos si aplica
     if (tieneHijosConvivientes) {
       if (hijos.isEmpty || archivosHijos.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -644,6 +668,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
     await verificarSaldoYEnviarSolicitud();
   }
+
 
   Future<void> verificarSaldoYEnviarSolicitud() async {
     User? user = FirebaseAuth.instance.currentUser;

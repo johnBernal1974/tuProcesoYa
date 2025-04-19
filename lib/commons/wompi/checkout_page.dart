@@ -125,12 +125,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
   Widget build(BuildContext context) {
     // Si es un pago por algún servicio específico
     final tiposPagos = {
-      'peticion': 'DERECHO DE PETICIÓN',
-      'tutela': 'TUTELA',
-      'domiciliaria': 'PRISIÓN DOMICILIARIA',
-      'permiso_72h': 'PERMISO DE 72 HORAS',
-      'condicional': 'LIBERTAD CONDICIONAL',
-      'extincion_pena': 'EXTINCIÓN DE LA PENA'
+      'peticion': 'Derecho de petición',
+      'tutela': 'Tutela',
+      'domiciliaria': 'Prisión domiciliaria',
+      'permiso_72h': 'Permiso de 72 horas',
+      'condicional': 'Libertad condicional',
+      'extincion_pena': 'Extinción de la pena'
     };
 
     if (tiposPagos.containsKey(widget.tipoPago)) {
@@ -138,7 +138,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       String referencia = widget.referencia ?? "${widget.tipoPago}_${_auth.currentUser?.uid}_${_uuid.v4()}";
 
       return MainLayout(
-        pageTitle: "Pago por $nombre",
+        pageTitle: nombre,
         content: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -148,32 +148,21 @@ class _CheckoutPageState extends State<CheckoutPage> {
               RichText(
                 textAlign: TextAlign.center,
                 text: TextSpan(
-                  style: const TextStyle(fontSize: 14, color: Colors.black),
+                  style: const TextStyle(fontSize: 18, color: Colors.black),
                   children: [
                     const TextSpan(text: "Para enviar tu solicitud de "),
                     TextSpan(
                       text: nombre,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                     ),
-                    const TextSpan(text: ", debes realizar el pago del servicio."),
+                    const TextSpan(text: ", debes realizar el pago respectivo."),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 60),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: primary),
-                  color: blanco,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      offset: const Offset(0, 2),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 80, vertical: 10),
                 child: Column(
                   children: [
                     const Text("Valor", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -181,7 +170,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 100),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: primary),
                 onPressed: () async {
@@ -234,16 +223,12 @@ class _CheckoutPageState extends State<CheckoutPage> {
               const SizedBox(height: 40),
               if (_subscriptionValue != null)
                 Container(
+                  color: blanco,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: gris),
-                    color: Colors.green,
-                  ),
                   child: Column(
                     children: [
-                      const Text("Valor de la suscripción", style: TextStyle(fontWeight: FontWeight.bold, color: blanco)),
-                      Text("\$${_formatter.format(_subscriptionValue)}", style: const TextStyle(fontSize: 22, color: blanco)),
+                      const Text("Valor de la suscripción", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54, fontSize: 11)),
+                      Text("\$${_formatter.format(_subscriptionValue)}", style: const TextStyle(fontSize: 22, color: negro)),
                     ],
                   ),
                 )
