@@ -252,7 +252,7 @@ class _SideBarState extends State<SideBar> {
                 child: _buildDrawerTile(
                     context, "Solicitudes de Libertad condicional",
                     Icons.double_arrow_outlined,
-                    'home_admin'),
+                    'historial_solicitudes_libertad_condicional_admin'),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),

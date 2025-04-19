@@ -12,11 +12,13 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
+import 'Pages/administrador/atender_libertad_condicional/atender_libertad_condicional.dart';
 import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
+import 'Pages/administrador/historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'Pages/administrador/historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
 import 'Pages/administrador/historial_solicitudes_tutela_admin/historial_solicitudes_tutela_admin.dart';
 import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
@@ -134,6 +136,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_derecho_peticion_admin': (context) => const HistorialSolicitudesDerechoPeticionAdminPage(),
         'historial_solicitudes_tutelas_admin': (context) => const HistorialSolicitudesTutelaPageAdmin(),
         'historial_solicitudes_prision_domiciliaria_admin': (context) => const HistorialSolicitudesDomiciliariaAdminPage(),
+        'historial_solicitudes_libertad_condicional_admin': (context) => const HistorialSolicitudesCondicionalAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -309,7 +312,28 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
-
+          else if (settings.name == 'atender_solicitud_libertad_condicional_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderLibertadCondicionalPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                direccion: args['direccion'] ?? "",
+                departamento: args['departamento'] ?? "",
+                municipio: args['municipio'] ?? "",
+                nombreResponsable: args['nombreResponsable'] ?? "",
+                cedulaResponsable: args['cedulaResponsable'] ?? "",
+                celularResponsable: args['celularResponsable'] ?? "",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable']?.toString(),
+                urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
+                parentesco: args['parentesco'] ?? "", // 🟣 ¡Este faltaba!
+              ),
+            );
+          }
 
           else if (settings.name == 'detalle_correo') {
             final args = settings.arguments as Map<String, dynamic>;
