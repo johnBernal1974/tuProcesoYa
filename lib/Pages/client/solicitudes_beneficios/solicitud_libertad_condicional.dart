@@ -178,41 +178,11 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                     ],
                   ),
                 ),
+
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
-                const Text(
-                    '4. Sube la certificación de insolvencia económica en un solo documento:', style: TextStyle(
-                    fontWeight: FontWeight.bold
-                )),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => pickSingleFile('insolvencia'),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.upload_file, color: Colors.deepPurple),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          archivoInsolvencia ?? 'Subir archivo',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.deepPurple,
-                          ),
-                        ),
-                      ),
-                      if (archivoInsolvencia != null)
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                          onPressed: () => eliminarArchivo('insolvencia'),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Divider(color: negroLetras, height: 1),
-                const SizedBox(height: 24),
-                const Text('5. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
+                const Text('4. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
                     fontWeight: FontWeight.bold
                 )),
                 const SizedBox(height: 10),
@@ -254,7 +224,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  "6. Por favor selecciona qué relación tiene la persona responsable con el PPL (persona privada de la libertad)",
+                  "5. Por favor selecciona qué relación tiene la persona responsable con el PPL (persona privada de la libertad)",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
@@ -334,7 +304,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                  '7. Sube la fotocopia de la cédula de la persona responsable:',
+                  '6. Sube la fotocopia de la cédula de la persona responsable:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -361,6 +331,10 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                     ],
                   ),
                 ),
+                const SizedBox(height: 24),
+                const Divider(color: negroLetras, height: 1),
+                const SizedBox(height: 24),
+                ingresarReparacionVictima(),
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
@@ -391,7 +365,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                       const Divider(color: negroLetras, height: 1),
                       const SizedBox(height: 24),
                       const Text(
-                        '9. Adjuntar los documentos de identidad de los hijos',
+                        '10. Adjuntar los documentos de identidad de los hijos',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
@@ -599,7 +573,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         archivoRecibo == null ||
         archivoDeclaracion == null ||
         archivoCedulaResponsable == null ||
-        archivoInsolvencia == null ||
+        (_opcionReparacionSeleccionada == 'insolvencia' && archivoInsolvencia == null) || // ✅ Solo si aplica
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
         _celularResponsableController.text.trim().isEmpty ||
@@ -669,6 +643,91 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     await verificarSaldoYEnviarSolicitud();
   }
 
+  final List<Map<String, String>> _opcionesReparacion = [
+    {
+      'clave': 'reparado',
+      'texto': 'Se ha reparado a la víctima.'
+    },
+    {
+      'clave': 'garantia',
+      'texto': 'Se ha asegurado el pago de la indemnización mediante garantía personal, real, bancaria o acuerdo de pago.'
+    },
+    {
+      'clave': 'insolvencia',
+      'texto': 'No se ha reparado a la víctima ni asegurado el pago de la indemnización debido a estado de insolvencia.'
+    },
+  ];
+
+
+  String? _opcionReparacionSeleccionada;
+
+  Widget ingresarReparacionVictima() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "7. Reparación de la víctima",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 4),
+        const Text("Indica si se realizó la reparación a la víctima, se aseguró el pago o si no ha sido posible por razones de insolvencia.",
+          style: TextStyle(fontSize: 12, color: Colors.black87)),
+        const SizedBox(height: 8),
+        ..._opcionesReparacion.map((opcion) {
+          return CheckboxListTile(
+            value: _opcionReparacionSeleccionada == opcion['clave'],
+            onChanged: (selected) {
+              setState(() {
+                _opcionReparacionSeleccionada =
+                (_opcionReparacionSeleccionada == opcion['clave']) ? null : opcion['clave'];
+              });
+            },
+            title: Text(opcion['texto']!, style: const TextStyle(fontSize: 14)),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+
+
+        if (_opcionReparacionSeleccionada ==
+            "No se ha reparado a la víctima ni asegurado el pago de la indemnización debido a estado de insolvencia.")
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              const Text(
+                '8. Sube la certificación de insolvencia económica en un solo documento:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => pickSingleFile('insolvencia'),
+                child: Row(
+                  children: [
+                    const Icon(Icons.upload_file, color: Colors.deepPurple),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        archivoInsolvencia ?? 'Subir archivo',
+                        style: const TextStyle(
+                          decoration: TextDecoration.underline,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                    ),
+                    if (archivoInsolvencia != null)
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                        onPressed: () => eliminarArchivo('insolvencia'),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
 
   Future<void> verificarSaldoYEnviarSolicitud() async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -814,6 +873,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         'archivo_cedula_responsable': urlArchivoCedulaResponsable,
         if (tieneHijosConvivientes) 'hijos': hijos,
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
+        'reparacion': _opcionReparacionSeleccionada,
       });
 
 
@@ -852,7 +912,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "8. Información de los Hijos",
+          "9. Información de los Hijos",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
