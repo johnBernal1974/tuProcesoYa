@@ -39,7 +39,7 @@ class RequisitosPrisionDomiciliariaPage extends StatelessWidget {
             _buildRequisito(
               icon: Icons.double_arrow_outlined,
               titulo: 'Certificado de insolvencia económica',
-              descripcion: 'Documento expedido por entidades como la Cámara de comercio, Secretaria de tránsito y transporte local que certifica que no tienes ingresos suficientes. Debes llevar la fotocopia de la cédula del Ppl y una carta solicitando el certificado.',
+              descripcion: 'Este documento es obligatorio si no se ha indemnizado a la víctima ni asegurado el pago mediante acuerdo, garantía o similar. Es expedido por entidades como la Cámara de Comercio o la Secretaría de Tránsito y Transporte local. Para solicitarlo, debes llevar la fotocopia de la cédula del PPL y una carta explicando la solicitud.',
               costo: 'Costo estimado: \$15.000 - \$35.000 COP',
             ),
 

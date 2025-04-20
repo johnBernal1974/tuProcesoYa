@@ -121,22 +121,25 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                  '2. Sube un recibo de servicios públicos de dicho domicilio:', style: TextStyle(
-                    fontWeight: FontWeight.bold
-                )),
+                  '2. Sube un recibo de servicios públicos de dicho domicilio:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => pickSingleFile('recibo'),
                   child: Row(
                     children: [
-                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      Icon(
+                        archivoRecibo != null ? Icons.check_circle : Icons.upload_file,
+                        color: archivoRecibo != null ? Colors.green : Colors.deepPurple,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           archivoRecibo ?? 'Subir archivo',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.deepPurple,
+                          style: TextStyle(
+                            color: archivoRecibo != null ? Colors.black : Colors.deepPurple,
+                            decoration: archivoRecibo != null ? TextDecoration.none : TextDecoration.underline,
                           ),
                         ),
                       ),
@@ -152,22 +155,25 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                  '3. Sube la declaración extra juicio para la solicitud de prisión domiciliaria:', style: TextStyle(
-                    fontWeight: FontWeight.bold
-                )),
+                  '3. Sube la declaración extra juicio para la solicitud de prisión domiciliaria:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => pickSingleFile('declaracion'),
                   child: Row(
                     children: [
-                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      Icon(
+                        archivoDeclaracion != null ? Icons.check_circle : Icons.upload_file,
+                        color: archivoDeclaracion != null ? Colors.green : Colors.deepPurple,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           archivoDeclaracion ?? 'Subir archivo',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.deepPurple,
+                          style: TextStyle(
+                            color: archivoDeclaracion != null ? Colors.black : Colors.deepPurple,
+                            decoration: archivoDeclaracion != null ? TextDecoration.none : TextDecoration.underline,
                           ),
                         ),
                       ),
@@ -182,38 +188,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
-                const Text(
-                    '4. Sube la certificación de insolvencia económica en un solo documento:', style: TextStyle(
-                    fontWeight: FontWeight.bold
-                )),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => pickSingleFile('insolvencia'),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.upload_file, color: Colors.deepPurple),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          archivoInsolvencia ?? 'Subir archivo',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.deepPurple,
-                          ),
-                        ),
-                      ),
-                      if (archivoInsolvencia != null)
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                          onPressed: () => eliminarArchivo('insolvencia'),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Divider(color: negroLetras, height: 1),
-                const SizedBox(height: 24),
-                const Text('5. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
+                const Text('4. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
                     fontWeight: FontWeight.bold
                 )),
                 const SizedBox(height: 10),
@@ -255,7 +230,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  "6. Por favor selecciona qué relación tiene la persona responsable con el PPL (persona privada de la libertad)",
+                  "5. Por favor selecciona qué relación tiene la persona responsable con el PPL (persona privada de la libertad)",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
@@ -335,7 +310,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                  '7. Sube la fotocopia de la cédula de la persona responsable:',
+                  '6. Sube la fotocopia de la cédula de la persona responsable:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -343,14 +318,17 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                   onTap: () => pickSingleFile('cedula_responsable'),
                   child: Row(
                     children: [
-                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      Icon(
+                        archivoCedulaResponsable != null ? Icons.check_circle : Icons.upload_file,
+                        color: archivoCedulaResponsable != null ? Colors.green : Colors.deepPurple,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           archivoCedulaResponsable ?? 'Subir archivo',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.deepPurple,
+                          style: TextStyle(
+                            color: archivoCedulaResponsable != null ? Colors.black : Colors.deepPurple,
+                            decoration: archivoCedulaResponsable != null ? TextDecoration.none : TextDecoration.underline,
                           ),
                         ),
                       ),
@@ -362,6 +340,10 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 24),
+                const Divider(color: negroLetras, height: 1),
+                const SizedBox(height: 24),
+                ingresarReparacionVictima(),
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
@@ -392,7 +374,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                       const Divider(color: negroLetras, height: 1),
                       const SizedBox(height: 24),
                       const Text(
-                        '9. Adjuntar los documentos de identidad de los hijos',
+                        '10. Adjuntar los documentos de identidad de los hijos',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
@@ -413,19 +395,25 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                         ),
                       ),
                       const SizedBox(height: 8),
+
+                      // ✅ Lista de archivos seleccionados
                       if (archivosHijos.isNotEmpty)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: archivosHijos.map((file) {
                             return Row(
                               children: [
-                                const Icon(Icons.upload_file, color: Colors.deepPurple, size: 18),
+                                const Icon(Icons.check_circle, color: Colors.green, size: 18),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     file.name,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 14),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black,
+                                      decoration: TextDecoration.none,
+                                    ),
                                   ),
                                 ),
                                 IconButton(
@@ -593,6 +581,95 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
     }
   }
 
+  final List<Map<String, String>> _opcionesReparacion = [
+    {
+      'clave': 'reparado',
+      'texto': 'Se ha reparado a la víctima.'
+    },
+    {
+      'clave': 'garantia',
+      'texto': 'Se ha asegurado el pago de la indemnización mediante garantía personal, real, bancaria o acuerdo de pago.'
+    },
+    {
+      'clave': 'insolvencia',
+      'texto': 'No se ha reparado a la víctima ni asegurado el pago de la indemnización debido a estado de insolvencia.'
+    },
+  ];
+
+
+  String? _opcionReparacionSeleccionada;
+
+  Widget ingresarReparacionVictima() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "7. Reparación de la víctima",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 4),
+        const Text("Indica si se realizó la reparación a la víctima, se aseguró el pago o si no ha sido posible por razones de insolvencia.",
+            style: TextStyle(fontSize: 12, color: Colors.black87)),
+        const SizedBox(height: 8),
+        ..._opcionesReparacion.map((opcion) {
+          return CheckboxListTile(
+            value: _opcionReparacionSeleccionada == opcion['clave'],
+            onChanged: (selected) {
+              setState(() {
+                _opcionReparacionSeleccionada =
+                (_opcionReparacionSeleccionada == opcion['clave']) ? null : opcion['clave'];
+              });
+            },
+            title: Text(opcion['texto']!, style: const TextStyle(fontSize: 14)),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          );
+        }).toList(),
+
+
+        if (_opcionReparacionSeleccionada ==
+            "insolvencia")
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 20),
+              const Text(
+                '8. Sube la certificación de insolvencia económica en un solo documento:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: () => pickSingleFile('insolvencia'),
+                child: Row(
+                  children: [
+                    Icon(
+                      archivoInsolvencia != null ? Icons.check_circle : Icons.upload_file,
+                      color: archivoInsolvencia != null ? Colors.green : Colors.deepPurple,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        archivoInsolvencia ?? 'Subir archivo',
+                        style: TextStyle(
+                          color: archivoInsolvencia != null ? Colors.black : Colors.deepPurple,
+                          decoration: archivoInsolvencia != null ? TextDecoration.none : TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                    if (archivoInsolvencia != null)
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                        onPressed: () => eliminarArchivo('insolvencia'),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+      ],
+    );
+  }
+
   void validarYEnviar() async {
     if (_direccionController.text.trim().isEmpty ||
         departamentoSeleccionado == null ||
@@ -600,7 +677,8 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         archivoRecibo == null ||
         archivoDeclaracion == null ||
         archivoCedulaResponsable == null ||
-        archivoInsolvencia == null ||
+        _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
+        (_opcionReparacionSeleccionada == 'insolvencia' && archivoInsolvencia == null) || // ✅ Solo si aplica
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
         _celularResponsableController.text.trim().isEmpty ||
@@ -815,6 +893,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         'archivo_cedula_responsable': urlArchivoCedulaResponsable,
         if (tieneHijosConvivientes) 'hijos': hijos,
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
+        'reparacion': _opcionReparacionSeleccionada,
       });
 
 
@@ -853,7 +932,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "8. Información de los Hijos",
+          "9. Información de los Hijos",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
@@ -876,19 +955,24 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
               ),
             ),
             const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () {
-                final nombre = _nombreHijoController.text.trim();
-                final edad = _edadHijoController.text.trim();
-                if (nombre.isNotEmpty && edad.isNotEmpty) {
-                  setState(() {
-                    hijos.add({"nombre": nombre, "edad": edad});
-                    _nombreHijoController.clear();
-                    _edadHijoController.clear();
-                  });
-                }
-              },
-              child: const Icon(Icons.add),
+            Column(
+              children: [
+                const Text("Guardar", style: TextStyle(fontSize: 11)),
+                ElevatedButton(
+                  onPressed: () {
+                    final nombre = _nombreHijoController.text.trim();
+                    final edad = _edadHijoController.text.trim();
+                    if (nombre.isNotEmpty && edad.isNotEmpty) {
+                      setState(() {
+                        hijos.add({"nombre": nombre, "edad": edad});
+                        _nombreHijoController.clear();
+                        _edadHijoController.clear();
+                      });
+                    }
+                  },
+                  child: const Icon(Icons.save),
+                ),
+              ],
             )
           ],
         ),

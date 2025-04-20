@@ -120,22 +120,25 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                    '2. Sube un recibo de servicios públicos de dicho domicilio:', style: TextStyle(
-                    fontWeight: FontWeight.bold
-                )),
+                  '2. Sube un recibo de servicios públicos de dicho domicilio:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () => pickSingleFile('recibo'),
                   child: Row(
                     children: [
-                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      Icon(
+                        archivoRecibo != null ? Icons.check_circle : Icons.upload_file,
+                        color: archivoRecibo != null ? Colors.green : Colors.deepPurple,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           archivoRecibo ?? 'Subir archivo',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.deepPurple,
+                          style: TextStyle(
+                            color: archivoRecibo != null ? Colors.black : Colors.deepPurple,
+                            decoration: archivoRecibo != null ? TextDecoration.none : TextDecoration.underline,
                           ),
                         ),
                       ),
@@ -159,14 +162,17 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                   onTap: () => pickSingleFile('declaracion'),
                   child: Row(
                     children: [
-                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      Icon(
+                        archivoDeclaracion != null ? Icons.check_circle : Icons.upload_file,
+                        color: archivoDeclaracion != null ? Colors.green : Colors.deepPurple,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           archivoDeclaracion ?? 'Subir archivo',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.deepPurple,
+                          style: TextStyle(
+                            color: archivoDeclaracion != null ? Colors.black : Colors.deepPurple,
+                            decoration: archivoDeclaracion != null ? TextDecoration.none : TextDecoration.underline,
                           ),
                         ),
                       ),
@@ -178,7 +184,6 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                     ],
                   ),
                 ),
-
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
@@ -312,14 +317,17 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                   onTap: () => pickSingleFile('cedula_responsable'),
                   child: Row(
                     children: [
-                      const Icon(Icons.upload_file, color: Colors.deepPurple),
+                      Icon(
+                        archivoCedulaResponsable != null ? Icons.check_circle : Icons.upload_file,
+                        color: archivoCedulaResponsable != null ? Colors.green : Colors.deepPurple,
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           archivoCedulaResponsable ?? 'Subir archivo',
-                          style: const TextStyle(
-                            decoration: TextDecoration.underline,
-                            color: Colors.deepPurple,
+                          style: TextStyle(
+                            color: archivoCedulaResponsable != null ? Colors.black : Colors.deepPurple,
+                            decoration: archivoCedulaResponsable != null ? TextDecoration.none : TextDecoration.underline,
                           ),
                         ),
                       ),
@@ -386,19 +394,25 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                         ),
                       ),
                       const SizedBox(height: 8),
+
+                      // ✅ Lista de archivos seleccionados
                       if (archivosHijos.isNotEmpty)
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: archivosHijos.map((file) {
                             return Row(
                               children: [
-                                const Icon(Icons.upload_file, color: Colors.deepPurple, size: 18),
+                                const Icon(Icons.check_circle, color: Colors.green, size: 18),
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
                                     file.name,
                                     overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 14),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.black,
+                                      decoration: TextDecoration.none,
+                                    ),
                                   ),
                                 ),
                                 IconButton(
@@ -573,6 +587,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         archivoRecibo == null ||
         archivoDeclaracion == null ||
         archivoCedulaResponsable == null ||
+        _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
         (_opcionReparacionSeleccionada == 'insolvencia' && archivoInsolvencia == null) || // ✅ Solo si aplica
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
@@ -690,7 +705,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
 
         if (_opcionReparacionSeleccionada ==
-            "No se ha reparado a la víctima ni asegurado el pago de la indemnización debido a estado de insolvencia.")
+            "insolvencia")
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -704,14 +719,17 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                 onTap: () => pickSingleFile('insolvencia'),
                 child: Row(
                   children: [
-                    const Icon(Icons.upload_file, color: Colors.deepPurple),
+                    Icon(
+                      archivoInsolvencia != null ? Icons.check_circle : Icons.upload_file,
+                      color: archivoInsolvencia != null ? Colors.green : Colors.deepPurple,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         archivoInsolvencia ?? 'Subir archivo',
-                        style: const TextStyle(
-                          decoration: TextDecoration.underline,
-                          color: Colors.deepPurple,
+                        style: TextStyle(
+                          color: archivoInsolvencia != null ? Colors.black : Colors.deepPurple,
+                          decoration: archivoInsolvencia != null ? TextDecoration.none : TextDecoration.underline,
                         ),
                       ),
                     ),
@@ -935,19 +953,24 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
               ),
             ),
             const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () {
-                final nombre = _nombreHijoController.text.trim();
-                final edad = _edadHijoController.text.trim();
-                if (nombre.isNotEmpty && edad.isNotEmpty) {
-                  setState(() {
-                    hijos.add({"nombre": nombre, "edad": edad});
-                    _nombreHijoController.clear();
-                    _edadHijoController.clear();
-                  });
-                }
-              },
-              child: const Icon(Icons.add),
+            Column(
+              children: [
+                const Text("Guardar", style: TextStyle(fontSize: 11)),
+                ElevatedButton(
+                  onPressed: () {
+                    final nombre = _nombreHijoController.text.trim();
+                    final edad = _edadHijoController.text.trim();
+                    if (nombre.isNotEmpty && edad.isNotEmpty) {
+                      setState(() {
+                        hijos.add({"nombre": nombre, "edad": edad});
+                        _nombreHijoController.clear();
+                        _edadHijoController.clear();
+                      });
+                    }
+                  },
+                  child: const Icon(Icons.add),
+                ),
+              ],
             )
           ],
         ),
