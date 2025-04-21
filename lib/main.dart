@@ -308,7 +308,8 @@ class MyApp extends StatelessWidget {
                 archivos: List<String>.from(args['archivos'] ?? []),
                 urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable']?.toString(),
                 urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
-                parentesco: args['parentesco'] ?? "", // 🟣 ¡Este faltaba!
+                parentesco: args['parentesco'] ?? "",
+                reparacion: args['reparacion'] ?? "",
               ),
             );
           }
@@ -330,7 +331,8 @@ class MyApp extends StatelessWidget {
                 archivos: List<String>.from(args['archivos'] ?? []),
                 urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable']?.toString(),
                 urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
-                parentesco: args['parentesco'] ?? "", // 🟣 ¡Este faltaba!
+                parentesco: args['parentesco'] ?? "",
+                reparacion: args['reparacion'] ?? "",
               ),
             );
           }

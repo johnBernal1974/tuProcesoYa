@@ -570,11 +570,6 @@ class _HistorialSolicitudesCondicionalAdminPageState extends State<HistorialSoli
     DateTime fechaEnvio = latestData['fechaEnvio']?.toDate() ?? DateTime.now();
     DateTime fechaLimite = fechaEnvio.add(Duration(days: tiempoPermitido));
     bool sinRespuesta = DateTime.now().isAfter(fechaLimite);
-    print("📆 Fecha de envío: $fechaEnvio");
-    print("📆 Fecha límite: $fechaLimite");
-    print("📆 Hoy: ${DateTime.now()}");
-    print("📌 ¿Sin respuesta? $sinRespuesta");
-    print("📌 Número de seguimiento: ${latestData['numero_seguimiento']}");
 
     if (context.mounted) {
       Navigator.pushNamed(
@@ -606,6 +601,7 @@ class _HistorialSolicitudesCondicionalAdminPageState extends State<HistorialSoli
           'cedulaResponsable': latestData['cedula_responsable'] ?? "",
           'celularResponsable': latestData['celular_responsable'] ?? "",
           'parentesco': latestData['parentesco'] ?? "",
+          'reparacion': latestData['reparacion'] ?? "",
           // Estado de la respuesta
           'sinRespuesta': sinRespuesta,
           // Si quieres incluir las preguntas y respuestas de IA (por si se usa luego)

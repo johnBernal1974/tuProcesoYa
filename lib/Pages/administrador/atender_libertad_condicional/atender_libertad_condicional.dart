@@ -35,6 +35,7 @@ class AtenderLibertadCondicionalPage extends StatefulWidget {
   final String idUser;
   final List<String> archivos;
   final String parentesco;
+  final String reparacion;
 
 
   // 🔹 Nuevos campos opcionales
@@ -56,6 +57,7 @@ class AtenderLibertadCondicionalPage extends StatefulWidget {
     required this.idUser,
     required this.archivos,
     required this.parentesco,
+    required this.reparacion,
     this.urlArchivoCedulaResponsable,
     this.urlsArchivosHijos = const [],
   });
@@ -341,7 +343,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (widget.archivos.isNotEmpty) ...[
-              const Text("📄 Recibo de servicios , 📝 Declaración extrajuicio y 📝 Declaración insolvencia",
+              const Text("📄 Recibo de servicios - 📝 Declaración extrajuicio - 📝 Insolvencia (Si aplica)",
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               ArchivoViewerWeb(
@@ -509,6 +511,46 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     );
   }
 
+  Widget infoReparacionVictima({required String reparacion}) {
+    final descripciones = {
+      "reparado": {
+        "texto": "Se ha reparado a la víctima.",
+        "icono": Icons.volunteer_activism,
+        "color": Colors.green,
+      },
+      "garantia": {
+        "texto": "Se ha asegurado el pago de la indemnización mediante garantía personal, real, bancaria o acuerdo de pago.",
+        "icono": Icons.verified_user,
+        "color": Colors.blue,
+      },
+      "insolvencia": {
+        "texto": "No se ha reparado a la víctima ni asegurado el pago de la indemnización debido a estado de insolvencia.",
+        "icono": Icons.warning_amber_rounded,
+        "color": Colors.orange,
+      },
+    };
+
+    final info = descripciones[reparacion];
+
+    if (info == null) {
+      return const ListTile(
+        leading: Icon(Icons.help_outline, color: Colors.grey),
+        title: Text("Información no disponible.", style: TextStyle(fontSize: 14)),
+      );
+    }
+
+    return ListTile(
+      leading: Icon(info["icono"] as IconData, color: info["color"] as Color),
+      title: Text(
+        info["texto"] as String,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+      ),
+      contentPadding: EdgeInsets.zero,
+    );
+  }
+
+
+
   Widget _buildInformacionUsuarioWidget({
     required String direccion,
     required String departamento,
@@ -518,8 +560,8 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     required String celularResponsable,
     List<Map<String, String>> hijos = const [], // ← Añadido por defecto
   }) {
-    TextStyle labelStyle = const TextStyle(fontSize: 13);
-    TextStyle valueStyle = const TextStyle(fontSize: 14, fontWeight: FontWeight.bold);
+    TextStyle labelStyle = const TextStyle(fontSize: 12);
+    TextStyle valueStyle = const TextStyle(fontSize: 12, fontWeight: FontWeight.bold);
 
     return Card(
       surfaceTintColor: blanco,
@@ -532,10 +574,10 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           children: [
             const Text(
               "Información suministrada por el Usuario",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
-            const Text("Lugar registrada para la libertad condicional"),
+            const Text("Lugar registrado para la libertad condicional", style: TextStyle(fontSize: 12)),
             Row(
               children: [
                 Text("Dirección: ", style: labelStyle),
@@ -548,10 +590,11 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
               ],
             ),
             const SizedBox(height: 12),
-            const Divider(height: 20, color: gris),
+            const Divider(height: 1, color: gris),
+            const SizedBox(height: 12),
             const Text(
               "Persona que se hace responsable en el Domicilio",
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
             ),
             const SizedBox(height: 8),
             Row(
@@ -560,14 +603,12 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
                 Expanded(child: Text(nombreResponsable, style: valueStyle)),
               ],
             ),
-            const SizedBox(height: 4),
             Row(
               children: [
                 Text("Número de identificación: ", style: labelStyle),
                 Expanded(child: Text(cedulaResponsable, style: valueStyle)),
               ],
             ),
-            const SizedBox(height: 4),
             Row(
               children: [
                 Text("Teléfono Celular: ", style: labelStyle),
@@ -580,7 +621,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
               const Divider(height: 20, color: gris),
               const Text(
                 "Hijos que convivirán en el domicilio",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
               ),
               const SizedBox(height: 8),
               ...hijos.map((hijo) {
@@ -588,10 +629,16 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
                 final edad = hijo['edad'] ?? '';
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 4),
-                  child: Text("• $nombre - $edad años", style: valueStyle),
+                  child: Text("$nombre - $edad años", style: const TextStyle(fontSize: 12)),
                 );
               }).toList(),
             ],
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: gris),
+            const SizedBox(height: 12),
+            infoReparacionVictima(
+                reparacion: widget.reparacion
+            ),
           ],
         ),
       ),
