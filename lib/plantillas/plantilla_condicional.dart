@@ -105,19 +105,19 @@ class LibertadCondicionalTemplate {
     }
 
     buffer.writeln("""
-        <span style="font-size: 18px;"><b>I. SINOPSIS PROCESAL</b></span><br>
+        <span style="font-size: 16px;"><b>I. SINOPSIS PROCESAL</b></span><br>
         ${convertirParrafos(sinopsis)}<br><br>
 
-        <span style="font-size: 18px;"><b>II. CONSIDERACIONES</b></span><br>
+        <span style="font-size: 16px;"><b>II. CONSIDERACIONES</b></span><br>
         ${convertirParrafos(consideraciones)}<br><br>
 
-        <span style="font-size: 18px;"><b>III. FUNDAMENTOS DE DERECHO</b></span><br>
+        <span style="font-size: 16px;"><b>III. FUNDAMENTOS DE DERECHO</b></span><br>
         ${convertirParrafos(fundamentosDeDerecho)}<br><br>
 
-        <span style="font-size: 18px;"><b>IV. PRETENSIONES</b></span><br>
+        <span style="font-size: 16px;"><b>IV. PRETENSIONES</b></span><br>
         ${convertirParrafos(pretenciones)}<br><br>
 
-        <span style="font-size: 18px;"><b>V. ANEXOS</b></span><br>
+        <span style="font-size: 16px;"><b>V. ANEXOS</b></span><br>
         ${convertirParrafos(anexos)}<br><br>
 
         <b>Información del domicilio donde se cumpliría la medida:</b><br>

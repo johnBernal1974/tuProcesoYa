@@ -1,8 +1,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
@@ -19,7 +17,7 @@ import '../../../../src/colors/colors.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 
-class SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage extends StatefulWidget {
+class SolicitudesLibertadCondicionalEnviadasPorCorreoPage extends StatefulWidget {
   final String status;
   final String idDocumento;
   final String numeroSeguimiento;
@@ -43,7 +41,7 @@ class SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage extends StatefulWidget
   final List<String> urlsArchivosHijos;
   final bool sinRespuesta;
 
-  const SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage({
+  const SolicitudesLibertadCondicionalEnviadasPorCorreoPage({
     super.key,
     required this.status,
     required this.idDocumento,
@@ -68,10 +66,10 @@ class SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage extends StatefulWidget
 
 
   @override
-  State<SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage> createState() => _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState();
+  State<SolicitudesLibertadCondicionalEnviadasPorCorreoPage> createState() => _SolicitudesLibertadCondicionalEnviadasPorCorreoPageState();
 }
 
-class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage> {
+class _SolicitudesLibertadCondicionalEnviadasPorCorreoPageState extends State<SolicitudesLibertadCondicionalEnviadasPorCorreoPage> {
   late PplProvider _pplProvider;
   Ppl? userData;
   bool isLoading = true; // Bandera para controlar la carga
@@ -112,7 +110,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      pageTitle: 'Prisión Domiciliaria Enviada',
+      pageTitle: 'Libertad Condicional Enviada',
       content: SingleChildScrollView(
         child: Center(
           child: SizedBox(
@@ -128,43 +126,43 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       LayoutBuilder(
-                            builder: (context, constraints) {
-                              bool isMobile = constraints.maxWidth < 800; // Detectar si es móvil
+                        builder: (context, constraints) {
+                          bool isMobile = constraints.maxWidth < 800; // Detectar si es móvil
 
-                              return Column(
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                                    child: isMobile
-                                        ? Column( // En móviles, disposición en columna
-                                      children: [
-                                        if (widget.sinRespuesta)
-                                        _buildWarningMessage(),
-                                        const SizedBox(height: 10),
-                                        if (widget.sinRespuesta && rol != "pasante 1") _buildTutelaButton(context),
-                                        const SizedBox(height: 15)
-                                      ],
-                                    )
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: isMobile
+                                    ? Column( // En móviles, disposición en columna
+                                  children: [
+                                    if (widget.sinRespuesta)
+                                      _buildWarningMessage(),
+                                    const SizedBox(height: 10),
+                                    if (widget.sinRespuesta && rol != "pasante 1") _buildTutelaButton(context),
+                                    const SizedBox(height: 15)
+                                  ],
+                                )
 
-                                        : Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.center,
-                                      children: [
-                                        if (widget.sinRespuesta)
-                                          Flexible(child: _buildWarningMessage()),
+                                    : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    if (widget.sinRespuesta)
+                                      Flexible(child: _buildWarningMessage()),
 
-                                        const SizedBox(width: 50),
+                                    const SizedBox(width: 50),
 
-                                        if (widget.sinRespuesta && rol != "pasante 1")
-                                          SizedBox(width: 200, child: _buildTutelaButton(context)),
-                                        const Divider(color: Colors.red, height: 1),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
+                                    if (widget.sinRespuesta && rol != "pasante 1")
+                                      SizedBox(width: 200, child: _buildTutelaButton(context)),
+                                    const Divider(color: Colors.red, height: 1),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
                       const SizedBox(height: 30),
                       if (isWide)
                         Row(
@@ -201,13 +199,13 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                       style: TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                     SizedBox(
-                                      height: 300, // o el valor que consideres adecuado
-                                      child:
-                                      ListaCorreosWidget(
-                                        solicitudId: widget.idDocumento,
-                                        nombreColeccion: "prision_domiciliaria_solicitados",
-                                        onTapCorreo: _mostrarDetalleCorreo,
-                                      )
+                                        height: 300, // o el valor que consideres adecuado
+                                        child:
+                                        ListaCorreosWidget(
+                                          solicitudId: widget.idDocumento,
+                                          nombreColeccion: "libertad_condicional_solicitados",
+                                          onTapCorreo: _mostrarDetalleCorreo,
+                                        )
                                     ),
                                   ],
                                 ),
@@ -246,13 +244,13 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                     style: TextStyle(fontWeight: FontWeight.bold),
                                   ),
                                   SizedBox(
-                                    height: 300, // o el valor que consideres adecuado
-                                    child:
-                                    ListaCorreosWidget(
-                                      solicitudId: widget.idDocumento,
-                                      nombreColeccion: "prision_domiciliaria_solicitados",
-                                      onTapCorreo: _mostrarDetalleCorreo,
-                                    )
+                                      height: 300, // o el valor que consideres adecuado
+                                      child:
+                                      ListaCorreosWidget(
+                                        solicitudId: widget.idDocumento,
+                                        nombreColeccion: "libertad_condicional_solicitados",
+                                        onTapCorreo: _mostrarDetalleCorreo,
+                                      )
                                   ),
 
                                 ],
@@ -386,7 +384,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                   ),
                 ),
                 Text(
-                  "Prisión domiciliaria - Enviada",
+                  "Libertad condicional - Enviada",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: fontSize,
@@ -485,7 +483,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
-            const Text("Lugar registrado para la prisión domiciliaria", style: TextStyle(fontSize: 12)),
+            const Text("Lugar registrado para la libertad condicional", style: TextStyle(fontSize: 12)),
             Row(
               children: [
                 Text("Dirección: ", style: labelStyle),
@@ -590,6 +588,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
       contentPadding: EdgeInsets.zero,
     );
   }
+
 
   /// 📅 Muestra la fecha de hoy en formato adecuado
   Widget _buildFechaHoy() {
@@ -726,7 +725,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
 
       // 🔥 Obtener documento de Firestore
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitados')
+          .collection('libertad_condicional_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -751,6 +750,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
               diligencio = data['diligencio'] ?? 'No registrado';
               reviso = data['reviso'] ?? 'No registrado';
               envio = data['envió'] ?? 'No registrado';
+
               fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
               fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
               fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
@@ -805,7 +805,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
               padding: const EdgeInsets.all(20),
               child: FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance
-                    .collection('prision_domiciliaria_solicitados')
+                    .collection('libertad_condicional_solicitados')
                     .doc(widget.idDocumento)
                     .collection('log_correos')
                     .doc(correoId)
