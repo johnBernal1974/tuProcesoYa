@@ -121,6 +121,8 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
   late final String? urlArchivoCedulaResponsable;
   late final List<String> urlsArchivosHijos;
   Map<String, dynamic>? solicitudData;
+  String? _opcionReparacionSeleccionada;
+
 
 
   @override
@@ -1251,13 +1253,11 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
 
     if (fetchedData != null && latestData != null && mounted) {
       // 🔹 Precargar campos solo si no están ya cargados
-      if (!_isSinopsisLoaded) {
-        _sinopsisController.text = generarTextoSinopsisDesdeDatos(
-          fetchedData,
-          fetchedData.situacion ?? 'En Reclusión',        );
-        _isSinopsisLoaded = true;
-      }
-
+      _sinopsisController.text = generarTextoSinopsisDesdeDatos(
+        fetchedData,
+        fetchedData.situacion ?? 'En Reclusión',
+        widget.reparacion, // ✅ así accedes a la variable
+      );
 
       if (!_isFundamentosLoaded) {
         _fundamentosDerechoController.text =
@@ -1288,8 +1288,8 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           fetchedData.situacion ?? 'En Reclusión',
           incluirPuntoHijos: tieneHijosYDocumentos,
           hijos: listaHijos,
+          reparacion: widget.reparacion,
         );
-
         _isAnexosLoaded = true;
       }
 
@@ -1350,7 +1350,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     }
   }
 
-  String generarTextoSinopsisDesdeDatos(Ppl userData, String situacion) {
+  String generarTextoSinopsisDesdeDatos(Ppl userData, String situacion, String reparacion) {
     final jdc = userData.juzgadoQueCondeno ?? '';
     final condena = userData.tiempoCondena?.toString() ?? '';
     final captura = userData.fechaCaptura?.toString() ?? '';
@@ -1358,13 +1358,32 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     final purgado = "$mesesEjecutado";
     final fechaFormateada = formatearFechaCaptura(captura);
 
+    String textoBase;
+
     if (situacion == "En Prisión domiciliaria") {
-      return "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. Actualmente me encuentro cumpliendo dicha condena bajo el beneficio de prisión domiciliaria. Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la pena, incluyendo redenciones obtenidas conforme a la ley, por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito exigido para solicitar el beneficio de libertad condicional.";
+      textoBase =
+      "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
+          "Actualmente me encuentro cumpliendo dicha condena bajo el beneficio de prisión domiciliaria. "
+          "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la pena, incluyendo redenciones obtenidas conforme a la ley, "
+          "por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito exigido para solicitar el beneficio de libertad condicional.";
+    } else {
+      textoBase =
+      "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
+          "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, "
+          "por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, lo que me permite acceder al beneficio de libertad condicional según la ley.";
     }
 
-    // Default (En Reclusión)
-    return "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, lo que me permite acceder al beneficio de libertad condicional según la ley.";
+    // 🔹 Complemento según reparación
+    final complemento = {
+      'reparado': " Por otro lado, me permito informar que cumplí con el requisito de reparación a la víctima, lo cual fortalece mi solicitud.",
+      'garantia': " Por otro lado, he asegurado el pago de la indemnización a la víctima mediante acuerdo o garantía, cumpliendo con lo establecido en la normatividad vigente.",
+      'insolvencia': " Por otro lado, desafortunadamente no he podido cumplir con la reparación a la víctima por mi estado de insolvencia económica, situación que acredito debidamente con la certificación adjunta en la presente solicitud.",
+    }[reparacion] ?? "";
+
+    return "$textoBase$complemento";
   }
+
+
 
   String generarTextoPretencionesDesdeDatos(String situacion) {
     if (situacion == "En Prisión domiciliaria") {
@@ -1424,11 +1443,30 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   String generarTextoAnexos(
       String situacion, {
         required bool incluirPuntoHijos,
+        required String reparacion,
         List<Map<String, dynamic>> hijos = const [],
         int cantidadDocumentos = 0,
       }) {
-    String punto5 = '';
+    final incluyeInsolvencia = reparacion == 'insolvencia';
 
+    int contador = 1;
+
+    final punto1 = "$contador. ${situacion == 'En Prisión domiciliaria'
+        ? "Declaración extrajuicio de la persona con la que convivo actualmente durante el beneficio de prisión domiciliaria, y quien continuará como responsable en caso de otorgarse la libertad condicional."
+        : "Declaración extrajuicio de la persona que me acogerá en el sitio de domicilio durante el beneficio de libertad condicional."}";
+    contador++;
+
+    final punto2 = incluyeInsolvencia
+        ? "${contador++}. Certificación de insolvencia económica."
+        : null;
+
+    final punto3 =
+        "${contador++}. Fotocopia de la cédula de ciudadanía de la persona responsable.";
+
+    final punto4 =
+        "${contador++}. Fotocopia de un recibo de servicios públicos que demuestra la dirección de residencia.";
+
+    String punto5 = '';
     if (incluirPuntoHijos && hijos.isNotEmpty) {
       final pluralDocs = cantidadDocumentos > 1;
       final pluralHijos = hijos.length > 1;
@@ -1437,7 +1475,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
           : (pluralHijos ? 'convivirán' : 'convivirá');
 
       final titulo =
-          "5. Documento${pluralDocs ? 's' : ''} de mi ${pluralHijos ? 'hijos' : 'hijo'} que $verboConvivir conmigo durante el cumplimiento de la pena.";
+          "$contador. Documento${pluralDocs ? 's' : ''} de mi ${pluralHijos ? 'hijos' : 'hijo'} que $verboConvivir conmigo durante el cumplimiento de la pena.";
 
       final listaHijos = hijos.map((h) {
         final nombre = h['nombre'] ?? 'Nombre no registrado';
@@ -1448,30 +1486,16 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       punto5 = "$titulo\n$listaHijos";
     }
 
-    if (situacion == "En Prisión domiciliaria") {
-      return """
-1. Declaración extrajuicio de la persona con la que convivo actualmente durante el beneficio de prisión domiciliaria, y quien continuará como responsable en caso de otorgarse la libertad condicional.
-
-2. Certificación de insolvencia económica que acredite la imposibilidad de contratar defensa particular o asumir otros costos procesales.
-
-3. Fotocopia de la cédula de ciudadanía de la persona responsable.
-
-4. Fotocopia de un recibo de servicios públicos que demuestre la dirección de residencia.
-${punto5.isNotEmpty ? '\n$punto5' : ''}
-""";
-    }
-
-    return """
-1. Declaración extrajuicio de la persona que me acogerá en el sitio de domicilio durante el beneficio de libertad condicional.
-
-2. Certificación de insolvencia económica que acredite la imposibilidad de contratar defensa particular o asumir otros costos procesales.
-
-3. Fotocopia de la cédula de ciudadanía de la persona responsable.
-
-4. Fotocopia de un recibo de servicios públicos que demuestre la dirección de residencia.
-${punto5.isNotEmpty ? '\n$punto5' : ''}
-""";
+    return [
+      punto1,
+      if (punto2 != null) punto2,
+      punto3,
+      punto4,
+      if (punto5.isNotEmpty) punto5
+    ].join('\n\n');
   }
+
+
 
   void fetchDocumentoLibertadCondicional() async {
     try {

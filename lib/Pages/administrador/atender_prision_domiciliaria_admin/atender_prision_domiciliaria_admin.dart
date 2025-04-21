@@ -1252,7 +1252,10 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     if (fetchedData != null && latestData != null && mounted) {
       // 🔹 Precargar campos solo si no están ya cargados
       if (!_isSinopsisLoaded) {
-        _sinopsisController.text = generarTextoSinopsisDesdeDatos(fetchedData);
+        _sinopsisController.text = generarTextoSinopsisDesdeDatos(
+          fetchedData,
+          widget.reparacion, // ✅ Se pasa la clave de reparación
+        );
         _isSinopsisLoaded = true;
       }
 
@@ -1268,17 +1271,24 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       }
 
       if (!_isAnexosLoaded) {
-        _anexosController.text = """
-1. Declaración extrajuicio de la persona que me acogerá en el sitio de domicilio.
+        final tieneHijosYDocumentos = latestData.containsKey('hijos') &&
+            latestData['hijos'] is List &&
+            latestData['hijos'].isNotEmpty &&
+            latestData.containsKey('documentos_hijos') &&
+            latestData['documentos_hijos'] is List &&
+            latestData['documentos_hijos'].isNotEmpty;
 
-2. Certificación de insolvencia económica.
-
-3. Fotocopia de la cédula de ciudadanía de la persona que me acogerá.
-
-4. Fotocopia de un recibo de servicios públicos.
-
-5. Registro civil de mis hijos.
-""";
+        final listaHijos = tieneHijosYDocumentos
+            ? (latestData['hijos'] as List<dynamic>)
+            .whereType<Map>() // 🔹 Asegura que cada ítem sea un Map
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList()
+            : <Map<String, dynamic>>[];
+        _anexosController.text = generarTextoAnexos(
+          incluirPuntoHijos: tieneHijosYDocumentos,
+          hijos: listaHijos,
+          reparacion: widget.reparacion,
+        );
         _isAnexosLoaded = true;
       }
 
@@ -1338,7 +1348,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     }
   }
 
-  String generarTextoSinopsisDesdeDatos(Ppl userData) {
+  String generarTextoSinopsisDesdeDatos(Ppl userData, String reparacion) {
     final jdc = userData.juzgadoQueCondeno ?? '';
     final condena = userData.tiempoCondena?.toString() ?? '';
     final captura = userData.fechaCaptura?.toString() ?? '';
@@ -1346,8 +1356,23 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     final purgado = "$mesesEjecutado";
     final fechaFormateada = formatearFechaCaptura(captura);
 
-    return "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, por lo cual ya he superado el 50% de la pena impuesta.";
+    final textoBase =
+        "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
+        "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, "
+        "por lo cual ya he superado el 50% de la pena impuesta.";
+
+    // 🔹 Complemento según reparación
+    final complemento = {
+      'reparado': " Por otro lado, me permito informar que cumplí con el requisito de reparación a la víctima, lo cual fortalece mi solicitud.",
+      'garantia': " Por otro lado, he asegurado el pago de la indemnización a la víctima mediante acuerdo o garantía, cumpliendo con lo establecido en la normatividad vigente.",
+      'insolvencia': " Por otro lado, desafortunadamente no he podido cumplir con la reparación a la víctima por mi estado de insolvencia económica, situación que acredito debidamente con la certificación adjunta en la presente solicitud.",
+    }[reparacion] ?? "";
+
+    return "$textoBase$complemento";
   }
+
+
+
 
   String generarTextoPretencionesDesdeDatos(Ppl userData) {
     return """
@@ -1380,6 +1405,59 @@ Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a u
 4. No he sido sentenciado por uno de los delitos exceptuados por el propio artículo 38G.
 """;
   }
+
+  String generarTextoAnexos(
+      {
+        required bool incluirPuntoHijos,
+        required String reparacion,
+        List<Map<String, dynamic>> hijos = const [],
+        int cantidadDocumentos = 0,
+      }) {
+    final incluyeInsolvencia = reparacion == 'insolvencia';
+
+    int contador = 1;
+
+    final punto1 =
+        "$contador. Declaración extrajuicio de la persona con la que conviviré durante el beneficio de prisión domiciliaria y quien asumirá la responsabilidad en caso de que me sea concedido dicho beneficio.";
+    contador++;
+
+    final punto2 = incluyeInsolvencia
+        ? "${contador++}. Certificación de insolvencia económica."
+        : null;
+
+    final punto3 =
+        "${contador++}. Fotocopia de la cédula de ciudadanía de la persona responsable.";
+
+    final punto4 =
+        "${contador++}. Fotocopia de un recibo de servicios públicos que demuestra la dirección de residencia.";
+
+    String punto5 = '';
+    if (incluirPuntoHijos && hijos.isNotEmpty) {
+      final pluralDocs = cantidadDocumentos > 1;
+      final pluralHijos = hijos.length > 1;
+      final verboConvivir = pluralHijos ? 'conviven' : 'convive';
+
+      final titulo =
+          "$contador. Documento${pluralDocs ? 's' : ''} de mi ${pluralHijos ? 'hijos' : 'hijo'} que $verboConvivir conmigo durante el cumplimiento de la pena.";
+
+      final listaHijos = hijos.map((h) {
+        final nombre = h['nombre'] ?? 'Nombre no registrado';
+        final edad = h['edad'] ?? 'Edad desconocida';
+        return '• $nombre, de $edad años';
+      }).join('\n');
+
+      punto5 = "$titulo\n$listaHijos";
+    }
+
+    return [
+      punto1,
+      if (punto2 != null) punto2,
+      punto3,
+      punto4,
+      if (punto5.isNotEmpty) punto5,
+    ].join('\n\n');
+  }
+
 
 
   void fetchDocumentoPrisionDomiciliaria() async {
