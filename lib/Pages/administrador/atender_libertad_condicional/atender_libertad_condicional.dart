@@ -11,6 +11,7 @@ import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
+import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_condicional.dart';
@@ -348,7 +349,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
               const Text("📄 Recibo de servicios - 📝 Declaración extrajuicio - 📝 Insolvencia (Si aplica)",
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              ArchivoViewerWeb(
+              ArchivoViewerWeb2(
                 archivos: widget.archivos,
               ),
               const SizedBox(height: 20),
@@ -356,7 +357,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
             if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) ...[
               const Text("🪪 Cédula del responsable", style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              ArchivoViewerWeb(
+              ArchivoViewerWeb2(
                 archivos: [widget.urlArchivoCedulaResponsable!],
               ),
               const SizedBox(height: 20),
@@ -365,7 +366,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
               const Text("👶 Documentos de identidad de los hijos",
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              ArchivoViewerWeb(
+              ArchivoViewerWeb2(
                 archivos: widget.urlsArchivosHijos,
               ),
               const SizedBox(height: 20),
@@ -376,7 +377,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
               const Text("📎 Otros archivos adjuntos",
                   style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              ArchivoViewerWeb(
+              ArchivoViewerWeb2(
                 archivos: archivosAdjuntos
                     .map((e) => e['contenido']!)
                     .toList()
@@ -2322,7 +2323,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
                   "Hola *${userData!.nombreAcudiente}*,\n\n"
                       "Hemos enviado tu solicitud de libertad condicional número *$numeroSeguimiento* a la autoridad competente.\n\n"
                       "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n"
-                      "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes beneficios penitenciarios. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                      "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes libertad condicional. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                       "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
               );
               final link = "https://wa.me/$celular?text=$mensaje";

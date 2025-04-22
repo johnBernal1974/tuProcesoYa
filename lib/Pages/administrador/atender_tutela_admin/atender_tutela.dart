@@ -10,6 +10,7 @@ import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/a
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
+import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/ia_backend_service/IASuggestionCard.dart';
 import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
@@ -292,7 +293,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
 
         /// 📂 **Mostramos los archivos aquí**
         archivosAdjuntos.isNotEmpty
-            ? ArchivoViewerWeb(archivos: archivos)
+            ? ArchivoViewerWeb2(archivos: archivos)
             : const Text(
           "El usuario no compartió ningún archivo",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),

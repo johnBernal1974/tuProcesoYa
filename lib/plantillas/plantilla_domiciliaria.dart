@@ -117,23 +117,23 @@ class PrisionDomiciliariaTemplate {
         </span>
     """);
 
-    if (hijos != null && hijos!.isNotEmpty) {
-      buffer.writeln("""
-    <h4 style="margin-bottom: 0;">Hijos que convivirán conmigo durante el beneficio de prisión domiciliaria:</h4>
-    <div style="font-size: 13px; margin-top: 2px;">
-  """);
-
-      for (var hijo in hijos!) {
-        final nombre = hijo['nombre'] ?? '';
-        final edad = hijo['edad'] ?? '';
-        buffer.writeln('<div>- $nombre ($edad años)</div>');
-      }
-
-      buffer.writeln("""
-    <p style="margin-top: 6px;">Se adjuntaron los documentos de identidad de mis hijos.</p>
-    </div><br><br><br>
-  """);
-    }
+  //   if (hijos != null && hijos!.isNotEmpty) {
+  //     buffer.writeln("""
+  //   <h4 style="margin-bottom: 0;">Hijos que convivirán conmigo durante el beneficio de prisión domiciliaria:</h4>
+  //   <div style="font-size: 13px; margin-top: 2px;">
+  // """);
+  //
+  //     for (var hijo in hijos!) {
+  //       final nombre = hijo['nombre'] ?? '';
+  //       final edad = hijo['edad'] ?? '';
+  //       buffer.writeln('<div>- $nombre ($edad años)</div>');
+  //     }
+  //
+  //     buffer.writeln("""
+  //   <p style="margin-top: 6px;">Se adjuntaron los documentos de identidad de mis hijos.</p>
+  //   </div><br><br><br>
+  // """);
+  //   }
 
 
     buffer.writeln("""    

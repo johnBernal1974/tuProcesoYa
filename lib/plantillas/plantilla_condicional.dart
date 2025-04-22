@@ -129,27 +129,27 @@ class LibertadCondicionalTemplate {
         </span>
     """);
 
-    if (hijos != null && hijos!.isNotEmpty) {
-      final textoHijos = situacion == "En Prisión domiciliaria"
-          ? "Hijos que conviven conmigo actualmente y que lo seguirán haciendo durante el beneficio de libertad condicional:"
-          : "Hijos que convivirán conmigo durante el beneficio de libertad condicional:";
-
-      buffer.writeln("""
-        <h4 style="margin-bottom: 0;">$textoHijos</h4>
-        <div style="font-size: 13px; margin-top: 2px;">
-      """);
-
-      for (var hijo in hijos!) {
-        final nombre = hijo['nombre'] ?? '';
-        final edad = hijo['edad'] ?? '';
-        buffer.writeln('<div>- $nombre ($edad años)</div>');
-      }
-
-      buffer.writeln("""
-        <p style="margin-top: 6px;">Se adjuntan los documentos de identidad.</p>
-        </div><br><br><br>
-      """);
-    }
+    // if (hijos != null && hijos!.isNotEmpty) {
+    //   final textoHijos = situacion == "En Prisión domiciliaria"
+    //       ? "Hijos que conviven conmigo actualmente y que lo seguirán haciendo durante el beneficio de libertad condicional:"
+    //       : "Hijos que convivirán conmigo durante el beneficio de libertad condicional:";
+    //
+    //   buffer.writeln("""
+    //     <h4 style="margin-bottom: 0;">$textoHijos</h4>
+    //     <div style="font-size: 13px; margin-top: 2px;">
+    //   """);
+    //
+    //   for (var hijo in hijos!) {
+    //     final nombre = hijo['nombre'] ?? '';
+    //     final edad = hijo['edad'] ?? '';
+    //     buffer.writeln('<div>- $nombre ($edad años)</div>');
+    //   }
+    //
+    //   buffer.writeln("""
+    //     <p style="margin-top: 6px;">Se adjuntan los documentos de identidad.</p>
+    //     </div><br><br><br>
+    //   """);
+    // }
 
     buffer.writeln("""    
         Agradezco enormemente la atención prestada a la presente.<br><br><br>

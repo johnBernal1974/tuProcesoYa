@@ -218,6 +218,18 @@ class _HistorialSolicitudesPrisionDomiciliariaPageState extends State<HistorialS
                             ? ArchivoViewerWeb(archivos: archivos)
                             : const Text("El usuario no compartió ningún archivo"),
                         const SizedBox(height: 12),
+                        if (data.containsKey('archivo_cedula_responsable') &&
+                            (data['archivo_cedula_responsable'] as String).isNotEmpty) ...[
+                          const Divider(color: gris),
+                          const Text(
+                            "🧾 Cédula del responsable:",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          const SizedBox(height: 8),
+                          ArchivoViewerWeb(
+                            archivos: [data['archivo_cedula_responsable']],
+                          ),
+                        ],
                         if (urlsHijos.isNotEmpty) ...[
                           const Divider(color: gris),
                           const Text(

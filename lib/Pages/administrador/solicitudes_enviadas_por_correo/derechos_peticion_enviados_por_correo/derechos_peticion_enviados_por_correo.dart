@@ -13,6 +13,7 @@ import 'package:universal_html/html.dart' as html;
 
 import '../../../../commons/admin_provider.dart';
 import '../../../../commons/archivoViewerWeb.dart';
+import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
@@ -644,7 +645,7 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
 
         /// 📂 **Mostramos los archivos aquí**
         archivos.isNotEmpty
-            ? ArchivoViewerWeb(archivos: archivos)
+            ? ArchivoViewerWeb2(archivos: archivos)
             : const Text(
           "El usuario no compartió ningún archivo",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),

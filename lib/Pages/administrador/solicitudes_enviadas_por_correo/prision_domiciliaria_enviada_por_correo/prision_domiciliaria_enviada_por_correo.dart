@@ -13,6 +13,7 @@ import 'package:universal_html/html.dart' as html;
 
 import '../../../../commons/admin_provider.dart';
 import '../../../../commons/archivoViewerWeb.dart';
+import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
@@ -431,7 +432,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
 
         /// 📂 **Mostramos los archivos aquí**
         archivos.isNotEmpty
-            ? ArchivoViewerWeb(archivos: archivos)
+            ? ArchivoViewerWeb2(archivos: archivos)
             : const Text(
           "El usuario no compartió ningún archivo",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
@@ -440,14 +441,14 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
         if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) ...[
           const Text("🪪 Cédula del responsable", style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          ArchivoViewerWeb(archivos: [widget.urlArchivoCedulaResponsable!]),
+          ArchivoViewerWeb2(archivos: [widget.urlArchivoCedulaResponsable!]),
           const SizedBox(height: 20),
         ],
 
         if (widget.urlsArchivosHijos.isNotEmpty) ...[
           const Text("👶 Documentos de identidad de los hijos", style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          ArchivoViewerWeb(archivos: widget.urlsArchivosHijos),
+          ArchivoViewerWeb2(archivos: widget.urlsArchivosHijos),
           const SizedBox(height: 20),
         ],
 
