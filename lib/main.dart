@@ -37,6 +37,7 @@ import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
+import 'Pages/client/historial_solicitudes_prision_domiciliaria/historial_solicitudes_prision_domiciliaria.dart';
 import 'Pages/client/home/home.dart';
 import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_libertad_condicional.dart';
 import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_prision_domiciliaria.dart';
@@ -52,6 +53,7 @@ import 'Pages/client/solicitudes_beneficios/solicitud_libertad_condicional.dart'
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
+import 'Pages/detalle_de_correo_page/detalle_correo_domiciliaria.dart';
 import 'Pages/detalle_de_correo_page/detalle_de_correo_page.dart';
 import 'Pages/landing_page/info_page.dart';
 import 'Pages/login/login.dart';
@@ -151,6 +153,7 @@ class MyApp extends StatelessWidget {
         'nosotros': (context) => const NosotrosPage(),
         'derecho_peticion_solicitud': (context) => const DerechoDePeticionSolicitudPage(),
         'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
+        'historial_solicitudes_prision_domiciliaria': (context) => const HistorialSolicitudesPrisionDomiciliariaPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
@@ -371,6 +374,15 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => DetalleCorreoPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
+          else if (settings.name == 'detalle_correo_prision_domiciliaria') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoDomiciliariaPage(
                 idDocumento: args['idDocumento'],
                 correoId: args['correoId'],
               ),

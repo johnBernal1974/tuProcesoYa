@@ -7,18 +7,18 @@ import '../../../commons/main_layaout.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../src/colors/colors.dart';
 
-class HistorialSolicitudesDerechosPeticionPage extends StatefulWidget {
-  const HistorialSolicitudesDerechosPeticionPage({super.key});
+class HistorialSolicitudesPrisionDomiciliariaPage extends StatefulWidget {
+  const HistorialSolicitudesPrisionDomiciliariaPage({super.key});
 
   @override
-  State<HistorialSolicitudesDerechosPeticionPage> createState() =>
-      _HistorialSolicitudesDerechosPeticionPageState();
+  State<HistorialSolicitudesPrisionDomiciliariaPage> createState() =>
+      _HistorialSolicitudesPrisionDomiciliariaPageState();
 }
 
-class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSolicitudesDerechosPeticionPage> {
+class _HistorialSolicitudesPrisionDomiciliariaPageState extends State<HistorialSolicitudesPrisionDomiciliariaPage> {
   late MyAuthProvider _authProvider;
   String? _userId;
-  int? _correoExpandidoIndex; // Agrega esto a tu State
+  int? _correoExpandidoIndex;
 
 
   @override
@@ -42,7 +42,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
       return const Stream.empty();
     }
     return FirebaseFirestore.instance
-        .collection('derechos_peticion_solicitados')
+        .collection('prision_domiciliaria_solicitados')
         .where('idUser', isEqualTo: _userId)
         .orderBy('fecha', descending: true)
         .snapshots();
@@ -51,7 +51,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      pageTitle: 'Historial derechos de petición',
+      pageTitle: 'Historial prisión domiciliaria',
       content: Center(
         child: Padding(
           padding: EdgeInsets.symmetric(
@@ -108,13 +108,17 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
       };
     }).toList();
 
+    // Obtener archivos de los hijos
+    List<String> urlsHijos = [];
+    if (data.containsKey('documentos_hijos') && data['documentos_hijos'] is List) {
+      urlsHijos = (data['documentos_hijos'] as List).whereType<String>().toList();
+    }
+
     return Card(
       color: blanco,
       surfaceTintColor: blanco,
       margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 1),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       elevation: 2,
       child: ExpansionTile(
         tilePadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -158,7 +162,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                   Expanded(
                     child: Text(
                       switch (data['status']) {
-                        "Solicitado" => "El usuario lo ha solicitado",
+                        "Solicitado" => "Se recibió tu solicitud",
                         "Diligenciado" => "Se está analizando tu solicitud",
                         "Revisado" => "Tu solicitud está lista para ser enviada",
                         "Enviado" => "Se ha enviado a la autoridad competente",
@@ -177,7 +181,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                   ? DateFormat("d 'de' MMMM 'de' y", 'es').format((data['fecha'] as Timestamp).toDate())
                   : 'Sin fecha',
             ),
-            _buildDatoColumna("Categoría", data['categoria'] ?? 'Desconocida'),
+            _buildDatoColumna("Categoría", "Beneficios penitenciarios"),
           ],
         ),
         children: [
@@ -186,7 +190,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildDatoFila("Subcategoría", data['subcategoria'] ?? "Desconocida"),
+                _buildDatoFila("Subcategoría", "Prisión domiciliaria"),
                 const Divider(color: gris),
                 Card(
                   surfaceTintColor: Colors.amber.shade700,
@@ -198,33 +202,40 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          "Información y archivos que enviaste en la solicitud",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: negro),
-                        ),
+                        _buildDatoReparacion(data['reparacion']),
                         const SizedBox(height: 15),
-                        const Text("\ud83d\udcdc Preguntas y respuestas:", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                        const SizedBox(height: 10),
-                        _buildPreguntasRespuestas(data['preguntas_respuestas']),
                         const Divider(color: gris),
+                        const Text(
+                          "Archivos que enviaste en la solicitud",
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: negro),
+                        ),const SizedBox(height: 5),
                         const Text(
                           "📎 Archivos adjuntos:",
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
+                        const SizedBox(height: 5),
                         archivosAdjuntos.isNotEmpty
                             ? ArchivoViewerWeb(archivos: archivos)
                             : const Text("El usuario no compartió ningún archivo"),
                         const SizedBox(height: 12),
+                        if (urlsHijos.isNotEmpty) ...[
+                          const Divider(color: gris),
+                          const Text(
+                            "👶 Documentos de identidad de los hijos:",
+                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          ),
+                          const SizedBox(height: 8),
+                          ArchivoViewerWeb(archivos: urlsHijos),
+                        ],
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 40),
                 const Text("Informe de Diligencias realizadas"),
-
                 FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
-                      .collection("derechos_peticion_solicitados")
+                      .collection("prision_domiciliaria_solicitados")
                       .doc(idDocumento)
                       .collection("log_correos")
                       .orderBy("timestamp", descending: true)
@@ -234,7 +245,10 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Text("Aún no hay correos enviados a la autoridad competente para esta solicitud.");
+                      return const Text(
+                        "Aún no hay correos enviados a la autoridad competente para esta solicitud.",
+                        style: TextStyle(fontSize: 11),
+                      );
                     }
 
                     final correos = snapshot.data!.docs;
@@ -281,14 +295,8 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                                   child: Row(
                                     children: [
-                                      Expanded(
-                                        flex: 2,
-                                        child: Text(estado, style: const TextStyle(fontSize: 11)),
-                                      ),
-                                      Expanded(
-                                        flex: 4,
-                                        child: Text(fechaTexto, style: const TextStyle(fontSize: 10)),
-                                      ),
+                                      Expanded(flex: 2, child: Text(estado, style: const TextStyle(fontSize: 11))),
+                                      Expanded(flex: 4, child: Text(fechaTexto, style: const TextStyle(fontSize: 10))),
                                       Expanded(
                                         flex: 3,
                                         child: Align(
@@ -297,7 +305,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                                             onPressed: () {
                                               Navigator.pushNamed(
                                                 context,
-                                                'detalle_correo',
+                                                'detalle_correo_prision_domiciliaria',
                                                 arguments: {
                                                   'idDocumento': idDocumento,
                                                   'correoId': doc.id,
@@ -335,6 +343,42 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     );
   }
 
+
+  Widget _buildDatoReparacion(String? valorRaw) {
+    String textoAMostrar;
+
+    switch (valorRaw) {
+      case 'reparado':
+        textoAMostrar = 'Informaste que fue reparada a la víctima.';
+        break;
+      case 'asegurado':
+        textoAMostrar = 'Informaste que se aseguró el pago de la reparación.';
+        break;
+      case 'insolvencia':
+        textoAMostrar = 'Informaste que no se ha reparado a la víctima debido a insolvencia.';
+        break;
+      default:
+        textoAMostrar = 'Información no registrada.';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Información de reparación de la víctima",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            textoAMostrar,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal, color: Colors.black87),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildDatoFila(String titulo, String valor) {
     return Padding(
@@ -392,34 +436,22 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
       ),
     );
   }
-
-  Widget _buildPreguntasRespuestas(List<dynamic>? preguntasRespuestas) {
-    if (preguntasRespuestas == null || preguntasRespuestas.isEmpty) {
-      return const Text("No hay preguntas registradas.");
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: preguntasRespuestas.asMap().entries.map((entry) {
-        final int index = entry.key + 1;
-        final Map<String, dynamic> preguntaRespuesta = entry.value;
-        final String pregunta = preguntaRespuesta['pregunta'] ?? "Pregunta desconocida";
-        final String respuesta = preguntaRespuesta['respuesta'] ?? "Sin respuesta";
-
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Pregunta $index: $pregunta",
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-              Text("Respuesta: $respuesta",
-                  style: const TextStyle(color: Colors.black87, fontSize: 11)),
-              const Divider(),
-            ],
+  Widget _buildDatoColumna2(String titulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            titulo,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
-        );
-      }).toList(),
+          Text(
+            valor,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black),
+          ),
+        ],
+      ),
     );
   }
 
@@ -428,7 +460,4 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     List<String> partes = decodedUrl.split('/');
     return partes.last.split('?').first;
   }
-
-
-
 }

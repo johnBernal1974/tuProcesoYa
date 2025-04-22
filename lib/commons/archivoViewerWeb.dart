@@ -12,7 +12,7 @@ class ArchivoViewerWeb extends StatelessWidget {
   Widget build(BuildContext context) {
     // Detectamos el ancho de la pantalla
     double screenWidth = MediaQuery.of(context).size.width;
-    int crossAxisCount = 6; // Default para PC
+    int crossAxisCount = 4; // Default para PC
 
     if (screenWidth < 1200) {
       crossAxisCount = 4; // Tablets grandes
