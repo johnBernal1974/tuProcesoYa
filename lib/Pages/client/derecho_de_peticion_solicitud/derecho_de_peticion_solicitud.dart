@@ -355,64 +355,50 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
   }
 
   Future<void> verificarSaldoYEnviarSolicitud(List<String> respuestas) async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final configSnapshot = await FirebaseFirestore.instance
+        .collection('configuraciones')
+        .limit(1)
+        .get();
 
-    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
-    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+    final double valorDerechoPeticion =
+    (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
 
-    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
-    final double valorDerechoPeticion = (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
+    if (!context.mounted) return;
 
-    if (saldo < valorDerechoPeticion) {
-      if (!context.mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: blanco,
-          title: const Text("Pago requerido"),
-          content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CheckoutPage(
-                      tipoPago: 'peticion', // ✅ cambio aquí
-                      valor: valorDerechoPeticion.toInt(),
-                      onTransaccionAprobada: () async {
-                        final user = FirebaseAuth.instance.currentUser;
-                        if (user == null) return;
-
-                        final userRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
-                        final userDoc = await userRef.get();
-                        final double saldoActual = (userDoc.data()?['saldo'] ?? 0).toDouble();
-
-                        final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
-                        final double valorDerechoPeticion = (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
-
-                        final double nuevoSaldo = saldoActual + valorDerechoPeticion - valorDerechoPeticion;
-                        await userRef.update({'saldo': nuevoSaldo});
-
-                        enviarSolicitudDerechoPeticion(respuestas);
-                      },
-                    ),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Pago requerido"),
+        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // cerrar el diálogo
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CheckoutPage(
+                    tipoPago: 'peticion',
+                    valor: valorDerechoPeticion.toInt(),
+                    onTransaccionAprobada: () async {
+                      await enviarSolicitudDerechoPeticion(respuestas);
+                    },
                   ),
-                );
-              },
-              child: const Text("Pagar"),
-            ),
-
-          ],
-        ),
-      );
-      return;
-    }
-    enviarSolicitudDerechoPeticion(respuestas);
+                ),
+              );
+            },
+            child: const Text("Pagar"),
+          ),
+        ],
+      ),
+    );
   }
+
 
   Future<void> enviarSolicitudDerechoPeticion(List<String> respuestas) async {
     User? user = FirebaseAuth.instance.currentUser;

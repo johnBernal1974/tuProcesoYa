@@ -2,11 +2,7 @@ class MenuOptionsDerechoPeticionHelper {
   /// Devuelve un mapa con las categorías y sus respectivas subcategorías
   static final Map<String, List<String>> menuOptions = {
     "Beneficios Penitenciarios": [
-      "Libertad condicional",
-      "Prisión domiciliaria",
-      "Permiso administrativo hasta de 72 horas",
       "Redención de pena",
-      "Extinción de la sanción penal"
     ],
     "Salud y Atención Médica": [
       "Atención médica oportuna y adecuada",
@@ -17,7 +13,6 @@ class MenuOptionsDerechoPeticionHelper {
       "Condiciones de higiene y salubridad",
     ],
     "Condiciones de Reclusión": [
-      "Hacinamiento",
       "Acceso a agua y alimentación",
       "Malos tratos",
       "Traslados por seguridad"
@@ -46,6 +41,9 @@ class MenuOptionsDerechoPeticionHelper {
       "Derechos de la población LGBTIQ+",
       "Derechos de Afrocolombianos",
       "Derechos de indígenas",
+    ],
+    "Otros": [
+      "Condición o situación especial",
     ],
   };
 

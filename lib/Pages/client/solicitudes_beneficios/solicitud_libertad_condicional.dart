@@ -748,62 +748,50 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
   }
 
   Future<void> verificarSaldoYEnviarSolicitud() async {
-    User? user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    final configSnapshot = await FirebaseFirestore.instance
+        .collection('configuraciones')
+        .limit(1)
+        .get();
 
-    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
-    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+    final double valorCondicional =
+    (configSnapshot.docs.first.data()['valor_condicional'] ?? 0).toDouble();
 
-    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
-    final double valorCondicional = (configSnapshot.docs.first.data()['valor_condicional'] ?? 0).toDouble();
+    if (!context.mounted) return;
 
-    if (saldo < valorCondicional) {
-      if (!context.mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          backgroundColor: blanco,
-          title: const Text("Pago requerido"),
-          content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CheckoutPage(
-                      tipoPago: 'condicional',
-                      valor: valorCondicional.toInt(),
-                      onTransaccionAprobada: () async {
-                        final user = FirebaseAuth.instance.currentUser;
-                        if (user == null) return;
-
-                        final userRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
-                        final userDoc = await userRef.get();
-                        final double saldoActual = (userDoc.data()?['saldo'] ?? 0).toDouble();
-
-                        final nuevoSaldo = saldoActual - valorCondicional;
-                        await userRef.update({'saldo': nuevoSaldo});
-
-                        await enviarSolicitudLibertadCondicional();
-                      },
-                    ),
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Pago requerido"),
+        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CheckoutPage(
+                    tipoPago: 'condicional',
+                    valor: valorCondicional.toInt(),
+                    onTransaccionAprobada: () async {
+                      await enviarSolicitudLibertadCondicional();
+                    },
                   ),
-
-                );
-              },
-              child: const Text("Pagar"),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    await enviarSolicitudLibertadCondicional();
+                ),
+              );
+            },
+            child: const Text("Pagar"),
+          ),
+        ],
+      ),
+    );
   }
+
 
   Future<void> enviarSolicitudLibertadCondicional() async {
     User? user = FirebaseAuth.instance.currentUser;

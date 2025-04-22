@@ -785,10 +785,10 @@ class _HomePageState extends State<HomePage> {
 
 
         // 🔥 Animación para "Condena total cumplida"
-        _buildAnimatedDato("Condena\nTotal Cumplida", mesesCumplidos, diasRestantes, Colors.green.shade200),
+        _buildAnimatedDato("Condena\nTotal Cumplida", mesesCumplidos, diasRestantes, Colors.green.shade100),
 
         // 🔥 Animación para "Condena restante"
-        _buildAnimatedDato("Condena\nRestante", mesesRestante, diasRestanteExactos, Colors.purple.shade200),
+        _buildAnimatedDato("Condena\nRestante", mesesRestante, diasRestanteExactos, Colors.purple.shade100),
         const SizedBox(height: 10),
         _buildDatoFila("Porcentaje ejecutado", "${porcentajeEjecutado.toStringAsFixed(1)}%"),
       ],

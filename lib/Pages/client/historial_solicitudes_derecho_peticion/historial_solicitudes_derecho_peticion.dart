@@ -158,7 +158,7 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                   Expanded(
                     child: Text(
                       switch (data['status']) {
-                        "Solicitado" => "El usuario lo ha solicitado",
+                        "Solicitado" => "Hemos recibido tu solicitado",
                         "Diligenciado" => "Se está analizando tu solicitud",
                         "Revisado" => "Tu solicitud está lista para ser enviada",
                         "Enviado" => "Se ha enviado a la autoridad competente",
