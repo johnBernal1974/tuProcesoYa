@@ -380,7 +380,7 @@ class _SideBarState extends State<SideBar> {
               // 🔥 Espaciado para cada elemento
               child: _buildDrawerTile(
                   context, "Tus Solicitudes derecho peticion",
-                  Icons.history_edu_outlined,
+                  Icons.double_arrow_rounded,
                   'historial_solicitudes_derechos_peticion'),
             ),
             Padding(
@@ -388,7 +388,7 @@ class _SideBarState extends State<SideBar> {
               // 🔥 Espaciado para cada elemento
               child: _buildDrawerTile(
                   context, "Tus Solicitudes de tutelas",
-                  Icons.history_edu_outlined,
+                  Icons.double_arrow_rounded,
                   'home'),
             ),
             Padding(
@@ -396,14 +396,22 @@ class _SideBarState extends State<SideBar> {
               // 🔥 Espaciado para cada elemento
               child: _buildDrawerTile(
                   context, "Tus Solicitudes prisión domiciliaria",
-                  Icons.history_edu_outlined,
+                  Icons.double_arrow_rounded,
                   'historial_solicitudes_prision_domiciliaria'),
             ),
             Padding(
               padding: const EdgeInsets.only(left: 16.0),
               // 🔥 Espaciado para cada elemento
               child: _buildDrawerTile(
-                  context, "Tus Redenciones", Icons.filter_9_plus_outlined,
+                  context, "Tus Solicitudes libertad condicional",
+                  Icons.double_arrow_rounded,
+                  'historial_solicitudes_libertad_condicional'),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 16.0),
+              // 🔥 Espaciado para cada elemento
+              child: _buildDrawerTile(
+                  context, "Tus Redenciones", Icons.double_arrow_rounded,
                   'mis_redenciones'),
             ),
           ],
