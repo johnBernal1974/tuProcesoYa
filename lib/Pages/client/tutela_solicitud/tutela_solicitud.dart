@@ -1,19 +1,21 @@
-// ✅ Solicitud de tutela con la misma lógica que derecho de petición
 
 import 'dart:math';
-import 'dart:io';
+import 'dart:io'; // Necesario para manejar archivos en almacenamiento local
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:tuprocesoya/Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
 import 'package:tuprocesoya/Pages/client/solicitud_exitosa_tutela/solicitud_exitosa_tutela.dart';
-import 'package:tuprocesoya/helper/opciones_menu_tutela_helper.dart';
-import 'package:tuprocesoya/helper/preguntas_tutela_helper.dart';
+import 'package:tuprocesoya/helper/opciones_menu_derecho_peticion_helper.dart';
+import 'package:tuprocesoya/helper/preguntasDerechoPeticionHelper.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../commons/wompi/checkout_page.dart';
-import '../../../commons/wompi/pagoExitoso_tutela.dart';
+import '../../../helper/opciones_menu_tutela_helper.dart';
+import '../../../helper/preguntas_tutela_helper.dart';
 import '../../../src/colors/colors.dart';
 
 class TutelaSolicitudPage extends StatefulWidget {
@@ -24,42 +26,44 @@ class TutelaSolicitudPage extends StatefulWidget {
 }
 
 class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
+  String _hintCategory = 'Seleccione una categoría';
+  String _hintSubCategory = 'Seleccione una subcategoría';
+  List<String> categorias = MenuOptionsDerechoPeticionHelper.obtenerCategorias();
   String? selectedCategory;
   String? selectedSubCategory;
-  List<TextEditingController> _controllers = [];
   List<PlatformFile> _selectedFiles = [];
+  List<String> archivosUrls = [];
+  List<String> preguntas = [];
+  List<TextEditingController> _controllers = [];
+
 
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      pageTitle: 'Solicitar Tutela',
+      pageTitle: 'Solicitud de servicio',
       content: SingleChildScrollView(
         child: Center(
           child: SizedBox(
             width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Tutela - Protección de derechos fundamentales', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
-                  _buildDropdowns(),
-                  const SizedBox(height: 20),
-                  if (selectedCategory != null && selectedSubCategory != null) ...[
-                    _buildPreguntasFormulario(),
-                    const SizedBox(height: 20),
-                    _buildAdjuntarArchivos(),
-                    const SizedBox(height: 30),
-                    ElevatedButton(
-                      onPressed: _validarYEnviarFormulario,
-                      style: ElevatedButton.styleFrom(backgroundColor: primary),
-                      child: const Text("Enviar solicitud", style: TextStyle(color: blanco)),
-                    ),
-                    const SizedBox(height: 50),
-                  ],
-                ],
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Tutela', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 20),
+                const Text(
+                  'Selecciona el tema sobre el cual quieres realizar la tutela',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, height: 1),
+                ),
+                const SizedBox(height: 25),
+                _buildDropdownMenus(), // Sección de Dropdowns
+
+                const SizedBox(height: 10),
+                const Divider(height: 1, color: grisMedio),
+                const SizedBox(height: 10),
+
+                // Solo se muestra si ambas opciones están seleccionadas
+                if (selectedCategory != null && selectedSubCategory != null) _buildInstructionsAndInput(),
+              ],
             ),
           ),
         ),
@@ -67,221 +71,466 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
     );
   }
 
-  Widget _buildDropdowns() {
-    const border = OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.grey),
-    );
+  Future<void> pickFiles() async {
+    try {
+      // Permitir selección múltiple de archivos
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: true, // Permitir selección múltiple
+      );
 
+      if (result != null) {
+        setState(() {
+          // Agregar los archivos seleccionados a la lista existente
+          _selectedFiles.addAll(result.files);
+        });
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error al seleccionar archivos: $e");
+      }
+    }
+  }
+
+  Widget adjuntarDocumento() {
     return Column(
       children: [
-        DropdownButtonFormField<String>(
-          dropdownColor: blanco,
-          decoration: const InputDecoration(
-            labelText: 'Categoría',
-            enabledBorder: border,
-            focusedBorder: border,
-          ),
-          value: selectedCategory,
-          items: MenuOptionsTutelaHelper.obtenerCategorias()
-              .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
-              .toList(),
-          onChanged: (value) => setState(() {
-            selectedCategory = value;
-            selectedSubCategory = null;
-          }),
-        ),
         const SizedBox(height: 15),
-        if (selectedCategory != null)
-          DropdownButtonFormField<String>(
-            dropdownColor: blanco,
-            decoration: const InputDecoration(
-              labelText: 'Subcategoría',
-              enabledBorder: border,
-              focusedBorder: border,
+        const Text("Si cuentas con documentos que puedan respaldar tu solicitud por favor adjuntalos"),
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: pickFiles,
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Icon(Icons.attach_file, color: primary, size: 18),
+              SizedBox(width: 8),
+              Text(
+                "Adjuntar documentos",
+                style: TextStyle(
+                  color: primary,
+                  fontSize: 14,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (_selectedFiles.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Container(
+            alignment: Alignment.topLeft,
+            child: const Text(
+              "Archivos seleccionados:",
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
             ),
-            value: selectedSubCategory,
-            items: MenuOptionsTutelaHelper.obtenerSubcategorias(selectedCategory!)
-                .map((sub) => DropdownMenuItem(value: sub, child: Text(sub)))
-                .toList(),
-            onChanged: (value) => setState(() => selectedSubCategory = value),
+          ),
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _selectedFiles.length,
+            itemBuilder: (context, index) {
+              return ListTile(
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+                leading: IconButton(
+                  icon: const Icon(Icons.delete, size: 20),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          backgroundColor: blanco,
+                          title: const Text("Eliminar archivo"),
+                          content: Text(
+                            "¿Estás seguro de que deseas eliminar ${_selectedFiles[index].name}?",
+                          ),
+                          actions: [
+                            TextButton(
+                              child: const Text("Cancelar"),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                            TextButton(
+                              child: const Text("Eliminar"),
+                              onPressed: () {
+                                setState(() {
+                                  _selectedFiles.removeAt(index);
+                                });
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+                title: Text(
+                  _selectedFiles[index].name,
+                  style: const TextStyle(fontSize: 12, height: 1.2),
+                  textAlign: TextAlign.left,
+                ),
+              );
+            },
+          )
+        ],
+      ],
+    );
+  }
+
+  Widget _buildDropdownMenus() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Menú principal
+        SizedBox(
+          width: double.infinity,
+          child: DropdownButtonFormField<String>(
+            dropdownColor: Colors.amber.shade50,
+            decoration: _inputDecoration(_hintCategory),
+            value: selectedCategory,
+            items: MenuOptionsTutelaHelper.obtenerCategorias().map((String category) {
+              return DropdownMenuItem<String>(
+                value: category,
+                child: Text(category),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                selectedCategory = value;
+                _hintCategory = 'Categoría seleccionada';
+                selectedSubCategory = null; // Resetea subcategoría
+              });
+            },
+          ),
+        ),
+
+        const SizedBox(height: 15),
+
+        // Menú secundario (Solo se muestra si hay una categoría seleccionada)
+        if (selectedCategory != null)
+          SizedBox(
+            width: double.infinity,
+            child: DropdownButtonFormField<String>(
+              decoration: _inputDecoration(_hintSubCategory),
+              dropdownColor: Colors.amber.shade50,
+              isExpanded: true,
+              value: selectedSubCategory,
+              items: MenuOptionsTutelaHelper.obtenerSubcategorias(selectedCategory!).map((String subCategory) {
+                return DropdownMenuItem<String>(
+                  value: subCategory,
+                  child: Text(subCategory),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedSubCategory = value;
+                  _hintSubCategory = 'Subcategoría seleccionada';
+                });
+              },
+            ),
+          ),
+
+        const SizedBox(height: 10),
+
+        // Mostrar selección final
+        if (selectedCategory != null && selectedSubCategory != null)
+          Text(
+            "Seleccionaste:\n$selectedCategory → $selectedSubCategory",
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
       ],
     );
   }
 
+  /// Método que construye las instrucciones, inputs y botón según la categoría y subcategoría seleccionada.
+  Widget _buildInstructionsAndInput() {
+    List<String> preguntas = PreguntasTutelaHelper.obtenerPreguntas(
+        selectedCategory,
+        selectedSubCategory);
 
-  Widget _buildPreguntasFormulario() {
-    final preguntas = PreguntasTutelaHelper.obtenerPreguntas(selectedCategory, selectedSubCategory);
+    // Verificar si los controladores ya están creados y tienen el mismo tamaño
     if (_controllers.length != preguntas.length) {
-      _controllers = List.generate(preguntas.length, (_) => TextEditingController());
+      _controllers = List.generate(preguntas.length, (index) => TextEditingController());
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: List.generate(preguntas.length, (i) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("${i + 1}. ${preguntas[i]}", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          const SizedBox(height: 6),
-          TextField(
-            textCapitalization: TextCapitalization.sentences,
-            controller: _controllers[i],
-            minLines: 3,
-            maxLines: null,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade400)),
-              enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade400)),
-              focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade700, width: 2)),
-              hintText: 'Escribe tu respuesta...',
-            ),
-          ),
-          const SizedBox(height: 20),
-        ],
-      )),
-    );
-  }
-
-
-  Widget _buildAdjuntarArchivos() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text("Adjunta documentos que respalden tu solicitud:"),
-        const SizedBox(height: 8),
-        TextButton.icon(
-          icon: const Icon(Icons.attach_file),
-          label: const Text("Adjuntar"),
-          onPressed: () async {
-            final result = await FilePicker.platform.pickFiles(allowMultiple: true);
-            if (result != null) {
-              setState(() => _selectedFiles.addAll(result.files));
-            }
+        const SizedBox(height: 25),
+        const Text(
+          'INSTRUCCIONES',
+          style: TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 25),
+
+        const Text(
+          "Para facilitar la comprensión y garantizar la precisión, por favor proporciona "
+              "respuestas claras, concisas, detalladas y veraces a cada una de las siguientes preguntas:",
+          style: TextStyle(fontSize: 14),
+        ),
+
+        const SizedBox(height: 15),
+
+        // Sección de preguntas y respuestas
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: preguntas.length,
+          itemBuilder: (context, index) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Pregunta ${index + 1}: ${preguntas[index]}", // Muestra la pregunta
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  textCapitalization: TextCapitalization.sentences,
+                  controller: _controllers[index],
+                  minLines: 2, // 👈 Se añade esto
+                  maxLines: null, // 👈 Esto permite que crezca dinámicamente
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade300)),
+                    hintText: 'Escribe tu respuesta aquí...',
+                  ),
+                ),
+                const SizedBox(height: 15),
+              ],
+            );
           },
         ),
-        ..._selectedFiles.map((file) => ListTile(
-          title: Text(file.name),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () => setState(() => _selectedFiles.remove(file)),
+        const SizedBox(height: 20),
+        adjuntarDocumento(),
+        const SizedBox(height: 30),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: primary),
+          onPressed: () {
+            _guardarSolicitudConValoresActualizados();
+          },
+          child: const Text(
+            "Enviar solicitud",
+            style: TextStyle(color: Colors.white),
           ),
-        )),
+        ),
+        const SizedBox(height: 100),
       ],
     );
   }
 
-  Future<void> _validarYEnviarFormulario() async {
-    final respuestas = _controllers.map((c) => c.text.trim()).toList();
-    if (respuestas.any((r) => r.isEmpty)) {
+  /// Método para reutilizar el estilo de los inputs.
+  InputDecoration _inputDecoration(String labelText) {
+    return InputDecoration(
+      labelText: labelText,
+      enabledBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.grey),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: const BorderSide(color: Colors.grey, width: 2.0),
+        borderRadius: BorderRadius.circular(8.0),
+      ),
+    );
+  }
+
+  void _guardarSolicitudConValoresActualizados() {
+    // Actualizar manualmente los valores de los controladores
+    List<String> respuestas = _controllers.map((c) => c.text.trim()).toList();
+
+    // Verificar si hay respuestas vacías
+    if (respuestas.any((respuesta) => respuesta.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Completa todas las respuestas"), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text("❌ Hay respuestas vacías. Por favor, completa todos los campos."),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
       );
       return;
     }
 
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    verificarSaldoYEnviarSolicitud(respuestas);
+  }
 
-    final config = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
-    final valor = (config.docs.first.data()['valor_tutela'] ?? 0).toDouble();
-    if(context.mounted){
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => CheckoutPage(
-            tipoPago: 'tutela',
-            valor: valor.toInt(),
-            onTransaccionAprobada: () async {
-              final confirmar = await showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  backgroundColor: blanco,
-                  title: const Text("Ya puedes enviar tu solicitud de tutela"),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text("Enviar solicitud"),
-                    ),
-                  ],
+  Future<void> verificarSaldoYEnviarSolicitud(List<String> respuestas) async {
+    final configSnapshot = await FirebaseFirestore.instance
+        .collection('configuraciones')
+        .limit(1)
+        .get();
+
+    final double valorTutela =
+    (configSnapshot.docs.first.data()['valor_tutela'] ?? 0).toDouble();
+
+    if (!context.mounted) return;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Pago requerido"),
+        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // cerrar el diálogo
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => CheckoutPage(
+                    tipoPago: 'tutela',
+                    valor: valorTutela.toInt(),
+                    onTransaccionAprobada: () async {
+                      await enviarSolicitudTutela(respuestas, valorTutela);
+                    },
+                  ),
                 ),
               );
-              if (confirmar == true) {
-                await _enviarSolicitudTutela(respuestas);
-              }
             },
+            child: const Text("Pagar"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> enviarSolicitudTutela(List<String> respuestas, double valorTutela) async {
+    User? user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (!context.mounted) return;
+
+    bool confirmarEnvio = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Ya puedes enviar tu solicitud de tutela"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar solicitud")),
+        ],
+      ),
+    );
+
+    if (!confirmarEnvio) return;
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          backgroundColor: blancoCards,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text("Subiendo información..."),
+            ],
           ),
         ),
       );
     }
-  }
 
-  Future<void> _enviarSolicitudTutela(List<String> respuestas) async {
+    try {
+      FirebaseFirestore firestore = FirebaseFirestore.instance;
+      FirebaseStorage storage = FirebaseStorage.instance;
+
+      String docId = firestore.collection('tutelas_solicitados').doc().id;
+      String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
+      List<String> archivosUrls = [];
+
+      for (PlatformFile file in _selectedFiles) {
+        try {
+          String filePath = 'tutelas/$docId/${file.name}';
+          Reference storageRef = storage.ref(filePath);
+          UploadTask uploadTask = kIsWeb
+              ? storageRef.putData(file.bytes!)
+              : storageRef.putFile(File(file.path!));
+          TaskSnapshot snapshot = await uploadTask;
+          String downloadUrl = await snapshot.ref.getDownloadURL();
+          archivosUrls.add(downloadUrl);
+        } catch (_) {}
+      }
+
+      List<String> preguntas = PreguntasDerechoPeticionHelper.obtenerPreguntasPorCategoriaYSubcategoria(
+        selectedCategory,
+        selectedSubCategory,
+      );
+
+      List<Map<String, String>> preguntasRespuestas = [];
+      for (int i = 0; i < preguntas.length; i++) {
+        preguntasRespuestas.add({
+          "pregunta": preguntas[i],
+          "respuesta": respuestas.length > i ? respuestas[i] : "",
+        });
+      }
+
+      await firestore.collection('derechos_peticion_solicitados').doc(docId).set({
+        "id": docId,
+        "idUser": user.uid,
+        "numero_seguimiento": numeroSeguimiento,
+        "categoria": selectedCategory,
+        "subcategoria": selectedSubCategory,
+        "preguntas_respuestas": preguntasRespuestas,
+        "archivos": archivosUrls,
+        "fecha": FieldValue.serverTimestamp(),
+        "status": "Solicitado",
+        "asignadoA": "",
+      });
+      await descontarSaldo(valorTutela);
+
+      if (context.mounted) {
+        Navigator.pop(context);
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                SolicitudExitosaTutelaPage(numeroSeguimiento: numeroSeguimiento),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        Navigator.pop(context);
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text("Error"),
+            content: const Text("Hubo un problema al guardar la solicitud."),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Aceptar")),
+            ],
+          ),
+        );
+      }
+    }
+  }
+  Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => const AlertDialog(
-        backgroundColor: blanco,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 10),
-            Text("Enviando solicitud..."),
-          ],
-        ),
-      ),
-    );
+    final docRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
+    final snapshot = await docRef.get();
 
-    final firestore = FirebaseFirestore.instance;
-    final storage = FirebaseStorage.instance;
+    if (snapshot.exists) {
+      final datos = snapshot.data();
+      final double saldoActual = (datos?['saldo'] ?? 0).toDouble();
+      final double nuevoSaldo = saldoActual - valor;
 
-    final docId = firestore.collection('tutelas_solicitadas').doc().id;
-    final numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
-
-    List<String> archivosUrls = [];
-    for (final file in _selectedFiles) {
-      try {
-        final ref = storage.ref('tutelas/$docId/${file.name}');
-        final upload = kIsWeb ? ref.putData(file.bytes!) : ref.putFile(File(file.path!));
-        final snap = await upload;
-        final url = await snap.ref.getDownloadURL();
-        archivosUrls.add(url);
-      } catch (_) {}
-    }
-
-    final preguntas = PreguntasTutelaHelper.obtenerPreguntas(selectedCategory, selectedSubCategory);
-    final preguntasRespuestas = List.generate(preguntas.length, (i) => {
-      'pregunta': preguntas[i],
-      'respuesta': respuestas.length > i ? respuestas[i] : '',
-    });
-
-    await firestore.collection('tutelas_solicitadas').doc(docId).set({
-      'id': docId,
-      'idUser': user.uid,
-      'numero_seguimiento': numeroSeguimiento,
-      'categoria': selectedCategory,
-      'subcategoria': selectedSubCategory,
-      'preguntas_respuestas': preguntasRespuestas,
-      'archivos': archivosUrls,
-      'fecha': FieldValue.serverTimestamp(),
-      'status': 'Solicitado',
-      'asignadoA': '',
-    });
-
-    final userDoc = await firestore.collection('Ppl').doc(user.uid).get();
-    final saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
-    final config = await firestore.collection('configuraciones').limit(1).get();
-    final valor = (config.docs.first.data()['valor_tutela'] ?? 0).toDouble();
-    await firestore.collection('Ppl').doc(user.uid).update({'saldo': saldo - valor});
-
-    if (context.mounted) {
-      Navigator.pop(context);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => SolicitudExitosaTutelaPage(numeroSeguimiento: numeroSeguimiento)),
-      );
+      // 🔒 Solo descontar si hay saldo suficiente
+      if (nuevoSaldo >= 0) {
+        await docRef.update({'saldo': nuevoSaldo});
+      } else {
+        debugPrint('⚠️ Saldo insuficiente, no se pudo descontar');
+      }
     }
   }
 }

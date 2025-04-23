@@ -781,7 +781,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                     tipoPago: 'domiciliaria',
                     valor: valorDomiciliaria.toInt(),
                     onTransaccionAprobada: () async {
-                      await enviarSolicitudPrisionDomiciliaria();
+                      await enviarSolicitudPrisionDomiciliaria(valorDomiciliaria);
                     },
                   ),
                 ),
@@ -795,15 +795,9 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
   }
 
 
-  Future<void> enviarSolicitudPrisionDomiciliaria() async {
+  Future<void> enviarSolicitudPrisionDomiciliaria(double valorDomiciliaria) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
-    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
-    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
-
-    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
-    final double valorDomiciliaria = (configSnapshot.docs.first.data()['valor_domiciliaria'] ?? 0).toDouble();
 
     if (!context.mounted) return;
 
@@ -822,7 +816,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
     if (!confirmarEnvio) return;
 
-    if(context.mounted){
+    if (context.mounted) {
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -851,7 +845,9 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         try {
           String filePath = 'solicitudes_prision_domiciliaria/$docId/${file.name}';
           Reference storageRef = FirebaseStorage.instance.ref(filePath);
-          UploadTask uploadTask = kIsWeb ? storageRef.putData(file.bytes!) : storageRef.putFile(File(file.path!));
+          UploadTask uploadTask = kIsWeb
+              ? storageRef.putData(file.bytes!)
+              : storageRef.putFile(File(file.path!));
           TaskSnapshot snapshot = await uploadTask;
           String downloadUrl = await snapshot.ref.getDownloadURL();
           archivosUrls.add(downloadUrl);
@@ -883,18 +879,16 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
         'reparacion': _opcionReparacionSeleccionada,
       });
+      await descontarSaldo(valorDomiciliaria);
 
-
-      await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).update({
-        'saldo': saldo - valorDomiciliaria,
-      });
 
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => SolicitudExitosaDomiciliariaPage(numeroSeguimiento: numeroSeguimiento),
+            builder: (context) =>
+                SolicitudExitosaDomiciliariaPage(numeroSeguimiento: numeroSeguimiento),
           ),
         );
       }
@@ -911,6 +905,27 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
             ],
           ),
         );
+      }
+    }
+  }
+
+  Future<void> descontarSaldo(double valor) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final docRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
+    final snapshot = await docRef.get();
+
+    if (snapshot.exists) {
+      final datos = snapshot.data();
+      final double saldoActual = (datos?['saldo'] ?? 0).toDouble();
+      final double nuevoSaldo = saldoActual - valor;
+
+      // 🔒 Solo descontar si hay saldo suficiente
+      if (nuevoSaldo >= 0) {
+        await docRef.update({'saldo': nuevoSaldo});
+      } else {
+        debugPrint('⚠️ Saldo insuficiente, no se pudo descontar');
       }
     }
   }
@@ -970,7 +985,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
           title: Text(hijo['nombre'] ?? ''),
           subtitle: Text("Edad: ${hijo['edad']} años"),
           trailing: IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
+            icon: const Icon(Icons.close, color: Colors.red),
             onPressed: () {
               setState(() {
                 hijos.remove(hijo);

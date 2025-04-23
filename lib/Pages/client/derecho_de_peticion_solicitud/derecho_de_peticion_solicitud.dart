@@ -386,7 +386,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
                     tipoPago: 'peticion',
                     valor: valorDerechoPeticion.toInt(),
                     onTransaccionAprobada: () async {
-                      await enviarSolicitudDerechoPeticion(respuestas);
+                      await enviarSolicitudDerechoPeticion(respuestas, valorDerechoPeticion);
                     },
                   ),
                 ),
@@ -399,16 +399,9 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
     );
   }
 
-
-  Future<void> enviarSolicitudDerechoPeticion(List<String> respuestas) async {
+  Future<void> enviarSolicitudDerechoPeticion(List<String> respuestas, double valorPeticion) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
-    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
-    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
-
-    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
-    final double valorDerechoPeticion = (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
 
     if (!context.mounted) return;
 
@@ -425,7 +418,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
 
     if (!confirmarEnvio) return;
 
-    if(context.mounted){
+    if (context.mounted) {
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -489,20 +482,18 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         "status": "Solicitado",
         "asignadoA": "",
       });
-
-      double nuevoSaldo = saldo - valorDerechoPeticion;
-      await firestore.collection('Ppl').doc(user.uid).update({'saldo': nuevoSaldo});
+      await descontarSaldo(valorPeticion);
 
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => SolicitudExitosaDerechoPeticionPage(numeroSeguimiento: numeroSeguimiento),
+            builder: (context) =>
+                SolicitudExitosaDerechoPeticionPage(numeroSeguimiento: numeroSeguimiento),
           ),
         );
       }
-
     } catch (e) {
       if (context.mounted) {
         Navigator.pop(context);
@@ -519,7 +510,24 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
       }
     }
   }
+  Future<void> descontarSaldo(double valor) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
+    final docRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
+    final snapshot = await docRef.get();
 
+    if (snapshot.exists) {
+      final datos = snapshot.data();
+      final double saldoActual = (datos?['saldo'] ?? 0).toDouble();
+      final double nuevoSaldo = saldoActual - valor;
 
+      // 🔒 Solo descontar si hay saldo suficiente
+      if (nuevoSaldo >= 0) {
+        await docRef.update({'saldo': nuevoSaldo});
+      } else {
+        debugPrint('⚠️ Saldo insuficiente, no se pudo descontar');
+      }
+    }
+  }
 }

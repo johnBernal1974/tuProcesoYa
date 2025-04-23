@@ -779,7 +779,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                     tipoPago: 'condicional',
                     valor: valorCondicional.toInt(),
                     onTransaccionAprobada: () async {
-                      await enviarSolicitudLibertadCondicional();
+                      await enviarSolicitudLibertadCondicional(valorCondicional);
                     },
                   ),
                 ),
@@ -793,15 +793,9 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
   }
 
 
-  Future<void> enviarSolicitudLibertadCondicional() async {
+  Future<void> enviarSolicitudLibertadCondicional(double valorCondicional) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
-    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
-    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
-
-    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
-    final double valorCondicional = (configSnapshot.docs.first.data()['valor_condicional'] ?? 0).toDouble();
 
     if (!context.mounted) return;
 
@@ -820,7 +814,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
     if (!confirmarEnvio) return;
 
-    if(context.mounted){
+    if (context.mounted) {
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -881,18 +875,15 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
         'reparacion': _opcionReparacionSeleccionada,
       });
-
-
-      await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).update({
-        'saldo': saldo - valorCondicional,
-      });
+      await descontarSaldo(valorCondicional);
 
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => SolicitudExitosaLibertadCondicionalPage(numeroSeguimiento: numeroSeguimiento),
+            builder: (context) =>
+                SolicitudExitosaLibertadCondicionalPage(numeroSeguimiento: numeroSeguimiento),
           ),
         );
       }
@@ -909,6 +900,27 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
             ],
           ),
         );
+      }
+    }
+  }
+
+  Future<void> descontarSaldo(double valor) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final docRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
+    final snapshot = await docRef.get();
+
+    if (snapshot.exists) {
+      final datos = snapshot.data();
+      final double saldoActual = (datos?['saldo'] ?? 0).toDouble();
+      final double nuevoSaldo = saldoActual - valor;
+
+      // 🔒 Solo descontar si hay saldo suficiente
+      if (nuevoSaldo >= 0) {
+        await docRef.update({'saldo': nuevoSaldo});
+      } else {
+        debugPrint('⚠️ Saldo insuficiente, no se pudo descontar');
       }
     }
   }
@@ -956,7 +968,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                       });
                     }
                   },
-                  child: const Icon(Icons.add),
+                  child: const Icon(Icons.save),
                 ),
               ],
             )
@@ -968,7 +980,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
           title: Text(hijo['nombre'] ?? ''),
           subtitle: Text("Edad: ${hijo['edad']} años"),
           trailing: IconButton(
-            icon: const Icon(Icons.delete, color: Colors.red),
+            icon: const Icon(Icons.close, color: Colors.red),
             onPressed: () {
               setState(() {
                 hijos.remove(hijo);
