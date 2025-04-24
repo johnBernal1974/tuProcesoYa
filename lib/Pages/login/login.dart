@@ -33,6 +33,10 @@ class _LoginPageState extends State<LoginPage> {
   bool _isOtp = true;
   int _clickCounter = 0;
   Timer? _tapTimer;
+  int _contadorReenvio = 60;
+  Timer? _timer;
+  bool _puedeReenviar = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -277,6 +281,7 @@ class _LoginPageState extends State<LoginPage> {
         final confirmation = await auth.signInWithPhoneNumber(celular);
         setState(() {
           _confirmationResult = confirmation;
+          _iniciarTemporizadorReenvio();
         });
         _mostrarMensaje("Código enviado. Ingresa el código recibido.");
       } else {
@@ -321,6 +326,25 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoadingOtp = false);
     }
   }
+
+  void _iniciarTemporizadorReenvio() {
+    _contadorReenvio = 60;
+    _puedeReenviar = false;
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_contadorReenvio == 0) {
+        setState(() {
+          _puedeReenviar = true;
+        });
+        timer.cancel();
+      } else {
+        setState(() {
+          _contadorReenvio--;
+        });
+      }
+    });
+  }
+
 
 
   void _mostrarMensaje(String mensaje, {Color color = Colors.black, int duracionSegundos = 3}) {
@@ -555,6 +579,36 @@ class _LoginPageState extends State<LoginPage> {
                 },
               ),
               const SizedBox(height: 20),
+              TextButton(
+                onPressed: _puedeReenviar
+                    ? () async {
+                  final auth = FirebaseAuth.instance;
+                  try {
+                    String celular = _celularController.text.trim();
+                    if (!celular.startsWith('+')) {
+                      if (celular.length == 10 && RegExp(r'^\d{10}$').hasMatch(celular)) {
+                        celular = '+57$celular';
+                      } else {
+                        _mostrarMensaje("Ingresa un número válido de 10 dígitos.");
+                        return;
+                      }
+                    }
+                    final confirmation = await FirebaseAuth.instance.signInWithPhoneNumber(celular);
+
+                    setState(() {
+                      _confirmationResult = confirmation;
+                    });
+                    _mostrarMensaje("Nuevo código enviado");
+                    _iniciarTemporizadorReenvio();
+                  } catch (e) {
+                    _mostrarMensaje("Error al reenviar el código: ${e.toString()}");
+                  }
+                }
+                    : null,
+                child: Text(_puedeReenviar ? "Reenviar código" : "Reintentar en $_contadorReenvio s"),
+              ),
+              const SizedBox(height: 20),
+
             ],
           ),
 
@@ -584,7 +638,9 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-
-
-
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 }
