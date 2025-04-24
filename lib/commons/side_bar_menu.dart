@@ -369,6 +369,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(
             context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
             'buzon_sugerencias'),
+        _buildDrawerTile(context, "Preguntas frecuentes", Icons.double_arrow_rounded, 'preguntas_frecuentes_page'),
       ]);
     }
 
