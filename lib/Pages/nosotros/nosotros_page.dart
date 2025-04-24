@@ -1,128 +1,204 @@
 import 'package:flutter/material.dart';
-
+import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../commons/main_layaout.dart';
+import '../../widgets/redes_sociales.dart';
 
-class NosotrosPage extends StatefulWidget {
+class NosotrosPage extends StatelessWidget {
   const NosotrosPage({super.key});
 
   @override
-  State<NosotrosPage> createState() => _NosotrosPageState();
-}
-
-class _NosotrosPageState extends State<NosotrosPage> {
-  @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth >= 600 && screenWidth < 1000;
+    final isDesktop = screenWidth >= 1000;
+    final contentPadding = EdgeInsets.symmetric(horizontal: isDesktop ? 200 : isTablet ? 100 : 25);
+
     return MainLayout(
       pageTitle: 'Nosotros',
       content: SingleChildScrollView(
-        child: Center(
-          child: SizedBox(
-            width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 25),
-                  Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40), // Logo
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Bienvenido a Tu Proceso Ya, una plataforma comprometida con la justicia social y la defensa de los derechos humanos. Nuestra misión es facilitar el acceso a servicios legales esenciales para personas privadas de la libertad, que a menudo enfrentan barreras económicas y burocráticas para ejercer sus derechos.',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify, // Justificar el texto
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Sabemos que la justicia no siempre es accesible para todos, especialmente para aquellos que se encuentran en situación de vulnerabilidad. Por eso, hemos creado esta plataforma para que tú, como familiar, amigo o ser querido de una persona privada de la libertad, puedas solicitar derechos de petición y penitenciarios de manera fácil y segura.',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify, // Justificar el texto
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Nuestra plataforma es diseñada para ser intuitiva y accesible, sin requerir conocimientos legales previos. Nuestro objetivo es empoderarte para que puedas defender los derechos de tus seres queridos y contribuir a la justicia social en nuestro país.',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify, // Justificar el texto
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Te has unido a una comunidad que busca hacer una diferencia en la vida de aquellos que más lo necesitan.',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify, // Justificar el texto
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Objetivo:',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'El objetivo principal de Tu Proceso Ya es facilitar el acceso a la justicia y la igualdad de oportunidades para '
-                        'las Personas Privadas de Libertad (PPL) CONDENADAS y sus familiares, mediante la realización de diligencias y '
-                        'la provisión de resultados actualizados sobre su situación penitenciaria y judicial.',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify,
-                  ),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Misión:',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    'Nuestra misión es ser un aliado confiable y eficaz para los PPL '
-                        'condenados y sus familiares, brindando apoyo y asistencia en '
-                        'cada paso del proceso. Buscamos ser efectivos en lo relacionado con:',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify,
-                  ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    '1).Realizar diligencias ante las autoridades penitenciarias y judiciales para obtener información actualizada '
-                        'sobre la situación de los PPL condenados.',
-                      style: TextStyle(fontSize: 14),
-                      textAlign: TextAlign.justify,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                     '2).Proporcionar resultados precisos y oportunos a los PPL condenados y sus familiares.',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                        '3).Facilitar el acceso a información relevante sobre el sistema penitenciario y judicial.',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                        '4).Promover la igualdad de oportunidades y la justicia para los PPL condenados y sus familiares.',
-                    style: TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify,
-                  ),
-              const SizedBox(height: 20),
-              const Text(
-                'Visión:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 5),
+              color: blanco,
+              child: const Center(
+                child: RedesSocialesWidget(),
               ),
-              const SizedBox(height: 10),
-              const Text("Nuestra visión es ser la plataforma líder en la provisión de servicios de diligencias y resultados para los PPL "
-                  "condenados y sus familiares, contribuyendo a la creación de un sistema de justicia más justo, equitativo y "
-                  "accesible para todos. Nos comprometemos a ser un modelo de innovación y excelencia en la provisión "
-                  "de servicios para los PPL condenados y sus familiares. Expandiremos nuestros servicios a "
-                  "nivel nacional e internacional, alcanzando a una mayor cantidad de personas y familias afectadas por la privación de "
-                  "libertad. Además, buscamos establecer alianzas estratégicas con organizaciones y entidades que compartan nuestros "
-                  "objetivos y valores, para fortalecer nuestra capacidad de impacto y mejorar la calidad de nuestros servicios.",
-              style: TextStyle(fontSize: 14),
-              textAlign: TextAlign.justify,
             ),
+
+            Padding(
+              padding: contentPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 20),
+
+                  Center(
+                    child: Image.asset(
+                      "assets/images/logo_tu_proceso_ya_transparente.png",
+                      height: 60,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 20,
+                    runSpacing: 20,
+                    children: _buildCards(crossAxisCount: isDesktop ? 3 : isTablet ? 2 : 1),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Nuestra Misión',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'Humanizar el acceso a la justicia para las personas condenadas y sus familias, poniendo a su alcance una plataforma tecnológica accesible, segura y eficiente. A través de nuestra herramienta, facilitamos la gestión de trámites como derechos de petición y tutelas, promoviendo la participación activa de los seres queridos en los procesos legales, fortaleciendo el vínculo familiar, y brindando claridad, esperanza y autonomía en un momento de vulnerabilidad. Trabajamos para que cada acción jurídica sea un paso hacia la dignidad y el ejercicio real de los derechos.',
+                        style: TextStyle(fontSize: 16, color: Colors.black87),
+                        textAlign: TextAlign.justify,
+                      ),
+                      SizedBox(height: 32),
+                      Text(
+                        'Nuestra Visión',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        'Aspiramos a consolidarnos como un referente nacional e internacional en la facilitación del acceso jurídico para personas condenadas y sus familias, mediante una plataforma tecnológica confiable, empática y transformadora. Buscamos impulsar un ecosistema digital que acerque a los usuarios a la justicia, promueva la participación de sus seres queridos en los procesos legales y contribuya a una sociedad más justa, informada y solidaria. Visualizamos un futuro donde la tecnología sea puente de dignidad, acompañamiento y oportunidades para quienes más lo necesitan.',
+                        style: TextStyle(fontSize: 16, color: Colors.black87),
+                        textAlign: TextAlign.justify,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+                  const Divider(color: gris, height: 1),
+                  const SizedBox(height: 50),
+
+                  Wrap(
+                    spacing: 16,
+                    runSpacing: 16,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _buildValueCard(Icons.gavel, 'Acceso a la Justicia', 'Tecnología que elimina barreras y acerca soluciones legales.'),
+                      _buildValueCard(Icons.favorite, 'Dignidad Humana', 'Cada trámite es una oportunidad para restaurar derechos y esperanza.'),
+                      _buildValueCard(Icons.family_restroom, 'Conexión Familiar', 'Fortalecemos el lazo entre las personas condenadas y sus seres queridos.'),
+                      _buildValueCard(Icons.lightbulb, 'Autonomía e Información', 'Facilitamos decisiones claras y simples que brindan tranquilidad a las familias.'),
+                      _buildValueCard(Icons.public, 'Compromiso Social', 'Trabajamos por una justicia más humana, cercana y accesible.'),
+                    ],
+                  ),
+                  const SizedBox(height: 100),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static Widget _buildValueCard(IconData icon, String title, String description) {
+    return SizedBox(
+      width: 230,
+      child: Card(
+        surfaceTintColor: blanco,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Icon(icon, size: 40, color: Colors.deepPurple),
+              const SizedBox(height: 12),
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.deepPurple)),
+              const SizedBox(height: 8),
+              Text(description, textAlign: TextAlign.center, style: const TextStyle(fontSize: 14, color: Colors.black87)),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  List<Widget> _buildCards({required int crossAxisCount}) {
+    final List<Map<String, String>> data = [
+      {
+        'title': '¿Quiénes Somos?',
+        'image': 'assets/images/equipo1.png',
+        'description':
+        'Somos una plataforma tecnológica orientada a facilitar el acceso a la justicia, promover la equidad y defender los derechos humanos. Brindamos herramientas digitales que permiten a las personas privadas de la libertad ejercer sus derechos de manera autónoma, fortaleciendo su bienestar y dignidad durante su estadía en prisión.'
+      },
+      {
+        'title': '¿Qué Hacemos?',
+        'image': 'assets/images/familia.png',
+        'description':
+        'Facilitamos a las personas privadas de la libertad y a sus seres queridos el acceso sencillo y seguro a servicios jurídicos como derechos de petición y tutelas. Contribuimos a que las familias mantengan el vínculo, participen activamente en la defensa de sus derechos y encuentren alivio en medio de la adversidad.'
+      },
+      {
+        'title': '¿A Quién Va Dirigido?',
+        'image': 'assets/images/equipo.png',
+        'description':
+        'Esta plataforma nace como un puente para quienes, desde afuera, no se resignan a quedarse de brazos cruzados. Está pensada para familiares y personas cercanas a personas condenadas, que buscan acompañar con amor, esperanza y compromiso. Les brinda una herramienta clara y accesible para apoyar el seguimiento de los procesos legales, y ser una voz activa en la defensa de los derechos de quienes más lo necesitan. '
+      },
+    ];
+
+    return data.map((item) {
+      return SizedBox(
+        width: 400,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeIn,
+          margin: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                blurRadius: 6,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Text(
+                item['title']!,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  item['image']!,
+                  height: 200,
+                  width: 250,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 100),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                item['description']!,
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                textAlign: TextAlign.justify,
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
   }
 }

@@ -102,7 +102,7 @@ class InfoPage extends StatelessWidget {
                       ),
                       SizedBox(height: 12),
                       Text(
-                        'Humanizar el acceso a la justicia para las personas condenadas y sus familias, poniendo a su alcance una plataforma tecnológica accesible, segura y eficiente. A través de nuestra herramienta, facilitamos la gestión de trámites como derechos de petición y tutelas, promoviendo la participación activa de los seres queridos en los procesos legales, fortaleciendo el vínculo familiar, y brindando claridad, esperanza y autonomía en un momento de vulnerabilidad. Trabajamos para que cada acción jurídica sea un paso hacia la dignidad, el acompañamiento y el ejercicio real de los derechos.',
+                        'Humanizar el acceso a la justicia para las personas condenadas y sus familias, poniendo a su alcance una plataforma tecnológica accesible, segura y eficiente. A través de nuestra herramienta, facilitamos la gestión de trámites como derechos de petición y tutelas, promoviendo la participación activa de los seres queridos en los procesos legales, fortaleciendo el vínculo familiar, y brindando claridad, esperanza y autonomía en un momento de vulnerabilidad. Trabajamos para que cada acción jurídica sea un paso hacia la dignidad y el ejercicio real de los derechos.',
                         style: TextStyle(fontSize: 16, color: Colors.black87),
                         textAlign: TextAlign.justify,
                       ),
@@ -201,7 +201,7 @@ class InfoPage extends StatelessWidget {
         'title': '¿Quiénes Somos?',
         'image': 'assets/images/equipo1.png',
         'description':
-        'Somos una plataforma tecnológica dedicada a promover el acceso a la justicia, la equidad y la defensa de los derechos humanos. Acompañamos y brindamos apoyo a las personas privadas de la libertad, fortaleciendo su bienestar y ayudándoles a sobrellevar su estadía en prisión con dignidad y esperanza.'
+        'Somos una plataforma tecnológica orientada a facilitar el acceso a la justicia, promover la equidad y defender los derechos humanos. Brindamos herramientas digitales que permiten a las personas privadas de la libertad ejercer sus derechos de manera autónoma, fortaleciendo su bienestar y dignidad durante su estadía en prisión.'
       },
       {
         'title': '¿Qué Hacemos?',
@@ -213,7 +213,7 @@ class InfoPage extends StatelessWidget {
         'title': '¿A Quién Va Dirigido?',
         'image': 'assets/images/equipo.png',
         'description':
-        'Está dirigido a familiares, amigos y personas cercanas de personas condenadas, brindándoles una herramienta accesible para apoyar la gestión y seguimiento de trámites legales, fortaleciendo así su acompañamiento desde el exterior. Esta plataforma les permite involucrarse activamente en la defensa de los derechos de sus seres queridos. '
+        'Esta plataforma nace como un puente para quienes, desde afuera, no se resignan a quedarse de brazos cruzados. Está pensada para familiares y personas cercanas a personas condenadas, que buscan acompañar con amor, esperanza y compromiso. Les brinda una herramienta clara y accesible para apoyar el seguimiento de los procesos legales, y ser una voz activa en la defensa de los derechos de quienes más lo necesitan. '
       },
     ];
 
