@@ -8,10 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
-import 'package:tuprocesoya/Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
 import 'package:tuprocesoya/Pages/client/solicitud_exitosa_tutela/solicitud_exitosa_tutela.dart';
-import 'package:tuprocesoya/helper/opciones_menu_derecho_peticion_helper.dart';
-import 'package:tuprocesoya/helper/preguntasDerechoPeticionHelper.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../helper/opciones_menu_tutela_helper.dart';
@@ -28,7 +25,7 @@ class TutelaSolicitudPage extends StatefulWidget {
 class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
   String _hintCategory = 'Seleccione una categoría';
   String _hintSubCategory = 'Seleccione una subcategoría';
-  List<String> categorias = MenuOptionsDerechoPeticionHelper.obtenerCategorias();
+  List<String> categorias = MenuOptionsTutelaHelper.obtenerCategorias();
   String? selectedCategory;
   String? selectedSubCategory;
   List<PlatformFile> _selectedFiles = [];
@@ -460,7 +457,7 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
         } catch (_) {}
       }
 
-      List<String> preguntas = PreguntasDerechoPeticionHelper.obtenerPreguntasPorCategoriaYSubcategoria(
+      List<String> preguntas = PreguntasTutelaHelper.obtenerPreguntas(
         selectedCategory,
         selectedSubCategory,
       );
@@ -473,7 +470,7 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
         });
       }
 
-      await firestore.collection('derechos_peticion_solicitados').doc(docId).set({
+      await firestore.collection('tutelas_solicitados').doc(docId).set({
         "id": docId,
         "idUser": user.uid,
         "numero_seguimiento": numeroSeguimiento,

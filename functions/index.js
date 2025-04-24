@@ -542,7 +542,7 @@ Petición concreta
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "Eres un redactor legal colombiano. Redactas en tercera persona, con precisión jurídica, sin adornos personales. Redacción clara, técnica y estructurada." },
+        { role: "system", content: "Eres un redactor legal colombiano. Redactas en primera persona, con precisión jurídica, sin adornos personales. Redacción clara, técnica y estructurada." },
         { role: "user", content: prompt }
       ],
       temperature: 0.6,

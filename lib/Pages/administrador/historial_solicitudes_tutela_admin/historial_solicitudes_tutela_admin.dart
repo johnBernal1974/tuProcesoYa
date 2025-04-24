@@ -60,7 +60,7 @@ class _HistorialSolicitudesTutelaPageAdminState extends State<HistorialSolicitud
               Expanded(
                   child:StreamBuilder<QuerySnapshot>(
                     stream: firestore
-                        .collection('tutelas_solicitadas')
+                        .collection('tutelas_solicitados')
                         .orderBy('fecha', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
@@ -174,7 +174,7 @@ class _HistorialSolicitudesTutelaPageAdminState extends State<HistorialSolicitud
 
   Widget _buildEstadoCards(String role) {
     return StreamBuilder<QuerySnapshot>(
-      stream: firestore.collection('tutelas_solicitadas').snapshots(),
+      stream: firestore.collection('tutelas_solicitados').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const CircularProgressIndicator();
@@ -364,7 +364,7 @@ class _HistorialSolicitudesTutelaPageAdminState extends State<HistorialSolicitud
         if (userRole == "pasante 1" && (asignadoA == null || asignadoA.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('tutelas_solicitadas')
+                .collection('tutelas_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA': user.uid,
@@ -389,7 +389,7 @@ class _HistorialSolicitudesTutelaPageAdminState extends State<HistorialSolicitud
         if (userRole == "pasante 2" && (asignadoA_P2 == null || asignadoA_P2.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('tutelas_solicitadas')
+                .collection('tutelas_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA_P2': user.uid,

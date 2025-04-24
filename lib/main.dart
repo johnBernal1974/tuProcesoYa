@@ -39,6 +39,8 @@ import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 import 'Pages/client/historial_solicitudes_libertad_condicional/historial_solicitudes_libertad_condicional.dart';
 import 'Pages/client/historial_solicitudes_prision_domiciliaria/historial_solicitudes_prision_domiciliaria.dart';
+import 'Pages/client/historial_solicitudes_tutela/historial_solicitudes_tutela.dart';
+import 'Pages/client/historiales_page/historiales_page.dart';
 import 'Pages/client/home/home.dart';
 import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_libertad_condicional.dart';
 import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_prision_domiciliaria.dart';
@@ -56,6 +58,7 @@ import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_condicional.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_domiciliaria.dart';
+import 'Pages/detalle_de_correo_page/detalle_correo_tutela.dart';
 import 'Pages/detalle_de_correo_page/detalle_de_correo_page.dart';
 import 'Pages/landing_page/info_page.dart';
 import 'Pages/login/login.dart';
@@ -157,6 +160,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_derechos_peticion': (context) => const HistorialSolicitudesDerechosPeticionPage(),
         'historial_solicitudes_prision_domiciliaria': (context) => const HistorialSolicitudesPrisionDomiciliariaPage(),
         'historial_solicitudes_libertad_condicional': (context) => const HistorialSolicitudesLibertadCondicionalPage(),
+        'historial_solicitudes_tutela': (context) => const HistorialSolicitudesTutelaPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
@@ -170,6 +174,7 @@ class MyApp extends StatelessWidget {
         'solicitud_condicional_page': (context) => const SolicitudLibertadCondicionalPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
+        'historiales_page': (context) => const HistorialSolicitudesPage(),
 
 
         //general
@@ -377,6 +382,15 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => DetalleCorreoPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
+          else if (settings.name == 'detalle_correo_tutela') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoTutelaPage(
                 idDocumento: args['idDocumento'],
                 correoId: args['correoId'],
               ),
