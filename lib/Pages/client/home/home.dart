@@ -39,6 +39,10 @@ class _HomePageState extends State<HomePage> {
   bool _isTrial = false;
   int _diasRestantesPrueba = 0;
   int? _subscriptionValue;
+  Map<String, String> _statusSolicitudes = {};
+  bool _statusLoaded = false;
+
+
 
 
   @override
@@ -65,11 +69,12 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _uid = user.uid;
       });
-
       await _loadData(); // 🔥 Cargar datos generales del usuario
-
       // 🔥 Calcular la condena directamente con el controlador
       await _calculoCondenaController.calcularTiempo(_uid);
+      await _cargarStatusSolicitudes();
+      print("📌 Status de solicitudes cargado: $_statusSolicitudes");
+
     }
   }
 
@@ -315,7 +320,7 @@ class _HomePageState extends State<HomePage> {
           child: Column(
             children: [
               const Text(
-                "Beneficios obtenidos",
+                "Beneficios obtenidos por tiempo cumplido",
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
                   fontSize: 18,
@@ -330,6 +335,7 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(height: 50),
       ],
     );
+
   }
 
   /// Contenido si el usuario **no ha pagado**
@@ -465,37 +471,92 @@ class _HomePageState extends State<HomePage> {
 
   // para isPaid true
   Widget _buildBeneficiosList() {
-    print("🔍 Construyendo Beneficios - Valores actuales:");
-    print("   - porcentajeEjecutado: $porcentajeEjecutado%");
-    print("   - tiempoCondena: $tiempoCondena meses");
-
     return Column(
       children: [
-        if(_ppl!.situacion == "En Reclusión")
-          _buildBeneficioFila("Permiso de 72h", 33.33, "el permiso de 72 horas.", "permiso de 72 horas"),
-
-
-        if(_ppl!.situacion == "En Reclusión")
-          _buildBeneficioFila(
-            'Prisión Domiciliaria',
-            50,
-            'el beneficio para cumplir el resto de la condena en su domicilio bajo vigilancia.',
-            'prision_domiciliaria',
+        if (_ppl!.situacion == "En Reclusión")
+          Card(
+            surfaceTintColor: Colors.grey,
+            color: Colors.grey.shade100,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: _buildBeneficioFila(
+                "Permiso de 72h",
+                33.33,
+                "el permiso de 72 horas.",
+                "permiso_72h",
+                status: _statusSolicitudes["permiso_72h"],
+              ),
+            ),
           ),
-        if(_ppl!.situacion == "En Reclusión" || _ppl!.situacion == "En Prisión domiciliaria")
-          _buildBeneficioFila("Libertad Condicional", 60, "el beneficio para salir del lugar de reclusión bajo libertad condicional", "libertad_condicional"),
-          _buildBeneficioFila(
-          'Extinción de la Pena',
-          100,
-          'obtener su libertad definitiva.',
-          'extincion_pena', // 👈 ID interno
+        if (_ppl!.situacion == "En Reclusión")
+          Card(
+            surfaceTintColor: Colors.grey,
+            color: Colors.grey.shade100,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: _buildBeneficioFila(
+                "Prisión Domiciliaria",
+                50,
+                "el beneficio para cumplir el resto de la condena en su domicilio bajo vigilancia.",
+                "prision_domiciliaria",
+                status: _statusSolicitudes["prision_domiciliaria"],
+              ),
+            ),
+          ),
+        if (_ppl!.situacion == "En Reclusión" || _ppl!.situacion == "En Prisión domiciliaria")
+          Card(
+            surfaceTintColor: Colors.grey,
+            color: Colors.grey.shade100,
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: _buildBeneficioFila(
+                "Libertad Condicional",
+                60,
+                "el beneficio para salir del lugar de reclusión bajo libertad condicional",
+                "libertad_condicional",
+                status: _statusSolicitudes["libertad_condicional"],
+              ),
+            ),
+          ),
+        Card(
+          surfaceTintColor: Colors.grey,
+          color: Colors.grey.shade100,
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: _buildBeneficioFila(
+              "Extinción de la Pena",
+              100,
+              "obtener su libertad definitiva.",
+              "extincion_pena",
+              status: _statusSolicitudes["extincion_pena"],
+            ),
+          ),
         ),
       ],
     );
   }
 
+
   // para idPaid true
-  Widget _buildBeneficioFila(String titulo, double porcentajeRequerido, String accion, String idBeneficio) {
+  Widget _buildBeneficioFila(
+      String titulo,
+      double porcentajeRequerido,
+      String accion,
+      String idBeneficio, {
+        String? status,
+      }) {
     final List<String> beneficios = _ppl?.beneficiosAdquiridos.map((e) => e.toLowerCase().trim()).toList() ?? [];
     final bool adquirido = beneficios.contains(idBeneficio.toLowerCase().trim()) || beneficios.contains(titulo.toLowerCase().trim());
 
@@ -503,6 +564,16 @@ class _HomePageState extends State<HomePage> {
     int tiempo = _calculoCondenaController.tiempoCondena ?? 0;
     bool cumple = porcentaje >= porcentajeRequerido;
     int diasFaltantes = ((porcentajeRequerido - porcentaje) / 100 * tiempo * 30).ceil();
+
+    final normalizedStatus = status?.toLowerCase().trim();
+    final bool estaEnProceso = [
+      'solicitado',
+      'diligenciado',
+      'revisado',
+      'enviado',
+      'negado',
+      'concedido',
+    ].contains(normalizedStatus);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -534,26 +605,49 @@ class _HomePageState extends State<HomePage> {
                 ),
             ],
           ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  adquirido
-                      ?  "Según los registros encontrados en la rama judicial y relacionados  con el PPL, ya le fue otorgado previamente el beneficio de $titulo."
-                      : cumple
-                      ? "Ya se puede solicitar $accion"
-                      : "No se ha cumplido el tiempo establecido para obtener este beneficio.",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: adquirido ? Colors.black : cumple ? Colors.black : Colors.grey,
+          if (!(cumple && !adquirido && estaEnProceso))
+            const SizedBox(height: 4),
+          if (!(cumple && !adquirido && estaEnProceso)) // Solo muestra texto si no está en proceso
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    adquirido
+                        ? "Según los registros encontrados en la rama judicial y relacionados con el PPL, ya le fue otorgado previamente el beneficio de $titulo."
+                        : !cumple
+                        ? "No se ha cumplido el tiempo establecido para obtener este beneficio."
+                        : "",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: adquirido ? Colors.black : cumple ? Colors.black : Colors.grey,
+                    ),
                   ),
                 ),
+              ],
+            ),
+          if (_statusLoaded && cumple && !adquirido && !estaEnProceso)
+            Padding(
+              padding: const EdgeInsets.only(top: 6.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      "Ya se puede solicitar $accion",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          if (!adquirido && cumple)
+            ),
+
+
+          // Botón solo si cumple y no está en proceso
+          if (_statusLoaded && !adquirido && cumple && !estaEnProceso)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Align(
@@ -574,11 +668,142 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
-          const Divider(color: gris),
+
+          // Mensaje si está en proceso
+          if (_statusLoaded && cumple && !adquirido && estaEnProceso)
+            Container(
+              margin: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: switch (normalizedStatus) {
+                  "solicitado" => Colors.orange.shade50,
+                  "diligenciado" => Colors.amber.shade50,
+                  "revisado" => Colors.teal.shade50,
+                  "enviado" => Colors.green.shade50,
+                  "negado" => Colors.red.shade700,
+                  "concedido" => Colors.green.shade700,
+                  _ => Colors.grey.shade100,
+                },
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    switch (normalizedStatus) {
+                      "solicitado" => Icons.assignment_outlined,
+                      "diligenciado" => Icons.search,
+                      "revisado" => Icons.check_circle_outline,
+                      "enviado" => Icons.send_outlined,
+                      "negado" => Icons.cancel_outlined,
+                      "concedido" => Icons.account_balance,
+                      _ => Icons.help_outline,
+                    },
+                    size: 18,
+                    color: switch (normalizedStatus) {
+                      "solicitado" => Colors.orange,
+                      "diligenciado" => Colors.amber.shade700,
+                      "revisado" => Colors.teal,
+                      "enviado" => Colors.green,
+                      "negado" => Colors.white,
+                      "concedido" => Colors.white,
+                      _ => Colors.grey,
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      switch (normalizedStatus) {
+                        "solicitado" => "Hemos recibido la solicitud de $titulo",
+                        "diligenciado" => "Se está analizando la solicitud de $titulo",
+                        "revisado" => "La solicitud de $titulo está lista para ser enviada",
+                        "enviado" => "La solicitud de $titulo fue enviada a la autoridad competente",
+                        "negado" => "La solicitud de $titulo fue negada por la autoridad competente",
+                        "concedido" => "¡Muy buenas noticias! La solicitud de $titulo fue concedida por la autoridad competente",
+                        _ => "Estado desconocido para la solicitud de $titulo",
+                      },
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: normalizedStatus == "concedido"
+                            ? Colors.white
+                            : normalizedStatus == "negado"
+                            ? Colors.white
+                            : Colors.black87,
+                      ),
+                    ),
+                  )
+                ],
+              ),
+            ),
+          if (_statusLoaded && normalizedStatus == "negado")
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: SizedBox(
+                  height: 28,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                    ),
+                    onPressed: () {
+                      // Aquí defines a qué página o acción lleva el botón de impugnación
+                      Navigator.pushNamed(context, 'info_previa_impugnacion_page', arguments: {
+                        'beneficio': idBeneficio,
+                        'titulo': titulo,
+                      });
+                    },
+                    child: const Text("Impugnar"),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+
+
+  Future<void> _cargarStatusSolicitudes() async {
+    final user = FirebaseFirestore.instance.collection('Ppl').doc(_uid);
+
+    final solicitudes = [
+      {'coleccion': 'permiso_72h_solicitados', 'id': 'permiso_72h'},
+      {'coleccion': 'prision_domiciliaria_solicitados', 'id': 'prision_domiciliaria'},
+      {'coleccion': 'libertad_condicional_solicitados', 'id': 'libertad_condicional'},
+      {'coleccion': 'extincion_pena_solicitados', 'id': 'extincion_pena'},
+    ];
+
+    final Map<String, String> resultados = {};
+
+    for (final solicitud in solicitudes) {
+      final snap = await FirebaseFirestore.instance
+          .collection(solicitud['coleccion']!)
+          .where('idUser', isEqualTo: _uid)
+          .orderBy('fecha', descending: true)
+          .limit(1)
+          .get();
+
+      if (snap.docs.isNotEmpty) {
+        final status = snap.docs.first.data()['status'] as String?;
+        if (status != null) {
+          resultados[solicitud['id']!] = status;
+        }
+      }
+    }
+
+    setState(() {
+      _statusSolicitudes = resultados;
+      _statusLoaded = true;
+    });
+  }
+
+
 
   // pendiente por usar
   void _navegarASolicitud(String idBeneficio) {
