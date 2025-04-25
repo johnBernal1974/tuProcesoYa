@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
+import '../../widgets/preguntas_expandibles.dart';
 import '../../widgets/redes_sociales.dart';
 
 class InfoPage extends StatelessWidget {
@@ -137,6 +138,8 @@ class InfoPage extends StatelessWidget {
                     ],
                   ),
 
+                  const SizedBox(height: 80),
+                  const PreguntasExpandiblesWidget(),
                   const SizedBox(height: 80),
 
                   Center(

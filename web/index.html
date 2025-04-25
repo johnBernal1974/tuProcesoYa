@@ -13,9 +13,12 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Tu proceso Ya">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon500.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="favicon500.png" />
+
 
   <title>Tu proceso Ya</title>
   <link rel="manifest" href="manifest.json">
@@ -24,14 +27,105 @@
     const serviceWorkerVersion = null;
   </script>
   <script src="flutter.js" defer></script>
+
+  <style>
+  /* Splash screen visual */
+  #splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+  }
+
+  #splash-screen img {
+    width: 180px;
+    height: auto;
+    animation: fadeIn 1.2s ease-in-out;
+  }
+
+  #loader {
+    margin-top: 25px;
+    width: 45px;
+    height: 45px;
+    border: 5px solid #ccc;
+    border-top: 5px solid #7b1fa2; /* Deep purple */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  #splash-screen p {
+    margin-top: 14px;
+    font-size: 16px;
+    color: #444;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 600px) {
+    #splash-screen img {
+      width: 150px;
+    }
+
+    #loader {
+      width: 35px;
+      height: 35px;
+    }
+
+    #splash-screen p {
+      font-size: 14px;
+    }
+  }
+</style>
+
 </head>
 <body>
 
-<!-- 👇 Aquí debe ir el contenedor del reCAPTCHA -->
+<!-- 🔐 reCAPTCHA container -->
 <div id="recaptcha-container"></div>
 
+<!-- 🟣 Splash visual -->
+<div id="splash-screen">
+  <img src="assets/images/logo_tu_proceso_ya_transparente.png" alt="Tu Proceso Ya" style="width: 180px; height: auto;">
+  <div id="loader" style="width: 45px; height: 45px; margin-top: 25px;"></div>
+  <p style="margin-top: 14px; font-size: 16px; color: #444;">Espera un momento...</p>
+</div>
+
+
+<script>
+  window.addEventListener('load', function () {
+    _flutter.loader.loadEntrypoint({
+      serviceWorker: {
+        serviceWorkerVersion: serviceWorkerVersion,
+      },
+      onEntrypointLoaded: function (engineInitializer) {
+        engineInitializer.initializeEngine().then(function (appRunner) {
+          appRunner.runApp();
+          const splash = document.getElementById('splash-screen');
+          if (splash) splash.remove();
+        });
+      }
+    });
+  });
+</script>
+
+<!-- ♻️ reCAPTCHA styles conservados -->
 <style>
-  /* Estilo base para el botón de reCAPTCHA */
   #recaptcha-container {
     position: fixed;
     bottom: 20px;
@@ -43,12 +137,10 @@
     box-shadow: 0px 0px 12px rgba(0, 0, 0, 0.2);
   }
 
-  /* Oculta el contenedor cuando esté vacío */
   #recaptcha-container:empty {
     display: none;
   }
 
-  /* Estilo adaptado para móviles */
   @media (max-width: 600px) {
     #recaptcha-container {
       bottom: 10px;
@@ -60,7 +152,6 @@
       box-sizing: border-box;
     }
 
-    /* Corrige el challenge de imágenes de Google */
     iframe[title="recaptcha challenge"] {
       position: fixed !important;
       top: 50% !important;
@@ -74,19 +165,5 @@
   }
 </style>
 
-<script>
-    window.addEventListener('load', function(ev) {
-      _flutter.loader.loadEntrypoint({
-        serviceWorker: {
-          serviceWorkerVersion: serviceWorkerVersion,
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
-          });
-        }
-      });
-    });
-  </script>
 </body>
 </html>
