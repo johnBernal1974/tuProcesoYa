@@ -234,7 +234,9 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                      return const Text("Aún no hay correos enviados a la autoridad competente para esta solicitud.");
+                      return const Text("Aún no hay correos enviados a la autoridad competente para esta solicitud.", style: TextStyle(
+                        fontSize: 11
+                      ),);
                     }
 
                     final correos = snapshot.data!.docs;

@@ -66,9 +66,10 @@ class _PreguntasExpandiblesWidgetState extends State<PreguntasExpandiblesWidget>
                   Padding(
                     padding: const EdgeInsets.all(12.0),
                     child: Text(
-                      pregunta['respuesta']!,
+                      pregunta['respuesta']!.trim(),
                       style: const TextStyle(fontSize: 14, color: Colors.black87),
-                    ),
+                      textAlign: TextAlign.start,
+                    )
                   ),
                 ],
               ),

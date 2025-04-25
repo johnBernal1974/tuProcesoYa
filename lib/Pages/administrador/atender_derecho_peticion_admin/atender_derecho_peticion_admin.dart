@@ -1061,6 +1061,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             td: userData?.td?.trim() ?? "",
             nui: userData?.nui?.trim() ?? "",
             numeroSeguimiento: widget.numeroSeguimiento,
+            nombreAcudiente: '${userData!.nombreAcudiente} ${userData!.apellidoAcudiente}'
+
           );
 
           isLoading = false;
@@ -1469,7 +1471,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       emailUsuario: userData?.email?.trim() ?? "",
       td: userData?.td?.trim() ?? "",
       nui: userData?.nui?.trim() ?? "",
-      numeroSeguimiento: widget.numeroSeguimiento
+      numeroSeguimiento: widget.numeroSeguimiento,
+      nombreAcudiente: '${userData!.nombreAcudiente} ${userData!.apellidoAcudiente}'
     );
 
     return Column(
@@ -1525,7 +1528,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         emailUsuario: userData?.email.trim() ?? "",
         nui: userData?.nui.trim() ?? "",
         td: userData?.td.trim() ?? "",
-        numeroSeguimiento: widget.numeroSeguimiento
+        numeroSeguimiento: widget.numeroSeguimiento,
+        nombreAcudiente: '${userData!.nombreAcudiente} ${userData!.apellidoAcudiente}'
     );
 
     String mensajeHtml = derechoPeticion.generarTextoHtml();

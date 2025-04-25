@@ -139,7 +139,12 @@ class InfoPage extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 80),
-                  const PreguntasExpandiblesWidget(),
+                  Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 750),
+                      child: const PreguntasExpandiblesWidget(),
+                    ),
+                  ),
                   const SizedBox(height: 80),
 
                   Center(

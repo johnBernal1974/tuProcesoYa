@@ -14,6 +14,7 @@ class DerechoPeticionTemplate {
   final String nui;
   final String td;
   final String numeroSeguimiento;
+  final String nombreAcudiente;
 
   DerechoPeticionTemplate({
     required this.entidad,
@@ -31,6 +32,7 @@ class DerechoPeticionTemplate {
     required this.nui,
     required this.td,
     required this.numeroSeguimiento,
+    required this.nombreAcudiente,
   });
 
   String generarTextoHtml() {
@@ -47,12 +49,14 @@ class DerechoPeticionTemplate {
         <b>II. Fundamentos de derecho:</b><br>
         $fundamentosDeDerecho<br><br>
         <b>III. Petición concreta</b><br>
-        $peticionConcreta<br><br><br>
+        $peticionConcreta<br><br><br>       
+        Agradezco enormemente su colaboración y respuesta rápida y satisfactoria.<br><br><br><br>
+        Atentamente,<br><br><br>
+        <b>$nombreAcudiente</b><br>
+        Acudiente del Ppl<br><br><br><br><br>
         Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
         $emailAlternativo<br>
-        $emailUsuario<br><br><br>
-        Agradezco enormemente su colaboración y respuesta rápida y satisfactoria.,<br><br>
-       Atentamente,<br>
+        $emailUsuario<br>
       <div style="margin-top: 80px;">
         <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="150" height="50"><br>
       </div>
