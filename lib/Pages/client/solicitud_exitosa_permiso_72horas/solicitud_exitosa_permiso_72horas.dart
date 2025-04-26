@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:tuprocesoya/Pages/client/home/home.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
-import '../historial_solicitudes_libertad_condicional/historial_solicitudes_libertad_condicional.dart';
+import '../historial_solicitudes_permiso_72h/historial_solicitudes_permiso_72h.dart';
 
-class SolicitudExitosaLibertadCondicionalPage extends StatelessWidget {
+class SolicitudExitosaPermiso72HorasPage extends StatelessWidget {
   final String numeroSeguimiento;
 
-  const SolicitudExitosaLibertadCondicionalPage({super.key, required this.numeroSeguimiento});
+  const SolicitudExitosaPermiso72HorasPage({super.key, required this.numeroSeguimiento});
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +25,7 @@ class SolicitudExitosaLibertadCondicionalPage extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             const Text(
-              "Tu solicitud de Libertad condicional ha sido recibida",
+              "Tu solicitud de Permiso de 72 horas ha sido recibida",
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, height: 1),
               textAlign: TextAlign.center,
             ),
@@ -43,7 +43,7 @@ class SolicitudExitosaLibertadCondicionalPage extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             const Text(
-              "Verificaremos la información enviada para proceder con la radicación de la solicitud de libertad condicional ante la autoridad competente. ",
+              "Verificaremos la información enviada para proceder con la radicación de la solicitud de permiso de 72 horas ante la autoridad competente. ",
               style: TextStyle(fontSize: 14, height: 1.1),
               textAlign: TextAlign.justify,
             ),
@@ -101,7 +101,7 @@ class SolicitudExitosaLibertadCondicionalPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const HistorialSolicitudesLibertadCondicionalPage()),
+                    MaterialPageRoute(builder: (context) => const HistorialSolicitudesPermiso72HorasPage()),
                   );
                 },
                 style: ElevatedButton.styleFrom(

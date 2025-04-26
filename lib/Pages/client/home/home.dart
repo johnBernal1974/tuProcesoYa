@@ -829,8 +829,8 @@ class _HomePageState extends State<HomePage> {
 
   void _navegarAInfoPreviaSolicitud(String idBeneficio) {
     switch (idBeneficio.toLowerCase().trim()) {
-      case 'permiso de 72 horas':
-        Navigator.pushNamed(context, 'solicitud_72h');
+      case 'permiso_72h':
+        Navigator.pushNamed(context, 'info_previa_72h_page');
         break;
       case 'prision_domiciliaria':
         Navigator.pushNamed(context, 'info_previa_solicitud_domiciliaria_page');

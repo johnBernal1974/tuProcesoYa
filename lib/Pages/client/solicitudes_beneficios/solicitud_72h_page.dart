@@ -13,6 +13,7 @@ import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
 import '../solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
+import '../solicitud_exitosa_permiso_72horas/solicitud_exitosa_permiso_72horas.dart';
 
 class SolicitudPermiso72HorasPage extends StatefulWidget {
   const SolicitudPermiso72HorasPage({super.key});
@@ -75,12 +76,12 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
             child: ListView(
               children: [
                 const Text(
-                  'Solicitud de Prisión Domiciliaria',
+                  'Solicitud permiso de 72 horas',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'La prisión domiciliaria es un beneficio que permite al PPL cumplir su condena en un lugar de residencia previamente aprobado, cuando se cumplen ciertos requisitos legales y humanitarios.',
+                  'El permiso de 72 horas es un beneficio que permite al PPL salir temporalmente del centro de reclusión para fortalecer sus lazos familiares y sociales, siempre que cumpla con los requisitos legales establecidos.',
                   style: TextStyle(fontSize: 14),
                 ),
                 const SizedBox(height: 12),
@@ -155,7 +156,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                  '3. Sube la declaración extra juicio para la solicitud de prisión domiciliaria:',
+                  '3. Sube la declaración extra juicio para la solicitud del permiso de 72 horas:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -355,7 +356,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                     });
                   },
                   title: const Text(
-                    '¿Vivirá con sus hijos mientras cumple el beneficio de prisión domiciliaria? Solo aplica para hijos menores de 18 años.',
+                    'Selecciona esta opción si el Ppl estará con sus hijos mientras dura su permiso de 72 horas. Solo aplica para hijos menores de 18 años.',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   controlAffinity: ListTileControlAffinity.leading,
@@ -433,12 +434,21 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                 const SizedBox(height: 24),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: primary
+                    backgroundColor: primary,
                   ),
-                  onPressed: validarYEnviar,
-                  child: const Text('Enviar solicitud', style: TextStyle(
-                      color: blanco
-                  )),
+                  onPressed: () async {
+                    final validado = await validarCampos();
+                    if (validado) {
+                      final confirmado = await mostrarConfirmacionEnvio(context);
+                      if (confirmado) {
+                        await enviarSolicitud();
+                      }
+                    }
+                  },
+                  child: const Text(
+                    'Enviar solicitud',
+                    style: TextStyle(color: blanco),
+                  ),
                 ),
                 const SizedBox(height: 30),
               ],
@@ -447,6 +457,110 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         ),
       ),
     );
+  }
+
+  Future<bool> validarCampos() async {
+    if (_direccionController.text.trim().isEmpty ||
+        departamentoSeleccionado == null ||
+        municipioSeleccionado == null ||
+        archivoRecibo == null ||
+        archivoDeclaracion == null ||
+        archivoCedulaResponsable == null ||
+        _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
+        _nombreResponsableController.text.trim().isEmpty ||
+        _cedulaResponsableController.text.trim().isEmpty ||
+        _celularResponsableController.text.trim().isEmpty ||
+        parentescoSeleccionado == null || parentescoSeleccionado!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Por favor, completa todos los campos y sube los documentos requeridos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    final celular = _celularResponsableController.text.trim();
+    if (celular.length != 10 || !RegExp(r'^\d+$').hasMatch(celular)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("El número de celular debe tener exactamente 10 dígitos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    final cedula = _cedulaResponsableController.text.trim();
+    if (cedula.length < 7 || cedula.length > 10 || !RegExp(r'^\d+$').hasMatch(cedula)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("La cédula debe tener entre 7 y 10 dígitos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    if (tieneHijosConvivientes) {
+      if (hijos.isEmpty || archivosHijos.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor, agrega los datos de los hijos y sube sus documentos."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+
+      for (var hijo in hijos) {
+        final nombre = hijo['nombre']?.trim() ?? '';
+        final edadStr = hijo['edad'] ?? '0';
+        final edad = int.tryParse(edadStr) ?? 0;
+
+        if (nombre.isEmpty || edad <= 0 || edad >= 18) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Verifica que cada hijo tenga nombre y una edad válida menor de 18 años."),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return false;
+        }
+      }
+    }
+
+    return true; // ✅ Todo validado bien
+  }
+
+
+  Future<bool> mostrarConfirmacionEnvio(BuildContext context) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: blanco,
+          title: const Text('Confirmar envío'),
+          content: const Text('¿Estás seguro de enviar la solicitud?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: primary),
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Confirmar', style: TextStyle(color: blanco)),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  Future<void> enviarSolicitud() async {
+    await verificarSaldoYEnviarSolicitud();
   }
 
   void eliminarArchivoHijo(PlatformFile file) {
@@ -604,7 +718,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "7. Reparación de la víctima",
+          "7. Reparación de la víctima (* Selección obligatoria *)",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
@@ -634,7 +748,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
             children: [
               const SizedBox(height: 20),
               const Text(
-                '8. Sube la certificación de insolvencia económica en un solo documento:',
+                '8. Recuerda que si tienes certificado de insolvencia puedes adjuntarlo para fortalecer tu solicitud (Opcional)',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -678,7 +792,6 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         archivoDeclaracion == null ||
         archivoCedulaResponsable == null ||
         _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
-        (_opcionReparacionSeleccionada == 'insolvencia' && archivoInsolvencia == null) || // ✅ Solo si aplica
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
         _celularResponsableController.text.trim().isEmpty ||
@@ -755,8 +868,8 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         .limit(1)
         .get();
 
-    final double valorDomiciliaria =
-    (configSnapshot.docs.first.data()['valor_domiciliaria'] ?? 0).toDouble();
+    final double valorPermiso72h =
+    (configSnapshot.docs.first.data()['valor_72h'] ?? 0).toDouble();
 
     if (!context.mounted) return;
 
@@ -778,10 +891,10 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                 context,
                 MaterialPageRoute(
                   builder: (_) => CheckoutPage(
-                    tipoPago: 'domiciliaria',
-                    valor: valorDomiciliaria.toInt(),
+                    tipoPago: 'permiso',
+                    valor: valorPermiso72h.toInt(),
                     onTransaccionAprobada: () async {
-                      await enviarSolicitudPrisionDomiciliaria(valorDomiciliaria);
+                      await enviarSolicitudPermiso72horas(valorPermiso72h);
                     },
                   ),
                 ),
@@ -795,7 +908,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
   }
 
 
-  Future<void> enviarSolicitudPrisionDomiciliaria(double valorDomiciliaria) async {
+  Future<void> enviarSolicitudPermiso72horas(double valor72horas) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -806,7 +919,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       builder: (context) => AlertDialog(
         backgroundColor: blanco,
         title: const Text("Confirmar envío"),
-        content: const Text("Ya puedes enviar tu solicitud de Prisión domiciliaria"),
+        content: const Text("Ya puedes enviar tu solicitud de Permiso de 72 horas"),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
           TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar")),
@@ -836,14 +949,14 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      String docId = firestore.collection('prision_domiciliaria_solicitados').doc().id;
+      String docId = firestore.collection('permiso_72horas_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
       List<String> urls = [];
 
       for (PlatformFile file in _selectedFiles) {
         try {
-          String filePath = 'solicitudes_prision_domiciliaria/$docId/${file.name}';
+          String filePath = 'solicitudes_permiso_72horas/$docId/${file.name}';
           Reference storageRef = FirebaseStorage.instance.ref(filePath);
           UploadTask uploadTask = kIsWeb
               ? storageRef.putData(file.bytes!)
@@ -854,7 +967,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         } catch (_) {}
       }
 
-      await firestore.collection('prision_domiciliaria_solicitados').doc(docId).set({
+      await firestore.collection('permiso_72horas_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
         'numero_seguimiento': numeroSeguimiento,
@@ -879,7 +992,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
         'reparacion': _opcionReparacionSeleccionada,
       });
-      await descontarSaldo(valorDomiciliaria);
+      await descontarSaldo(valor72horas);
 
 
       if (context.mounted) {
@@ -888,7 +1001,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
           context,
           MaterialPageRoute(
             builder: (context) =>
-                SolicitudExitosaDomiciliariaPage(numeroSeguimiento: numeroSeguimiento),
+                SolicitudExitosaPermiso72HorasPage(numeroSeguimiento: numeroSeguimiento),
           ),
         );
       }

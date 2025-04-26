@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../src/colors/colors.dart';
 
-class RequisitosPrisionDomiciliariaPage extends StatelessWidget {
-  const RequisitosPrisionDomiciliariaPage({super.key});
+class RequisitosPermiso72hPage extends StatelessWidget {
+  const RequisitosPermiso72hPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +13,7 @@ class RequisitosPrisionDomiciliariaPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: blanco,
       appBar: AppBar(
-        title: const Text('Prisión Domiciliaria'),
+        title: const Text('Permiso de 72 horas'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
       ),
@@ -28,11 +28,10 @@ class RequisitosPrisionDomiciliariaPage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-
             _buildRequisito(
               icon: Icons.double_arrow_outlined,
               titulo: 'Declaración extrajuicio de la persona responsable',
-              descripcion: 'Documento notariado donde la persona que recibirá al Ppl en su domicilio, declara que se compromete a ser responsable durante la condena. Se consigue en cualquier notaría con la cédula del responsable.',
+              descripcion: 'Documento notariado donde la persona que recibirá al Ppl en su domicilio, declara que se compromete a ser responsable durante las 72 horas de permiso. Se consigue en cualquier notaría con la cédula del responsable.',
               costo: 'Costo estimado: \$25.000 - \$35.000 COP',
             ),
 
@@ -58,7 +57,7 @@ class RequisitosPrisionDomiciliariaPage extends StatelessWidget {
             _buildRequisito(
               icon: Icons.double_arrow_outlined,
               titulo: 'Documentos de identidad de los hijos (si vivirán con el Ppl)',
-              descripcion: 'Puede ser registro civil o tarjeta de identidad. Esto demuestra el arraigo familiar y que el entorno donde se vivirá es adecuado. Esto solo aplica para hijos menores de 18 años',
+              descripcion: 'Puede ser registro civil o tarjeta de identidad. Esto demuestra el arraigo familiar y que el entorno donde pasará en su tiempo de permiso es adecuado. Esto solo aplica para hijos menores de 18 años',
             ),
             const SizedBox(height: 24),
             const Text(
@@ -105,7 +104,7 @@ class RequisitosPrisionDomiciliariaPage extends StatelessWidget {
 
                   if(context.mounted){
                     if (confirmar == true) {
-                      Navigator.pushReplacementNamed(context, 'solicitud_domiciliaria_page');
+                      Navigator.pushReplacementNamed(context, 'solicitud_72h_page');
                     }
                   }
                 },

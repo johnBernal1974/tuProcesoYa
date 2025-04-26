@@ -38,10 +38,12 @@ import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 import 'Pages/client/historial_solicitudes_libertad_condicional/historial_solicitudes_libertad_condicional.dart';
+import 'Pages/client/historial_solicitudes_permiso_72h/historial_solicitudes_permiso_72h.dart';
 import 'Pages/client/historial_solicitudes_prision_domiciliaria/historial_solicitudes_prision_domiciliaria.dart';
 import 'Pages/client/historial_solicitudes_tutela/historial_solicitudes_tutela.dart';
 import 'Pages/client/historiales_page/historiales_page.dart';
 import 'Pages/client/home/home.dart';
+import 'Pages/client/info_previa_solicitud_beneficios/info_previa_permiso_72h.dart';
 import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_libertad_condicional.dart';
 import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_prision_domiciliaria.dart';
 import 'Pages/client/mis_datos/mis_datos.dart';
@@ -52,6 +54,8 @@ import 'Pages/client/register/register.dart';
 import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
 import 'Pages/client/solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
 import 'Pages/client/solicitud_exitosa_libertad_condicional/solicitud_exitosa_libertad_condicional.dart';
+import 'Pages/client/solicitud_exitosa_permiso_72horas/solicitud_exitosa_permiso_72horas.dart';
+import 'Pages/client/solicitudes_beneficios/solicitud_72h_page.dart';
 import 'Pages/client/solicitudes_beneficios/solicitud_domiciliaria_page.dart';
 import 'Pages/client/solicitudes_beneficios/solicitud_libertad_condicional.dart';
 import 'Pages/client/tutela/tutela.dart';
@@ -59,6 +63,7 @@ import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_condicional.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_domiciliaria.dart';
+import 'Pages/detalle_de_correo_page/detalle_correo_permiso_72horas.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_tutela.dart';
 import 'Pages/detalle_de_correo_page/detalle_de_correo_page.dart';
 import 'Pages/landing_page/info_page.dart';
@@ -162,6 +167,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_prision_domiciliaria': (context) => const HistorialSolicitudesPrisionDomiciliariaPage(),
         'historial_solicitudes_libertad_condicional': (context) => const HistorialSolicitudesLibertadCondicionalPage(),
         'historial_solicitudes_tutela': (context) => const HistorialSolicitudesTutelaPage(),
+        'historial_solicitudes_permiso_72horas': (context) => const HistorialSolicitudesPermiso72HorasPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
@@ -170,11 +176,12 @@ class MyApp extends StatelessWidget {
         'terminos_y_condiciones': (context) => const TerminosCondicionesPage(),
         //'checkout_wompi': (context) => const CheckoutPage(),
         'mis_transacciones': (context) => const MisTransaccionesPage(),
-        'solicitud_72h_page': (context) => const MisTransaccionesPage(),
+        'solicitud_72h_page': (context) => const SolicitudPermiso72HorasPage(),
         'solicitud_domiciliaria_page': (context) => const SolicitudDomiciliariaPage(),
         'solicitud_condicional_page': (context) => const SolicitudLibertadCondicionalPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
+        'info_previa_72h_page': (context) => const RequisitosPermiso72hPage(),
         'historiales_page': (context) => const HistorialSolicitudesPage(),
         'preguntas_frecuentes_page': (context) => const PreguntasFrecuentesPage(),
 
@@ -213,6 +220,14 @@ class MyApp extends StatelessWidget {
             final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
             return MaterialPageRoute(
               builder: (context) => SolicitudExitosaDomiciliariaPage(
+                numeroSeguimiento: numeroSeguimiento,
+              ),
+            );
+          }
+          else if (settings.name == 'solicitud_exitosa_permiso_72horas') {
+            final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
+            return MaterialPageRoute(
+              builder: (context) => SolicitudExitosaPermiso72HorasPage(
                 numeroSeguimiento: numeroSeguimiento,
               ),
             );
@@ -411,6 +426,15 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => DetalleCorreoCondicionalPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
+          else if (settings.name == 'detalle_correo_permiso_72horas') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoPermiso72HorasPage(
                 idDocumento: args['idDocumento'],
                 correoId: args['correoId'],
               ),
