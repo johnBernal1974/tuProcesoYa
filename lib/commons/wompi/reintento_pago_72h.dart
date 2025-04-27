@@ -84,7 +84,7 @@ class ReintentoPagoPermiso72hPage extends StatelessWidget {
                         return;
                       }
 
-                      final nuevaReferencia = 'permiso_72h_${user.uid}_${const Uuid().v4()}';
+                      final nuevaReferencia = 'permiso_${user.uid}_${const Uuid().v4()}';
                       print("📌 Nueva referencia generada: $nuevaReferencia");
 
                       Navigator.pushReplacement(

@@ -41,6 +41,8 @@ class _RegistroPageState extends State<RegistroPage> {
   int currentPageIndex = 0;
   List<Map<String, Object>> centrosReclusionTodos = [];
   late Future<bool> _centrosFuture;
+  RecaptchaVerifier? _recaptchaVerifier;
+
 
 
   // Controladores de texto
@@ -1364,72 +1366,59 @@ class _RegistroPageState extends State<RegistroPage> {
     );
 
     try {
-      if (kDebugMode) {
-        print("🤖 reCAPTCHA renderizando...");
+      if (kIsWeb) {
+        // ✅ Crea el RecaptchaVerifier en web
+        recaptchaVerifier = RecaptchaVerifier(
+          auth: FirebaseAuthPlatform.instance,
+          container: 'recaptcha-container', // 👈 Aquí debe haber un div vacío en tu HTML
+          size: RecaptchaVerifierSize.normal,
+          theme: RecaptchaVerifierTheme.light,
+          onSuccess: () {
+            if (kDebugMode) print("✅ reCAPTCHA verificado correctamente");
+            html.document.getElementById('recaptcha-container')?.style.display = 'none';
+            setState(() {
+              _recaptchaValidado = true;
+            });
+          },
+          onError: (FirebaseAuthException e) {
+            Navigator.of(context).pop();
+            _mostrarMensaje("Error en reCAPTCHA: ${e.message}");
+          },
+          onExpired: () {
+            Navigator.of(context).pop();
+            _mostrarMensaje("El reCAPTCHA ha expirado");
+          },
+        );
       }
 
-      final recaptchaVerifier = RecaptchaVerifier(
-        auth: FirebaseAuthPlatform.instance,
-        container: 'recaptcha-container',
-        size: RecaptchaVerifierSize.normal,
-        theme: RecaptchaVerifierTheme.light,
-        onSuccess: () {
-          if (kDebugMode) {
-            print("✅ reCAPTCHA verificado");
-          }
-          // 👉 Oculta visualmente el reCAPTCHA
-          html.document.getElementById('recaptcha-container')?.style.display = 'none';
-
-          setState(() {
-            _recaptchaValidado = true; // 👈 ahora sí se pueden mostrar los campos
-          });
-
-          // 🔥 Oculta visualmente el contenedor tras validación
-          final element = html.document.getElementById('recaptcha-container');
-          if (element != null) {
-            element.style.display = 'none';
-          }
-        },
-        onError: (FirebaseAuthException e) {
-          if (kDebugMode) {
-            print("❌ Error reCAPTCHA: ${e.message}");
-          }
-          Navigator.of(context).pop();
-          _mostrarMensaje("Error al validar reCAPTCHA");
-        },
-        onExpired: () {
-          if (kDebugMode) {
-            print("⚠️ reCAPTCHA expirado");
-          }
-          Navigator.of(context).pop();
-          _mostrarMensaje("El reCAPTCHA ha expirado");
-        },
-      );
-
+      // 🔥 Ahora sí enviamos el código usando el recaptchaVerifier
       final confirmationResult = await FirebaseAuth.instance.signInWithPhoneNumber(
         "+57$celular",
         recaptchaVerifier,
       );
 
-      if (kDebugMode) {
-        print("✅ Código enviado");
-      }
-      if(context.mounted){
+      if (context.mounted) {
         Navigator.of(context).pop(); // Cierra el loading
       }
 
       setState(() {
         _confirmationResult = confirmationResult;
         _otpEnviado = true;
+        _recaptchaValidado = true;
       });
 
+      if (kDebugMode) {
+        print("✅ Código enviado correctamente");
+      }
     } catch (e) {
-      if(context.mounted){
+      if (context.mounted) {
         Navigator.of(context).pop();
         _mostrarMensaje("Error inesperado: ${e.toString()}");
       }
     }
   }
+
+
 
   void _guardarConPin() async {
     final pin = pinController.text.trim();
@@ -1506,25 +1495,32 @@ class _RegistroPageState extends State<RegistroPage> {
   void _verificarOTP() async {
     final codigo = otpController.text.trim();
 
-    if (codigo.isEmpty) {
-      _mostrarMensaje("Código inválido.");
+    if (codigo.isEmpty || codigo.length != 6) {
+      _mostrarMensaje("Ingresa un código válido de 6 dígitos.");
+      return;
+    }
+
+    if (_confirmationResult == null) {
+      _mostrarMensaje("Primero solicita el código de verificación.");
       return;
     }
 
     try {
       // Verifica el código ingresado
-      await _confirmationResult.confirm(codigo);
+      await _confirmationResult!.confirm(codigo);
 
       if (kDebugMode) {
         print("✅ Código verificado correctamente");
       }
 
-      // Lleva al usuario a la página para ingresar el PIN (ej. página 16)
-      setState(() {
-        _currentPage = 16;
-      });
-      _pageController.jumpToPage(16);
-    } on FirebaseAuthException {
+      // Redirecciona a la siguiente página, como tenías
+      if (context.mounted) {
+        setState(() {
+          _currentPage = 16;
+        });
+        _pageController.jumpToPage(16);
+      }
+    } on FirebaseAuthException catch (_) {
       _mostrarMensaje("Código inválido o expirado. Intenta nuevamente.");
     } catch (e) {
       _mostrarMensaje("Error inesperado: ${e.toString()}");

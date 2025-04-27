@@ -773,7 +773,7 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseFirestore.instance.collection('Ppl').doc(_uid);
 
     final solicitudes = [
-      {'coleccion': 'permiso_72h_solicitados', 'id': 'permiso_72h'},
+      {'coleccion': 'permiso_72horas_solicitados', 'id': 'permiso_72h'},
       {'coleccion': 'prision_domiciliaria_solicitados', 'id': 'prision_domiciliaria'},
       {'coleccion': 'libertad_condicional_solicitados', 'id': 'libertad_condicional'},
       {'coleccion': 'extincion_pena_solicitados', 'id': 'extincion_pena'},
@@ -803,29 +803,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-
-
-  // pendiente por usar
-  void _navegarASolicitud(String idBeneficio) {
-    switch (idBeneficio.toLowerCase().trim()) {
-      case 'permiso de 72 horas':
-        Navigator.pushNamed(context, 'solicitud_72h');
-        break;
-      case 'prision_domiciliaria':
-        Navigator.pushNamed(context, 'solicitud_domiciliaria_page');
-        break;
-      case 'libertad_condicional':
-        Navigator.pushNamed(context, 'solicitud_condicional_page');
-        break;
-      case 'extincion_pena':
-        Navigator.pushNamed(context, 'solicitud_extincion_pena');
-        break;
-      default:
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Ruta de beneficio no reconocida"))
-        );
-    }
-  }
 
   void _navegarAInfoPreviaSolicitud(String idBeneficio) {
     switch (idBeneficio.toLowerCase().trim()) {

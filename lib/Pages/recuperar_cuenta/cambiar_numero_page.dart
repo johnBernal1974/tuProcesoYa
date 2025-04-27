@@ -59,64 +59,23 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
     if (mounted) setState(() => _loading = true);
 
     try {
-      if (kIsWeb) {
-        final recaptchaVerifier = RecaptchaVerifier(
-          auth: FirebaseAuthPlatform.instance,
-          container: 'recaptcha-container',
-          size: RecaptchaVerifierSize.normal,
-          theme: RecaptchaVerifierTheme.light,
-          onSuccess: () {
-            html.document.getElementById('recaptcha-container')?.style.display = 'none';
-          },
-          onError: (error) {
-            _mostrarMensaje("Error con reCAPTCHA: $error");
-            setState(() => _loading = false);
-          },
-          onExpired: () {
-            _mostrarMensaje("El reCAPTCHA ha expirado");
-            setState(() => _loading = false);
-          },
-        );
+      // 🔥 Solo usamos signInWithPhoneNumber directo
+      final confirmationResult = await FirebaseAuth.instance.signInWithPhoneNumber("+57$celular");
 
-        await FirebaseAuth.instance.signInWithPhoneNumber("+57$celular", recaptchaVerifier).then((confirmationResult) {
-          if (!mounted) return;
-          setState(() {
-            _verificationId = confirmationResult.verificationId;
-            _otpEnviado = true;
-            _loading = false;
-          });
-          _iniciarTemporizador();
-          _mostrarMensaje("Código enviado correctamente.");
-          html.document.getElementById('recaptcha-container')?.style.display = 'none'; // 👈 Oculta después de usar
-        });
-      } else {
-        // Si no es web (ej. Android/iOS)
-        await FirebaseAuth.instance.verifyPhoneNumber(
-          phoneNumber: "+57$celular",
-          timeout: const Duration(seconds: 60),
-          verificationCompleted: (_) {},
-          verificationFailed: (error) {
-            _mostrarMensaje("Error: ${error.message}");
-            setState(() => _loading = false);
-          },
-          codeSent: (verificationId, resendToken) {
-            if (!mounted) return;
-            setState(() {
-              _verificationId = verificationId;
-              _otpEnviado = true;
-              _loading = false;
-            });
-            _iniciarTemporizador();
-            _mostrarMensaje("Código enviado.");
-          },
-          codeAutoRetrievalTimeout: (_) {},
-        );
-      }
+      if (!mounted) return;
+      setState(() {
+        _verificationId = confirmationResult.verificationId;
+        _otpEnviado = true;
+        _loading = false;
+      });
+      _iniciarTemporizador();
+      _mostrarMensaje("Código enviado correctamente.");
     } catch (e) {
       _mostrarMensaje("Error inesperado: ${e.toString()}");
       setState(() => _loading = false);
     }
   }
+
 
 
   void _verificarOTP() async {
