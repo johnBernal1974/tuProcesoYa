@@ -111,35 +111,42 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
                 Row(
                   children: [
                     Expanded(
-                      child: CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Adquirido', style: TextStyle(fontSize: 13)),
-                        value: _beneficiosAdquiridosSeleccionados.contains(beneficio),
-                        onChanged: (valor) {
-                          if (valor == true) {
-                            _seleccionarAdquirido(beneficio);
-                          } else {
-                            _desmarcarAdquirido(beneficio);
-                          }
-                        },
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _beneficiosAdquiridosSeleccionados.contains(beneficio),
+                            onChanged: (valor) {
+                              if (valor == true) {
+                                _seleccionarAdquirido(beneficio);
+                              } else {
+                                _desmarcarAdquirido(beneficio);
+                              }
+                            },
+                          ),
+                          const Text('Concedido', style: TextStyle(fontSize: 13)),
+                        ],
                       ),
                     ),
                     Expanded(
-                      child: CheckboxListTile(
-                        contentPadding: EdgeInsets.zero,
-                        title: const Text('Negado', style: TextStyle(fontSize: 13)),
-                        value: _beneficiosNegadosSeleccionados.contains(beneficio),
-                        onChanged: (valor) {
-                          if (valor == true) {
-                            _seleccionarNegado(beneficio);
-                          } else {
-                            _desmarcarNegado(beneficio);
-                          }
-                        },
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _beneficiosNegadosSeleccionados.contains(beneficio),
+                            onChanged: (valor) {
+                              if (valor == true) {
+                                _seleccionarNegado(beneficio);
+                              } else {
+                                _desmarcarNegado(beneficio);
+                              }
+                            },
+                          ),
+                          const Text('Negado', style: TextStyle(fontSize: 13)),
+                        ],
                       ),
                     ),
                   ],
                 ),
+
                 const Divider(),
               ],
             )),
