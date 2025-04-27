@@ -341,7 +341,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           EditarBeneficiosWidget(
             pplId: widget.doc["id"],
             beneficiosAdquiridosInicial: ppl.beneficiosAdquiridos,
+            beneficiosNegadosInicial: ppl.beneficiosNegados, // 🔥 Añadir esta línea
           ),
+
 
           agregarRedenciones(),
           const SizedBox(height: 20),

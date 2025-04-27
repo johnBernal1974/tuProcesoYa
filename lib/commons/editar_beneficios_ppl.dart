@@ -6,11 +6,13 @@ import '../src/colors/colors.dart';
 class EditarBeneficiosWidget extends StatefulWidget {
   final String pplId;
   final List<String> beneficiosAdquiridosInicial;
+  final List<String> beneficiosNegadosInicial;
 
   const EditarBeneficiosWidget({
     super.key,
     required this.pplId,
     required this.beneficiosAdquiridosInicial,
+    required this.beneficiosNegadosInicial,
   });
 
   @override
@@ -25,18 +27,21 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
     "Extinción de la Pena",
   ];
 
-  late List<String> _beneficiosSeleccionados;
+  late List<String> _beneficiosAdquiridosSeleccionados;
+  late List<String> _beneficiosNegadosSeleccionados;
 
   @override
   void initState() {
     super.initState();
-    _beneficiosSeleccionados = List<String>.from(widget.beneficiosAdquiridosInicial);
+    _beneficiosAdquiridosSeleccionados = List<String>.from(widget.beneficiosAdquiridosInicial);
+    _beneficiosNegadosSeleccionados = List<String>.from(widget.beneficiosNegadosInicial);
   }
 
   Future<void> _guardarCambios() async {
     try {
       await FirebaseFirestore.instance.collection("Ppl").doc(widget.pplId).update({
-        "beneficiosAdquiridos": _beneficiosSeleccionados,
+        "beneficiosAdquiridos": _beneficiosAdquiridosSeleccionados,
+        "beneficiosNegados": _beneficiosNegadosSeleccionados,
       });
 
       if (context.mounted) {
@@ -53,6 +58,32 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
     }
   }
 
+  void _seleccionarAdquirido(String beneficio) {
+    setState(() {
+      _beneficiosAdquiridosSeleccionados.add(beneficio);
+      _beneficiosNegadosSeleccionados.remove(beneficio);
+    });
+  }
+
+  void _seleccionarNegado(String beneficio) {
+    setState(() {
+      _beneficiosNegadosSeleccionados.add(beneficio);
+      _beneficiosAdquiridosSeleccionados.remove(beneficio);
+    });
+  }
+
+  void _desmarcarAdquirido(String beneficio) {
+    setState(() {
+      _beneficiosAdquiridosSeleccionados.remove(beneficio);
+    });
+  }
+
+  void _desmarcarNegado(String beneficio) {
+    setState(() {
+      _beneficiosNegadosSeleccionados.remove(beneficio);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -66,22 +97,51 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Actualizar Beneficios Adquiridos",
+              "Actualizar Beneficios",
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const Divider(color: gris),
-            ..._beneficiosDisponibles.map((beneficio) => CheckboxListTile(
-              title: Text(beneficio),
-              value: _beneficiosSeleccionados.contains(beneficio),
-              onChanged: (valor) {
-                setState(() {
-                  if (valor == true) {
-                    _beneficiosSeleccionados.add(beneficio);
-                  } else {
-                    _beneficiosSeleccionados.remove(beneficio);
-                  }
-                });
-              },
+            ..._beneficiosDisponibles.map((beneficio) => Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  beneficio,
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Adquirido', style: TextStyle(fontSize: 13)),
+                        value: _beneficiosAdquiridosSeleccionados.contains(beneficio),
+                        onChanged: (valor) {
+                          if (valor == true) {
+                            _seleccionarAdquirido(beneficio);
+                          } else {
+                            _desmarcarAdquirido(beneficio);
+                          }
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Negado', style: TextStyle(fontSize: 13)),
+                        value: _beneficiosNegadosSeleccionados.contains(beneficio),
+                        onChanged: (valor) {
+                          if (valor == true) {
+                            _seleccionarNegado(beneficio);
+                          } else {
+                            _desmarcarNegado(beneficio);
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(),
+              ],
             )),
             const SizedBox(height: 10),
             SizedBox(

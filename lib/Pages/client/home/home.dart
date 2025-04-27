@@ -69,7 +69,6 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _uid = user.uid;
       });
-      await _loadData(); // 🔥 Cargar datos generales del usuario
       // 🔥 Calcular la condena directamente con el controlador
       await _calculoCondenaController.calcularTiempo(_uid);
       await _cargarStatusSolicitudes();
@@ -78,37 +77,37 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Future<void> _loadData() async {
-    final pplData = await _pplProvider.getById(_uid);
-
-    if (mounted) {
-      setState(() {
-        _ppl = pplData;
-        _isPaid = pplData?.isPaid ?? false;
-      });
-
-      // 🔥 Calcular tiempo y actualizar valores en setState
-      await _calculoCondenaController.calcularTiempo(_uid);
-      setState(() {
-        porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado!;
-        tiempoCondena = _calculoCondenaController.tiempoCondena!;
-      });
-
-      // 🔥 Obtener la fecha de registro y verificar prueba gratuita
-      dynamic fechaRegistroRaw = pplData?.fechaRegistro ?? Timestamp.now();
-      Timestamp fechaRegistro = fechaRegistroRaw is Timestamp ? fechaRegistroRaw : Timestamp.fromDate(fechaRegistroRaw);
-      await _calcularTiempoDePrueba(fechaRegistro);
-
-      setState(() {
-        _isLoading = false;
-      });
-
-      print("✅ Datos actualizados:");
-      print("   - porcentajeEjecutado: $porcentajeEjecutado%");
-      print("   - tiempoCondena: $tiempoCondena meses");
-      print("   - isTrial: $_isTrial (Días restantes: $_diasRestantesPrueba)");
-    }
-  }
+  // Future<void> _loadData() async {
+  //   final pplData = await _pplProvider.getById(_uid);
+  //
+  //   if (mounted) {
+  //     setState(() {
+  //       _ppl = pplData;
+  //       _isPaid = pplData?.isPaid ?? false;
+  //     });
+  //
+  //     // 🔥 Calcular tiempo y actualizar valores en setState
+  //     await _calculoCondenaController.calcularTiempo(_uid);
+  //     setState(() {
+  //       porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado!;
+  //       tiempoCondena = _calculoCondenaController.tiempoCondena!;
+  //     });
+  //
+  //     // 🔥 Obtener la fecha de registro y verificar prueba gratuita
+  //     dynamic fechaRegistroRaw = pplData?.fechaRegistro ?? Timestamp.now();
+  //     Timestamp fechaRegistro = fechaRegistroRaw is Timestamp ? fechaRegistroRaw : Timestamp.fromDate(fechaRegistroRaw);
+  //     await _calcularTiempoDePrueba(fechaRegistro);
+  //
+  //     setState(() {
+  //       _isLoading = false;
+  //     });
+  //
+  //     print("✅ Datos actualizados:");
+  //     print("   - porcentajeEjecutado: $porcentajeEjecutado%");
+  //     print("   - tiempoCondena: $tiempoCondena meses");
+  //     print("   - isTrial: $_isTrial (Días restantes: $_diasRestantesPrueba)");
+  //   }
+  // }
 
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDiasRedimidos = 0;
@@ -162,99 +161,142 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return MainLayout(
       pageTitle: 'Página Principal',
-      content: _isLoading
-          ? const Center(child: CircularProgressIndicator()) // 🔹 No carga la UI hasta tener datos
-          : SingleChildScrollView(
-        child: SizedBox(
-          width: MediaQuery.of(context).size.width >= 1000 ? 800 : double.infinity,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
-              Text(
-                'Hoy es: ${DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now())}',
-                style: const TextStyle(fontSize: 12),
-              ),
-              const SizedBox(height: 10),
-              if (_isTrial && !_isPaid)
-                SizedBox(
-                  child: Stack(
-                    clipBehavior: Clip.none, // 🔥 Permite que la imagen sobresalga de la tarjeta
-                    children: [
-                      // 🔹 Tarjeta principal
-                      Card(
-                        surfaceTintColor: blanco,
-                        elevation: 6,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        color: Colors.white,
-                        child: Padding(
-                          padding: const EdgeInsets.all(10), // 🔥 Mayor espaciado interno
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center, // 🔹 Centra el contenido
-                            children: [
-                              const SizedBox(height: 10), // 🔥 Espacio para la imagen encima
-                              const Text(
-                                "¡ Felicidades !",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w900,
-                                  color: primary,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const Text(
-                                "Disfruta de tu regalo de bienvenida.",
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                "Aún tienes $_diasRestantesPrueba días para explorar todas las funciones de nuestra aplicación.",
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: gris, height: 1.1),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+      content: _uid.isEmpty
+          ? const Center(child: CircularProgressIndicator())
+          : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+        stream: FirebaseFirestore.instance.collection('Ppl').doc(_uid).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-                      // 🔹 Imagen flotante sobre la tarjeta
-                      Positioned(
-                        top: -25, // 🔥 Eleva la imagen sobre la tarjeta
-                        right: -250, // 🔥 Ajusta la posición más a la derecha
-                        left: 20, // 🔥 Asegura que esté centrada
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.white, // 🔥 Fondo blanco para destacar
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 6,
-                                offset: const Offset(2, 4),
-                              ),
-                            ],
-                          ),
-                          padding: const EdgeInsets.all(6), // 🔥 Espaciado interno
-                          child: Image.asset(
-                            "assets/images/regalo.png",
-                            height: 50, // 🔥 Tamaño de la imagen ajustado
-                          ),
-                        ),
-                      ),
-                    ],
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Center(child: Text('No se encontraron datos del usuario'));
+          }
+
+          // 🔥 Actualizamos _ppl en tiempo real usando el fromDocumentSnapshot
+          _ppl = Ppl.fromDocumentSnapshot(snapshot.data!);
+
+          // 🔥 Actualizamos _isPaid y _isTrial en tiempo real
+          _isPaid = _ppl?.isPaid ?? false;
+
+          if (_ppl?.fechaRegistro != null) {
+            DateTime fechaActual = DateTime.now();
+            DateTime fechaRegistro = _ppl!.fechaRegistro!;
+            int diasPasados = fechaActual.difference(fechaRegistro).inDays;
+
+            int tiempoDePrueba = 7; // O el que quieras
+            _isTrial = diasPasados < tiempoDePrueba;
+            _diasRestantesPrueba = tiempoDePrueba - diasPasados;
+          }
+
+          return SingleChildScrollView(
+            child: SizedBox(
+              width: MediaQuery.of(context).size.width >= 1000 ? 800 : double.infinity,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
+                  Text(
+                    'Hoy es: ${DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now())}',
+                    style: const TextStyle(fontSize: 12),
                   ),
-                ),
-              _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
-              const SizedBox(height: 20)
-            ],
-          ),
-        ),
+                  const SizedBox(height: 10),
+                  if (_isTrial && !_isPaid)
+                    _buildTrialCard(),
+                  _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
+
+
+  Widget _buildTrialCard() {
+    return SizedBox(
+      child: Stack(
+        clipBehavior: Clip.none, // 🔥 Permite que la imagen sobresalga de la tarjeta
+        children: [
+          Card(
+            surfaceTintColor: blanco,
+            elevation: 6,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            color: Colors.white,
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 10),
+                  const Text(
+                    "¡ Felicidades !",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      color: primary,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const Text(
+                    "Disfruta de tu regalo de bienvenida.",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Aún tienes $_diasRestantesPrueba días para explorar todas las funciones de nuestra aplicación.",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: gris,
+                      height: 1.1,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            top: -25,
+            right: -250,
+            left: 20,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 6,
+                    offset: const Offset(2, 4),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.all(6),
+              child: Image.asset(
+                "assets/images/regalo.png",
+                height: 50,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
 
   /// Contenido si el usuario **ha pagado**
   Widget _buildPaidContent() {
@@ -557,8 +599,11 @@ class _HomePageState extends State<HomePage> {
       String idBeneficio, {
         String? status,
       }) {
-    final List<String> beneficios = _ppl?.beneficiosAdquiridos.map((e) => e.toLowerCase().trim()).toList() ?? [];
-    final bool adquirido = beneficios.contains(idBeneficio.toLowerCase().trim()) || beneficios.contains(titulo.toLowerCase().trim());
+    final List<String> beneficiosAdquiridos = _ppl?.beneficiosAdquiridos.map((e) => e.toLowerCase().trim()).toList() ?? [];
+    final List<String> beneficiosNegados = _ppl?.beneficiosNegados.map((e) => e.toLowerCase().trim()).toList() ?? [];
+
+    final bool adquirido = beneficiosAdquiridos.contains(idBeneficio.toLowerCase().trim()) || beneficiosAdquiridos.contains(titulo.toLowerCase().trim());
+    final bool negado = beneficiosNegados.contains(idBeneficio.toLowerCase().trim()) || beneficiosNegados.contains(titulo.toLowerCase().trim());
 
     double porcentaje = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
     int tiempo = _calculoCondenaController.tiempoCondena ?? 0;
@@ -583,8 +628,20 @@ class _HomePageState extends State<HomePage> {
           Row(
             children: [
               Icon(
-                adquirido ? Icons.verified : cumple ? Icons.check_circle : Icons.warning,
-                color: adquirido ? Colors.blue : cumple ? Colors.green : Colors.red,
+                adquirido
+                    ? Icons.verified
+                    : negado
+                    ? Icons.cancel
+                    : cumple
+                    ? Icons.check_circle
+                    : Icons.warning,
+                color: adquirido
+                    ? Colors.blue
+                    : negado
+                    ? Colors.red
+                    : cumple
+                    ? Colors.green
+                    : Colors.red,
                 size: 20,
               ),
               const SizedBox(width: 8),
@@ -594,39 +651,48 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: adquirido ? Colors.blue : cumple ? Colors.green : Colors.red,
+                    color: adquirido
+                        ? Colors.blue
+                        : negado
+                        ? Colors.red
+                        : cumple
+                        ? Colors.green
+                        : Colors.red,
                   ),
                 ),
               ),
-              if (!adquirido && !cumple)
+              if (!adquirido && !negado && !cumple)
                 Text(
                   "Restan: $diasFaltantes días",
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                 ),
             ],
           ),
-          if (!(cumple && !adquirido && estaEnProceso))
-            const SizedBox(height: 4),
-          if (!(cumple && !adquirido && estaEnProceso)) // Solo muestra texto si no está en proceso
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    adquirido
-                        ? "Según los registros encontrados en la rama judicial y relacionados con el PPL, ya le fue otorgado previamente el beneficio de $titulo."
-                        : !cumple
-                        ? "No se ha cumplido el tiempo establecido para obtener este beneficio."
-                        : "",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: adquirido ? Colors.black : cumple ? Colors.black : Colors.grey,
-                    ),
+
+          const SizedBox(height: 4),
+
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  adquirido
+                      ? "Según los registros, ya le fue otorgado el beneficio de $titulo."
+                      : negado
+                      ? "Según los registros, el beneficio de $titulo fue negado previamente."
+                      : !cumple
+                      ? "No se ha cumplido el tiempo establecido para obtener este beneficio."
+                      : "",
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: adquirido || negado ? Colors.black : cumple ? Colors.black : Colors.grey,
                   ),
                 ),
-              ],
-            ),
-          if (_statusLoaded && cumple && !adquirido && !estaEnProceso)
+              ),
+            ],
+          ),
+
+          if (_statusLoaded && cumple && !adquirido && !negado && !estaEnProceso)
             Padding(
               padding: const EdgeInsets.only(top: 6.0),
               child: Row(
@@ -645,9 +711,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-
-          // Botón solo si cumple y no está en proceso
-          if (_statusLoaded && !adquirido && cumple && !estaEnProceso)
+          if (_statusLoaded && !adquirido && !negado && cumple && !estaEnProceso)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Align(
@@ -669,8 +733,8 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-          // Mensaje si está en proceso
-          if (_statusLoaded && cumple && !adquirido && estaEnProceso)
+          // Mensaje de estado en proceso
+          if (_statusLoaded && cumple && !adquirido && !negado && estaEnProceso)
             Container(
               margin: const EdgeInsets.only(top: 4),
               padding: const EdgeInsets.all(8),
@@ -736,6 +800,8 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
+
+          // Botón "Impugnar" si fue negado
           if (_statusLoaded && normalizedStatus == "negado")
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
@@ -752,7 +818,6 @@ class _HomePageState extends State<HomePage> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onPressed: () {
-                      // Aquí defines a qué página o acción lleva el botón de impugnación
                       Navigator.pushNamed(context, 'info_previa_impugnacion_page', arguments: {
                         'beneficio': idBeneficio,
                         'titulo': titulo,
@@ -767,6 +832,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
 
 
   Future<void> _cargarStatusSolicitudes() async {

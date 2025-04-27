@@ -61,57 +61,53 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 🔵 Primero "¿No tienes cuenta? / Regístrate aquí"
-                Column(
-                  children: [
-                    const Text(
-                      '¿No tienes una cuenta?',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                if (_isOtp) ...[
+                  // 🔵 Solo muestra esto si estamos en OTP (Usuario normal)
+                  const Text(
+                    '¿No tienes una cuenta?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 8),
-                    GestureDetector(
-                      onTap: () {
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _isLoading = true;
+                      });
+                      Navigator.pushNamed(context, "register").then((_) {
                         setState(() {
-                          _isLoading = true;
+                          _isLoading = false;
                         });
-                        Navigator.pushNamed(context, "register").then((_) {
-                          setState(() {
-                            _isLoading = false;
-                          });
-                        });
-                      },
-                      child: _isLoading
-                          ? const CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                      )
-                          : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.double_arrow, color: Colors.black),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Regístrate aquí",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: screenWidth > 600 ? 28 : 26,
-                              fontWeight: FontWeight.w900,
-                            ),
+                      });
+                    },
+                    child: _isLoading
+                        ? const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                    )
+                        : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.double_arrow, color: Colors.black),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Regístrate aquí",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: screenWidth > 600 ? 28 : 26,
+                            fontWeight: FontWeight.w900,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 30),
-                const Divider(color: gris, height: 1),
-                const SizedBox(height: 30),
-
-                // 🔵 Después el título "Iniciar Sesión"
+                  ),
+                  const SizedBox(height: 30),
+                  const Divider(color: gris, height: 1),
+                  const SizedBox(height: 30),
+                ],
+                // 🔵 Siempre muestra este título (pero cambia el texto si es admin o normal)
                 GestureDetector(
                   onTap: () {
                     _clickCounter++;
@@ -121,7 +117,6 @@ class _LoginPageState extends State<LoginPage> {
                         _clickCounter = 0;
                       });
                     }
-
                     _tapTimer?.cancel();
                     _tapTimer = Timer(const Duration(seconds: 2), () {
                       _clickCounter = 0;
@@ -133,15 +128,15 @@ class _LoginPageState extends State<LoginPage> {
                     });
                   },
                   child: Text(
-                    "Si ya tienes una cuenta creada",
+                    _isOtp ? "Si ya tienes una cuenta creada" : "Iniciar sesión",
                     style: TextStyle(
-                      fontSize: screenWidth > 600 ? 32 : 24,
+                      fontSize: screenWidth > 600 ? 28 : 24,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
                 ),
-                // 🔵 Luego el formulario
+                // 🔥 Este espacio adicional debajo del título
                 if (_isOtp)
                   formularioOTP()
                 else
@@ -149,22 +144,23 @@ class _LoginPageState extends State<LoginPage> {
 
                 const SizedBox(height: 40),
 
-                // 🔵 Al final "¿Quieres recuperar tu cuenta?"
-                GestureDetector(
-                  onTap: () {
-                    Navigator.pushNamed(context, "forgot_password");
-                  },
-                  child: Text(
-                    "¿Quieres recuperar tu cuenta?",
-                    style: TextStyle(
-                      color: gris,
-                      fontSize: screenWidth > 600 ? 18 : 14,
-                      fontWeight: FontWeight.w500,
+                if (_isOtp) // 🔵 El botón de recuperar solo para usuarios normales
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(context, "forgot_password");
+                    },
+                    child: Text(
+                      "¿Quieres recuperar tu cuenta?",
+                      style: TextStyle(
+                        color: gris,
+                        fontSize: screenWidth > 600 ? 18 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
+
           ),
         ),
       ),

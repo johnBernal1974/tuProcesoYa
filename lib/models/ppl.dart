@@ -44,6 +44,7 @@ class Ppl {
   final String direccion;
   final String situacion;
   final List<String> beneficiosAdquiridos;
+  final List<String> beneficiosNegados;
 
   // Constructor
   Ppl({
@@ -82,6 +83,7 @@ class Ppl {
     required this.direccion,
     required this.situacion,
     required this.beneficiosAdquiridos,
+    required this.beneficiosNegados,
   });
 
   // Factory para crear una instancia de Ppl desde JSON
@@ -134,8 +136,66 @@ class Ppl {
     direccion: json["direccion"] ?? '',
     situacion: json["situacion"] ?? '',
     beneficiosAdquiridos: List<String>.from(json["beneficiosAdquiridos"] ?? []),
+    beneficiosNegados: List<String>.from(json["beneficiosNegados"] ?? []),
 
   );
+
+  // Factory para crear Ppl directamente desde Firestore
+  factory Ppl.fromDocumentSnapshot(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+
+    return Ppl(
+      id: doc.id,
+      nombreAcudiente: data["nombre_acudiente"] ?? '',
+      apellidoAcudiente: data["apellido_acudiente"] ?? '',
+      parentescoRepresentante: data["parentesco_representante"] ?? '',
+      celular: data["celular"] ?? '',
+      email: data["email"] ?? '',
+      nombrePpl: data["nombre_ppl"] ?? '',
+      apellidoPpl: data["apellido_ppl"] ?? '',
+      tipoDocumentoPpl: data["tipo_documento_ppl"] ?? '',
+      numeroDocumentoPpl: data["numero_documento_ppl"] ?? '',
+      regional: data["regional"] ?? '',
+      centroReclusion: data["centro_reclusion"] ?? '',
+      juzgadoEjecucionPenas: data["juzgado_ejecucion_penas"] ?? '',
+      juzgadoEjecucionPenasEmail: data["juzgado_ejecucion_penas_email"] ?? '',
+      ciudad: data["ciudad"] ?? '',
+      juzgadoQueCondeno: data["juzgado_que_condeno"] ?? '',
+      juzgadoQueCondenoEmail: data["juzgado_que_condeno_email"] ?? '',
+      categoriaDelDelito: data["categoria_delito"] ?? '',
+      delito: data["delito"] ?? '',
+      radicado: data["radicado"] ?? '',
+      tiempoCondena: data["tiempo_condena"] ?? 0,
+      td: data["td"] ?? '',
+      nui: data["nui"] ?? '',
+      patio: data["patio"] ?? '',
+      fechaCaptura: data["fecha_captura"] != null
+          ? (data["fecha_captura"] is String
+          ? DateTime.tryParse(data["fecha_captura"])
+          : (data["fecha_captura"] is Timestamp
+          ? (data["fecha_captura"] as Timestamp).toDate()
+          : null))
+          : null,
+      status: data["status"] ?? '',
+      isNotificatedActivated: data["isNotificatedActivated"] ?? false,
+      isPaid: data["isPaid"] ?? false,
+      assignedTo: data["assignedTo"] ?? '',
+      fechaRegistro: data["fechaRegistro"] != null
+          ? (data["fechaRegistro"] is String
+          ? DateTime.tryParse(data["fechaRegistro"])
+          : (data["fechaRegistro"] is Timestamp
+          ? (data["fechaRegistro"] as Timestamp).toDate()
+          : null))
+          : null,
+      departamento: data["departamento"] ?? '',
+      municipio: data["municipio"] ?? '',
+      direccion: data["direccion"] ?? '',
+      situacion: data["situacion"] ?? '',
+      beneficiosAdquiridos: List<String>.from(data["beneficiosAdquiridos"] ?? []),
+      beneficiosNegados: List<String>.from(data["beneficiosNegados"] ?? []),
+    );
+  }
+
 
   // Método para convertir una instancia de Ppl a JSON
   Map<String, dynamic> toJson() => {
@@ -174,5 +234,6 @@ class Ppl {
     "direccion": direccion,
     "situacion": situacion,
     "beneficiosAdquiridos": beneficiosAdquiridos,
+    "beneficiosNegados": beneficiosNegados,
   };
 }
