@@ -836,7 +836,7 @@ class _HistorialSolicitudesPermiso72HorasAdminPageState extends State<HistorialS
   String obtenerRutaSegunStatus(String status) {
     switch (status) {
       case "Enviado":
-        return 'solicitudes_libertad_condicional_enviadas_por_correo';
+        return 'solicitudes_permiso_72_horas_enviadas_por_correo';
       default:
         return 'atender_solicitud_permiso_72_horas_page';
     }

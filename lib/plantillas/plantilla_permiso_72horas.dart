@@ -94,15 +94,10 @@ class Permiso72HorasTemplate {
         E.S.D<br><br>
     """);
 
-    if (situacion == "En Prisión domiciliaria") {
-      buffer.writeln("""
-        yo, <b>$nombrePpl $apellidoPpl</b>, identificado con cédula <b>$identificacionPpl</b>, actualmente cumplo mi condena en prisión domiciliaria en la dirección $direccionDomicilio, municipio de $municipio - $departamento, bajo la responsabilidad de $nombreResponsable, quien convive conmigo en dicho domicilio.<br><br>
-      """);
-    } else {
-      buffer.writeln("""
-        yo, <b>$nombrePpl $apellidoPpl</b>, identificado con el número de cédula <b>$identificacionPpl</b>, actualmente recluido en la $centroPenitenciario , con el NUI : <b>$nui</b> y TD : <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.<br><br>
-      """);
-    }
+    buffer.writeln("""
+  yo, <b>$nombrePpl $apellidoPpl</b>, identificado con el número de cédula <b>$identificacionPpl</b>, actualmente recluido en el establecimiento <b>$centroPenitenciario</b>, con el NUI: <b>$nui</b> y TD: <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.<br><br>
+""");
+
 
     buffer.writeln("""
         <span style="font-size: 16px;"><b>I. SINOPSIS PROCESAL</b></span><br>

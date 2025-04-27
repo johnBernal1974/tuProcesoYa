@@ -91,7 +91,7 @@ class ReintentoPagoPermiso72hPage extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => CheckoutPage(
-                            tipoPago: 'permiso_72h',
+                            tipoPago: 'permiso',
                             valor: valor!,
                             referencia: nuevaReferencia,
                             onTransaccionAprobada: onTransaccionAprobada,

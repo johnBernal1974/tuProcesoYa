@@ -30,6 +30,7 @@ import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/libertad_condicional_enviada_por_correo/libertad_condicional_enviada_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/permiso_72horas_enviadas_por_correo/permiso_72horas_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/prision_domiciliaria_enviada_por_correo/prision_domiciliaria_enviada_por_correo.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import 'Pages/administrador/tutelas/derechos_tutelables_page.dart';
@@ -332,8 +333,36 @@ class MyApp extends StatelessWidget {
                 reparacion: args['reparacion'] ?? "",
               ),
             );
-
           }
+          else if (settings.name == 'solicitudes_permiso_72_horas_enviadas_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesPermiso72HorasEnviadasPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'] ?? "Beneficios penitenciarios",
+                subcategoria: args['subcategoria'] ?? "Prisión domiciliaria",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable'],
+                urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
+
+                // 🟢 Usa las claves correctas aquí
+                direccion: args['direccion'] ?? "",
+                municipio: args['municipio'] ?? "",
+                departamento: args['departamento'] ?? "",
+                nombreResponsable: args['nombreResponsable'] ?? "", // <== ✅ aquí cambia
+                cedulaResponsable: args['cedulaResponsable'] ?? "", // <== ✅ aquí cambia
+                celularResponsable: args['celularResponsable'] ?? "",
+                sinRespuesta: args['sinRespuesta'] ?? false,
+                reparacion: args['reparacion'] ?? "",
+              ),
+            );
+          }
+
+
           else if (settings.name == 'atender_tutela_page') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(

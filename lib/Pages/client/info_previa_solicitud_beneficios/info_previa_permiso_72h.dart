@@ -45,7 +45,7 @@ class RequisitosPermiso72hPage extends StatelessWidget {
             _buildRequisito(
               icon: Icons.double_arrow_outlined,
               titulo: 'Recibo de servicios públicos',
-              descripcion: 'Sirve para verificar la dirección donde se estará cumpliendo la condena. Puedes descargarlo de internet o conseguirlo en físico. Preferiblemente a nombre del responsable.',
+              descripcion: 'Sirve para verificar la dirección donde se estará disfrutando el permiso de 72 horas. Puedes descargarlo de internet o conseguirlo en físico. Preferiblemente a nombre del responsable.',
             ),
 
             _buildRequisito(

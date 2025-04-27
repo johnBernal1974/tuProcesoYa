@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
+import 'package:tuprocesoya/Pages/administrador/historial_solicitudes_permiso_72horas_admin/historial_solicitudes_permiso_72horas_admin.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
@@ -20,7 +21,6 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
-import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'atender_permiso_72horas_admin_controler.dart';
 
 class AtenderPermiso72HorasPage extends StatefulWidget {
@@ -581,7 +581,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 16),
-            const Text("Lugar registrado para la libertad condicional", style: TextStyle(fontSize: 12)),
+            const Text("Lugar registrado para el permiso de 72 horas", style: TextStyle(fontSize: 12)),
             Row(
               children: [
                 Text("Dirección: ", style: labelStyle),
@@ -1247,7 +1247,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
     Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
 
     final doc = await FirebaseFirestore.instance
-        .collection('libertad_condicional_solicitados')
+        .collection('permiso_72horas_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -1255,11 +1255,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
     if (fetchedData != null && latestData != null && mounted) {
       // 🔹 Precargar campos solo si no están ya cargados
-      _sinopsisController.text = generarTextoSinopsisDesdeDatos(
-        fetchedData,
-        fetchedData.situacion ?? 'En Reclusión',
-        widget.reparacion, // ✅ así accedes a la variable
-      );
+      _sinopsisController.text = generarTextoSinopsisParaPermiso72h(fetchedData);
 
       if (!_isFundamentosLoaded) {
         _fundamentosDerechoController.text =
@@ -1286,12 +1282,12 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
             .map((e) => Map<String, dynamic>.from(e))
             .toList()
             : <Map<String, dynamic>>[];
-        _anexosController.text = generarTextoAnexos(
-          fetchedData.situacion ?? 'En Reclusión',
+        _anexosController.text = generarTextoAnexosParaPermiso72Horas(
           incluirPuntoHijos: tieneHijosYDocumentos,
           hijos: listaHijos,
-          reparacion: widget.reparacion,
+          cantidadDocumentos: listaHijos.length,
         );
+
         _isAnexosLoaded = true;
       }
 
@@ -1301,7 +1297,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
         permiso72horas = Permiso72HorasTemplate(
             dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
             entidad: fetchedData.centroReclusion ?? "",
-            referencia: "Beneficios penitenciarios - Libertad condicional",
+            referencia: "Beneficios penitenciarios - Permiso de 72 horas",
             nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
             apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
             identificacionPpl: fetchedData.numeroDocumentoPpl ?? "",
@@ -1352,40 +1348,19 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
     }
   }
 
-  String generarTextoSinopsisDesdeDatos(Ppl userData, String situacion, String reparacion) {
-    final jdc = userData.juzgadoQueCondeno ?? '';
-    final condena = userData.tiempoCondena?.toString() ?? '';
+  String generarTextoSinopsisParaPermiso72h(Ppl userData) {
+    final jdc = userData.juzgadoQueCondeno;
+    final condena = userData.tiempoCondena.toString();
     final captura = userData.fechaCaptura?.toString() ?? '';
-    final delito = userData.delito ?? '';
-    final purgado = "$mesesEjecutado";
+    final delito = userData.delito;
     final fechaFormateada = formatearFechaCaptura(captura);
+    final purgado = "$mesesEjecutado";
 
-    String textoBase;
-
-    if (situacion == "En Prisión domiciliaria") {
-      textoBase =
+    return
       "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
-          "Actualmente me encuentro cumpliendo dicha condena bajo el beneficio de prisión domiciliaria. "
-          "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la pena, incluyendo redenciones obtenidas conforme a la ley, "
-          "por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito exigido para solicitar el beneficio de libertad condicional.";
-    } else {
-      textoBase =
-      "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
-          "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, "
-          "por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, lo que me permite acceder al beneficio de libertad condicional según la ley.";
-    }
-
-    // 🔹 Complemento según reparación
-    final complemento = {
-      'reparado': " Por otro lado, me permito informar que cumplí con el requisito de reparación a la víctima, lo cual fortalece mi solicitud.",
-      'garantia': " Por otro lado, he asegurado el pago de la indemnización a la víctima mediante acuerdo o garantía, cumpliendo con lo establecido en la normatividad vigente.",
-      'insolvencia': " Por otro lado, desafortunadamente no he podido cumplir con la reparación a la víctima por mi estado de insolvencia económica, situación que acredito debidamente con la certificación adjunta en la presente solicitud.",
-    }[reparacion] ?? "";
-
-    return "$textoBase$complemento";
+          "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. "
+          ;
   }
-
-
 
   String generarTextoPretencionesDesdeDatos(String situacion) {
     if (situacion == "En Prisión domiciliaria") {
@@ -1398,9 +1373,9 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
     // Default (En Reclusión)
     return """
-PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite de libertad condicional.
+PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite del permiso de hasta 72 horas.
 
-SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de las tres quintas partes de la pena, la buena conducta y el entorno familiar favorable.
+SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establecido en el artículo 147 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de la tercera parte de la pena, la buena conducta, la participación en actividades de estudio, trabajo o enseñanza, y la existencia de un entorno familiar favorable.
 """;
   }
 
@@ -1415,69 +1390,52 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
     final nombreResponsable = latestData['nombre_responsable'] ?? '';
     final situacion = userData.situacion ?? 'En Reclusión';
 
-    if (situacion == "En Prisión domiciliaria") {
-      return """
-1. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es una forma de cumplimiento de la pena privativa de la libertad fuera del establecimiento carcelario, bajo vigilancia del Estado, cuando el condenado haya cumplido las tres quintas partes de la pena y demostrado buena conducta.
-
-2. En mi caso, ya me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria, lo que implica una forma anticipada de resocialización, con arraigo demostrado en el entorno familiar y social.
-
-3. Actualmente convivo en la $direccion, del municipio de $municipio - $departamento, bajo el cuidado y responsabilidad de $nombreResponsable, quien es mi $parentesco. Esta situación refleja estabilidad, arraigo, y compromiso con las condiciones impuestas por la justicia.
-
-4. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos del beneficio.
-
-""";
-    }
-
-    // Situación por defecto: En Reclusión
     return """
-1. Conforme al artículo 64 de la Ley 65 de 1993 (Código Penitenciario), tengo derecho a la libertad condicional, beneficio que procede cuando el condenado ha cumplido las tres quintas partes de la pena y ha observado buena conducta durante su reclusión.
+De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observancia del principio de reserva legal en materia de beneficios administrativos (Sentencias T-972 de 2005 y C-312 de 2002), solicito la concesión del permiso de hasta 72 horas, con base en los siguientes fundamentos:
 
-2. He cumplido más del 60% de la pena impuesta, y durante mi permanencia en el centro penitenciario he demostrado conducta ejemplar, compromiso con procesos de resocialización y respeto por las normas internas.
+1. Actualmente me encuentro recluido en un establecimiento de mediana seguridad, requisito contemplado en la normatividad vigente. Esta circunstancia se acredita con la certificación expedida por la autoridad penitenciaria.
 
-3. Cuento con arraigo familiar y social, y tengo un lugar digno y estable donde continuar el cumplimiento de la pena, conforme a la normatividad vigente.
+2. He cumplido más de una tercera (1/3) parte de la pena impuesta, conforme lo exige la ley para acceder al permiso de salida temporal.
 
-3.1. En caso de ser concedido el beneficio, residiré en la $direccion, del municipio de $municipio - $departamento, en compañía de $nombreResponsable, el cual es mi $parentesco y ha manifestado su disposición y compromiso como persona responsable de mi acogida.
+3. No registro requerimientos vigentes de autoridad judicial alguna, situación verificada a través del expediente y certificación correspondiente.
 
-4. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos que excluyan este beneficio.
+4. No he incurrido en fuga ni tentativa de fuga durante el proceso ni durante la ejecución de la sentencia condenatoria, requisito esencial establecido en el numeral 4º del artículo 147 de la Ley 65 de 1993.
+
+5. Durante mi permanencia en el establecimiento penitenciario he participado en actividades laborales, educativas o de enseñanza, y he mantenido una conducta ejemplar, como se acredita mediante certificación expedida por el Consejo de Disciplina.
+
+6. No pertenezco al núcleo familiar de la víctima ni he sido condenado por delitos que excluyan este beneficio conforme a la ley.
 """;
   }
 
-  String generarTextoAnexos(
-      String situacion, {
-        required bool incluirPuntoHijos,
-        required String reparacion,
-        List<Map<String, dynamic>> hijos = const [],
-        int cantidadDocumentos = 0,
-      }) {
-    final incluyeInsolvencia = reparacion == 'insolvencia';
 
+  String generarTextoAnexosParaPermiso72Horas({
+    required bool incluirPuntoHijos,
+    required List<Map<String, dynamic>> hijos,
+    required int cantidadDocumentos,
+  }) {
     int contador = 1;
 
-    final punto1 = "$contador. ${situacion == 'En Prisión domiciliaria'
-        ? "Declaración extrajuicio de la persona con la que convivo actualmente durante el beneficio de prisión domiciliaria, y quien continuará como responsable en caso de otorgarse la libertad condicional."
-        : "Declaración extrajuicio de la persona que me acogerá en el sitio de domicilio durante el beneficio de libertad condicional."}";
+    final punto1 =
+        "$contador. Declaración extrajuicio de la persona responsable que me acogerá durante el disfrute del permiso de hasta 72 horas.";
     contador++;
 
-    final punto2 = incluyeInsolvencia
-        ? "${contador++}. Certificación de insolvencia económica."
-        : null;
-
-    final punto3 =
+    final punto2 =
         "${contador++}. Fotocopia de la cédula de ciudadanía de la persona responsable.";
 
+    final punto3 =
+        "${contador++}. Fotocopia de un recibo de servicios públicos que demuestre la dirección de residencia donde se cumplirá el permiso.";
+
     final punto4 =
-        "${contador++}. Fotocopia de un recibo de servicios públicos que demuestra la dirección de residencia.";
+        "${contador++}. Copia de la certificación o acta que acredite fase de mediana seguridad.";
 
     String punto5 = '';
     if (incluirPuntoHijos && hijos.isNotEmpty) {
       final pluralDocs = cantidadDocumentos > 1;
       final pluralHijos = hijos.length > 1;
-      final verboConvivir = situacion == 'En Prisión domiciliaria'
-          ? (pluralHijos ? 'conviven' : 'convive')
-          : (pluralHijos ? 'convivirán' : 'convivirá');
+      final verboConvivir = pluralHijos ? 'convivirán' : 'convivirá';
 
       final titulo =
-          "$contador. Documento${pluralDocs ? 's' : ''} de mi ${pluralHijos ? 'hijos' : 'hijo'} que $verboConvivir conmigo durante el cumplimiento de la pena.";
+          "$contador. Documento${pluralDocs ? 's' : ''} de mi ${pluralHijos ? 'hijos' : 'hijo'} que $verboConvivir conmigo durante el permiso.";
 
       final listaHijos = hijos.map((h) {
         final nombre = h['nombre'] ?? 'Nombre no registrado';
@@ -1490,14 +1448,12 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
     return [
       punto1,
-      if (punto2 != null) punto2,
+      punto2,
       punto3,
       punto4,
-      if (punto5.isNotEmpty) punto5
+      if (punto5.isNotEmpty) punto5,
     ].join('\n\n');
   }
-
-
 
   void fetchDocumentoPermiso72Horas() async {
     try {
@@ -1696,7 +1652,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarSinopsis(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('permiso_72horas_solicitados')
           .doc(docId)
           .get();
 
@@ -1723,7 +1679,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarConsideraciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('permiso_72horas_solicitados')
           .doc(docId)
           .get();
 
@@ -1751,7 +1707,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarFundamentosDeDerecho(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('permiso_72horas_solicitados')
           .doc(docId)
           .get();
 
@@ -1778,7 +1734,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarPretenciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('permiso_72horas_solicitados')
           .doc(docId)
           .get();
 
@@ -1805,7 +1761,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarAnexos(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('permiso_72horas_solicitados')
           .doc(docId)
           .get();
 
@@ -2005,7 +1961,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
   }) {
     //usamos la misma plantilla que domiciliaria ya que es igual**
-    final plantilla = LibertadCondicionalTemplate(
+    final plantilla = Permiso72HorasTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad,
       referencia: "Beneficios penitenciarios - Permiso de 72 horas",
@@ -2185,7 +2141,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "libertad_condicional",
+      "tipo": "permiso_72horas",
     });
 
     final response = await http.post(
@@ -2448,7 +2404,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
                   return SlideTransition(position: offsetAnimation, child: child);
                 },
                 pageBuilder: (context, animation, secondaryAnimation) {
-                  return const HistorialSolicitudesCondicionalAdminPage();
+                  return const HistorialSolicitudesPermiso72HorasAdminPage();
                 },
               ),
             );
@@ -2516,7 +2472,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
                   return SlideTransition(position: offsetAnimation, child: child);
                 },
                 pageBuilder: (context, animation, secondaryAnimation) {
-                  return const HistorialSolicitudesCondicionalAdminPage();
+                  return const HistorialSolicitudesPermiso72HorasAdminPage();
                 },
               ),
             );
