@@ -236,7 +236,7 @@ class _SideBarState extends State<SideBar> {
                 child: _buildDrawerTile(
                     context, "Solicitudes permiso 72 horas",
                     Icons.double_arrow_outlined,
-                    'home_admin'),
+                    'historial_solicitudes_permiso_72horas_admin'),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),

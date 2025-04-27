@@ -1,4 +1,4 @@
-class LibertadCondicionalTemplate {
+class Permiso72HorasTemplate {
   final String dirigido;
   final String entidad;
   final String referencia;
@@ -33,7 +33,7 @@ class LibertadCondicionalTemplate {
   final List<Map<String, String>>? hijos;
   final List<String>? documentosHijos;
 
-  LibertadCondicionalTemplate({
+  Permiso72HorasTemplate({
     required this.entidad,
     required this.dirigido,
     required this.referencia,
@@ -88,7 +88,7 @@ class LibertadCondicionalTemplate {
         Condenado: <b>$nombrePpl $apellidoPpl</b>.<br>
         Radicado del proceso: <b>$radicado</b>.<br>
         Delito: <b>$delito</b>.<br>
-        Asunto: <b>Solicitud de libertad condicional - $numeroSeguimiento</b>.<br><br>
+        Asunto: <b>Solicitud de Permiso de 72 horas - $numeroSeguimiento</b>.<br><br>
 
         “Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.”<br><br>
         E.S.D<br><br>
@@ -120,7 +120,7 @@ class LibertadCondicionalTemplate {
         <span style="font-size: 16px;"><b>V. ANEXOS</b></span><br>
         ${convertirParrafos(anexos)}<br><br>
 
-        <b>Información del domicilio donde se cumpliría la medida:</b><br>
+        <b>Información del domicilio donde se disfrutará del permiso:</b><br>
         <span style="font-size: 13px;">
         Dirección: <b>$direccionDomicilio</b>, <b>$municipio</b> - <b>$departamento</b><br>
         Nombre de la persona responsable: <b>$nombreResponsable</b><br>
