@@ -55,120 +55,122 @@ class _LoginPageState extends State<LoginPage> {
       body: SingleChildScrollView(
         child: Center(
           child: Container(
-              constraints: const BoxConstraints(maxWidth: 600), // Limita el ancho máximo
-              padding: const EdgeInsets.all(20.0), // Agrega espacio alrededor del contenido
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center, // 🔹 Asegura que los elementos estén en la parte superior
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      _clickCounter++;
-                      if (_clickCounter == 3) {
-                        setState(() {
-                          _isOtp = false;
-                          _clickCounter = 0;
-                        });
-                      }
-
-                      // Reinicia el contador si pasan más de 1.5s entre toques
-                      _tapTimer?.cancel();
-                      _tapTimer = Timer(const Duration(seconds: 2), () {
-                        _clickCounter = 0;
-                      });
-                    },
-                    onLongPress: () {
-                      setState(() {
-                        _isOtp = false;
-                      });
-                    },
-                    child: Text(
-                      "Iniciar Sesión",
+            constraints: const BoxConstraints(maxWidth: 600),
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 🔵 Primero "¿No tienes cuenta? / Regístrate aquí"
+                Column(
+                  children: [
+                    const Text(
+                      '¿No tienes una cuenta?',
                       style: TextStyle(
-                        fontSize: screenWidth > 600 ? 32 : 24,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
                       ),
                     ),
-                  ),
-
-                  const SizedBox(height: 20),
-                  if (_isOtp)
-                    formularioOTP()
-                  else
-                    formularioCorreoContrasena(),
-                  const SizedBox(height: 20),
-                  // LINK PARA REGISTRARSE
-                  if (_isOtp)
-                    const SizedBox(height: 40),
-                  Column(
-                    children: [
-                      Column(
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        Navigator.pushNamed(context, "register").then((_) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        });
+                      },
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                      )
+                          : Row(
+                        mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text('¿No tienes cuenta?', style: TextStyle(
-                            fontSize: 13
-                          ),),
-                          const SizedBox(width: 15),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _isLoading = true;
-                              });
-                              Navigator.pushNamed(context, "register").then((_) {
-                                setState(() {
-                                  _isLoading = false;
-                                });
-                              });
-                            },
-                            child: _isLoading
-                                ? const CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                            )
-                                : Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.double_arrow, color: primary), // Puedes cambiar el ícono si lo deseas
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Regístrate aquí",
-                                  style: TextStyle(
-                                    color: primary,
-                                    fontSize: screenWidth > 600 ? 18 : 20,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                              ],
+                          const Icon(Icons.double_arrow, color: Colors.black),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Regístrate aquí",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: screenWidth > 600 ? 28 : 26,
+                              fontWeight: FontWeight.w900,
                             ),
-
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                      // LINK "Olvidé mi contraseña"
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.pushNamed(context, "forgot_password");
-                        },
-                        child: Text(
-                          "¿Quieres recuperar tu cuenta?",
-                          style: TextStyle(
-                            color: gris,
-                            fontSize: screenWidth > 600 ? 18 : 14,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
+                    ),
+                  ],
+                ),
 
-                    ],
+                const SizedBox(height: 30),
+                const Divider(color: gris, height: 1),
+                const SizedBox(height: 30),
+
+                // 🔵 Después el título "Iniciar Sesión"
+                GestureDetector(
+                  onTap: () {
+                    _clickCounter++;
+                    if (_clickCounter == 3) {
+                      setState(() {
+                        _isOtp = false;
+                        _clickCounter = 0;
+                      });
+                    }
+
+                    _tapTimer?.cancel();
+                    _tapTimer = Timer(const Duration(seconds: 2), () {
+                      _clickCounter = 0;
+                    });
+                  },
+                  onLongPress: () {
+                    setState(() {
+                      _isOtp = false;
+                    });
+                  },
+                  child: Text(
+                    "Si ya tienes una cuenta creada",
+                    style: TextStyle(
+                      fontSize: screenWidth > 600 ? 32 : 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
-                ],
-              ),
+                ),
+                // 🔵 Luego el formulario
+                if (_isOtp)
+                  formularioOTP()
+                else
+                  formularioCorreoContrasena(),
+
+                const SizedBox(height: 40),
+
+                // 🔵 Al final "¿Quieres recuperar tu cuenta?"
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, "forgot_password");
+                  },
+                  child: Text(
+                    "¿Quieres recuperar tu cuenta?",
+                    style: TextStyle(
+                      color: gris,
+                      fontSize: screenWidth > 600 ? 18 : 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
         ),
-        ),
-      );
+      ),
+    );
   }
+
 
   void _login() async {
     if (_formKey.currentState!.validate()) {
@@ -257,7 +259,6 @@ class _LoginPageState extends State<LoginPage> {
     String celular = _celularController.text.trim();
     final codigo = _otpController.text.trim();
 
-    // Añadir +57 si no lo tiene
     if (!celular.startsWith('+')) {
       if (celular.length == 10 && RegExp(r'^\d{10}$').hasMatch(celular)) {
         celular = '+57$celular';
@@ -277,55 +278,104 @@ class _LoginPageState extends State<LoginPage> {
 
       if (_confirmationResult == null) {
         // Primer paso: enviar el código
-        final auth = FirebaseAuth.instance;
-        final confirmation = await auth.signInWithPhoneNumber(celular);
-        setState(() {
-          _confirmationResult = confirmation;
-          _iniciarTemporizadorReenvio();
-        });
-        _mostrarMensaje("Código enviado. Ingresa el código recibido.");
+        try {
+          final auth = FirebaseAuth.instance;
+          final confirmation = await auth.signInWithPhoneNumber(celular);
+          setState(() {
+            _confirmationResult = confirmation;
+            _iniciarTemporizadorReenvio();
+          });
+          _mostrarMensaje("Código enviado. Ingresa el código recibido.");
+        } on FirebaseAuthException catch (e) {
+          String errorMsg = "Error al enviar el código. Intenta de nuevo.";
+          switch (e.code) {
+            case 'invalid-phone-number':
+              errorMsg = "El número de teléfono ingresado no es válido.";
+              break;
+            case 'network-request-failed':
+              errorMsg = "Problemas de conexión. Verifica tu internet.";
+              break;
+            case 'too-many-requests':
+              errorMsg = "Demasiados intentos. Espera un momento antes de volver a intentarlo.";
+              break;
+            default:
+              errorMsg = "Error al enviar el código: ${e.message}";
+              break;
+          }
+          _mostrarMensaje(errorMsg, color: Colors.red);
+        }
       } else {
         // Segundo paso: confirmar el código
-        final cred = await _confirmationResult!.confirm(codigo);
+        try {
+          final cred = await _confirmationResult!.confirm(codigo);
 
-        if (cred.user != null) {
-          final userDoc = await FirebaseFirestore.instance
-              .collection('Ppl')
-              .doc(cred.user!.uid)
-              .get();
+          if (cred.user != null) {
+            final userDoc = await FirebaseFirestore.instance
+                .collection('Ppl')
+                .doc(cred.user!.uid)
+                .get();
 
-          if (userDoc.exists) {
-            final data = userDoc.data()!;
-            final status = data['status']?.toString().trim() ?? "";
+            if (userDoc.exists) {
+              final data = userDoc.data()!;
+              final status = data['status']?.toString().trim() ?? "";
 
-            if (status == 'bloqueado') {
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, 'bloqueo_page', (_) => false);
-              }
-              return;
-            }
-
-            if (status == 'registrado') {
-              if(context.mounted){
-                Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (_) => false);
+              if (status == 'bloqueado') {
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, 'bloqueo_page', (_) => false);
+                }
+                return;
               }
 
+              if (status == 'registrado') {
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (_) => false);
+                }
+              } else {
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, 'home', (_) => false);
+                }
+              }
             } else {
-              if(context.mounted){
-                Navigator.pushNamedAndRemoveUntil(context, 'home', (_) => false);
-              }
+              _mostrarMensaje("Usuario no encontrado. Por favor regístrate.");
             }
-          } else {
-            _mostrarMensaje("Usuario no encontrado. Por favor regístrate.");
           }
+        } on FirebaseAuthException catch (e) {
+          String errorMsg = "Error al verificar el código.";
+          switch (e.code) {
+            case 'invalid-phone-number':
+              errorMsg = "El número de teléfono ingresado no es válido.";
+              break;
+            case 'invalid-verification-code':
+              errorMsg = "El código de verificación es incorrecto.";
+              break;
+            case 'session-expired':
+              errorMsg = "La sesión del código ha expirado. Solicita uno nuevo.";
+              break;
+            case 'network-request-failed':
+              errorMsg = "Problemas de conexión. Revisa tu internet.";
+              break;
+            case 'too-many-requests':
+              errorMsg = "Has intentado demasiadas veces. Por seguridad, debes esperar un momento.";
+              break;
+            case 'invalid-app-credential':
+              errorMsg = "Hubo un error de autenticación. Por favor, intenta nuevamente.";
+              break;
+            case 'app-not-authorized':
+              errorMsg = "Esta aplicación no está autorizada para realizar autenticaciones. Contacta soporte.";
+              break;
+            default:
+              errorMsg = "Error: ${e.message}";
+              break;
+          }
+
+          _mostrarMensaje(errorMsg, color: Colors.red);
         }
       }
-    } catch (e) {
-      _mostrarMensaje("Error al verificar el código: ${e.toString()}");
     } finally {
       setState(() => _isLoadingOtp = false);
     }
   }
+
 
   void _iniciarTemporizadorReenvio() {
     _contadorReenvio = 60;
@@ -490,6 +540,7 @@ class _LoginPageState extends State<LoginPage> {
       children: [
         const Text("Inicia sesión con el número de celular que registraste."),
         const SizedBox(height: 25),
+
         // CAMPO DE CELULAR
         TextFormField(
           controller: _celularController,
@@ -511,30 +562,15 @@ class _LoginPageState extends State<LoginPage> {
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: primary, width: 2),
             ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
             prefixIcon: const Icon(Icons.phone),
           ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return "El número es obligatorio";
-            }
-            if (!RegExp(r'^\d{10}$').hasMatch(value)) {
-              return "El número debe tener 10 dígitos";
-            }
-            return null;
+          onChanged: (value) {
+            setState(() {}); // 🔥 Refresca la vista para habilitar o deshabilitar el botón
           },
         ),
 
         const SizedBox(height: 20),
 
-        // SOLO MOSTRAR EL CAMPO OTP SI YA SE ENVIÓ EL CÓDIGO
         if (_confirmationResult != null)
           Column(
             children: [
@@ -558,57 +594,10 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(8),
                     borderSide: const BorderSide(color: primary, width: 2),
                   ),
-                  errorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.red, width: 2),
-                  ),
-                  focusedErrorBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: Colors.red, width: 2),
-                  ),
                   prefixIcon: const Icon(Icons.lock_clock),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Ingresa el código OTP";
-                  }
-                  if (value.length != 6) {
-                    return "El código debe tener 6 dígitos";
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
-              TextButton(
-                onPressed: _puedeReenviar
-                    ? () async {
-                  final auth = FirebaseAuth.instance;
-                  try {
-                    String celular = _celularController.text.trim();
-                    if (!celular.startsWith('+')) {
-                      if (celular.length == 10 && RegExp(r'^\d{10}$').hasMatch(celular)) {
-                        celular = '+57$celular';
-                      } else {
-                        _mostrarMensaje("Ingresa un número válido de 10 dígitos.");
-                        return;
-                      }
-                    }
-                    final confirmation = await FirebaseAuth.instance.signInWithPhoneNumber(celular);
-
-                    setState(() {
-                      _confirmationResult = confirmation;
-                    });
-                    _mostrarMensaje("Nuevo código enviado");
-                    _iniciarTemporizadorReenvio();
-                  } catch (e) {
-                    _mostrarMensaje("Error al reenviar el código: ${e.toString()}");
-                  }
-                }
-                    : null,
-                child: Text(_puedeReenviar ? "Reenviar código" : "Reintentar en $_contadorReenvio s"),
-              ),
-              const SizedBox(height: 20),
-
             ],
           ),
 
@@ -625,7 +614,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
               backgroundColor: primary,
             ),
-            onPressed: _isLoadingOtp ? null : _loginConOTP,
+            onPressed: _isLoadingOtp || !_esNumeroCelularValido()
+                ? null // 🔥 Desactiva el botón si está vacío o no válido
+                : _loginConOTP,
             child: _isLoadingOtp
                 ? const CircularProgressIndicator(color: Colors.white)
                 : Text(
@@ -637,6 +628,13 @@ class _LoginPageState extends State<LoginPage> {
       ],
     );
   }
+
+  bool _esNumeroCelularValido() {
+    final celular = _celularController.text.trim();
+    return RegExp(r'^\d{10}$').hasMatch(celular);
+  }
+
+
 
   @override
   void dispose() {
