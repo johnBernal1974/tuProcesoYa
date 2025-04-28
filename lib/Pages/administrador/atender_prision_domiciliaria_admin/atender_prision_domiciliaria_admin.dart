@@ -1259,17 +1259,25 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       if (!_isSinopsisLoaded) {
         _sinopsisController.text = generarTextoSinopsisDesdeDatos(
           fetchedData,
+          fetchedData.situacion ?? 'En Reclusión',
           widget.reparacion,
-          _calculoCondenaController.totalDiasRedimidos ?? 0, // 🔥 Se pasa también los días redimidos aquí
+          _calculoCondenaController.totalDiasRedimidos ?? 0,
         );
         _isSinopsisLoaded = true;
       }
 
       if (!_isFundamentosLoaded) {
         _fundamentosDerechoController.text =
-            generarTextoFundamentosDesdeDatos(fetchedData, latestData, widget.parentesco);
+            generarTextoFundamentosDesdeDatos(
+              fetchedData,
+              latestData,
+              widget.parentesco,
+              mesesEjecutado, // 🔥 Aquí pasas los meses ejecutados
+              diasEjecutadoExactos, // 🔥 Aquí pasas los días ejecutados
+            );
         _isFundamentosLoaded = true;
       }
+
 
       if (!_isPretencionesLoaded) {
         _pretencionesController.text = generarTextoPretencionesDesdeDatos(fetchedData);
@@ -1310,12 +1318,13 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
           municipio: widget.municipio,
           departamento: widget.departamento,
           nombreResponsable: widget.nombreResponsable,
-          parentescoResponsable: widget.parentesco, // 🔥 Aquí pasas también el parentesco
+          parentescoResponsable: widget.parentesco,
+          mesesEjecutados: mesesEjecutado,
+          diasEjecutados: diasEjecutadoExactos,
           hijos: listaHijos,
         );
         _isConsideracionesLoaded = true;
       }
-
 
       setState(() {
         userData = fetchedData;
@@ -1374,35 +1383,27 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     }
   }
 
-  String generarTextoSinopsisDesdeDatos(Ppl userData, String reparacion, double totalDiasRedimidos) {
+  String generarTextoSinopsisDesdeDatos(
+      Ppl userData,
+      String situacion,
+      String reparacion, // aunque no lo uses, lo dejamos para que no tengas que cambiar llamadas existentes
+      double totalDiasRedimidos,
+      ) {
     final jdc = userData.juzgadoQueCondeno ?? '';
     final condena = userData.tiempoCondena?.toString() ?? '';
     final captura = userData.fechaCaptura?.toString() ?? '';
     final delito = userData.delito ?? '';
     final fechaFormateada = formatearFechaCaptura(captura);
 
-    // 🔥 Sumar días ejecutados + días redimidos
-    final diasEjecutadosReales = (mesesEjecutado * 30) + diasEjecutadoExactos;
-    final totalDiasCumplidos = diasEjecutadosReales + totalDiasRedimidos.toInt();
-
-    // 🔥 Convertir a meses y días
-    final totalMesesCumplidos = totalDiasCumplidos ~/ 30;
-    final diasRestantes = totalDiasCumplidos % 30;
-
-    // 🔥 Texto base
-    final textoBase =
-        "La condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
-        "La captura se efectuó el día $fechaFormateada.";
-
-    // 🔥 Complemento según reparación
-    final complemento = {
-      'reparado': " Además, he cumplido con el requisito de reparación a la víctima, fortaleciendo la presente solicitud.",
-      'garantia': " Además, he asegurado el pago de la indemnización a la víctima mediante acuerdo o garantía, cumpliendo con lo establecido en la normatividad vigente.",
-      'insolvencia': " Asimismo, no ha sido posible cumplir con la reparación a la víctima debido a mi estado de insolvencia económica, situación que se acredita debidamente con la certificación adjunta.",
-    }[reparacion] ?? "";
-
-    return "$textoBase$complemento";
+    if (situacion == "En Prisión domiciliaria") {
+      return "Mi condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
+          "La captura fue el día $fechaFormateada. Actualmente me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria.";
+    } else {
+      return "Mi condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
+          "La captura fue el día $fechaFormateada.";
+    }
   }
+
 
   String generarTextoConsideracionesParaPrisionDomiciliaria({
     required String direccion,
@@ -1410,6 +1411,8 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     required String departamento,
     required String nombreResponsable,
     required String parentescoResponsable,
+    required int mesesEjecutados,
+    required int diasEjecutados,
     List<Map<String, String>> hijos = const [],
   }) {
     // 🔹 Construir el texto de los hijos si existen
@@ -1423,21 +1426,28 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       }).join("; ");
 
       textoHijos =
-      "\nEn el mismo hogar también conviviré con ${esPlural ? "mis hijos" : "mi hijo"} $listaHijos, "
+      "\n\nEn el mismo hogar también conviviré con ${esPlural ? "mis hijos" : "mi hijo"} $listaHijos, "
           "${esPlural ? "quienes son" : "quien es"} parte esencial de mi vida y ${esPlural ? "representan" : "representa"} mi principal motivación para avanzar en mi proceso de resocialización.";
     }
+
+    // 🔹 Texto de cumplimiento de pena
+    final textoCumplimientoPena =
+        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la pena impuesta, superando así el cincuenta por ciento (50%) del total de la condena, requisito previsto en el artículo 38G del Código Penal para acceder al beneficio de prisión domiciliaria.";
+
 
     return """
 Honorable Juez, respetuosamente me permito solicitar que me sea concedido el beneficio de prisión domiciliaria, con el fin de continuar el cumplimiento de mi pena en un entorno familiar, bajo condiciones de vigilancia y responsabilidad.
 
-Durante el tiempo que permanezca en prisión domiciliaria, residiré en la dirección ubicada en $direccion, en el municipio de $municipio, departamento de $departamento. Allí estaré bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable y quien ha manifestado de manera expresa su compromiso de acompañarme y garantizar el cumplimiento de las condiciones que me sean impuestas.
-
 Durante mi permanencia en el establecimiento penitenciario, he demostrado un comportamiento ejemplar, participando activamente en programas de resocialización, educación y trabajo, y manteniendo una conducta respetuosa frente a la autoridad y mis compañeros.
-$textoHijos
+
+$textoCumplimientoPena
+
+De ser concedido el beneficio, residiré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable, y quien ha asumido el compromiso de garantizar que cumpla con todas las condiciones que se me impongan.$textoHijos
 
 Con esta solicitud, busco fortalecer los lazos familiares, consolidar mi proceso de resocialización y reincorporarme positivamente a la sociedad, continuando con mi proceso de transformación personal en un ambiente de apoyo y contención familiar.
 """;
   }
+
 
 
 
@@ -1452,11 +1462,13 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
       Ppl userData,
       Map<String, dynamic> latestData,
       String parentesco,
+      int mesesEjecutados, // 🔥 Añadimos esto
+      int diasEjecutados, // 🔥 Añadimos esto también
       ) {
     return """
 1. Conforme a lo dispuesto en el artículo 38G del Código Penal, modificado por el artículo 4 de la Ley 1709 de 2014, el cumplimiento de la pena privativa de la libertad en lugar de residencia puede ser autorizado cuando se hayan cumplido los siguientes requisitos: haber purgado la mitad (½) de la pena impuesta, demostrar arraigo familiar y social, garantizar el cumplimiento de las obligaciones legales mediante caución, no pertenecer al núcleo familiar de la víctima y no haber sido condenado por delitos exceptuados.
 
-2. He cumplido con el requisito de haber purgado más de la mitad de la pena impuesta, conforme lo exige el artículo 38G del Código Penal.
+2. A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la pena impuesta, superando así el requisito temporal de haber purgado más de la mitad de la condena, conforme lo exige el artículo 38G del Código Penal.
 
 3. Respecto al arraigo familiar y social exigido en los numerales 3° y 4° del artículo 38B del Código Penal, manifiesto que mantengo vínculos familiares y sociales sólidos, demostrando pertenencia e integración a un núcleo familiar en condiciones estables, conforme a la interpretación de la Corte Suprema de Justicia en las Sentencias de Casación Penal, Radicados 46647 de 2016 y 46930 de 2017.
 
@@ -1467,6 +1479,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
 6. Esta fundamentación encuentra soporte adicional en el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, que establece el respeto de la dignidad humana y la finalidad de rehabilitación social de toda pena privativa de la libertad.
 """;
   }
+
 
 
 
