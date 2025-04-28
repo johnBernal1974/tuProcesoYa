@@ -1311,9 +1311,12 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
         municipio: widget.municipio,
         departamento: widget.departamento,
         nombreResponsable: widget.nombreResponsable,
-        parentescoResponsable: widget.parentesco, // 🔥 este parámetro adicional
-        hijos: listaHijos, // 👶 asegúrate de pasar la lista de hijos si hay
+        parentescoResponsable: widget.parentesco, // 🔥
+        mesesEjecutados: mesesEjecutado, // 🔥 agregas esto
+        diasEjecutados: diasEjecutadoExactos, // 🔥 agregas esto
+        hijos: listaHijos, // 👶
       );
+
       _consideracionesController.text = consideracionesTexto;
 
 
@@ -1389,7 +1392,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
     return
       "La condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
-          "La captura se efectuó el día $fechaFormateada y, a la fecha, he cumplido $totalMesesCumplidos meses y $diasRestantes días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley.";
+          "La captura se efectuó el día $fechaFormateada.";
   }
 
 
@@ -1404,32 +1407,24 @@ SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establ
   }
 
 
-
   String generarTextoFundamentosDesdeDatos(
       Ppl userData,
       Map<String, dynamic> latestData,
       String parentesco,
       ) {
-    final direccion = latestData['direccion'] ?? '';
-    final municipio = latestData['municipio'] ?? '';
-    final departamento = latestData['departamento'] ?? '';
-    final nombreResponsable = latestData['nombre_responsable'] ?? '';
-    final situacion = userData.situacion ?? 'En Reclusión';
 
     return """
 De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observancia del principio de reserva legal en materia de beneficios administrativos (Sentencias T-972 de 2005 y C-312 de 2002), solicito la concesión del permiso de hasta 72 horas, con base en los siguientes fundamentos:
 
 1. Actualmente me encuentro purgando la condena en un establecimiento de mediana seguridad, requisito contemplado en la normatividad vigente. Esta circunstancia se acredita con la certificación expedida por la autoridad penitenciaria.
 
-2. He cumplido más de una tercera (1/3) parte de la pena impuesta, conforme lo exige la ley para acceder al permiso de salida temporal.
+2. No registro requerimientos vigentes de autoridad judicial alguna, situación verificada a través del expediente y certificación correspondiente.
 
-3. No registro requerimientos vigentes de autoridad judicial alguna, situación verificada a través del expediente y certificación correspondiente.
+3. No he incurrido en fuga ni tentativa de fuga durante el proceso ni durante la ejecución de la sentencia condenatoria, requisito esencial establecido en el numeral 4º del artículo 147 de la Ley 65 de 1993.
 
-4. No he incurrido en fuga ni tentativa de fuga durante el proceso ni durante la ejecución de la sentencia condenatoria, requisito esencial establecido en el numeral 4º del artículo 147 de la Ley 65 de 1993.
+4. Durante mi permanencia en el establecimiento penitenciario he participado en actividades laborales, educativas o de enseñanza, y he mantenido una conducta ejemplar, como se acredita mediante certificación expedida por el Consejo de Disciplina.
 
-5. Durante mi permanencia en el establecimiento penitenciario he participado en actividades laborales, educativas o de enseñanza, y he mantenido una conducta ejemplar, como se acredita mediante certificación expedida por el Consejo de Disciplina.
-
-6. No pertenezco al núcleo familiar de la víctima ni he sido condenado por delitos que excluyan este beneficio conforme a la ley.
+5. No pertenezco al núcleo familiar de la víctima ni he sido condenado por delitos que excluyan este beneficio conforme a la ley.
 """;
   }
 
@@ -1487,6 +1482,8 @@ De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observanc
     required String departamento,
     required String nombreResponsable,
     required String parentescoResponsable,
+    required int mesesEjecutados,
+    required int diasEjecutados,
     List<Map<String, String>> hijos = const [],
   }) {
     // 🔹 Construir el texto para los hijos si existen
@@ -1500,20 +1497,27 @@ De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observanc
       }).join("; ");
 
       textoHijos =
-      "\nAdemás, deseo manifestar que en el mismo domicilio conviviré con ${esPlural ? "mis hijos" : "mi hijo"} ($listaHijos), "
-          "${esPlural ? "quienes representan" : "quien representa"} una parte esencial de mi vida y mi principal motor para seguir adelante en mi proceso de resocialización.";
+      "\n\nEn el mismo hogar también conviviré con ${esPlural ? "mis hijos" : "mi hijo"} $listaHijos, "
+          "${esPlural ? "quienes son" : "quien es"} parte esencial de mi vida y ${esPlural ? "representan" : "representa"} mi principal motivación para avanzar en mi proceso de resocialización.";
     }
+
+    // 🔹 Texto de cumplimiento de pena (adaptado para 72h)
+    final textoCumplimientoPena =
+        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la pena impuesta, superando el treinta y tres por ciento (33 %) del total de la condena, requisito establecido para acceder al beneficio de permiso administrativo de 72 horas.";
 
     return """
 Honorable Juez, me permito respetuosamente solicitar la concesión del permiso de hasta 72 horas, como una oportunidad invaluable para fortalecer mis lazos familiares y sociales.
 
-Durante el tiempo que he permanecido en reclusión, he mantenido una conducta ejemplar, participando activamente en actividades de formación, trabajo o resocialización, y cumpliendo de manera disciplinada con las normas internas del establecimiento.
+Durante el tiempo que he permanecido en reclusión, he mantenido una conducta ejemplar, participando activamente en programas de formación, trabajo o resocialización, y cumpliendo disciplinadamente con las normas del establecimiento penitenciario.
 
-Durante el disfrute del permiso, me comprometo a permanecer en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, donde estaré bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable y quien ha asumido el compromiso de brindarme apoyo y acompañamiento permanente.$textoHijos
+$textoCumplimientoPena
 
-Esta solicitud representa para mí una oportunidad de inmenso valor en mi proceso de reintegración social y familiar, reafirmando mi propósito de construir un proyecto de vida en libertad y en armonía con mi entorno.
+Durante el disfrute del permiso, permaneceré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable y quien ha asumido el compromiso de brindarme apoyo y acompañamiento permanente.$textoHijos
+
+Esta solicitud representa para mí una oportunidad de inmenso valor en mi proceso de reintegración social y familiar, reafirmando mi propósito de construir un proyecto de vida digno y en armonía con mi entorno.
 """;
   }
+
 
 
 
