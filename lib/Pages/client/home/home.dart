@@ -41,6 +41,8 @@ class _HomePageState extends State<HomePage> {
   int? _subscriptionValue;
   Map<String, String> _statusSolicitudes = {};
   bool _statusLoaded = false;
+  int _tiempoDePrueba = 7; // valor por defecto si no está en Firebase
+
 
 
 
@@ -59,9 +61,12 @@ class _HomePageState extends State<HomePage> {
     if (config.docs.isNotEmpty) {
       setState(() {
         _subscriptionValue = config.docs.first.data()['valor_subscripcion'];
+        _tiempoDePrueba = config.docs.first.data()['tiempoDePrueba'] ?? 7; // 🔥 Aquí traemos el tiempo real
       });
     }
   }
+
+
 
   Future<void> _loadUid() async {
     final user = _myAuthProvider.getUser();
@@ -69,45 +74,32 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _uid = user.uid;
       });
-      // 🔥 Calcular la condena directamente con el controlador
       await _calculoCondenaController.calcularTiempo(_uid);
       await _cargarStatusSolicitudes();
-      print("📌 Status de solicitudes cargado: $_statusSolicitudes");
-
+      await _cargarDatosPplYValidarTrial(); // 🔥 Aquí ya se calcula correctamente el Trial.
     }
   }
 
-  // Future<void> _loadData() async {
-  //   final pplData = await _pplProvider.getById(_uid);
-  //
-  //   if (mounted) {
-  //     setState(() {
-  //       _ppl = pplData;
-  //       _isPaid = pplData?.isPaid ?? false;
-  //     });
-  //
-  //     // 🔥 Calcular tiempo y actualizar valores en setState
-  //     await _calculoCondenaController.calcularTiempo(_uid);
-  //     setState(() {
-  //       porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado!;
-  //       tiempoCondena = _calculoCondenaController.tiempoCondena!;
-  //     });
-  //
-  //     // 🔥 Obtener la fecha de registro y verificar prueba gratuita
-  //     dynamic fechaRegistroRaw = pplData?.fechaRegistro ?? Timestamp.now();
-  //     Timestamp fechaRegistro = fechaRegistroRaw is Timestamp ? fechaRegistroRaw : Timestamp.fromDate(fechaRegistroRaw);
-  //     await _calcularTiempoDePrueba(fechaRegistro);
-  //
-  //     setState(() {
-  //       _isLoading = false;
-  //     });
-  //
-  //     print("✅ Datos actualizados:");
-  //     print("   - porcentajeEjecutado: $porcentajeEjecutado%");
-  //     print("   - tiempoCondena: $tiempoCondena meses");
-  //     print("   - isTrial: $_isTrial (Días restantes: $_diasRestantesPrueba)");
-  //   }
-  // }
+  Future<void> _cargarDatosPplYValidarTrial() async {
+    final doc = await FirebaseFirestore.instance.collection('Ppl').doc(_uid).get();
+    if (doc.exists) {
+      _ppl = Ppl.fromDocumentSnapshot(doc);
+      final fechaRegistro = _ppl?.fechaRegistro;
+      if (fechaRegistro != null) {
+        final now = DateTime.now();
+        final diasPasados = now.difference(fechaRegistro).inDays;
+        final configDoc = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+        int tiempoDePrueba = configDoc.docs.first.data()['tiempoDePrueba'] ?? 7;
+
+        setState(() {
+          _isTrial = diasPasados < tiempoDePrueba;
+          _diasRestantesPrueba = tiempoDePrueba - diasPasados;
+          _isLoading = false; // 🔥 Ya puedes construir la pantalla
+        });
+      }
+    }
+  }
+
 
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDiasRedimidos = 0;
@@ -132,63 +124,58 @@ class _HomePageState extends State<HomePage> {
     return totalDiasRedimidos;
   }
 
-  Future<void> _calcularTiempoDePrueba(Timestamp fechaRegistro) async {
-    final snapshot = await FirebaseFirestore.instance
-        .collection('configuraciones')
-        .limit(1)
-        .get();
-
-    int tiempoDePrueba = 7; // Valor por defecto
-
-    if (snapshot.docs.isNotEmpty) {
-      final data = snapshot.docs.first.data();
-      tiempoDePrueba = data['tiempoDePrueba'] ?? 7;
-    }
-
-    DateTime fechaActual = DateTime.now();
-    DateTime fechaRegistroDate = fechaRegistro.toDate();
-    int diasPasados = fechaActual.difference(fechaRegistroDate).inDays;
-
-    setState(() {
-      _isTrial = diasPasados < tiempoDePrueba;
-      _diasRestantesPrueba = tiempoDePrueba - diasPasados;
-      _isLoading = false;
-    });
-  }
-
 
   @override
   Widget build(BuildContext context) {
     return MainLayout(
       pageTitle: 'Página Principal',
-      content: _uid.isEmpty
-          ? const Center(child: CircularProgressIndicator())
+      content: _uid.isEmpty || _isLoading
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            CircularProgressIndicator(),
+            SizedBox(height: 16), // Espacio entre el spinner y el texto
+            Text(
+              'Cargando información...',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.black54,
+              ),
+            ),
+          ],
+        ),
+      )
           : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
         stream: FirebaseFirestore.instance.collection('Ppl').doc(_uid).snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text(
+                    'Cargando información...',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black54,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
 
           if (!snapshot.hasData || !snapshot.data!.exists) {
             return const Center(child: Text('No se encontraron datos del usuario'));
           }
 
-          // 🔥 Actualizamos _ppl en tiempo real usando el fromDocumentSnapshot
           _ppl = Ppl.fromDocumentSnapshot(snapshot.data!);
-
-          // 🔥 Actualizamos _isPaid y _isTrial en tiempo real
           _isPaid = _ppl?.isPaid ?? false;
-
-          if (_ppl?.fechaRegistro != null) {
-            DateTime fechaActual = DateTime.now();
-            DateTime fechaRegistro = _ppl!.fechaRegistro!;
-            int diasPasados = fechaActual.difference(fechaRegistro).inDays;
-
-            int tiempoDePrueba = 7; // O el que quieras
-            _isTrial = diasPasados < tiempoDePrueba;
-            _diasRestantesPrueba = tiempoDePrueba - diasPasados;
-          }
 
           return SingleChildScrollView(
             child: SizedBox(
@@ -204,7 +191,9 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 10),
                   if (_isTrial && !_isPaid)
                     _buildTrialCard(),
-                  _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
+                  _isPaid || _isTrial
+                      ? _buildPaidContent()
+                      : _buildUnpaidContent(),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -214,6 +203,7 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
 
 
   Widget _buildTrialCard() {
