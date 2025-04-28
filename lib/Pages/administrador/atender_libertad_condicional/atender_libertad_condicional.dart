@@ -13,6 +13,7 @@ import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
+import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_condicional.dart';
 import '../../../src/colors/colors.dart';
@@ -123,6 +124,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
   late final List<String> urlsArchivosHijos;
   Map<String, dynamic>? solicitudData;
   String? _opcionReparacionSeleccionada;
+  late CalculoCondenaController _calculoCondenaController;
 
 
 
@@ -137,6 +139,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
         "contenido": archivo,
       };
     }).toList();
+    _calculoCondenaController = CalculoCondenaController(_pplProvider);
 
 // 🔹 Agregar la cédula del responsable si existe
     if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) {
@@ -1253,11 +1256,16 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     final latestData = doc.data();
 
     if (fetchedData != null && latestData != null && mounted) {
-      // 🔹 Precargar campos solo si no están ya cargados
+      // 🔥 Primero calcular correctamente los tiempos
+      await _calculoCondenaController.calcularTiempo(widget.idUser);
+      final diasRedimidos = _calculoCondenaController.totalDiasRedimidos ?? 0;
+
+      // 🔥 Precargar campos
       _sinopsisController.text = generarTextoSinopsisDesdeDatos(
         fetchedData,
         fetchedData.situacion ?? 'En Reclusión',
-        widget.reparacion, // ✅ así accedes a la variable
+        widget.reparacion,
+        diasRedimidos,
       );
 
       if (!_isFundamentosLoaded) {
@@ -1267,7 +1275,8 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
       }
 
       if (!_isPretencionesLoaded) {
-        _pretencionesController.text = generarTextoPretencionesDesdeDatos(fetchedData.situacion ?? 'En Reclusión');
+        _pretencionesController.text =
+            generarTextoPretencionesDesdeDatos(fetchedData.situacion ?? 'En Reclusión');
         _isPretencionesLoaded = true;
       }
 
@@ -1281,10 +1290,11 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
 
         final listaHijos = tieneHijosYDocumentos
             ? (latestData['hijos'] as List<dynamic>)
-            .whereType<Map>() // 🔹 Asegura que cada ítem sea un Map
+            .whereType<Map>()
             .map((e) => Map<String, dynamic>.from(e))
             .toList()
             : <Map<String, dynamic>>[];
+
         _anexosController.text = generarTextoAnexos(
           fetchedData.situacion ?? 'En Reclusión',
           incluirPuntoHijos: tieneHijosYDocumentos,
@@ -1294,9 +1304,28 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
         _isAnexosLoaded = true;
       }
 
+      if (!_isConsideracionesLoaded) {
+        final listaHijos = solicitudData?.containsKey('hijos') == true
+            ? List<Map<String, String>>.from(
+            solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
+            : <Map<String, String>>[];
+
+        _consideracionesController.text = generarTextoConsideracionesParaLibertadCondicional(
+          direccion: widget.direccion,
+          municipio: widget.municipio,
+          departamento: widget.departamento,
+          nombreResponsable: widget.nombreResponsable,
+          parentescoResponsable: widget.parentesco,
+          situacion: fetchedData?.situacion ?? 'En Reclusión',
+          mesesEjecutados: mesesEjecutado,
+          diasEjecutados: diasEjecutadoExactos,
+          hijos: listaHijos,
+        );
+        _isConsideracionesLoaded = true;
+      }
+
       setState(() {
         userData = fetchedData;
-
         libertadCondicional = LibertadCondicionalTemplate(
           dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
           entidad: fetchedData.centroReclusion ?? "",
@@ -1327,9 +1356,8 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           purgado: "$mesesEjecutado",
           jdc: fetchedData.juzgadoQueCondeno ?? "",
           numeroSeguimiento: widget.numeroSeguimiento,
-          situacion: fetchedData.situacion
+          situacion: fetchedData.situacion,
         );
-
         isLoading = false;
       });
     } else if (mounted) {
@@ -1339,6 +1367,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
       });
     }
   }
+
 
 
   String formatearFechaCaptura(String fechaString) {
@@ -1351,39 +1380,76 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     }
   }
 
-  String generarTextoSinopsisDesdeDatos(Ppl userData, String situacion, String reparacion) {
+  String generarTextoSinopsisDesdeDatos(
+      Ppl userData,
+      String situacion,
+      String reparacion,
+      double totalDiasRedimidos,
+      ) {
     final jdc = userData.juzgadoQueCondeno ?? '';
     final condena = userData.tiempoCondena?.toString() ?? '';
     final captura = userData.fechaCaptura?.toString() ?? '';
     final delito = userData.delito ?? '';
-    final purgado = "$mesesEjecutado";
     final fechaFormateada = formatearFechaCaptura(captura);
 
-    String textoBase;
-
     if (situacion == "En Prisión domiciliaria") {
-      textoBase =
-      "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
-          "Actualmente me encuentro cumpliendo dicha condena bajo el beneficio de prisión domiciliaria. "
-          "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la pena, incluyendo redenciones obtenidas conforme a la ley, "
-          "por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito exigido para solicitar el beneficio de libertad condicional.";
+      return "Mi condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
+          "La captura fue el día $fechaFormateada. Actualmente me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria.";
     } else {
-      textoBase =
-      "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
-          "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, "
-          "por lo cual ya he superado el 60% o tres quintas (3/5) partes de la pena impuesta, lo que me permite acceder al beneficio de libertad condicional según la ley.";
+      return "Mi condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
+          "La captura fue el día $fechaFormateada.";
     }
-
-    // 🔹 Complemento según reparación
-    final complemento = {
-      'reparado': " Por otro lado, me permito informar que cumplí con el requisito de reparación a la víctima, lo cual fortalece mi solicitud.",
-      'garantia': " Por otro lado, he asegurado el pago de la indemnización a la víctima mediante acuerdo o garantía, cumpliendo con lo establecido en la normatividad vigente.",
-      'insolvencia': " Por otro lado, desafortunadamente no he podido cumplir con la reparación a la víctima por mi estado de insolvencia económica, situación que acredito debidamente con la certificación adjunta en la presente solicitud.",
-    }[reparacion] ?? "";
-
-    return "$textoBase$complemento";
   }
 
+
+  String generarTextoConsideracionesParaLibertadCondicional({
+    required String direccion,
+    required String municipio,
+    required String departamento,
+    required String nombreResponsable,
+    required String parentescoResponsable,
+    required String situacion,
+    required int mesesEjecutados,
+    required int diasEjecutados,
+    List<Map<String, String>> hijos = const [],
+  }) {
+    // 🔹 Construir el texto para los hijos si existen
+    String textoHijos = "";
+    if (hijos.isNotEmpty) {
+      final esPlural = hijos.length > 1;
+      final listaHijos = hijos.map((hijo) {
+        final nombre = hijo['nombre'] ?? '';
+        final edad = hijo['edad'] ?? '';
+        return "$nombre, de $edad años";
+      }).join("; ");
+
+      textoHijos =
+      "\n\nEn el mismo hogar también conviviré con ${esPlural ? "mis hijos" : "mi hijo"} $listaHijos, "
+          "${esPlural ? "quienes son" : "quien es"} parte esencial de mi vida y ${esPlural ? "representan" : "representa"} mi principal motivación para continuar avanzando de manera positiva en mi proceso de resocialización.";
+    }
+
+    // 🔹 Texto según situación
+    final textoComportamiento = (situacion == "En Prisión domiciliaria")
+        ? "Durante el tiempo que he permanecido en prisión domiciliaria, he mantenido un comportamiento ejemplar, cumpliendo con las condiciones impuestas, y participando activamente en mi proceso de resocialización y fortalecimiento familiar."
+        : "Durante mi tiempo de reclusión, he mantenido un comportamiento ejemplar, cumpliendo con las normas del establecimiento, participando activamente en actividades de resocialización, trabajo y educación, y demostrando compromiso con mi proceso de transformación personal.";
+
+    // 🔹 Texto de cumplimiento de pena (lo que quitamos de la sinopsis)
+    final textoCumplimientoPena =
+        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. "
+        "En consecuencia, he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito legal para solicitar el beneficio de libertad condicional.";
+
+    return """
+Honorable Juez, respetuosamente me permito solicitar la concesión del beneficio de libertad condicional, como una oportunidad para continuar con mi proceso de resocialización y reintegración a la sociedad en un entorno familiar estable y de apoyo.
+
+$textoComportamiento
+
+$textoCumplimientoPena
+
+De ser concedido el beneficio, residiré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable, y quien ha asumido el compromiso de acompañarme y garantizar que cumpla con todas las condiciones que se me impongan.$textoHijos
+
+Esta solicitud representa para mí una oportunidad de inmenso valor para consolidar mi proceso de reintegración social y familiar, contribuyendo activamente a la construcción de un proyecto de vida digno y en libertad.
+""";
+  }
 
 
   String generarTextoPretencionesDesdeDatos(String situacion) {
@@ -1408,38 +1474,40 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       Map<String, dynamic> latestData,
       String parentesco,
       ) {
-    final direccion = latestData['direccion'] ?? '';
-    final municipio = latestData['municipio'] ?? '';
-    final departamento = latestData['departamento'] ?? '';
-    final nombreResponsable = latestData['nombre_responsable'] ?? '';
     final situacion = userData.situacion ?? 'En Reclusión';
 
     if (situacion == "En Prisión domiciliaria") {
       return """
 1. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es una forma de cumplimiento de la pena privativa de la libertad fuera del establecimiento carcelario, bajo vigilancia del Estado, cuando el condenado haya cumplido las tres quintas partes de la pena y demostrado buena conducta.
 
-2. En mi caso, ya me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria, lo que implica una forma anticipada de resocialización, con arraigo demostrado en el entorno familiar y social.
+2. Actualmente me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria, evidencia de mi proceso de resocialización anticipada, del arraigo demostrado en el entorno familiar y del cumplimiento disciplinado de las condiciones impuestas.
 
-3. Actualmente convivo en la $direccion, del municipio de $municipio - $departamento, bajo el cuidado y responsabilidad de $nombreResponsable, quien es mi $parentesco. Esta situación refleja estabilidad, arraigo, y compromiso con las condiciones impuestas por la justicia.
+3. De acuerdo con los artículos 21 y 42 de la Constitución Política, el respeto a la dignidad humana y la protección de la familia respaldan la importancia de continuar con mi proceso de integración social en un ambiente de apoyo familiar.
 
-4. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos del beneficio.
+4. El artículo 145 de la Ley 65 de 1993 establece que, cumplidos los requisitos de porcentaje de pena ejecutada, buena conducta y plan de resocialización, procede la concesión de la libertad condicional, requisitos que he satisfecho.
 
+5. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos para la procedencia del beneficio.
+
+6. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, dispone que las penas privativas de libertad deben tener como finalidad esencial la rehabilitación social, principio que respaldo mediante esta solicitud.
 """;
     }
 
-    // Situación por defecto: En Reclusión
+    // 🔹 Situación por defecto: En Reclusión
     return """
-1. Conforme al artículo 64 de la Ley 65 de 1993 (Código Penitenciario), tengo derecho a la libertad condicional, beneficio que procede cuando el condenado ha cumplido las tres quintas partes de la pena y ha observado buena conducta durante su reclusión.
+1. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es un mecanismo de cumplimiento de la pena bajo vigilancia estatal, aplicable a quienes hayan cumplido las tres quintas partes de la pena y demuestren buena conducta.
 
-2. He cumplido más del 60% de la pena impuesta, y durante mi permanencia en el centro penitenciario he demostrado conducta ejemplar, compromiso con procesos de resocialización y respeto por las normas internas.
+2. Durante mi permanencia en el centro de reclusión, he cumplido más del 60% de la pena impuesta, observando una conducta ejemplar, compromiso constante con procesos de resocialización, educación y trabajo, y respeto por las normas internas.
 
-3. Cuento con arraigo familiar y social, y tengo un lugar digno y estable donde continuar el cumplimiento de la pena, conforme a la normatividad vigente.
+3. En atención a los artículos 21 y 42 de la Constitución Política, solicito el beneficio como medio para fortalecer el derecho fundamental a la dignidad humana y la importancia de la familia como núcleo esencial de la sociedad.
 
-3.1. En caso de ser concedido el beneficio, residiré en la $direccion, del municipio de $municipio - $departamento, en compañía de $nombreResponsable, el cual es mi $parentesco y ha manifestado su disposición y compromiso como persona responsable de mi acogida.
+4. El artículo 145 de la Ley 65 de 1993 señala que cumplidos los requisitos de tiempo, comportamiento y plan de resocialización, es procedente acceder a la libertad condicional, condiciones que se reflejan en mi trayectoria penitenciaria.
 
-4. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos que excluyan este beneficio.
+5. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos de este beneficio.
+
+6. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, resalta la necesidad de que la privación de la libertad tenga como fin principal la rehabilitación social, principio que oriento en mi solicitud.
 """;
   }
+
 
   String generarTextoAnexos(
       String situacion, {
@@ -2329,8 +2397,10 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
               final link = "https://wa.me/$celular?text=$mensaje";
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
+            if(context.mounted){
+              Navigator.pushReplacementNamed(context, 'historial_solicitudes_libertad_condicional_admin');
+            }
 
-            Navigator.pushReplacementNamed(context, 'historial_solicitudes_prision_domiciliaria_admin');
           }
         }
       },

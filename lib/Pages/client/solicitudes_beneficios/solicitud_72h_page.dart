@@ -30,10 +30,12 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
 
   String? archivoRecibo;
   String? archivoDeclaracion;
+  String? archivoFase;
   String? archivoInsolvencia;
   String? urlArchivoRecibo;
   String? urlArchivoDeclaracion;
   String? urlArchivoInsolvencia;
+  String? urlArchivoFase;
   String? departamentoSeleccionado;
   String? municipioSeleccionado;
   String? parentescoSeleccionado;
@@ -189,7 +191,43 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
-                const Text('4. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
+
+                const Text(
+                  '4. Sube la certificación de fase de mediana seguridad',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () => pickSingleFile('fase'),
+                  child: Row(
+                    children: [
+                      Icon(
+                        archivoFase != null ? Icons.check_circle : Icons.upload_file,
+                        color: archivoFase != null ? Colors.green : Colors.deepPurple,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          archivoFase ?? 'Subir archivo',
+                          style: TextStyle(
+                            color: archivoFase != null ? Colors.black : Colors.deepPurple,
+                            decoration: archivoFase != null ? TextDecoration.none : TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      if (archivoFase != null)
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                          onPressed: () => eliminarArchivo('fase'),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Divider(color: negroLetras, height: 1),
+                const SizedBox(height: 24),
+
+                const Text('5. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
                     fontWeight: FontWeight.bold
                 )),
                 const SizedBox(height: 10),
@@ -231,7 +269,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  "5. Por favor selecciona qué relación tiene la persona responsable con el PPL (persona privada de la libertad)",
+                  "6. Por favor selecciona qué relación tiene la persona responsable con el PPL (persona privada de la libertad)",
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
@@ -311,7 +349,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 const Text(
-                  '6. Sube la fotocopia de la cédula de la persona responsable:',
+                  '7. Sube la fotocopia de la cédula de la persona responsable:',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
@@ -375,7 +413,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                       const Divider(color: negroLetras, height: 1),
                       const SizedBox(height: 24),
                       const Text(
-                        '10. Adjuntar los documentos de identidad de los hijos',
+                        '11. Adjuntar los documentos de identidad de los hijos',
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
@@ -466,6 +504,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         archivoRecibo == null ||
         archivoDeclaracion == null ||
         archivoCedulaResponsable == null ||
+        archivoFase == null || // 🔥 Añadimos que fase es obligatorio
         _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
@@ -473,7 +512,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         parentescoSeleccionado == null || parentescoSeleccionado!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Por favor, completa todos los campos y sube los documentos requeridos."),
+          content: Text("Por favor, completa todos los campos y sube todos los documentos requeridos, incluyendo la certificación de fase de mediana seguridad."),
           backgroundColor: Colors.red,
         ),
       );
@@ -530,8 +569,9 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       }
     }
 
-    return true; // ✅ Todo validado bien
+    return true; // ✅ Todo validado correctamente
   }
+
 
 
   Future<bool> mostrarConfirmacionEnvio(BuildContext context) async {
@@ -591,6 +631,10 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         archivoInsolvencia = null;
         urlArchivoInsolvencia = null;
       }
+      else if (tipo == 'fase') {
+        archivoFase = null;
+        urlArchivoFase = null;
+      }
     });
   }
 
@@ -613,6 +657,9 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
           else if (tipo == 'insolvencia') {
             archivoInsolvencia = file.name;
           }
+          else if (tipo == 'fase') {
+            archivoFase = file.name;
+          }
         });
 
         docIdSolicitud ??= FirebaseFirestore.instance.collection('prision_domiciliaria_solicitados').doc().id;
@@ -633,7 +680,10 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
               urlArchivoCedulaResponsable = downloadUrl;
             } else if (tipo == 'insolvencia') {
               urlArchivoInsolvencia = downloadUrl;
+            } else if (tipo == 'fase') {
+              urlArchivoFase = downloadUrl;
             }
+
           });
 
           if (context.mounted) {
@@ -718,7 +768,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "7. Reparación de la víctima (* Selección obligatoria *)",
+          "8. Reparación de la víctima (* Selección obligatoria *)",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 4),
@@ -748,7 +798,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
             children: [
               const SizedBox(height: 20),
               const Text(
-                '8. Recuerda que si tienes certificado de insolvencia puedes adjuntarlo para fortalecer tu solicitud (Opcional)',
+                '9. Recuerda que si tienes certificado de insolvencia puedes adjuntarlo para fortalecer tu solicitud (Opcional)',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -791,6 +841,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         archivoRecibo == null ||
         archivoDeclaracion == null ||
         archivoCedulaResponsable == null ||
+        archivoFase == null || // 🔥 Añadido: validar archivoFase
         _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
@@ -798,7 +849,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         parentescoSeleccionado == null || parentescoSeleccionado!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Por favor, completa todos los campos y sube los documentos requeridos."),
+          content: Text("Por favor, completa todos los campos y sube todos los documentos requeridos, incluyendo la certificación de fase de mediana seguridad."),
           backgroundColor: Colors.red,
         ),
       );
@@ -858,8 +909,10 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       }
     }
 
+    // ✅ Si todo está bien, continuar
     await verificarSaldoYEnviarSolicitud();
   }
+
 
 
   Future<void> verificarSaldoYEnviarSolicitud() async {
@@ -985,6 +1038,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
           if (urlArchivoRecibo != null) urlArchivoRecibo!,
           if (urlArchivoDeclaracion != null) urlArchivoDeclaracion!,
           if (urlArchivoInsolvencia != null) urlArchivoInsolvencia!,
+          if (urlArchivoFase != null) urlArchivoFase!,
           ...archivosUrls,
         ],
         'archivo_cedula_responsable': urlArchivoCedulaResponsable,
@@ -1048,7 +1102,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "9. Información de los Hijos",
+          "10. Información de los Hijos",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),

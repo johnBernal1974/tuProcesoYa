@@ -14,6 +14,7 @@ import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
+import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_condicional.dart';
 import '../../../plantillas/plantilla_permiso_72horas.dart';
@@ -124,6 +125,9 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
   late final List<String> urlsArchivosHijos;
   Map<String, dynamic>? solicitudData;
   String? _opcionReparacionSeleccionada;
+  late CalculoCondenaController _calculoCondenaController;
+
+
 
 
 
@@ -138,6 +142,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
         "contenido": archivo,
       };
     }).toList();
+    _calculoCondenaController = CalculoCondenaController(_pplProvider);
 
 // 🔹 Agregar la cédula del responsable si existe
     if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) {
@@ -1245,6 +1250,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
   void fetchUserData() async {
     Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
+    await _calculoCondenaController.calcularTiempo(widget.idUser);
 
     final doc = await FirebaseFirestore.instance
         .collection('permiso_72horas_solicitados')
@@ -1254,8 +1260,12 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
     final latestData = doc.data();
 
     if (fetchedData != null && latestData != null && mounted) {
+      final diasRedimidos = _calculoCondenaController.totalDiasRedimidos ?? 0;
       // 🔹 Precargar campos solo si no están ya cargados
-      _sinopsisController.text = generarTextoSinopsisParaPermiso72h(fetchedData);
+      _sinopsisController.text = generarTextoSinopsisParaPermiso72h(
+        fetchedData,
+        diasRedimidos,
+      );
 
       if (!_isFundamentosLoaded) {
         _fundamentosDerechoController.text =
@@ -1264,7 +1274,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
       }
 
       if (!_isPretencionesLoaded) {
-        _pretencionesController.text = generarTextoPretencionesDesdeDatos(fetchedData.situacion ?? 'En Reclusión');
+        _pretencionesController.text = generarTextoPretencionesParaPermiso72Horas();
         _isPretencionesLoaded = true;
       }
 
@@ -1290,6 +1300,22 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
         _isAnexosLoaded = true;
       }
+
+      final List<Map<String, String>> listaHijos = solicitudData?.containsKey('hijos') == true
+          ? List<Map<String, String>>.from(
+        (solicitudData!['hijos'] as List).map((hijo) => Map<String, String>.from(hijo)),
+      )
+          : [];
+      final consideracionesTexto = generarTextoConsideracionesParaPermiso72Horas(
+        direccion: widget.direccion,
+        municipio: widget.municipio,
+        departamento: widget.departamento,
+        nombreResponsable: widget.nombreResponsable,
+        parentescoResponsable: widget.parentesco, // 🔥 este parámetro adicional
+        hijos: listaHijos, // 👶 asegúrate de pasar la lista de hijos si hay
+      );
+      _consideracionesController.text = consideracionesTexto;
+
 
       setState(() {
         userData = fetchedData;
@@ -1348,36 +1374,36 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
     }
   }
 
-  String generarTextoSinopsisParaPermiso72h(Ppl userData) {
-    final jdc = userData.juzgadoQueCondeno;
-    final condena = userData.tiempoCondena.toString();
+  String generarTextoSinopsisParaPermiso72h(Ppl userData, double totalDiasRedimidos) {
+    final jdc = userData.juzgadoQueCondeno ?? '';
+    final condena = userData.tiempoCondena?.toString() ?? '';
     final captura = userData.fechaCaptura?.toString() ?? '';
-    final delito = userData.delito;
+    final delito = userData.delito ?? '';
     final fechaFormateada = formatearFechaCaptura(captura);
-    final purgado = "$mesesEjecutado";
+
+    // 🔥 Sumar bien
+    final totalDiasEjecutados = (mesesEjecutado * 30) + diasEjecutadoExactos + totalDiasRedimidos.toInt();
+
+    final totalMesesCumplidos = totalDiasEjecutados ~/ 30;
+    final diasRestantes = totalDiasEjecutados % 30;
 
     return
-      "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
-          "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. "
-          ;
+      "La condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
+          "La captura se efectuó el día $fechaFormateada y, a la fecha, he cumplido $totalMesesCumplidos meses y $diasRestantes días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley.";
   }
 
-  String generarTextoPretencionesDesdeDatos(String situacion) {
-    if (situacion == "En Prisión domiciliaria") {
-      return """
-PRIMERO: Que se reconozca que actualmente me encuentro cumpliendo mi condena bajo el beneficio de prisión domiciliaria, y se evalúe la procedencia de concederme la libertad condicional conforme a la normatividad vigente.
 
-SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 de la Ley 65 de 1993, teniendo en cuenta el cumplimiento de los requisitos exigidos, incluyendo el tiempo purgado, la buena conducta y el entorno familiar de arraigo.
-""";
-    }
 
-    // Default (En Reclusión)
+
+  String generarTextoPretencionesParaPermiso72Horas() {
     return """
 PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite del permiso de hasta 72 horas.
 
 SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establecido en el artículo 147 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de la tercera parte de la pena, la buena conducta, la participación en actividades de estudio, trabajo o enseñanza, y la existencia de un entorno familiar favorable.
 """;
   }
+
+
 
   String generarTextoFundamentosDesdeDatos(
       Ppl userData,
@@ -1393,7 +1419,7 @@ SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establ
     return """
 De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observancia del principio de reserva legal en materia de beneficios administrativos (Sentencias T-972 de 2005 y C-312 de 2002), solicito la concesión del permiso de hasta 72 horas, con base en los siguientes fundamentos:
 
-1. Actualmente me encuentro recluido en un establecimiento de mediana seguridad, requisito contemplado en la normatividad vigente. Esta circunstancia se acredita con la certificación expedida por la autoridad penitenciaria.
+1. Actualmente me encuentro purgando la condena en un establecimiento de mediana seguridad, requisito contemplado en la normatividad vigente. Esta circunstancia se acredita con la certificación expedida por la autoridad penitenciaria.
 
 2. He cumplido más de una tercera (1/3) parte de la pena impuesta, conforme lo exige la ley para acceder al permiso de salida temporal.
 
@@ -1423,10 +1449,10 @@ De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observanc
         "${contador++}. Fotocopia de la cédula de ciudadanía de la persona responsable.";
 
     final punto3 =
-        "${contador++}. Fotocopia de un recibo de servicios públicos que demuestre la dirección de residencia donde se cumplirá el permiso.";
+        "${contador++}. Fotocopia de un recibo de servicios públicos que demuestra la dirección de residencia donde se cumplirá el permiso.";
 
     final punto4 =
-        "${contador++}. Copia de la certificación o acta que acredite fase de mediana seguridad.";
+        "${contador++}. Copia de la certificación o acta que acredita fase de mediana seguridad.";
 
     String punto5 = '';
     if (incluirPuntoHijos && hijos.isNotEmpty) {
@@ -1454,6 +1480,44 @@ De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observanc
       if (punto5.isNotEmpty) punto5,
     ].join('\n\n');
   }
+
+  String generarTextoConsideracionesParaPermiso72Horas({
+    required String direccion,
+    required String municipio,
+    required String departamento,
+    required String nombreResponsable,
+    required String parentescoResponsable,
+    List<Map<String, String>> hijos = const [],
+  }) {
+    // 🔹 Construir el texto para los hijos si existen
+    String textoHijos = "";
+    if (hijos.isNotEmpty) {
+      final esPlural = hijos.length > 1;
+      final listaHijos = hijos.map((hijo) {
+        final nombre = hijo['nombre'] ?? '';
+        final edad = hijo['edad'] ?? '';
+        return "$nombre, de $edad años";
+      }).join("; ");
+
+      textoHijos =
+      "\nAdemás, deseo manifestar que en el mismo domicilio conviviré con ${esPlural ? "mis hijos" : "mi hijo"} ($listaHijos), "
+          "${esPlural ? "quienes representan" : "quien representa"} una parte esencial de mi vida y mi principal motor para seguir adelante en mi proceso de resocialización.";
+    }
+
+    return """
+Honorable Juez, me permito respetuosamente solicitar la concesión del permiso de hasta 72 horas, como una oportunidad invaluable para fortalecer mis lazos familiares y sociales.
+
+Durante el tiempo que he permanecido en reclusión, he mantenido una conducta ejemplar, participando activamente en actividades de formación, trabajo o resocialización, y cumpliendo de manera disciplinada con las normas internas del establecimiento.
+
+Durante el disfrute del permiso, me comprometo a permanecer en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, donde estaré bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable y quien ha asumido el compromiso de brindarme apoyo y acompañamiento permanente.$textoHijos
+
+Esta solicitud representa para mí una oportunidad de inmenso valor en mi proceso de reintegración social y familiar, reafirmando mi propósito de construir un proyecto de vida en libertad y en armonía con mi entorno.
+""";
+  }
+
+
+
+
 
   void fetchDocumentoPermiso72Horas() async {
     try {

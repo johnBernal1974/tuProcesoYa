@@ -15,6 +15,7 @@ import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/ia_backend_service/IASuggestionCard.dart';
 import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
+import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_domiciliaria.dart';
 import '../../../src/colors/colors.dart';
@@ -123,6 +124,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   late final String? urlArchivoCedulaResponsable;
   late final List<String> urlsArchivosHijos;
   Map<String, dynamic>? solicitudData;
+  late CalculoCondenaController _calculoCondenaController;
 
 
   @override
@@ -136,6 +138,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
         "contenido": archivo,
       };
     }).toList();
+    _calculoCondenaController = CalculoCondenaController(_pplProvider);
 
 // 🔹 Agregar la cédula del responsable si existe
     if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) {
@@ -1250,11 +1253,14 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     final latestData = doc.data();
 
     if (fetchedData != null && latestData != null && mounted) {
-      // 🔹 Precargar campos solo si no están ya cargados
+      // 🔥 IMPORTANTE: Calcular primero el tiempo y los días redimidos
+      await _calculoCondenaController.calcularTiempo(widget.idUser);
+
       if (!_isSinopsisLoaded) {
         _sinopsisController.text = generarTextoSinopsisDesdeDatos(
           fetchedData,
-          widget.reparacion, // ✅ Se pasa la clave de reparación
+          widget.reparacion,
+          _calculoCondenaController.totalDiasRedimidos ?? 0, // 🔥 Se pasa también los días redimidos aquí
         );
         _isSinopsisLoaded = true;
       }
@@ -1284,6 +1290,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             .map((e) => Map<String, dynamic>.from(e))
             .toList()
             : <Map<String, dynamic>>[];
+
         _anexosController.text = generarTextoAnexos(
           incluirPuntoHijos: tieneHijosYDocumentos,
           hijos: listaHijos,
@@ -1291,6 +1298,24 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
         );
         _isAnexosLoaded = true;
       }
+
+      if (!_isConsideracionesLoaded) {
+        final listaHijos = solicitudData?.containsKey('hijos') == true
+            ? List<Map<String, String>>.from(
+            solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
+            : <Map<String, String>>[];
+
+        _consideracionesController.text = generarTextoConsideracionesParaPrisionDomiciliaria(
+          direccion: widget.direccion,
+          municipio: widget.municipio,
+          departamento: widget.departamento,
+          nombreResponsable: widget.nombreResponsable,
+          parentescoResponsable: widget.parentesco, // 🔥 Aquí pasas también el parentesco
+          hijos: listaHijos,
+        );
+        _isConsideracionesLoaded = true;
+      }
+
 
       setState(() {
         userData = fetchedData;
@@ -1338,6 +1363,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   }
 
 
+
   String formatearFechaCaptura(String fechaString) {
     try {
       final fecha = DateTime.parse(fechaString); // convierte el string en DateTime
@@ -1348,29 +1374,70 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     }
   }
 
-  String generarTextoSinopsisDesdeDatos(Ppl userData, String reparacion) {
+  String generarTextoSinopsisDesdeDatos(Ppl userData, String reparacion, double totalDiasRedimidos) {
     final jdc = userData.juzgadoQueCondeno ?? '';
     final condena = userData.tiempoCondena?.toString() ?? '';
     final captura = userData.fechaCaptura?.toString() ?? '';
     final delito = userData.delito ?? '';
-    final purgado = "$mesesEjecutado";
     final fechaFormateada = formatearFechaCaptura(captura);
 
-    final textoBase =
-        "Mi condena fue proferida mediante sentencia por el $jdc, a una pena de $condena meses de prisión, por el delito de $delito. "
-        "Fui capturado el día $fechaFormateada y, a la fecha, he cumplido $purgado meses de la condena, incluyendo el tiempo efectivo de detención y las redenciones obtenidas conforme a la ley, "
-        "por lo cual ya he superado el 50% de la pena impuesta.";
+    // 🔥 Sumar días ejecutados + días redimidos
+    final diasEjecutadosReales = (mesesEjecutado * 30) + diasEjecutadoExactos;
+    final totalDiasCumplidos = diasEjecutadosReales + totalDiasRedimidos.toInt();
 
-    // 🔹 Complemento según reparación
+    // 🔥 Convertir a meses y días
+    final totalMesesCumplidos = totalDiasCumplidos ~/ 30;
+    final diasRestantes = totalDiasCumplidos % 30;
+
+    // 🔥 Texto base
+    final textoBase =
+        "La condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
+        "La captura se efectuó el día $fechaFormateada.";
+
+    // 🔥 Complemento según reparación
     final complemento = {
-      'reparado': " Por otro lado, me permito informar que cumplí con el requisito de reparación a la víctima, lo cual fortalece mi solicitud.",
-      'garantia': " Por otro lado, he asegurado el pago de la indemnización a la víctima mediante acuerdo o garantía, cumpliendo con lo establecido en la normatividad vigente.",
-      'insolvencia': " Por otro lado, desafortunadamente no he podido cumplir con la reparación a la víctima por mi estado de insolvencia económica, situación que acredito debidamente con la certificación adjunta en la presente solicitud.",
+      'reparado': " Además, he cumplido con el requisito de reparación a la víctima, fortaleciendo la presente solicitud.",
+      'garantia': " Además, he asegurado el pago de la indemnización a la víctima mediante acuerdo o garantía, cumpliendo con lo establecido en la normatividad vigente.",
+      'insolvencia': " Asimismo, no ha sido posible cumplir con la reparación a la víctima debido a mi estado de insolvencia económica, situación que se acredita debidamente con la certificación adjunta.",
     }[reparacion] ?? "";
 
     return "$textoBase$complemento";
   }
 
+  String generarTextoConsideracionesParaPrisionDomiciliaria({
+    required String direccion,
+    required String municipio,
+    required String departamento,
+    required String nombreResponsable,
+    required String parentescoResponsable,
+    List<Map<String, String>> hijos = const [],
+  }) {
+    // 🔹 Construir el texto de los hijos si existen
+    String textoHijos = "";
+    if (hijos.isNotEmpty) {
+      final esPlural = hijos.length > 1;
+      final listaHijos = hijos.map((hijo) {
+        final nombre = hijo['nombre'] ?? '';
+        final edad = hijo['edad'] ?? '';
+        return "$nombre, de $edad años";
+      }).join("; ");
+
+      textoHijos =
+      "\nEn el mismo hogar también conviviré con ${esPlural ? "mis hijos" : "mi hijo"} $listaHijos, "
+          "${esPlural ? "quienes son" : "quien es"} parte esencial de mi vida y ${esPlural ? "representan" : "representa"} mi principal motivación para avanzar en mi proceso de resocialización.";
+    }
+
+    return """
+Honorable Juez, respetuosamente me permito solicitar que me sea concedido el beneficio de prisión domiciliaria, con el fin de continuar el cumplimiento de mi pena en un entorno familiar, bajo condiciones de vigilancia y responsabilidad.
+
+Durante el tiempo que permanezca en prisión domiciliaria, residiré en la dirección ubicada en $direccion, en el municipio de $municipio, departamento de $departamento. Allí estaré bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable y quien ha manifestado de manera expresa su compromiso de acompañarme y garantizar el cumplimiento de las condiciones que me sean impuestas.
+
+Durante mi permanencia en el establecimiento penitenciario, he demostrado un comportamiento ejemplar, participando activamente en programas de resocialización, educación y trabajo, y manteniendo una conducta respetuosa frente a la autoridad y mis compañeros.
+$textoHijos
+
+Con esta solicitud, busco fortalecer los lazos familiares, consolidar mi proceso de resocialización y reincorporarme positivamente a la sociedad, continuando con mi proceso de transformación personal en un ambiente de apoyo y contención familiar.
+""";
+  }
 
 
 
@@ -1386,25 +1453,23 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
       Map<String, dynamic> latestData,
       String parentesco,
       ) {
-    final direccion = latestData['direccion'] ?? '';
-    final municipio = latestData['municipio'] ?? '';
-    final departamento = latestData['departamento'] ?? '';
-    final nombreResponsable = latestData['nombre_responsable'] ?? '';
-
     return """
-1. El precepto 38G versa sobre el cumplimiento de la pena privativa de la libertad en el lugar de residencia o morada del condenado siempre que haya purgado la mitad (½) de la pena; satisfaga los numerales 3° y 4° del artículo 38B del Estatuto Punitivo, es decir que se demuestre su arraigo familiar y social y se garantice a través de caución el cumplimiento de las obligaciones legales; el penado no pertenezca al grupo familiar de la víctima y no haya sido sentenciado por uno de los delitos exceptuados por el propio artículo 38G.
+1. Conforme a lo dispuesto en el artículo 38G del Código Penal, modificado por el artículo 4 de la Ley 1709 de 2014, el cumplimiento de la pena privativa de la libertad en lugar de residencia puede ser autorizado cuando se hayan cumplido los siguientes requisitos: haber purgado la mitad (½) de la pena impuesta, demostrar arraigo familiar y social, garantizar el cumplimiento de las obligaciones legales mediante caución, no pertenecer al núcleo familiar de la víctima y no haber sido condenado por delitos exceptuados.
 
-2. He satisfecho los numerales 3° y 4° del artículo 38B del Estatuto Punitivo, es decir demuestro mi arraigo familiar y social, como lo reafirma lo siguiente:
+2. He cumplido con el requisito de haber purgado más de la mitad de la pena impuesta, conforme lo exige el artículo 38G del Código Penal.
 
-2.1. Estaré cumpliendo con mi condena bajo el beneficio de prisión domiciliaria en la $direccion, $municipio - $departamento, al lado de $nombreResponsable quien es mi $parentesco.
+3. Respecto al arraigo familiar y social exigido en los numerales 3° y 4° del artículo 38B del Código Penal, manifiesto que mantengo vínculos familiares y sociales sólidos, demostrando pertenencia e integración a un núcleo familiar en condiciones estables, conforme a la interpretación de la Corte Suprema de Justicia en las Sentencias de Casación Penal, Radicados 46647 de 2016 y 46930 de 2017.
 
-Lo anterior demuestra que tengo “la pertenencia a una familia, a un grupo, a una comunidad, a un trabajo o actividad, o la posesión de bienes…” en los términos que ha indicado la jurisprudencia de la Corte Suprema de justicia en sentencia de Casación Penal, Radicado 46930 de 2017, p. 25, citando a Sentencia de Casación Penal, Radicado 46647 de 2016, M.P. José Leónidas Bustos Martínez.
+4. No pertenezco al grupo familiar de la víctima, conforme a lo establecido en el numeral 5° del artículo 38G del Código Penal.
 
-3. No pertenezco al grupo familiar de la víctima.
+5. La sentencia dictada en mi contra no corresponde a ninguno de los delitos exceptuados para la concesión de este beneficio, de acuerdo con lo dispuesto en el mismo artículo 38G.
 
-4. No he sido sentenciado por uno de los delitos exceptuados por el propio artículo 38G.
+6. Esta fundamentación encuentra soporte adicional en el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, que establece el respeto de la dignidad humana y la finalidad de rehabilitación social de toda pena privativa de la libertad.
 """;
   }
+
+
+
 
   String generarTextoAnexos(
       {

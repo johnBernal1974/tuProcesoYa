@@ -34,6 +34,12 @@ class RequisitosPermiso72hPage extends StatelessWidget {
               descripcion: 'Documento notariado donde la persona que recibirá al Ppl en su domicilio, declara que se compromete a ser responsable durante las 72 horas de permiso. Se consigue en cualquier notaría con la cédula del responsable.',
               costo: 'Costo estimado: \$25.000 - \$35.000 COP',
             ),
+            _buildRequisito(
+              icon: Icons.double_arrow_outlined,
+              titulo: 'Certificación de fase de mediana seguridad',
+              descripcion: 'Documento expedido por el área jurídica o de tratamiento del centro penitenciario, donde consta que el Ppl se encuentra ubicado en fase de mediana seguridad, requisito indispensable para la solicitud del permiso de 72 horas.',
+              costo: 'Generalmente no tiene costo. Se solicita directamente en el área jurídica del establecimiento.',
+            ),
 
             _buildRequisito(
               icon: Icons.double_arrow_outlined,
