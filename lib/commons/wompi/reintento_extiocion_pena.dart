@@ -62,7 +62,7 @@ class ReintentoPagoExtincionPenaPage extends StatelessWidget {
                           context,
                           '/checkout',
                           arguments: {
-                            'tipoPago': 'extincion_pena',
+                            'tipoPago': 'extincion',
                             'valor': valor,
                             'referencia': referencia,
                             'onTransaccionAprobada': onTransaccionAprobada,

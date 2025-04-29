@@ -872,7 +872,7 @@ class _HomePageState extends State<HomePage> {
         Navigator.pushNamed(context, 'info_previa_libertad_condicional_page');
         break;
       case 'extincion_pena':
-        Navigator.pushNamed(context, 'solicitud_extincion_pena');
+        Navigator.pushNamed(context, 'solicitud_extincion_pena_page');
         break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(

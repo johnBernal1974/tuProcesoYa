@@ -130,7 +130,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'domiciliaria': 'Prisión domiciliaria',
       'permiso': 'Permiso de 72 horas',
       'condicional': 'Libertad condicional',
-      'extincion_pena': 'Extinción de la pena'
+      'extincion': 'Extinción de la pena'
     };
 
     if (tiposPagos.containsKey(widget.tipoPago)) {
