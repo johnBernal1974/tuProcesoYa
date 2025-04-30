@@ -1474,21 +1474,15 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
     return """
 1. Conforme a lo dispuesto en el artículo 38G del Código Penal, modificado por el artículo 4 de la Ley 1709 de 2014, el cumplimiento de la pena privativa de la libertad en lugar de residencia puede ser autorizado cuando se hayan cumplido los siguientes requisitos: haber purgado la mitad (½) de la pena impuesta, demostrar arraigo familiar y social, garantizar el cumplimiento de las obligaciones legales mediante caución, no pertenecer al núcleo familiar de la víctima y no haber sido condenado por delitos exceptuados.
 
-2. A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la pena impuesta, superando así el requisito temporal de haber purgado más de la mitad de la condena, conforme lo exige el artículo 38G del Código Penal.
+2. Respecto al arraigo familiar y social exigido en los numerales 3° y 4° del artículo 38B del Código Penal, manifiesto que mantengo vínculos familiares y sociales sólidos, demostrando pertenencia e integración a un núcleo familiar en condiciones estables, conforme a la interpretación de la Corte Suprema de Justicia en las Sentencias de Casación Penal, Radicados 46647 de 2016 y 46930 de 2017.
 
-3. Respecto al arraigo familiar y social exigido en los numerales 3° y 4° del artículo 38B del Código Penal, manifiesto que mantengo vínculos familiares y sociales sólidos, demostrando pertenencia e integración a un núcleo familiar en condiciones estables, conforme a la interpretación de la Corte Suprema de Justicia en las Sentencias de Casación Penal, Radicados 46647 de 2016 y 46930 de 2017.
+3. No pertenezco al grupo familiar de la víctima, conforme a lo establecido en el numeral 5° del artículo 38G del Código Penal.
 
-4. No pertenezco al grupo familiar de la víctima, conforme a lo establecido en el numeral 5° del artículo 38G del Código Penal.
+4. La sentencia dictada en mi contra no corresponde a ninguno de los delitos exceptuados para la concesión de este beneficio, de acuerdo con lo dispuesto en el mismo artículo 38G.
 
-5. La sentencia dictada en mi contra no corresponde a ninguno de los delitos exceptuados para la concesión de este beneficio, de acuerdo con lo dispuesto en el mismo artículo 38G.
-
-6. Esta fundamentación encuentra soporte adicional en el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, que establece el respeto de la dignidad humana y la finalidad de rehabilitación social de toda pena privativa de la libertad.
+5. Esta fundamentación encuentra soporte adicional en el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, que establece el respeto de la dignidad humana y la finalidad de rehabilitación social de toda pena privativa de la libertad.
 """;
   }
-
-
-
-
 
   String generarTextoAnexos(
       {
@@ -1541,8 +1535,6 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
       if (punto5.isNotEmpty) punto5,
     ].join('\n\n');
   }
-
-
 
   void fetchDocumentoPrisionDomiciliaria() async {
     try {

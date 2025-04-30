@@ -65,8 +65,68 @@ class _RegistroPageState extends State<RegistroPage> {
   String? departamentoSeleccionado;
   String? municipioSeleccionado;
 
-  final List<String> parentescoOptions = ['Padre', 'Madre', 'Hermano/a', "Hijo/a", "Esposo/a",
-    "Amigo/a", "Tio/a", "Sobrino/a", "Nieto/a", "Abuelo/a",'Abogado/a', 'Tutor/a', 'Otro'];
+  final List<String> parentescoOptions = [
+    // 👪 Padres
+    'Madre',
+    'Padre',
+
+    // 👧👦 Hijos
+    'Hija',
+    'Hijo',
+
+    // 💑 Cónyuge
+    'Esposa',
+    'Esposo',
+
+    // 👵👴 Abuelos
+    'Abuela',
+    'Abuelo',
+
+    // 👧👦 Nietos
+    'Nieta',
+    'Nieto',
+
+    // 🧍‍♂️🧍‍♀️ Hermanos
+    'Hermana',
+    'Hermano',
+
+    // 👨‍👧‍👦 Tíos y primos
+    'Tía',
+    'Tío',
+    'Prima',
+    'Primo',
+
+    // 👨‍❤️‍👨 Pareja no conyugal
+    'Compañera',
+    'Compañero',
+
+    // 👨‍👩‍👧‍👦 Familia política
+    'Cuñada',
+    'Cuñado',
+    'Suegra',
+    'Suegro',
+    'Nuera',
+    'Yerno',
+
+    // 👧👦 Sobrinos
+    'Sobrina',
+    'Sobrino',
+
+    // 👥 Amistades
+    'Amiga',
+    'Amigo',
+
+    // 👨‍⚖️ Representantes legales o similares
+    'Abogado/a',
+    'Tutor/a',
+
+    // 🙋‍♀️ En nombre propio
+    'En nombre propio',
+
+    // ❓ Otro
+    'Otro',
+  ];
+
   final List<String> tipoDocumentoOptions = ['Cédula de Ciudadanía', 'Pasaporte', 'Tarjeta de Identidad'];
   final List<String> situacionOptions = ['En Reclusión', 'En Prisión domiciliaria', 'En libertad condicional'];
   String? parentesco;
