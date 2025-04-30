@@ -12,7 +12,6 @@ import '../../../commons/base_textfield.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
-import '../solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
 import '../solicitud_exitosa_permiso_72horas/solicitud_exitosa_permiso_72horas.dart';
 
 class SolicitudPermiso72HorasPage extends StatefulWidget {
@@ -662,8 +661,8 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
           }
         });
 
-        docIdSolicitud ??= FirebaseFirestore.instance.collection('prision_domiciliaria_solicitados').doc().id;
-        String path = 'solicitudes_prision_domiciliaria/$docIdSolicitud/${file.name}';
+        docIdSolicitud ??= FirebaseFirestore.instance.collection('permiso_72horas_solicitados').doc().id;
+        String path = 'solicitudes_permiso_72horas/$docIdSolicitud/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,
@@ -717,13 +716,13 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null && result.files.isNotEmpty) {
-        docIdSolicitud ??= FirebaseFirestore.instance.collection('prision_domiciliaria_solicitados').doc().id;
+        docIdSolicitud ??= FirebaseFirestore.instance.collection('permiso_72horas_solicitados').doc().id;
 
         for (PlatformFile file in result.files) {
           if (!archivosHijos.any((f) => f.name == file.name)) {
             archivosHijos.add(file);
 
-            String path = 'solicitudes_prision_domiciliaria/$docIdSolicitud/hijos/${file.name}';
+            String path = 'solicitudes_permiso_72horas/$docIdSolicitud/hijos/${file.name}';
 
             String? downloadUrl = await ArchivoUploader.subirArchivo(
               file: file,

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
+import 'package:flutter_html/flutter_html.dart';
+
 
 class DetalleCorreoExtincionPenaPage extends StatelessWidget {
   final String idDocumento;
@@ -65,11 +67,17 @@ class DetalleCorreoExtincionPenaPage extends StatelessWidget {
                   Text("📅 Enviado: $fechaEnvio", style: const TextStyle(fontSize: 12)),
                   const Divider(color: gris),
                   const SizedBox(height: 12),
-                  Text(
-                    contenido,
-                    style: const TextStyle(fontSize: 14),
-                    textAlign: TextAlign.justify,
+                  Html(
+                    data: contenido,
+                    style: {
+                      "body": Style(
+                        fontSize: FontSize(14),
+                        textAlign: TextAlign.justify,
+                        color: Colors.black,
+                      ),
+                    },
                   ),
+
                 ],
               ),
             ),

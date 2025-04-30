@@ -11,12 +11,10 @@ import 'package:tuprocesoya/Pages/administrador/historial_solicitudes_permiso_72
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
-import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
-import '../../../plantillas/plantilla_condicional.dart';
 import '../../../plantillas/plantilla_permiso_72horas.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
@@ -1524,7 +1522,7 @@ Durante el tiempo que he permanecido en reclusión, he mantenido una conducta ej
 
 $textoCumplimientoPena
 
-Durante el disfrute del permiso, permaneceré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable y quien ha asumido el compromiso de brindarme apoyo y acompañamiento permanente.$textoHijos
+Durante el disfrute del permiso, permaneceré en el domicilio ubicado en la $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable y quien ha asumido el compromiso de brindarme apoyo y acompañamiento permanente.$textoHijos
 
 Esta solicitud representa para mí una oportunidad de inmenso valor en mi proceso de reintegración social y familiar, reafirmando mi propósito de construir un proyecto de vida digno y en armonía con mi entorno.
 """;
@@ -2367,7 +2365,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
 
-            Navigator.pushReplacementNamed(context, 'historial_solicitudes_prision_domiciliaria_admin');
+            Navigator.pushReplacementNamed(context, 'historial_solicitudes_permiso_72horas_admin');
           }
         }
       },
