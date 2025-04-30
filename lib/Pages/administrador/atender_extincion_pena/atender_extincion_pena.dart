@@ -10,16 +10,15 @@ import 'package:mime/mime.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
-import '../../../commons/archivoViewerWeb.dart';
-import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
-import '../../../plantillas/plantilla_condicional.dart';
+import '../../../plantillas/plantilla_extincion_pena.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
 import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'atender_extincion_pena_controller.dart';
 
@@ -27,41 +26,16 @@ class AtenderExtincionPenaPage extends StatefulWidget {
   final String status;
   final String idDocumento;
   final String numeroSeguimiento;
-  final String direccion;
-  final String departamento;
-  final String municipio;
-  final String nombreResponsable;
-  final String cedulaResponsable;
-  final String celularResponsable;
   final String fecha;
   final String idUser;
-  final List<String> archivos;
-  final String parentesco;
-  final String reparacion;
-
-
-  // 🔹 Nuevos campos opcionales
-  final String? urlArchivoCedulaResponsable;
-  final List<String> urlsArchivosHijos;
 
   const AtenderExtincionPenaPage({
     super.key,
     required this.status,
     required this.idDocumento,
     required this.numeroSeguimiento,
-    required this.direccion,
-    required this.departamento,
-    required this.municipio,
-    required this.nombreResponsable,
-    required this.cedulaResponsable,
-    required this.celularResponsable,
     required this.fecha,
     required this.idUser,
-    required this.archivos,
-    required this.parentesco,
-    required this.reparacion,
-    this.urlArchivoCedulaResponsable,
-    this.urlsArchivosHijos = const [],
   });
 
   @override
@@ -84,14 +58,12 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
   final TextEditingController _sinopsisController = TextEditingController();
   final TextEditingController _consideracionesController = TextEditingController();
   final TextEditingController _pretencionesController = TextEditingController();
-  final TextEditingController _anexosController = TextEditingController();
   final TextEditingController _fundamentosDerechoController = TextEditingController();
   final AtenderExtincionPenaAdminController _controller = AtenderExtincionPenaAdminController();
   String sinopsis = "";
   String consideraciones = "";
   String fundamentosDeDerecho = "";
   String pretenciones = "";
-  String anexos = "";
   bool _mostrarVistaPrevia = false;
   bool _mostrarBotonVistaPrevia = false;
   Map<String, String> correosCentro = {};
@@ -103,7 +75,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
   bool _isFundamentosLoaded = false; // Bandera para evitar sobrescribir
   bool _isConsideracionesLoaded = false; // Bandera para evitar sobrescribir
   bool _isPretencionesLoaded = false; // Bandera para evitar sobrescribir
-  bool _isAnexosLoaded = false; // Bandera para evitar sobrescribir
   String adminFullName="";
   String entidad= "";
   String diligencio = '';
@@ -114,7 +85,7 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
   DateTime? fechaRevision;
   List<String> archivos = [];
   String rol = AdminProvider().rol ?? "";
-  late LibertadCondicionalTemplate libertadCondicional;
+  late ExtincionPenaTemplate extincionPena;
   String asignadoA_P2 = '';
   String asignadoNombreP2 = '';
   DateTime? fechaAsignadoP2;
@@ -133,32 +104,7 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
     // TODO: implement initState
     super.initState();
     _pplProvider = PplProvider();
-    archivosAdjuntos = widget.archivos.map((archivo) {
-      return {
-        "nombre": obtenerNombreArchivo(archivo),
-        "contenido": archivo,
-      };
-    }).toList();
     _calculoCondenaController = CalculoCondenaController(_pplProvider);
-
-// 🔹 Agregar la cédula del responsable si existe
-    if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) {
-      archivosAdjuntos.add({
-        "nombre": obtenerNombreArchivo(widget.urlArchivoCedulaResponsable!),
-        "contenido": widget.urlArchivoCedulaResponsable!,
-      });
-    }
-
-// 🔹 Agregar los documentos de los hijos
-    if (widget.urlsArchivosHijos.isNotEmpty) {
-      for (var url in widget.urlsArchivosHijos) {
-        archivosAdjuntos.add({
-          "nombre": obtenerNombreArchivo(url),
-          "contenido": url,
-        });
-      }
-    }
-
     fetchUserData();
     fetchDocumentoExtincionPena();
     calcularTiempo(widget.idUser);
@@ -166,7 +112,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
     _consideracionesController.addListener(_actualizarAltura);
     _fundamentosDerechoController.addListener(_actualizarAltura);
     _pretencionesController.addListener(_actualizarAltura);
-    _anexosController.addListener(_actualizarAltura);
 
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -174,7 +119,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
       cargarConsideraciones(widget.idDocumento);
       cargarFundamentosDeDerecho(widget.idDocumento);
       cargarPretenciones(widget.idDocumento);
-      cargarAnexos(widget.idDocumento);
     });
     adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
     if (adminFullName.isEmpty) {
@@ -182,7 +126,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
         print("❌ No se pudo obtener el nombre del administrador.");
       }
     }
-    archivos = List<String>.from(widget.archivos); // Copia los archivos una vez
   }
 
   String obtenerNombreArchivo(String url) {
@@ -320,87 +263,10 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
               const SizedBox(height: 15),
               _buildDetallesSolicitud(),
               const SizedBox(height: 20),
-              _buildInformacionUsuarioWidget(
-                direccion: widget.direccion,
-                departamento: widget.departamento,
-                municipio: widget.municipio,
-                nombreResponsable: widget.nombreResponsable,
-                cedulaResponsable: widget.cedulaResponsable,
-                celularResponsable: widget.celularResponsable,
-                hijos: solicitudData?.containsKey('hijos') == true
-                    ? List<Map<String, String>>.from(
-                    solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
-                    : [],
-              ),
             ],
           ),
 
         ),
-        const Row(
-          children: [
-            Icon(Icons.attach_file),
-            Text("Archivos adjuntos", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
-        ),
-        const SizedBox(height: 30),
-
-        /// 📂 **Mostramos los archivos aquí**
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (widget.archivos.isNotEmpty) ...[
-              const Text("📄 Recibo de servicios - 📝 Declaración extrajuicio - 📝 Insolvencia (Si aplica)",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ArchivoViewerWeb2(
-                archivos: widget.archivos,
-              ),
-              const SizedBox(height: 20),
-            ],
-            if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) ...[
-              const Text("🪪 Cédula del responsable", style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ArchivoViewerWeb2(
-                archivos: [widget.urlArchivoCedulaResponsable!],
-              ),
-              const SizedBox(height: 20),
-            ],
-            if (widget.urlsArchivosHijos.isNotEmpty) ...[
-              const Text("👶 Documentos de identidad de los hijos",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ArchivoViewerWeb2(
-                archivos: widget.urlsArchivosHijos,
-              ),
-              const SizedBox(height: 20),
-            ],
-            if (archivosAdjuntos.length > widget.archivos.length +
-                (widget.urlArchivoCedulaResponsable != null ? 1 : 0) +
-                widget.urlsArchivosHijos.length) ...[
-              const Text("📎 Otros archivos adjuntos",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              ArchivoViewerWeb2(
-                archivos: archivosAdjuntos
-                    .map((e) => e['contenido']!)
-                    .toList()
-                    .where((url) =>
-                !widget.archivos.contains(url) &&
-                    url != widget.urlArchivoCedulaResponsable &&
-                    !widget.urlsArchivosHijos.contains(url))
-                    .toList(),
-              ),
-            ],
-            if (widget.archivos.isEmpty &&
-                (widget.urlArchivoCedulaResponsable?.isEmpty ?? true) &&
-                widget.urlsArchivosHijos.isEmpty)
-              const Text(
-                "El usuario no compartió ningún archivo",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: Colors.red),
-              ),
-          ],
-        ),
-
         const SizedBox(height: 30),
         const Divider(color: gris),
         if (((widget.status == "Diligenciado" ||
@@ -428,8 +294,7 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
               const SizedBox(height: 30),
               ingresarPretenciones(),
               const SizedBox(height: 30),
-              ingresarAnexos(),
-              const SizedBox(height: 30),
+
             ],
           ),
 
@@ -472,7 +337,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
                     consideraciones = _consideracionesController.text.trim();
                     fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
                     pretenciones = _pretencionesController.text.trim();
-                    anexos = _anexosController.text.trim();
                     _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
                   });
                 },
@@ -485,33 +349,12 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
           ),
 
         if (_mostrarVistaPrevia)
-          vistaPreviaLibertadCondicional(
+          vistaPreviaExtincionPena(
             userData: userData,
             sinopsis: _sinopsisController.text,
             consideraciones: _consideracionesController.text,
             fundamentosDeDerecho: _fundamentosDerechoController.text,
             pretenciones: _pretencionesController.text,
-            anexos: _anexosController.text,
-            direccion: widget.direccion,
-            municipio: widget.municipio,
-            departamento: widget.departamento,
-            nombreResponsable: widget.nombreResponsable,
-            cedulaResponsable: widget.cedulaResponsable,
-            celularResponsable: widget.celularResponsable,
-            parentesco: widget.parentesco,
-            hijos: solicitudData?.containsKey('hijos') == true
-                ? List<Map<String, String>>.from(
-              (solicitudData!['hijos'] as List).map(
-                    (hijo) => Map<String, String>.from(
-                  (hijo as Map),
-                ),
-              ),
-            )
-                : [],
-
-            documentosHijos: solicitudData?.containsKey('documentos_hijos') == true
-                ? List<String>.from(solicitudData!['documentos_hijos'])
-                : [],
           )
       ],
     );
@@ -557,99 +400,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
 
 
 
-  Widget _buildInformacionUsuarioWidget({
-    required String direccion,
-    required String departamento,
-    required String municipio,
-    required String nombreResponsable,
-    required String cedulaResponsable,
-    required String celularResponsable,
-    List<Map<String, String>> hijos = const [], // ← Añadido por defecto
-  }) {
-    TextStyle labelStyle = const TextStyle(fontSize: 12);
-    TextStyle valueStyle = const TextStyle(fontSize: 12, fontWeight: FontWeight.bold);
-
-    return Card(
-      surfaceTintColor: blanco,
-      elevation: 5,
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Información suministrada por el Usuario",
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 16),
-            const Text("Lugar registrado para la Extinción de la pena", style: TextStyle(fontSize: 12)),
-            Row(
-              children: [
-                Text("Dirección: ", style: labelStyle),
-                Expanded(
-                  child: Text(
-                    '$direccion, $municipio, $departamento',
-                    style: valueStyle,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Divider(height: 1, color: gris),
-            const SizedBox(height: 12),
-            const Text(
-              "Persona que se hace responsable en el Domicilio",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text("Nombres y apellidos: ", style: labelStyle),
-                Expanded(child: Text(nombreResponsable, style: valueStyle)),
-              ],
-            ),
-            Row(
-              children: [
-                Text("Número de identificación: ", style: labelStyle),
-                Expanded(child: Text(cedulaResponsable, style: valueStyle)),
-              ],
-            ),
-            Row(
-              children: [
-                Text("Teléfono Celular: ", style: labelStyle),
-                Expanded(child: Text(celularResponsable, style: valueStyle)),
-              ],
-            ),
-
-            // 👶 Sección adicional si hay hijos
-            if (hijos.isNotEmpty) ...[
-              const Divider(height: 20, color: gris),
-              const Text(
-                "Hijos que convivirán en el domicilio",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              ...hijos.map((hijo) {
-                final nombre = hijo['nombre'] ?? '';
-                final edad = hijo['edad'] ?? '';
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text("$nombre - $edad años", style: const TextStyle(fontSize: 12)),
-                );
-              }).toList(),
-            ],
-            const SizedBox(height: 12),
-            const Divider(height: 1, color: gris),
-            const SizedBox(height: 12),
-            infoReparacionVictima(
-                reparacion: widget.reparacion
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
 
   void _actualizarAltura() {
@@ -661,8 +411,7 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
 
   void _guardarDatosEnVariables() {
     if ( _sinopsisController.text.isEmpty || _fundamentosDerechoController.text.isEmpty || _consideracionesController.text.isEmpty
-        || _pretencionesController.text.isEmpty
-        || _anexosController.text.isEmpty ) {
+        || _pretencionesController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("⚠️ Todos los campos deben estar llenos."),
@@ -680,7 +429,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
       consideraciones = _consideracionesController.text;
       fundamentosDeDerecho = _fundamentosDerechoController.text;
       pretenciones = _pretencionesController.text;
-      anexos = _anexosController.text;
     });
     _mostrarBotonVistaPrevia = true;
   }
@@ -691,12 +439,10 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
     _consideracionesController.removeListener(_actualizarAltura);
     _fundamentosDerechoController.removeListener(_actualizarAltura);
     _pretencionesController.removeListener(_actualizarAltura);
-    _anexosController.removeListener(_actualizarAltura);
     _sinopsisController.dispose();
     _consideracionesController.dispose();
     _fundamentosDerechoController.dispose();
     _pretencionesController.dispose();
-    _anexosController.dispose();
     super.dispose();
   }
 
@@ -906,8 +652,7 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
       _mostrarBotonVistaPrevia =
           _sinopsisController.text.trim().isNotEmpty && _consideracionesController.text.trim().isNotEmpty &&
               _fundamentosDerechoController.text.trim().isNotEmpty &&
-              _pretencionesController.text.trim().isNotEmpty &&
-              _anexosController.text.trim().isNotEmpty;
+              _pretencionesController.text.trim().isNotEmpty;
     });
   }
 
@@ -995,18 +740,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
             ],
           ),
           const SizedBox(height: 15),
-          // if (estaEnReclusion) ...[
-          //   const Divider(color: primary),
-          //   const SizedBox(height: 10),
-          //   const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //   Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-          //   const SizedBox(height: 10),
-          //   const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //   correoConBoton('Principal', correosCentro['correo_principal']),
-          //   correoConBoton('Director', correosCentro['correo_direccion']),
-          //   correoConBoton('Jurídica', correosCentro['correo_juridica']),
-          //   correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-          // ],
 
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
@@ -1264,13 +997,12 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
       _sinopsisController.text = generarTextoSinopsisDesdeDatos(
         fetchedData,
         fetchedData.situacion ?? 'En Reclusión',
-        widget.reparacion,
-        diasRedimidos,
+        _calculoCondenaController.totalDiasRedimidos ?? 0,
       );
 
       if (!_isFundamentosLoaded) {
         _fundamentosDerechoController.text =
-            generarTextoFundamentosDesdeDatos(fetchedData, latestData, widget.parentesco);
+            generarTextoFundamentosDesdeDatos(fetchedData, latestData);
         _isFundamentosLoaded = true;
       }
 
@@ -1280,53 +1012,18 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
         _isPretencionesLoaded = true;
       }
 
-      if (!_isAnexosLoaded) {
-        final tieneHijosYDocumentos = latestData.containsKey('hijos') &&
-            latestData['hijos'] is List &&
-            latestData['hijos'].isNotEmpty &&
-            latestData.containsKey('documentos_hijos') &&
-            latestData['documentos_hijos'] is List &&
-            latestData['documentos_hijos'].isNotEmpty;
-
-        final listaHijos = tieneHijosYDocumentos
-            ? (latestData['hijos'] as List<dynamic>)
-            .whereType<Map>()
-            .map((e) => Map<String, dynamic>.from(e))
-            .toList()
-            : <Map<String, dynamic>>[];
-
-        _anexosController.text = generarTextoAnexos(
-          fetchedData.situacion ?? 'En Reclusión',
-          incluirPuntoHijos: tieneHijosYDocumentos,
-          hijos: listaHijos,
-          reparacion: widget.reparacion,
-        );
-        _isAnexosLoaded = true;
-      }
-
       if (!_isConsideracionesLoaded) {
-        final listaHijos = solicitudData?.containsKey('hijos') == true
-            ? List<Map<String, String>>.from(
-            solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
-            : <Map<String, String>>[];
-
-        _consideracionesController.text = generarTextoConsideracionesParaLibertadCondicional(
-          direccion: widget.direccion,
-          municipio: widget.municipio,
-          departamento: widget.departamento,
-          nombreResponsable: widget.nombreResponsable,
-          parentescoResponsable: widget.parentesco,
+        _consideracionesController.text = generarTextoConsideracionesParaExtincionPena(
           situacion: fetchedData?.situacion ?? 'En Reclusión',
           mesesEjecutados: mesesEjecutado,
-          diasEjecutados: diasEjecutadoExactos,
-          hijos: listaHijos,
-        );
+          diasEjecutados: diasEjecutadoExactos,        );
+
         _isConsideracionesLoaded = true;
       }
 
       setState(() {
         userData = fetchedData;
-        libertadCondicional = LibertadCondicionalTemplate(
+        extincionPena = ExtincionPenaTemplate(
           dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
           entidad: fetchedData.centroReclusion ?? "",
           referencia: "Beneficios penitenciarios - Extinción de la pena",
@@ -1338,14 +1035,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
           consideraciones: _consideracionesController.text.trim(),
           fundamentosDeDerecho: _fundamentosDerechoController.text.trim(),
           pretenciones: _pretencionesController.text.trim(),
-          anexos: _anexosController.text.trim(),
-          direccionDomicilio: latestData['direccion'] ?? "",
-          municipio: latestData['municipio'] ?? "",
-          departamento: latestData['departamento'] ?? "",
-          nombreResponsable: latestData['nombre_responsable'] ?? "",
-          parentesco: widget.parentesco,
-          cedulaResponsable: latestData['cedula_responsable'] ?? "",
-          celularResponsable: latestData['celular_responsable'] ?? "",
           emailUsuario: fetchedData.email?.trim() ?? "",
           nui: fetchedData.nui ?? "",
           td: fetchedData.td ?? "",
@@ -1368,8 +1057,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
     }
   }
 
-
-
   String formatearFechaCaptura(String fechaString) {
     try {
       final fecha = DateTime.parse(fechaString); // convierte el string en DateTime
@@ -1383,7 +1070,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
   String generarTextoSinopsisDesdeDatos(
       Ppl userData,
       String situacion,
-      String reparacion,
       double totalDiasRedimidos,
       ) {
     final jdc = userData.juzgadoQueCondeno ?? '';
@@ -1392,178 +1078,85 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
     final delito = userData.delito ?? '';
     final fechaFormateada = formatearFechaCaptura(captura);
 
-    if (situacion == "En Prisión domiciliaria") {
-      return "Mi condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
-          "La captura fue el día $fechaFormateada. Actualmente me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria.";
-    } else {
-      return "Mi condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
-          "La captura fue el día $fechaFormateada.";
-    }
+    return "Mi condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
+        "La captura fue el día $fechaFormateada.";
+
   }
 
-
-  String generarTextoConsideracionesParaLibertadCondicional({
-    required String direccion,
-    required String municipio,
-    required String departamento,
-    required String nombreResponsable,
-    required String parentescoResponsable,
+  String generarTextoConsideracionesParaExtincionPena({
     required String situacion,
     required int mesesEjecutados,
     required int diasEjecutados,
-    List<Map<String, String>> hijos = const [],
   }) {
-    // 🔹 Construir el texto para los hijos si existen
-    String textoHijos = "";
-    if (hijos.isNotEmpty) {
-      final esPlural = hijos.length > 1;
-      final listaHijos = hijos.map((hijo) {
-        final nombre = hijo['nombre'] ?? '';
-        final edad = hijo['edad'] ?? '';
-        return "$nombre, de $edad años";
-      }).join("; ");
+    final textoComportamiento = (situacion == "En libertad condicional")
+        ? "Durante el tiempo que he permanecido en libertad condicional, he observado un comportamiento ejemplar, cumpliendo con las condiciones impuestas por la autoridad judicial y demostrando mi compromiso con la reintegración social."
+        : "Durante mi tiempo de reclusión, he mantenido una conducta intachable, cumpliendo con las normas del establecimiento, participando activamente en programas de resocialización y demostrando responsabilidad y disciplina.";
 
-      textoHijos =
-      "\n\nEn el mismo hogar también conviviré con ${esPlural ? "mis hijos" : "mi hijo"} $listaHijos, "
-          "${esPlural ? "quienes son" : "quien es"} parte esencial de mi vida y ${esPlural ? "representan" : "representa"} mi principal motivación para continuar avanzando de manera positiva en mi proceso de resocialización.";
-    }
-
-    // 🔹 Texto según situación
-    final textoComportamiento = (situacion == "En Prisión domiciliaria")
-        ? "Durante el tiempo que he permanecido en prisión domiciliaria, he mantenido un comportamiento ejemplar, cumpliendo con las condiciones impuestas, y participando activamente en mi proceso de resocialización y fortalecimiento familiar."
-        : "Durante mi tiempo de reclusión, he mantenido un comportamiento ejemplar, cumpliendo con las normas del establecimiento, participando activamente en actividades de resocialización, trabajo y educación, y demostrando compromiso con mi proceso de transformación personal.";
-
-    // 🔹 Texto de cumplimiento de pena (lo que quitamos de la sinopsis)
-    final textoCumplimientoPena =
-        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. "
-        "En consecuencia, he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito legal para solicitar el beneficio de libertad condicional.";
+    final textoCumplimiento =
+        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. Con ello, he satisfecho en su totalidad la pena privativa de la libertad impuesta.";
 
     return """
-Honorable Juez, respetuosamente me permito solicitar la concesión del beneficio de libertad condicional, como una oportunidad para continuar con mi proceso de resocialización y reintegración a la sociedad en un entorno familiar estable y de apoyo.
+Honorable Juez, me permito solicitar la extinción de la pena privativa de la libertad que me fue impuesta, en virtud del cumplimiento total de la misma, conforme a lo establecido en el artículo 147 de la Ley 65 de 1993.
 
 $textoComportamiento
 
-$textoCumplimientoPena
+$textoCumplimiento
 
-De ser concedido el beneficio, residiré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable, y quien ha asumido el compromiso de acompañarme y garantizar que cumpla con todas las condiciones que se me impongan.$textoHijos
-
-Esta solicitud representa para mí una oportunidad de inmenso valor para consolidar mi proceso de reintegración social y familiar, contribuyendo activamente a la construcción de un proyecto de vida digno y en libertad.
+Con esta solicitud busco formalizar el cierre de una etapa jurídica que he asumido con responsabilidad, y continuar mi vida con plena integración a la sociedad, dentro del marco de la legalidad y el respeto por los valores ciudadanos.
 """;
   }
 
-
   String generarTextoPretencionesDesdeDatos(String situacion) {
-    if (situacion == "En Prisión domiciliaria") {
+    if (situacion == "En libertad condicional") {
       return """
-PRIMERO: Que se reconozca que actualmente me encuentro cumpliendo mi condena bajo el beneficio de prisión domiciliaria, y se evalúe la procedencia de concederme la libertad condicional conforme a la normatividad vigente.
+PRIMERO: Que se reconozca que actualmente me encuentro en libertad condicional y que, habiendo cumplido la totalidad de la pena impuesta, se declare la extinción de la misma conforme a lo dispuesto en la Ley 65 de 1993.
 
-SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 de la Ley 65 de 1993, teniendo en cuenta el cumplimiento de los requisitos exigidos, incluyendo el tiempo purgado, la buena conducta y el entorno familiar de arraigo.
+SEGUNDO: Solicitar a la autoridad competente que emita la resolución correspondiente en la que se formalice la extinción de la pena privativa de la libertad que me fue impuesta.
 """;
     }
 
-    // Default (En Reclusión)
+    // Default: En Reclusión
     return """
-PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite de libertad condicional.
+PRIMERO: Solicitar al establecimiento penitenciario y carcelario que certifique el cumplimiento total de la pena, incluyendo el tiempo efectivo y los redimidos conforme a la ley.
 
-SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de las tres quintas partes de la pena, la buena conducta y el entorno familiar favorable.
+SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certificación y el cumplimiento íntegro de la pena, declare formalmente la extinción de la misma conforme al artículo 147 de la Ley 65 de 1993.
 """;
   }
+
 
   String generarTextoFundamentosDesdeDatos(
       Ppl userData,
       Map<String, dynamic> latestData,
-      String parentesco,
       ) {
     final situacion = userData.situacion ?? 'En Reclusión';
 
-    if (situacion == "En Prisión domiciliaria") {
+    if (situacion == "En libertad condicional") {
       return """
-1. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es una forma de cumplimiento de la pena privativa de la libertad fuera del establecimiento carcelario, bajo vigilancia del Estado, cuando el condenado haya cumplido las tres quintas partes de la pena y demostrado buena conducta.
+1. El artículo 147 de la Ley 65 de 1993 establece que la pena privativa de la libertad se extingue cuando ha sido cumplida en su totalidad, incluyendo el tiempo ejecutado efectivamente, los redimidos y los otorgados mediante beneficios administrativos o judiciales.
 
-2. Actualmente me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria, evidencia de mi proceso de resocialización anticipada, del arraigo demostrado en el entorno familiar y del cumplimiento disciplinado de las condiciones impuestas.
+2. Actualmente me encuentro en libertad condicional, lo cual indica que he cumplido una parte sustancial de la pena con conducta favorable y bajo supervisión, contribuyendo activamente a mi proceso de resocialización.
 
-3. De acuerdo con los artículos 21 y 42 de la Constitución Política, el respeto a la dignidad humana y la protección de la familia respaldan la importancia de continuar con mi proceso de integración social en un ambiente de apoyo familiar.
+3. El artículo 29 de la Constitución Política garantiza el debido proceso, y el cumplimiento total de la pena constituye una condición suficiente para solicitar su extinción.
 
-4. El artículo 145 de la Ley 65 de 1993 establece que, cumplidos los requisitos de porcentaje de pena ejecutada, buena conducta y plan de resocialización, procede la concesión de la libertad condicional, requisitos que he satisfecho.
+4. La Corte Constitucional ha reiterado en múltiples pronunciamientos que la finalidad de la pena no es solo sancionadora sino también resocializadora, y una vez esta se ha cumplido en su integridad, se debe reconocer el derecho a extinguirla legalmente.
 
-5. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos para la procedencia del beneficio.
-
-6. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, dispone que las penas privativas de libertad deben tener como finalidad esencial la rehabilitación social, principio que respaldo mediante esta solicitud.
+5. En virtud del principio de legalidad y del respeto por los derechos fundamentales, solicito se declare la extinción de la pena privativa de la libertad que me fue impuesta, toda vez que he satisfecho íntegramente su duración conforme a la ley.
 """;
     }
 
     // 🔹 Situación por defecto: En Reclusión
     return """
-1. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es un mecanismo de cumplimiento de la pena bajo vigilancia estatal, aplicable a quienes hayan cumplido las tres quintas partes de la pena y demuestren buena conducta.
+1. Conforme al artículo 147 del Código Penitenciario y Carcelario (Ley 65 de 1993), la pena privativa de la libertad se extingue cuando el condenado ha cumplido la totalidad de la misma, incluyendo los tiempos redimidos por trabajo, estudio u otras actividades reconocidas por la ley.
 
-2. Durante mi permanencia en el centro de reclusión, he cumplido más del 60% de la pena impuesta, observando una conducta ejemplar, compromiso constante con procesos de resocialización, educación y trabajo, y respeto por las normas internas.
+2. Actualmente me encuentro privado de la libertad en centro de reclusión, donde he cumplido efectivamente la pena impuesta, teniendo en cuenta los tiempos de reclusión y las redenciones legalmente reconocidas.
 
-3. En atención a los artículos 21 y 42 de la Constitución Política, solicito el beneficio como medio para fortalecer el derecho fundamental a la dignidad humana y la importancia de la familia como núcleo esencial de la sociedad.
+3. La Corte Constitucional ha sostenido que una vez se ha cumplido con la totalidad de la pena, el Estado tiene la obligación de reconocer la extinción de la misma, como expresión del respeto a los derechos fundamentales y al principio de legalidad.
 
-4. El artículo 145 de la Ley 65 de 1993 señala que cumplidos los requisitos de tiempo, comportamiento y plan de resocialización, es procedente acceder a la libertad condicional, condiciones que se reflejan en mi trayectoria penitenciaria.
+4. El artículo 29 de la Constitución Política de Colombia, que consagra el debido proceso, y el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, respaldan que la pena no debe prolongarse más allá del límite legalmente establecido.
 
-5. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos de este beneficio.
-
-6. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, resalta la necesidad de que la privación de la libertad tenga como fin principal la rehabilitación social, principio que oriento en mi solicitud.
+5. En razón de lo anterior, y habiéndose cumplido todos los requisitos temporales y sustanciales, solicito formalmente la extinción de la pena impuesta, en los términos del ordenamiento jurídico colombiano.
 """;
   }
-
-
-  String generarTextoAnexos(
-      String situacion, {
-        required bool incluirPuntoHijos,
-        required String reparacion,
-        List<Map<String, dynamic>> hijos = const [],
-        int cantidadDocumentos = 0,
-      }) {
-    final incluyeInsolvencia = reparacion == 'insolvencia';
-
-    int contador = 1;
-
-    final punto1 = "$contador. ${situacion == 'En Prisión domiciliaria'
-        ? "Declaración extrajuicio de la persona con la que convivo actualmente durante el beneficio de prisión domiciliaria, y quien continuará como responsable en caso de otorgarse la libertad condicional."
-        : "Declaración extrajuicio de la persona que me acogerá en el sitio de domicilio durante el beneficio de libertad condicional."}";
-    contador++;
-
-    final punto2 = incluyeInsolvencia
-        ? "${contador++}. Certificación de insolvencia económica."
-        : null;
-
-    final punto3 =
-        "${contador++}. Fotocopia de la cédula de ciudadanía de la persona responsable.";
-
-    final punto4 =
-        "${contador++}. Fotocopia de un recibo de servicios públicos que demuestra la dirección de residencia.";
-
-    String punto5 = '';
-    if (incluirPuntoHijos && hijos.isNotEmpty) {
-      final pluralDocs = cantidadDocumentos > 1;
-      final pluralHijos = hijos.length > 1;
-      final verboConvivir = situacion == 'En Prisión domiciliaria'
-          ? (pluralHijos ? 'conviven' : 'convive')
-          : (pluralHijos ? 'convivirán' : 'convivirá');
-
-      final titulo =
-          "$contador. Documento${pluralDocs ? 's' : ''} de mi ${pluralHijos ? 'hijos' : 'hijo'} que $verboConvivir conmigo durante el cumplimiento de la pena.";
-
-      final listaHijos = hijos.map((h) {
-        final nombre = h['nombre'] ?? 'Nombre no registrado';
-        final edad = h['edad'] ?? 'Edad desconocida';
-        return '• $nombre, de $edad años';
-      }).join('\n');
-
-      punto5 = "$titulo\n$listaHijos";
-    }
-
-    return [
-      punto1,
-      if (punto2 != null) punto2,
-      punto3,
-      punto4,
-      if (punto5.isNotEmpty) punto5
-    ].join('\n\n');
-  }
-
 
 
   void fetchDocumentoExtincionPena() async {
@@ -1868,33 +1461,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       }
     }
   }
-  //corregido full
-  Future<void> cargarAnexos(String docId) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('extincion_pena_solicitados')
-          .doc(docId)
-          .get();
-
-      if (doc.exists && !_isAnexosLoaded) {
-        final data = doc.data() as Map<String, dynamic>?;
-
-        final texto = data?['anexos'];
-        if (texto != null && texto is String) {
-          setState(() {
-            _anexosController.text = texto;
-            _isAnexosLoaded = true;
-          });
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando anexos: $e");
-      }
-    }
-  }
 
   //corregido full - autollenado por IA o se puede escribir igualmente
   Widget ingresarSinopsis() {
@@ -2021,58 +1587,17 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
     );
   }
 
-  Widget ingresarAnexos() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "ANEXOS",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: _anexosController,
-          minLines:1,
-          maxLines: null,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey.shade100, // Fondo gris claro
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          style: const TextStyle(fontSize: 14),
-          onChanged: (_) => verificarVistaPrevia(),
-        )
-      ],
-    );
-  }
 
-
-  Widget vistaPreviaLibertadCondicional({
+  Widget vistaPreviaExtincionPena({
     required Ppl? userData,
     required String sinopsis,
     required String consideraciones,
     required String fundamentosDeDerecho,
     required String pretenciones,
-    required String anexos,
-    required String direccion,
-    required String municipio,
-    required String departamento,
-    required String nombreResponsable,
-    required String cedulaResponsable,
-    required String celularResponsable,
-    required String parentesco,
-    required List<Map<String, String>>? hijos,
-    required List<String>? documentosHijos,
 
   }) {
     //usamos la misma plantilla que domiciliaria ya que es igual**
-    final plantilla = LibertadCondicionalTemplate(
+    final plantilla = ExtincionPenaTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad,
       referencia: "Beneficios penitenciarios - Extinción de la pena",
@@ -2084,14 +1609,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       consideraciones: convertirSaltosDeLinea(_consideracionesController.text),
       fundamentosDeDerecho: convertirSaltosDeLinea(_fundamentosDerechoController.text),
       pretenciones: convertirSaltosDeLinea(_pretencionesController.text),
-      anexos: convertirSaltosDeLinea(_anexosController.text),
-      direccionDomicilio: direccion,
-      municipio: municipio,
-      departamento: departamento,
-      nombreResponsable: nombreResponsable,
-      parentesco: widget.parentesco,
-      cedulaResponsable: cedulaResponsable,
-      celularResponsable: celularResponsable,
       emailUsuario: userData?.email ?? "",
       nui: userData?.nui ?? "",
       td: userData?.td ?? "",
@@ -2102,8 +1619,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       purgado: "$mesesEjecutado",
       jdc: userData?.juzgadoQueCondeno ?? "",
       numeroSeguimiento: widget.numeroSeguimiento,
-      hijos:hijos,
-      documentosHijos: documentosHijos,
       situacion: userData?.situacion ?? 'En Reclusión',
     );
 
@@ -2158,7 +1673,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-    libertadCondicional = LibertadCondicionalTemplate(
+      extincionPena = ExtincionPenaTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad ?? "",
       referencia: "Beneficios penitenciarios - Extinción de la pena",
@@ -2170,14 +1685,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       consideraciones: consideraciones,
       fundamentosDeDerecho: fundamentosDeDerecho,
       pretenciones: pretenciones,
-      anexos: anexos,
-      direccionDomicilio: latestData['direccion'] ?? '',
-      municipio: latestData['municipio'] ?? '',
-      departamento: latestData['departamento'] ?? '',
-      nombreResponsable: latestData['nombre_responsable'] ?? '',
-      parentesco: widget.parentesco,
-      cedulaResponsable: latestData['cedula_responsable'] ?? '',
-      celularResponsable: latestData['celular_responsable'] ?? '',
       emailUsuario: userData?.email.trim() ?? '',
       nui: userData?.nui ?? '',
       td: userData?.td ?? '',
@@ -2188,52 +1695,15 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
-      hijos: solicitudData?.containsKey('hijos') == true
-          ? List<Map<String, String>>.from(solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
-          : [],
-      documentosHijos: solicitudData?.containsKey('documentos_hijos') == true
-          ? List<String>.from(solicitudData!['documentos_hijos'])
-          : [],
       situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
     );
 
 
-    String mensajeHtml = libertadCondicional.generarTextoHtml();
+    String mensajeHtml = extincionPena.generarTextoHtml();
 
     List<Map<String, String>> archivosBase64 = [];
 
-    // Función auxiliar para procesar cualquier archivo por URL
-    Future<void> procesarArchivo(String urlArchivo) async {
-      try {
-        String nombreArchivo = obtenerNombreArchivo(urlArchivo);
-        final response = await http.get(Uri.parse(urlArchivo));
-        if (response.statusCode == 200) {
-          String base64String = base64Encode(response.bodyBytes);
-          archivosBase64.add({
-            "nombre": nombreArchivo,
-            "base64": base64String,
-            "tipo": lookupMimeType(nombreArchivo) ?? "application/octet-stream",
-          });
-        }
-      } catch (e) {
-        if (kDebugMode) print("❌ Error al procesar archivo $urlArchivo: $e");
-      }
-    }
 
-    // 🔹 Archivos principales
-    for (String archivoUrl in widget.archivos) {
-      await procesarArchivo(archivoUrl);
-    }
-
-    // 🔹 Cédula del responsable
-    if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) {
-      await procesarArchivo(widget.urlArchivoCedulaResponsable!);
-    }
-
-    // 🔹 Documentos de los hijos
-    for (String archivoHijo in widget.urlsArchivosHijos) {
-      await procesarArchivo(archivoHijo);
-    }
 
     final asuntoCorreo = "Solicitud de Extinción de la pena - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -2276,7 +1746,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       }
     }
   }
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -2330,7 +1799,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
             consideraciones = _consideracionesController.text.trim();
             fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
             pretenciones = _pretencionesController.text.trim();
-            anexos = _anexosController.text.trim();
           });
 
           if (context.mounted) {
@@ -2354,14 +1822,14 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
           await enviarCorreoResend();
 
-          final html = libertadCondicional.generarTextoHtml();
-          await subirHtmlCorreoADocumentoCondicional(
+          final html = extincionPena.generarTextoHtml();
+          await subirHtmlCorreoADocumentoExtincionPena(
             idDocumento: widget.idDocumento,
             htmlContent: html,
           );
 
           const urlApp = "https://www.tuprocesoya.com";
-          final numeroSeguimiento = libertadCondicional.numeroSeguimiento;
+          final numeroSeguimiento = extincionPena.numeroSeguimiento;
 
           if (context.mounted) {
             Navigator.of(context).pop(); // Cerrar loading
@@ -2398,7 +1866,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
             if(context.mounted){
-              Navigator.pushReplacementNamed(context, 'historial_solicitudes_libertad_condicional_admin');
+              Navigator.pushReplacementNamed(context, 'historial_solicitudes_extincion_pena_admin');
             }
           }
         }
@@ -2408,7 +1876,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   }
 
 
-  Future<void> subirHtmlCorreoADocumentoCondicional({
+  Future<void> subirHtmlCorreoADocumentoExtincionPena({
     required String idDocumento,
     required String htmlContent,
   }) async {
@@ -2495,7 +1963,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
             "consideraciones": _consideracionesController.text,
             "fundamentos_de_derecho": _fundamentosDerechoController.text,
             "pretenciones": _pretencionesController.text,
-            "anexos": _anexosController.text,
           });
 
           if (context.mounted) {
@@ -2516,7 +1983,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
                   return SlideTransition(position: offsetAnimation, child: child);
                 },
                 pageBuilder: (context, animation, secondaryAnimation) {
-                  return const HistorialSolicitudesCondicionalAdminPage();
+                  return const HistorialSolicitudesExtincionPenaAdminPage();
                 },
               ),
             );
@@ -2565,7 +2032,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
             "consideraciones": _consideracionesController.text,
             "fundamentos_de_derecho": _fundamentosDerechoController.text,
             "pretenciones": _pretencionesController.text,
-            "anexos": _anexosController.text,
           });
 
           if (context.mounted) {
@@ -2584,7 +2050,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
                   return SlideTransition(position: offsetAnimation, child: child);
                 },
                 pageBuilder: (context, animation, secondaryAnimation) {
-                  return const HistorialSolicitudesCondicionalAdminPage();
+                  return const HistorialSolicitudesExtincionPenaAdminPage();
                 },
               ),
             );

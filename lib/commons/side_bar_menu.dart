@@ -260,7 +260,7 @@ class _SideBarState extends State<SideBar> {
                 child: _buildDrawerTile(
                     context, "Solicitudes de Extinción de pena",
                     Icons.double_arrow_outlined,
-                    'home_admin'),
+                    'historial_solicitudes_extincion_pena_admin'),
               ),
             ],
           ),
