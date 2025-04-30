@@ -806,7 +806,7 @@ class _HistorialSolicitudesExtincionPenaAdminPageState extends State<HistorialSo
   String obtenerRutaSegunStatus(String status) {
     switch (status) {
       case "Enviado":
-        return 'solicitudes_libertad_condicional_enviadas_por_correo';
+        return 'solicitudes_extincion_pena_enviadas_por_correo';
       default:
         return 'atender_extincion_pena_page';
     }

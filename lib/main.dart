@@ -31,6 +31,7 @@ import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_enviada_por_correo/extincion_perna_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/libertad_condicional_enviada_por_correo/libertad_condicional_enviada_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/permiso_72horas_enviadas_por_correo/permiso_72horas_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/prision_domiciliaria_enviada_por_correo/prision_domiciliaria_enviada_por_correo.dart';
@@ -379,6 +380,21 @@ class MyApp extends StatelessWidget {
             );
           }
 
+          else if (settings.name == 'solicitudes_extincion_pena_enviadas_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesExincionPenaPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'] ?? "Beneficios penitenciarios",
+                subcategoria: args['subcategoria'] ?? "Extinción de la pena",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
 
           else if (settings.name == 'atender_tutela_page') {
             final args = settings.arguments as Map<String, dynamic>;
