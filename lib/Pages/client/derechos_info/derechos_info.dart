@@ -376,7 +376,7 @@ class DerechosInfoPage extends StatelessWidget {
 
                     ],
                   ),
-                  textAlign: TextAlign.justify,
+                  textAlign: TextAlign.start,
                 ),
                 Divider(height: 1, color: negro,),
                 Text("Fuente: Fundación Comité de Solidaridad con los Presos Políticos; "

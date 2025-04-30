@@ -1705,27 +1705,6 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
     );
   }
 
-  // 🔹 Cloud Function para generar texto automático para prisión domiciliaria
-  // Future<void> generarTextoIAParaDomiciliaria() async {
-  //   try {
-  //     final resultado = await IABackendService.generarTextoPrisionDomiciliaria(); // ✅ Nombre correcto del método
-  //
-  //     setState(() {
-  //       _consideracionesController.text = resultado['consideraciones'] ?? '';
-  //       _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-  //       _peticionConcretaController.text = resultado['peticion'] ?? '';
-  //     });
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("❌ Error: $e")),
-  //     );
-  //   }
-  // }
-
   // corregido full
   Future<void> cargarSinopsis(String docId) async {
     try {

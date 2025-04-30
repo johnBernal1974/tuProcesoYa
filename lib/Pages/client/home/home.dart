@@ -9,6 +9,8 @@ import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/ppl_provider.dart';
+import 'package:rxdart/rxdart.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -66,8 +68,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
-
   Future<void> _loadUid() async {
     final user = _myAuthProvider.getUser();
     if (user != null) {
@@ -100,7 +100,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDiasRedimidos = 0;
 
@@ -130,81 +129,100 @@ class _HomePageState extends State<HomePage> {
     return MainLayout(
       pageTitle: 'Página Principal',
       content: _uid.isEmpty || _isLoading
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            CircularProgressIndicator(),
-            SizedBox(height: 16), // Espacio entre el spinner y el texto
-            Text(
-              'Cargando información...',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black54,
-              ),
-            ),
-          ],
-        ),
-      )
-          : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-        stream: FirebaseFirestore.instance.collection('Ppl').doc(_uid).snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Cargando información...',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ],
-              ),
-            );
+          ? _buildLoading()
+          : StreamBuilder<List<QuerySnapshot>>(
+        stream: CombineLatestStream.list([
+          FirebaseFirestore.instance
+              .collection('permiso_72horas_solicitados')
+              .where('idUser', isEqualTo: _uid)
+              .snapshots(),
+          FirebaseFirestore.instance
+              .collection('prision_domiciliaria_solicitados')
+              .where('idUser', isEqualTo: _uid)
+              .snapshots(),
+          FirebaseFirestore.instance
+              .collection('libertad_condicional_solicitados')
+              .where('idUser', isEqualTo: _uid)
+              .snapshots(),
+          FirebaseFirestore.instance
+              .collection('extincion_pena_solicitados')
+              .where('idUser', isEqualTo: _uid)
+              .snapshots(),
+        ]),
+        builder: (context, solicitudesSnapshots) {
+          if (!solicitudesSnapshots.hasData) return _buildLoading();
+
+          // 🔁 Recalcular los estados
+          final nuevasSolicitudes = solicitudesSnapshots.data!;
+          final nuevoStatus = <String, String>{};
+
+          if (nuevasSolicitudes[0].docs.isNotEmpty) {
+            nuevoStatus['permiso_72h'] = nuevasSolicitudes[0].docs.first['status'] ?? '';
+          }
+          if (nuevasSolicitudes[1].docs.isNotEmpty) {
+            nuevoStatus['prision_domiciliaria'] = nuevasSolicitudes[1].docs.first['status'] ?? '';
+          }
+          if (nuevasSolicitudes[2].docs.isNotEmpty) {
+            nuevoStatus['libertad_condicional'] = nuevasSolicitudes[2].docs.first['status'] ?? '';
+          }
+          if (nuevasSolicitudes[3].docs.isNotEmpty) {
+            nuevoStatus['extincion_pena'] = nuevasSolicitudes[3].docs.first['status'] ?? '';
           }
 
-          if (!snapshot.hasData || !snapshot.data!.exists) {
-            return const Center(child: Text('No se encontraron datos del usuario'));
-          }
+          _statusSolicitudes = nuevoStatus;
+          _statusLoaded = true;
 
-          _ppl = Ppl.fromDocumentSnapshot(snapshot.data!);
-          _isPaid = _ppl?.isPaid ?? false;
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance.collection('Ppl').doc(_uid).snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || !snapshot.data!.exists) {
+                return const Center(child: Text('No se encontraron datos del usuario'));
+              }
 
-          return SingleChildScrollView(
-            child: SizedBox(
-              width: MediaQuery.of(context).size.width >= 1000 ? 800 : double.infinity,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
-                  Text(
-                    'Hoy es: ${DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now())}',
-                    style: const TextStyle(fontSize: 12),
+              _ppl = Ppl.fromDocumentSnapshot(snapshot.data!);
+              _isPaid = _ppl?.isPaid ?? false;
+
+              return SingleChildScrollView(
+                child: SizedBox(
+                  width: MediaQuery.of(context).size.width >= 1000 ? 800 : double.infinity,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
+                      Text(
+                        'Hoy es: ${DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now())}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(height: 10),
+                      if (_isTrial && !_isPaid) _buildTrialCard(),
+                      _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
+                      const SizedBox(height: 20),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  if (_isTrial && !_isPaid)
-                    _buildTrialCard(),
-                  _isPaid || _isTrial
-                      ? _buildPaidContent()
-                      : _buildUnpaidContent(),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           );
         },
       ),
     );
   }
 
-
+  Widget _buildLoading() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text(
+            'Cargando información...',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black54),
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildTrialCard() {
     return SizedBox(
