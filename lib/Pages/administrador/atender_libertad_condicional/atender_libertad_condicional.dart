@@ -1304,11 +1304,14 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
         _isAnexosLoaded = true;
       }
 
+
       if (!_isConsideracionesLoaded) {
         final listaHijos = solicitudData?.containsKey('hijos') == true
             ? List<Map<String, String>>.from(
             solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
             : <Map<String, String>>[];
+
+        final diasRedimidos = _calculoCondenaController.totalDiasRedimidos?.toInt() ?? 0;
 
         _consideracionesController.text = generarTextoConsideracionesParaLibertadCondicional(
           direccion: widget.direccion,
@@ -1317,12 +1320,14 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           nombreResponsable: widget.nombreResponsable,
           parentescoResponsable: widget.parentesco,
           situacion: fetchedData?.situacion ?? 'En Reclusión',
-          mesesEjecutados: mesesEjecutado,
-          diasEjecutados: diasEjecutadoExactos,
+          diasEjecutados: diasEjecutadoExactos + (mesesEjecutado * 30),
+          diasRedimidos: diasRedimidos,
           hijos: listaHijos,
         );
+
         _isConsideracionesLoaded = true;
       }
+
 
       setState(() {
         userData = fetchedData;
@@ -1409,11 +1414,15 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     required String nombreResponsable,
     required String parentescoResponsable,
     required String situacion,
-    required int mesesEjecutados,
     required int diasEjecutados,
+    required int diasRedimidos,
     List<Map<String, String>> hijos = const [],
   }) {
-    // 🔹 Construir el texto para los hijos si existen
+    final totalDias = diasEjecutados + diasRedimidos;
+    final mesesEjecutados = totalDias ~/ 30;
+    final diasRestantes = totalDias % 30;
+
+    // 🔹 Hijos
     String textoHijos = "";
     if (hijos.isNotEmpty) {
       final esPlural = hijos.length > 1;
@@ -1428,14 +1437,14 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           "${esPlural ? "quienes son" : "quien es"} parte esencial de mi vida y ${esPlural ? "representan" : "representa"} mi principal motivación para continuar avanzando de manera positiva en mi proceso de resocialización.";
     }
 
-    // 🔹 Texto según situación
+    // 🔹 Comportamiento
     final textoComportamiento = (situacion == "En Prisión domiciliaria")
         ? "Durante el tiempo que he permanecido en prisión domiciliaria, he mantenido un comportamiento ejemplar, cumpliendo con las condiciones impuestas, y participando activamente en mi proceso de resocialización y fortalecimiento familiar."
         : "Durante mi tiempo de reclusión, he mantenido un comportamiento ejemplar, cumpliendo con las normas del establecimiento, participando activamente en actividades de resocialización, trabajo y educación, y demostrando compromiso con mi proceso de transformación personal.";
 
-    // 🔹 Texto de cumplimiento de pena (lo que quitamos de la sinopsis)
+    // 🔹 Cumplimiento
     final textoCumplimientoPena =
-        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. "
+        "A la fecha, he cumplido $mesesEjecutados meses y $diasRestantes días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. "
         "En consecuencia, he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito legal para solicitar el beneficio de libertad condicional.";
 
     return """
@@ -1450,6 +1459,7 @@ De ser concedido el beneficio, residiré en el domicilio ubicado en $direccion, 
 Esta solicitud representa para mí una oportunidad de inmenso valor para consolidar mi proceso de reintegración social y familiar, contribuyendo activamente a la construcción de un proyecto de vida digno y en libertad.
 """;
   }
+
 
 
   String generarTextoPretencionesDesdeDatos(String situacion) {

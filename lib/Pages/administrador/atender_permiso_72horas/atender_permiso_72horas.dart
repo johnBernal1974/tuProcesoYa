@@ -1261,15 +1261,25 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
     if (fetchedData != null && latestData != null && mounted) {
       final diasRedimidos = _calculoCondenaController.totalDiasRedimidos ?? 0;
-      // 🔹 Precargar campos solo si no están ya cargados
+
+      // 🔥 Calcular total ejecutado incluyendo redenciones
+      final totalDias = (mesesEjecutado * 30) + diasEjecutadoExactos + diasRedimidos.toInt();
+
+      final mesesEjecutadosFinal = totalDias ~/ 30;
+      final diasEjecutadosFinal = totalDias % 30;
+
+      // 🔹 Precargar campos
       _sinopsisController.text = generarTextoSinopsisParaPermiso72h(
         fetchedData,
         diasRedimidos,
       );
 
       if (!_isFundamentosLoaded) {
-        _fundamentosDerechoController.text =
-            generarTextoFundamentosDesdeDatos(fetchedData, latestData, widget.parentesco);
+        _fundamentosDerechoController.text = generarTextoFundamentosDesdeDatos(
+          fetchedData,
+          latestData,
+          widget.parentesco,
+        );
         _isFundamentosLoaded = true;
       }
 
@@ -1288,10 +1298,11 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
         final listaHijos = tieneHijosYDocumentos
             ? (latestData['hijos'] as List<dynamic>)
-            .whereType<Map>() // 🔹 Asegura que cada ítem sea un Map
+            .whereType<Map>()
             .map((e) => Map<String, dynamic>.from(e))
             .toList()
             : <Map<String, dynamic>>[];
+
         _anexosController.text = generarTextoAnexosParaPermiso72Horas(
           incluirPuntoHijos: tieneHijosYDocumentos,
           hijos: listaHijos,
@@ -1306,54 +1317,54 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
         (solicitudData!['hijos'] as List).map((hijo) => Map<String, String>.from(hijo)),
       )
           : [];
-      final consideracionesTexto = generarTextoConsideracionesParaPermiso72Horas(
+
+
+
+      _consideracionesController.text = generarTextoConsideracionesParaPermiso72Horas(
         direccion: widget.direccion,
         municipio: widget.municipio,
         departamento: widget.departamento,
         nombreResponsable: widget.nombreResponsable,
-        parentescoResponsable: widget.parentesco, // 🔥
-        mesesEjecutados: mesesEjecutado, // 🔥 agregas esto
-        diasEjecutados: diasEjecutadoExactos, // 🔥 agregas esto
-        hijos: listaHijos, // 👶
+        parentescoResponsable: widget.parentesco,
+        mesesEjecutados: mesesEjecutadosFinal,
+        diasEjecutados: diasEjecutadosFinal,
+        hijos: listaHijos,
       );
-
-      _consideracionesController.text = consideracionesTexto;
-
 
       setState(() {
         userData = fetchedData;
 
         permiso72horas = Permiso72HorasTemplate(
-            dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-            entidad: fetchedData.centroReclusion ?? "",
-            referencia: "Beneficios penitenciarios - Permiso de 72 horas",
-            nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
-            apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
-            identificacionPpl: fetchedData.numeroDocumentoPpl ?? "",
-            centroPenitenciario: fetchedData.centroReclusion ?? "",
-            sinopsis: _sinopsisController.text.trim(),
-            consideraciones: _consideracionesController.text.trim(),
-            fundamentosDeDerecho: _fundamentosDerechoController.text.trim(),
-            pretenciones: _pretencionesController.text.trim(),
-            anexos: _anexosController.text.trim(),
-            direccionDomicilio: latestData['direccion'] ?? "",
-            municipio: latestData['municipio'] ?? "",
-            departamento: latestData['departamento'] ?? "",
-            nombreResponsable: latestData['nombre_responsable'] ?? "",
-            parentesco: widget.parentesco,
-            cedulaResponsable: latestData['cedula_responsable'] ?? "",
-            celularResponsable: latestData['celular_responsable'] ?? "",
-            emailUsuario: fetchedData.email?.trim() ?? "",
-            nui: fetchedData.nui ?? "",
-            td: fetchedData.td ?? "",
-            patio: fetchedData.patio ?? "",
-            radicado: fetchedData.radicado ?? "",
-            delito: fetchedData.delito ?? "",
-            condena: "${fetchedData.tiempoCondena ?? 0}",
-            purgado: "$mesesEjecutado",
-            jdc: fetchedData.juzgadoQueCondeno ?? "",
-            numeroSeguimiento: widget.numeroSeguimiento,
-            situacion: fetchedData.situacion
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: fetchedData.centroReclusion ?? "",
+          referencia: "Beneficios penitenciarios - Permiso de 72 horas",
+          nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
+          apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
+          identificacionPpl: fetchedData.numeroDocumentoPpl ?? "",
+          centroPenitenciario: fetchedData.centroReclusion ?? "",
+          sinopsis: _sinopsisController.text.trim(),
+          consideraciones: _consideracionesController.text.trim(),
+          fundamentosDeDerecho: _fundamentosDerechoController.text.trim(),
+          pretenciones: _pretencionesController.text.trim(),
+          anexos: _anexosController.text.trim(),
+          direccionDomicilio: latestData['direccion'] ?? "",
+          municipio: latestData['municipio'] ?? "",
+          departamento: latestData['departamento'] ?? "",
+          nombreResponsable: latestData['nombre_responsable'] ?? "",
+          parentesco: widget.parentesco,
+          cedulaResponsable: latestData['cedula_responsable'] ?? "",
+          celularResponsable: latestData['celular_responsable'] ?? "",
+          emailUsuario: fetchedData.email?.trim() ?? "",
+          nui: fetchedData.nui ?? "",
+          td: fetchedData.td ?? "",
+          patio: fetchedData.patio ?? "",
+          radicado: fetchedData.radicado ?? "",
+          delito: fetchedData.delito ?? "",
+          condena: "${fetchedData.tiempoCondena ?? 0}",
+          purgado: "$mesesEjecutadosFinal meses y $diasEjecutadosFinal días",
+          jdc: fetchedData.juzgadoQueCondeno ?? "",
+          numeroSeguimiento: widget.numeroSeguimiento,
+          situacion: fetchedData.situacion,
         );
 
         isLoading = false;
@@ -1365,6 +1376,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
       });
     }
   }
+
 
 
   String formatearFechaCaptura(String fechaString) {

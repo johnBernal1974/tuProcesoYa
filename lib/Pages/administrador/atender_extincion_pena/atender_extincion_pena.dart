@@ -990,14 +990,15 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
 
     if (fetchedData != null && latestData != null && mounted) {
       // 🔥 Primero calcular correctamente los tiempos
+      await calcularTiempo(widget.idUser);
       await _calculoCondenaController.calcularTiempo(widget.idUser);
-      final diasRedimidos = _calculoCondenaController.totalDiasRedimidos ?? 0;
+      final diasRedimidos = _calculoCondenaController.totalDiasRedimidos?.toInt() ?? 0;
 
       // 🔥 Precargar campos
       _sinopsisController.text = generarTextoSinopsisDesdeDatos(
         fetchedData,
         fetchedData.situacion ?? 'En Reclusión',
-        _calculoCondenaController.totalDiasRedimidos ?? 0,
+        diasRedimidos.toDouble(),
       );
 
       if (!_isFundamentosLoaded) {
@@ -1013,10 +1014,15 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
       }
 
       if (!_isConsideracionesLoaded) {
+        final totalDias = (mesesEjecutado * 30) + diasEjecutadoExactos + diasRedimidos;
+        final mesesEjecutadosFinal = totalDias ~/ 30;
+        final diasEjecutadosFinal = totalDias % 30;
+
         _consideracionesController.text = generarTextoConsideracionesParaExtincionPena(
-          situacion: fetchedData?.situacion ?? 'En Reclusión',
-          mesesEjecutados: mesesEjecutado,
-          diasEjecutados: diasEjecutadoExactos,        );
+          situacion: fetchedData.situacion ?? 'En Reclusión',
+          mesesEjecutados: mesesEjecutadosFinal,
+          diasEjecutados: diasEjecutadosFinal,
+        );
 
         _isConsideracionesLoaded = true;
       }
@@ -1056,6 +1062,7 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
       });
     }
   }
+
 
   String formatearFechaCaptura(String fechaString) {
     try {
@@ -1722,7 +1729,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "extincion",
+      "tipo": "extincion_pena",
     });
 
     final response = await http.post(

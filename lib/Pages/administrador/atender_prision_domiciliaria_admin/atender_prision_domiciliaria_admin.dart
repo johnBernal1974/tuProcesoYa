@@ -1313,18 +1313,24 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
             : <Map<String, String>>[];
 
+        final diasRedimidos = _calculoCondenaController.totalDiasRedimidos?.toInt() ?? 0;
+        final totalDias = diasEjecutadoExactos + (mesesEjecutado * 30) + diasRedimidos;
+        final mesesTotales = totalDias ~/ 30;
+        final diasRestantes = totalDias % 30;
+
         _consideracionesController.text = generarTextoConsideracionesParaPrisionDomiciliaria(
           direccion: widget.direccion,
           municipio: widget.municipio,
           departamento: widget.departamento,
           nombreResponsable: widget.nombreResponsable,
           parentescoResponsable: widget.parentesco,
-          mesesEjecutados: mesesEjecutado,
-          diasEjecutados: diasEjecutadoExactos,
+          mesesEjecutados: mesesTotales,
+          diasEjecutados: diasRestantes,
           hijos: listaHijos,
         );
         _isConsideracionesLoaded = true;
       }
+
 
       setState(() {
         userData = fetchedData;
