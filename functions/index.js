@@ -416,32 +416,35 @@ exports.generarTextoIAExtendido = onRequest({
     if (respuestasUsuario.length > 0) {
       // 🔹 Prompt tradicional para derechos de petición con narrativa del acudiente
       prompt = `
-Redacta el cuerpo de un derecho de petición en Colombia para una persona privada de la libertad.
+      Redacta el cuerpo de un derecho de petición en Colombia para una persona privada de la libertad (PPL).
 
-🔒 Ya existe un encabezado con nombre, documento y centro penitenciario: **no repitas esos datos**.
+      🔒 Ya existe un encabezado con nombre, documento y centro penitenciario: **no repitas esos datos**.
 
-🧠 El relato fue escrito por un acudiente (familiar, amigo o persona de confianza), quien describe la situación del PPL en primera persona ("mi hermano", "mi padre", etc.). Interpreta correctamente el texto: **todo lo que se menciona se refiere exclusivamente a la persona privada de la libertad, no al acudiente.**
+      🧠 Las respuestas fueron dadas por un acudiente (familiar, amigo o persona de confianza), quien puede referirse al PPL en tercera persona ("mi hermano", "mi padre", etc.). Sin embargo, redacta el texto como si lo escribiera directamente la persona privada de la libertad, en primera persona. Interpreta correctamente que todo lo mencionado se refiere al PPL, y no al acudiente.
 
-🧠 Usa toda la información proporcionada para construir una sección sólida de “Consideraciones”, redactada en tercera persona, con lenguaje técnico, claro y sin adornos personales.
+      🧠 Usa toda la información proporcionada para construir una sección sólida de “Consideraciones”, redactada en primera persona, con lenguaje técnico, claro y sin adornos emocionales.
 
-✒️ Estructura el documento con estos títulos (tal cual):
+      ✒️ Estructura el documento con estos títulos (tal cual):
 
-Consideraciones
-Fundamentos de derecho
-Petición concreta
+      Consideraciones
 
-📌 Fundamentos de derecho debe incluir:
-- Fundamento en la Constitución Política (con número de artículo y descripción).
-- Fundamento en la Ley 65 de 1993 o normas penitenciarias pertinentes.
-- Jurisprudencia relevante: cita número de sentencia, año y criterio aplicable.
+      Fundamentos de derecho
 
-📌 En la Petición concreta:
-- Redacta con precisión y claridad.
-- Incluye si hay otro derecho que también esté en riesgo o se vulnera.
+      Petición concreta
 
-Respuestas dadas por el acudiente:
-${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
+      📌 Fundamentos de derecho debe incluir:
+      - Fundamento en la Constitución Política (con número de artículo y descripción).
+      - Fundamento en la Ley 65 de 1993 o normas penitenciarias pertinentes.
+      - Jurisprudencia relevante: cita número de sentencia, año y criterio aplicable.
+
+      📌 Petición concreta:
+      - Redacta en primera persona, con precisión y claridad.
+      - Expón de forma concreta lo que solicito y si se está vulnerando o amenazando otro derecho.
+
+      Respuestas dadas por el acudiente:
+      ${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
       `.trim();
+
     } else {
       // 🔹 Prompt adaptado según subcategoría sin respuestas
       switch (subcategoria.toLowerCase()) {
