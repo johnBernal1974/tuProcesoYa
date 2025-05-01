@@ -6,9 +6,12 @@ class TutelaTemplate {
   final String apellidoPpl;
   final String identificacionPpl;
   final String centroPenitenciario;
-  final String consideraciones;
-  final String fundamentosDeDerecho;
-  final String peticionConcreta;
+  final String hechos;
+  final String derechosVulnerados;
+  final String normasAplicables;
+  final String pretensiones;
+  final String pruebas;
+  final String juramento;
   final String emailUsuario;
   final String emailAlternativo;
   final String nui;
@@ -23,9 +26,12 @@ class TutelaTemplate {
     required this.apellidoPpl,
     required this.identificacionPpl,
     required this.centroPenitenciario,
-    required this.consideraciones,
-    required this.fundamentosDeDerecho,
-    required this.peticionConcreta,
+    required this.hechos,
+    required this.derechosVulnerados,
+    required this.normasAplicables,
+    required this.pretensiones,
+    required this.pruebas,
+    required this.juramento,
     required this.emailUsuario,
     this.emailAlternativo = "peticiones@tuprocesoya.com",
     required this.nui,
@@ -43,19 +49,25 @@ class TutelaTemplate {
         <p>Asunto: <b>ACCIÓN DE TUTELA - $numeroSeguimiento</b><br>
         Referencia: <b>$referencia</b></p>
 
-        <p>Me dirijo a usted en representación de <b>$nombrePpl $apellidoPpl</b>, con número de identificación <b>$identificacionPpl</b>, NUI: <b>$nui</b>, TD: <b>$td</b>, actualmente recluido en <b>$centroPenitenciario</b>, actuando en ejercicio de la <b>acción de tutela</b> consagrada en el artículo 86 de la Constitución Política, el Decreto 2591 de 1991 y demás normas concordantes, de manera respetuosa elevo a ustedes lo siguiente:</p>
+        <p>Me dirijo a usted en representación de <b>$nombrePpl $apellidoPpl</b>, identificado con <b>$identificacionPpl</b>, NUI: <b>$nui</b>, TD: <b>$td</b>, privado de la libertad en el establecimiento <b>$centroPenitenciario</b>, con el fin de ejercer la <b>acción de tutela</b> consagrada en el artículo 86 de la Constitución Política y el Decreto 2591 de 1991, por la vulneración de derechos fundamentales. A continuación, presento los hechos y fundamentos:</p>
 
-        <p><b>I. Consideraciones</b><br>$consideraciones</p>
+        <p><b>I. HECHOS</b><br>$hechos</p>
 
-        <p><b>II. Fundamentos de derecho</b><br>$fundamentosDeDerecho</p>
+        <p><b>II. DERECHOS FUNDAMENTALES VULNERADOS</b><br>$derechosVulnerados</p>
 
-        <p><b>III. Petición concreta</b><br>$peticionConcreta</p>
+        <p><b>III. NORMAS APLICABLES</b><br>$normasAplicables</p>
 
-        <p>Por favor enviar las notificaciones a las siguientes direcciones electrónicas:<br>
+        <p><b>IV. PRETENSIONES</b><br>$pretensiones</p>
+
+        <p><b>V. PRUEBAS</b><br>$pruebas</p>
+
+        <p><b>VI. CUMPLIMIENTO AL ARTÍCULO 37 DEL DECRETO 2591 DE 1991 – JURAMENTO</b><br>$juramento</p>
+
+        <p>Solicito que las notificaciones sean enviadas a las siguientes direcciones electrónicas:<br>
         $emailAlternativo<br>
         $emailUsuario</p>
 
-        <p>Agradezco enormemente su colaboración y respuesta rápida y satisfactoria.</p>
+        <p>Gracias por su atención y pronta respuesta.</p>
 
         <p>Atentamente,</p><br>
 

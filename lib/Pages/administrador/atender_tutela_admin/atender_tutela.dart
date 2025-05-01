@@ -12,6 +12,7 @@ import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/ia_backend_service/IASuggestionCard.dart';
+import '../../../commons/ia_backend_service/IASuggestionCardTutela.dart';
 import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../models/ppl.dart';
@@ -21,6 +22,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import 'atender_tutela_controler.dart';
 
 class AtenderTutelaPage extends StatefulWidget {
   final String status;
@@ -66,13 +68,21 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
   List<Map<String, String>> archivosAdjuntos = [];
-  final TextEditingController _consideracionesController = TextEditingController();
-  final TextEditingController _fundamentosDerechoController = TextEditingController();
-  final TextEditingController _peticionConcretaController = TextEditingController();
-  final AtenderDerechoPeticionAdminController _controller = AtenderDerechoPeticionAdminController();
-  String consideraciones = "";
-  String fundamentosDeDerecho = "";
-  String peticionConcreta = "";
+  final TextEditingController _hechosController = TextEditingController();
+  final TextEditingController _derechosVulneradosController = TextEditingController();
+  final TextEditingController _normasAplicablesController = TextEditingController();
+  final TextEditingController _pretensionesController = TextEditingController();
+  final TextEditingController _pruebasController = TextEditingController();
+  final TextEditingController _juramentoController = TextEditingController();
+  final AtenderTutelaAdminController _controller = AtenderTutelaAdminController();
+
+  String hechos = "";
+  String derechosVulnerados = "";
+  String normasAplicables = "";
+  String pretensiones = "";
+  String pruebas = "";
+  String juramento = "";
+
   bool _mostrarVistaPrevia = false;
   bool _mostrarBotonVistaPrevia = false;
   Map<String, String> correosCentro = {};
@@ -80,7 +90,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   String? correoSeleccionado= ""; // Guarda el correo seleccionado
   String? nombreCorreoSeleccionado;
   String idDocumento="";
-  bool _isConsideracionesLoaded = false; // Bandera para evitar sobrescribir
+  bool _isHechosLoaded = false; // Bandera para evitar sobrescribir
   bool _isFundamentosLoaded = false; // Bandera para evitar sobrescribir
   bool _isPeticionConcretaLoaded = false; // Bandera para evitar sobrescribir
   String adminFullName="";
@@ -114,11 +124,14 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       };
     }).toList();
     fetchUserData();
-    fetchDocumentoDerechoPeticion();
+    fetchDocumentoTutela();
     calcularTiempo(widget.idUser);
-    _consideracionesController.addListener(_actualizarAltura);
-    _fundamentosDerechoController.addListener(_actualizarAltura);
-    _peticionConcretaController.addListener(_actualizarAltura);
+    _hechosController.addListener(_actualizarAltura);
+    _derechosVulneradosController.addListener(_actualizarAltura);
+    _pretensionesController.addListener(_actualizarAltura);
+    _normasAplicablesController.addListener(_actualizarAltura);
+    _pruebasController.addListener(_actualizarAltura);
+    _juramentoController.addListener(_actualizarAltura);
     DocumentReference userDoc = FirebaseFirestore.instance.collection('Ppl').doc(widget.idUser);
     obtenerCorreosCentro(userDoc).then((correos) {
       setState(() {
@@ -126,9 +139,12 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       });
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      cargarConsideraciones(widget.idDocumento);
-      cargarFundamentosDeDerecho(widget.idDocumento);
-      cargarPeticionConcreta(widget.idDocumento);
+      cargarHechos(widget.idDocumento);
+      cargarDerechosVulnerados(widget.idDocumento);
+      cargarPretensiones(widget.idDocumento);
+      cargarNormasAplicables(widget.idDocumento);
+      cargarPruebas(widget.idDocumento);
+      cargarJuramento(widget.idDocumento);
     });
     adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
     if (adminFullName.isEmpty) {
@@ -317,11 +333,17 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                 ),
               ),
               const SizedBox(height: 30),
-              ingresarConsideraciones(),
+              ingresarHechos(),
               const SizedBox(height: 30),
-              ingresarFundamentosDeDerecho(),
+              ingresarDerechosVulnerados(),
               const SizedBox(height: 30),
-              ingresarPeticionConcreta(),
+              ingresarNormasAplicables(),
+              const SizedBox(height: 30),
+              ingresarPretensiones(),
+              const SizedBox(height: 30),
+              ingresarPruebas(),
+              const SizedBox(height: 30),
+              ingresarJuramento(),
               const SizedBox(height: 30),
             ],
           ),
@@ -361,9 +383,9 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                 onPressed: () {
                   setState(() {
                     // Actualizar las variables con los valores de los controladores
-                    consideraciones = _consideracionesController.text.trim();
-                    fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
-                    peticionConcreta = _peticionConcretaController.text.trim();
+                    hechos = _hechosController.text.trim();
+                    derechosVulnerados = _derechosVulneradosController.text.trim();
+                    pretensiones = _pretensionesController.text.trim();
                     _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
                   });
                 },
@@ -376,7 +398,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
           ),
 
         if (_mostrarVistaPrevia)
-          vistaPreviaDerechoPeticion(userData, consideraciones, fundamentosDeDerecho, peticionConcreta),
+          vistaPreviaTutela(userData, hechos, derechosVulnerados, pretensiones, normasAplicables, pruebas, juramento),
       ],
     );
   }
@@ -442,15 +464,16 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   }
 
   void _actualizarAltura() {
-    int lineas = '\n'.allMatches(_consideracionesController.text).length + 1;
+    int lineas = '\n'.allMatches(_hechosController.text).length + 1;
     setState(() {
 // Limita el crecimiento a 5 líneas
     });
   }
 
   void _guardarDatosEnVariables() {
-    if (_consideracionesController.text.isEmpty || _fundamentosDerechoController.text.isEmpty
-        || _peticionConcretaController.text.isEmpty) {
+    if (_hechosController.text.isEmpty || _derechosVulneradosController.text.isEmpty
+        || _pretensionesController.text.isEmpty || _normasAplicablesController.text.isEmpty
+        || _pruebasController.text.isEmpty  || _juramentoController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("⚠️ Todos los campos deben estar llenos."),
@@ -464,19 +487,30 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     }
 
     setState(() {
-      consideraciones = _consideracionesController.text;
-      fundamentosDeDerecho = _fundamentosDerechoController.text;
-      peticionConcreta = _peticionConcretaController.text;
+      hechos = _hechosController.text;
+      derechosVulnerados = _derechosVulneradosController.text;
+      pretensiones = _pretensionesController.text;
+      normasAplicables = _normasAplicablesController.text;
+      pruebas = _pruebasController.text;
+      juramento = _juramentoController.text;
     });
     _mostrarBotonVistaPrevia = true;
   }
 
   @override
   void dispose() {
-    _consideracionesController.removeListener(_actualizarAltura);
-    _fundamentosDerechoController.removeListener(_actualizarAltura);
-    _consideracionesController.dispose();
-    _fundamentosDerechoController.dispose();
+    _hechosController.removeListener(_actualizarAltura);
+    _derechosVulneradosController.removeListener(_actualizarAltura);
+    _pretensionesController.removeListener(_actualizarAltura);
+    _normasAplicablesController.removeListener(_actualizarAltura);
+    _pruebasController.removeListener(_actualizarAltura);
+    _juramentoController.removeListener(_actualizarAltura);
+    _hechosController.dispose();
+    _derechosVulneradosController.dispose();
+    _pretensionesController.dispose();
+    _normasAplicablesController.dispose();
+    _pruebasController.dispose();
+    _juramentoController.dispose();
     super.dispose();
   }
 
@@ -683,9 +717,12 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   void verificarVistaPrevia() {
     setState(() {
       _mostrarBotonVistaPrevia =
-          _consideracionesController.text.trim().isNotEmpty &&
-              _fundamentosDerechoController.text.trim().isNotEmpty &&
-              _peticionConcretaController.text.trim().isNotEmpty;
+          _hechosController.text.trim().isNotEmpty &&
+              _derechosVulneradosController.text.trim().isNotEmpty &&
+              _pretensionesController.text.trim().isNotEmpty &&
+              _normasAplicablesController.text.trim().isNotEmpty &&
+              _pruebasController.text.trim().isNotEmpty &&
+              _juramentoController.text.trim().isNotEmpty;
     });
   }
 
@@ -1064,16 +1101,17 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
             identificacionPpl: userData?.numeroDocumentoPpl ?? "",
             centroPenitenciario: userData?.centroReclusion ?? "",
-            consideraciones: consideraciones,
-            fundamentosDeDerecho: fundamentosDeDerecho,
-            peticionConcreta: peticionConcreta,
+            hechos: hechos,
+            derechosVulnerados: derechosVulnerados,
+            normasAplicables: normasAplicables,
+            pruebas: pruebas,
+            juramento: juramento,
+            pretensiones: pretensiones,
             emailUsuario: userData?.email?.trim() ?? "",
             td: userData?.td?.trim() ?? "",
             nui: userData?.nui?.trim() ?? "",
             numeroSeguimiento: widget.numeroSeguimiento, // 👈 asegúrate que esta variable exista
           );
-
-
           isLoading = false;
         });
       }
@@ -1087,10 +1125,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     }
   }
 
-  void fetchDocumentoDerechoPeticion() async {
+  void fetchDocumentoTutela() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
+          .collection('tutelas_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -1264,14 +1302,14 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
         respuestasUsuario: widget.respuestas,
       );
 
-      print("🔹 Consideraciones: ${resultado['consideraciones']}");
-      print("🔹 Fundamentos: ${resultado['fundamentos']}");
-      print("🔹 Petición: ${resultado['peticion']}");
+      print("🔹 Hechos: ${resultado['hechos']}");
+      print("🔹 Derechos vulnerados: ${resultado['derechos_vulnerados']}");
+      print("🔹 Pretensiones: ${resultado['pretensiones']}");
 
       setState(() {
-        _consideracionesController.text = resultado['consideraciones'] ?? '';
-        _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-        _peticionConcretaController.text = resultado['peticion'] ?? '';
+        _hechosController.text = resultado['hechos'] ?? '';
+        _derechosVulneradosController.text = resultado['derechos_vulnerados'] ?? '';
+        _pretensionesController.text = resultado['pretensiones'] ?? '';
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1285,21 +1323,21 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   }
 
   // corregido full
-  Future<void> cargarConsideraciones(String docId) async {
+  Future<void> cargarHechos(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
+          .collection('tutelas_solicitados')
           .doc(docId)
           .get();
 
-      if (doc.exists && !_isConsideracionesLoaded) {
+      if (doc.exists && !_isHechosLoaded) {
         final data = doc.data() as Map<String, dynamic>?;
 
-        final texto = data?['consideraciones'];
+        final texto = data?['hechos'];
         if (texto != null && texto is String) {
           setState(() {
-            _consideracionesController.text = texto;
-            _isConsideracionesLoaded = true;
+            _hechosController.text = texto;
+            _isHechosLoaded = true;
           });
 
           verificarVistaPrevia();
@@ -1307,25 +1345,25 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print("❌ Error cargando consideraciones: $e");
+        print("❌ Error cargando hechos: $e");
       }
     }
   }
   //corregido full
-  Future<void> cargarFundamentosDeDerecho(String docId) async {
+  Future<void> cargarDerechosVulnerados(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
+          .collection('tutelas_solicitados')
           .doc(docId)
           .get();
 
       if (doc.exists && !_isFundamentosLoaded) {
         final data = doc.data() as Map<String, dynamic>?;
 
-        final texto = data?['fundamentos_de_derecho'];
+        final texto = data?['derechos_vulnerados'];
         if (texto != null && texto is String) {
           setState(() {
-            _fundamentosDerechoController.text = texto;
+            _derechosVulneradosController.text = texto;
             _isFundamentosLoaded = true;
           });
 
@@ -1334,25 +1372,52 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print("❌ Error cargando fundamentos de derecho: $e");
+        print("❌ Error cargando derechos vulnerados: $e");
       }
     }
   }
-  //corregido full
-  Future<void> cargarPeticionConcreta(String docId) async {
+
+  Future<void> cargarNormasAplicables(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
+          .collection('tutelas_solicitados')
+          .doc(docId)
+          .get();
+
+      if (doc.exists && !_isFundamentosLoaded) {
+        final data = doc.data() as Map<String, dynamic>?;
+
+        final texto = data?['normas_aplicables'];
+        if (texto != null && texto is String) {
+          setState(() {
+            _normasAplicablesController.text = texto;
+            _isFundamentosLoaded = true;
+          });
+
+          verificarVistaPrevia();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error cargando normas aplicables: $e");
+      }
+    }
+  }
+
+  Future<void> cargarPretensiones(String docId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('tutelas_solicitados')
           .doc(docId)
           .get();
 
       if (doc.exists && !_isPeticionConcretaLoaded) {
         final data = doc.data() as Map<String, dynamic>?;
 
-        final texto = data?['peticion_concreta'];
+        final texto = data?['pretensiones'];
         if (texto != null && texto is String) {
           setState(() {
-            _peticionConcretaController.text = texto;
+            _pretensionesController.text = texto;
             _isPeticionConcretaLoaded = true;
           });
 
@@ -1361,27 +1426,84 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print("❌ Error cargando petición concreta: $e");
+        print("❌ Error cargando pretensiones: $e");
+      }
+    }
+  }
+
+  Future<void> cargarPruebas(String docId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('tutelas_solicitados')
+          .doc(docId)
+          .get();
+
+      if (doc.exists && !_isPeticionConcretaLoaded) {
+        final data = doc.data() as Map<String, dynamic>?;
+
+        final texto = data?['pruebas'];
+        if (texto != null && texto is String) {
+          setState(() {
+            _pretensionesController.text = texto;
+            _isPeticionConcretaLoaded = true;
+          });
+
+          verificarVistaPrevia();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error cargando pruebas: $e");
+      }
+    }
+  }
+
+  Future<void> cargarJuramento(String docId) async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('tutelas_solicitados')
+          .doc(docId)
+          .get();
+
+      if (doc.exists && !_isPeticionConcretaLoaded) {
+        final data = doc.data() as Map<String, dynamic>?;
+
+        final texto = data?['juramento'];
+        if (texto != null && texto is String) {
+          setState(() {
+            _pretensionesController.text = texto;
+            _isPeticionConcretaLoaded = true;
+          });
+
+          verificarVistaPrevia();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error cargando pruebas: $e");
       }
     }
   }
 
   // corregido full - autollenado por IA o se puede escribir igualmente
-  Widget ingresarConsideraciones() {
+  Widget ingresarHechos() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        IASuggestionCard(
+        IASuggestionCardTutela(
           categoria: widget.categoria,
           subcategoria: widget.subcategoria,
           respuestasUsuario: widget.respuestas,
-          consideracionesController: _consideracionesController,
-          fundamentosController: _fundamentosDerechoController,
-          peticionController: _peticionConcretaController,
+          hechosController: _hechosController,
+          derechosVulneradosController: _derechosVulneradosController,
+          pretensionesController: _pretensionesController,
+          normasAplicablesController: _normasAplicablesController,
+          pruebasController: _pruebasController,
+          juramentoController: _juramentoController,
         ),
         const SizedBox(height: 5),
         TextField(
-          controller: _consideracionesController,
+          controller: _hechosController,
           minLines:1,
           maxLines: null,
           decoration: InputDecoration(
@@ -1402,17 +1524,17 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     );
   }
   // corregido full - autollenado por IA o se puede escribir igualmente
-  Widget ingresarFundamentosDeDerecho() {
+  Widget ingresarDerechosVulnerados() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Fundamentos de derecho",
+          "Derechos vulnerados",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 5),
         TextField(
-          controller: _fundamentosDerechoController,
+          controller: _derechosVulneradosController,
           minLines:1,
           maxLines: null,
           decoration: InputDecoration(
@@ -1433,17 +1555,17 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     );
   }
   // corregido full - autollenado por IA o se puede escribir igualmente
-  Widget ingresarPeticionConcreta() {
+  Widget ingresarPretensiones() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Petición concreta",
+          "Pretensiones",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 5),
         TextField(
-          controller: _peticionConcretaController,
+          controller: _pretensionesController,
           minLines:1,
           maxLines: null,
           decoration: InputDecoration(
@@ -1464,8 +1586,101 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     );
   }
 
-  Widget vistaPreviaDerechoPeticion(userData, String consideraciones, String fundamentosDeDerecho, String peticionConcreta) {
-    var derechoPeticion = DerechoPeticionTemplate(
+  Widget ingresarNormasAplicables() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Normas aplicables",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 5),
+        TextField(
+          controller: _normasAplicablesController,
+          minLines:1,
+          maxLines: null,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100, // Fondo gris claro
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+          style: const TextStyle(fontSize: 14),
+          onChanged: (_) => verificarVistaPrevia(),
+        )
+      ],
+    );
+  }
+
+  Widget ingresarPruebas() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Pruebas",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 5),
+        TextField(
+          controller: _pruebasController,
+          minLines:1,
+          maxLines: null,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100, // Fondo gris claro
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+          style: const TextStyle(fontSize: 14),
+          onChanged: (_) => verificarVistaPrevia(),
+        )
+      ],
+    );
+  }
+  Widget ingresarJuramento() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Juramento",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 5),
+        TextField(
+          controller: _juramentoController,
+          minLines:1,
+          maxLines: null,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.grey.shade100, // Fondo gris claro
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+          style: const TextStyle(fontSize: 14),
+          onChanged: (_) => verificarVistaPrevia(),
+        )
+      ],
+    );
+  }
+
+  Widget vistaPreviaTutela(userData, String hechos, String derechosVulnerados, String pretensiones, String normasAplicables,
+      String pruebas, String juramento) {
+    var tutela = TutelaTemplate(
         dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
         entidad: entidad,
         referencia: '${widget.categoria} - ${widget.subcategoria}',
@@ -1473,21 +1688,23 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
         apellidoPpl: userData?.apellidoPpl?.trim() ?? "",
         identificacionPpl: userData?.numeroDocumentoPpl ?? "",
         centroPenitenciario: userData?.centroReclusion ?? "",
-        consideraciones: consideraciones,
-        fundamentosDeDerecho: fundamentosDeDerecho,
-        peticionConcreta: peticionConcreta,
+        hechos: hechos,
+        derechosVulnerados: derechosVulnerados,
+        pretensiones: pretensiones,
+        normasAplicables: normasAplicables,
+        pruebas: pruebas,
+        juramento: juramento,
         emailUsuario: userData?.email?.trim() ?? "",
         td: userData?.td?.trim() ?? "",
         nui: userData?.nui?.trim() ?? "",
         numeroSeguimiento: widget.numeroSeguimiento,
-        nombreAcudiente: '${userData!.nombreAcudiente} ${userData!.apellidoAcudiente}'
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          "Vista previa del derecho de petición",
+          "Vista previa de la accion de tutela",
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
@@ -1498,7 +1715,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             borderRadius: BorderRadius.circular(8),
           ),
           child: Html(
-            data: derechoPeticion.generarTextoHtml(),
+            data: tutela.generarTextoHtml(),
           ),
         ),
         const SizedBox(height: 50),
@@ -1522,7 +1739,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   Future<void> enviarCorreoMailersend() async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithMailerSend");
 
-    var derechoPeticion = DerechoPeticionTemplate(
+    var accionTutela = TutelaTemplate(
         dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
         entidad: userData?.centroReclusion ?? "",
         referencia: '${widget.categoria} - ${widget.subcategoria}',
@@ -1530,17 +1747,19 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
         apellidoPpl: userData?.apellidoPpl.trim() ?? "",
         identificacionPpl: userData?.numeroDocumentoPpl ?? "",
         centroPenitenciario: userData?.centroReclusion ?? "",
-        consideraciones: consideraciones,
-        fundamentosDeDerecho: fundamentosDeDerecho,
-        peticionConcreta: peticionConcreta,
+        hechos: hechos,
+        derechosVulnerados: derechosVulnerados,
+        pretensiones: pretensiones,
+        normasAplicables: normasAplicables,
+        pruebas: pruebas,
+        juramento: juramento,
         emailUsuario: userData?.email.trim() ?? "",
         nui: userData?.nui.trim() ?? "",
         td: userData?.td.trim() ?? "",
         numeroSeguimiento: widget.numeroSeguimiento,
-        nombreAcudiente: '${userData!.nombreAcudiente} ${userData!.apellidoAcudiente}'
     );
 
-    String mensajeHtml = derechoPeticion.generarTextoHtml();
+    String mensajeHtml = accionTutela.generarTextoHtml();
 
     List<Map<String, String>> archivosBase64 = [];
     for (String archivoUrl in widget.archivos) {
@@ -1562,7 +1781,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       }
     }
 
-    String asuntoCorreo = "Derecho de Petición - ${widget.numeroSeguimiento}";
+    String asuntoCorreo = "Acción de tutela - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
@@ -1589,7 +1808,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
 
     if (response.statusCode == 200) {
       await FirebaseFirestore.instance
-          .collection('derechos_peticion_solicitados')
+          .collection('tutelas_solicitados')
           .doc(widget.idDocumento)
           .update({
         "status": "Enviado",
@@ -1695,7 +1914,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                       Navigator.of(context).pop();
                       Navigator.pushReplacementNamed(
                         context,
-                        'historial_solicitudes_derecho_peticion_admin',
+                        'historial_solicitudes_tutelas_admin',
                       );
                     },
                     child: const Text("OK"),
@@ -1721,7 +1940,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "derechos_peticion/$idDocumento/correos/$fileName";
+      final filePath = "tutela/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
@@ -1734,7 +1953,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
 
       // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("derechos_peticion_solicitados")
+          .collection("tutelas_solicitados")
           .doc(idDocumento)
           .update({
         "correoHtmlUrl": downloadUrl,
@@ -1818,15 +2037,18 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
 
         try {
           await FirebaseFirestore.instance
-              .collection('derechos_peticion_solicitados')
+              .collection('tutelas_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Diligenciado",
             "diligencio": adminFullName, // Guarda el nombre del admin
             "fecha_diligenciamiento": FieldValue.serverTimestamp(),
-            "consideraciones": _consideracionesController.text,
-            "fundamentos_de_derecho": _fundamentosDerechoController.text,
-            "peticion_concreta": _peticionConcretaController.text
+            "hechos": _hechosController.text,
+            "derechos_vulnerados": _derechosVulneradosController.text,
+            "pretensiones": _pretensionesController.text,
+            "normas_aplicables": _normasAplicablesController.text,
+            "pruebas": _pruebasController.text,
+            "juramento": _pruebasController.text,
           });
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1867,12 +2089,15 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
 
         try {
           await FirebaseFirestore.instance
-              .collection('derechos_peticion_solicitados')
+              .collection('tutelas_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Revisado",
             "reviso": adminFullName, // Guarda el nombre del admin
             "fecha_revision": FieldValue.serverTimestamp(),
+            "hechos": _hechosController.text,
+            "derechos_vulnerados": _derechosVulneradosController.text,
+            "pretensiones": _pretensionesController.text
           });
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(

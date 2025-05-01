@@ -32,11 +32,34 @@ class IABackendService {
     }
   }
 
-  // static Future<Map<String, String>> generarTextoPrisionDomiciliaria() async {
-  //   return await generarTextoExtendidoDesdeCloudFunction(
-  //     categoria: 'Beneficios penitenciarios',
-  //     subcategoria: 'Prisión domiciliaria',
-  //     respuestasUsuario: [], // No requiere respuestas para este caso
-  //   );
-  // }
+  static Future<Map<String, String>> generarTextoTutelaExtendido({
+    required String categoria,
+    required String subcategoria,
+    List<String> respuestasUsuario = const [],
+  }) async {
+    final response = await http.post(
+      Uri.parse(baseUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'categoria': categoria,
+        'subcategoria': subcategoria,
+        'respuestasUsuario': respuestasUsuario,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return {
+        'hechos': data['hechos'] ?? '',
+        'derechos_vulnerados': data['derechos_vulnerados'] ?? '',
+        'pretensiones': data['pretensiones'] ?? '',
+        'normas_aplicables': data['normas_aplicables'] ?? '',
+        'pruebas': data['pruebas'] ?? '',
+        'juramento': data['juramento'] ?? '',
+      };
+    } else {
+      throw Exception('Error al generar texto IA extendido para tutela: ${response.body}');
+    }
+  }
+
 }
