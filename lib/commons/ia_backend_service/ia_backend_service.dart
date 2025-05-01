@@ -32,11 +32,11 @@ class IABackendService {
     }
   }
 
-  static Future<Map<String, String>> generarTextoPrisionDomiciliaria() async {
-    return await generarTextoExtendidoDesdeCloudFunction(
-      categoria: 'Beneficios penitenciarios',
-      subcategoria: 'Prisión domiciliaria',
-      respuestasUsuario: [], // No requiere respuestas para este caso
-    );
-  }
+  // static Future<Map<String, String>> generarTextoPrisionDomiciliaria() async {
+  //   return await generarTextoExtendidoDesdeCloudFunction(
+  //     categoria: 'Beneficios penitenciarios',
+  //     subcategoria: 'Prisión domiciliaria',
+  //     respuestasUsuario: [], // No requiere respuestas para este caso
+  //   );
+  // }
 }
