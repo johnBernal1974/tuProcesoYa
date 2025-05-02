@@ -38,27 +38,24 @@ class IABackendService {
     List<String> respuestasUsuario = const [],
   }) async {
     final response = await http.post(
-      Uri.parse(baseUrl),
+      Uri.parse('https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/generarTextoIAExtendido'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'categoria': categoria,
         'subcategoria': subcategoria,
+        'tipo': 'tutela', // 🔹 Nuevo parámetro que activa el modo "hechos" para tutela
         'respuestasUsuario': respuestasUsuario,
       }),
+
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       return {
         'hechos': data['hechos'] ?? '',
-        'derechos_vulnerados': data['derechos_vulnerados'] ?? '',
-        'pretensiones': data['pretensiones'] ?? '',
-        'normas_aplicables': data['normas_aplicables'] ?? '',
-        'pruebas': data['pruebas'] ?? '',
-        'juramento': data['juramento'] ?? '',
       };
     } else {
-      throw Exception('Error al generar texto IA extendido para tutela: ${response.body}');
+      throw Exception('Error al generar hechos de tutela: ${response.body}');
     }
   }
 

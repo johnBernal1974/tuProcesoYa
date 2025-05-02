@@ -1,86 +1,64 @@
 import 'package:flutter/material.dart';
-import '../../commons/ia_backend_service/ia_backend_service.dart';
+import 'ia_backend_service.dart'; // Asegúrate de tener el nuevo método generado
 
-class IASuggestionCardTutela extends StatefulWidget {
+class IASuggestionHechosTutela extends StatefulWidget {
   final String categoria;
   final String subcategoria;
-  final List<String>? respuestasUsuario; // Ahora puede ser null
+  final List<String> respuestasUsuario;
   final TextEditingController hechosController;
-  final TextEditingController derechosVulneradosController;
-  final TextEditingController pretensionesController;
-  final TextEditingController normasAplicablesController;
-  final TextEditingController pruebasController;
-  final TextEditingController juramentoController;
 
-  const IASuggestionCardTutela({
+  const IASuggestionHechosTutela({
     super.key,
     required this.categoria,
     required this.subcategoria,
-    this.respuestasUsuario, // Puede omitirse si no hay respuestas
+    required this.respuestasUsuario,
     required this.hechosController,
-    required this.derechosVulneradosController,
-    required this.pretensionesController,
-    required this.normasAplicablesController,
-    required this.pruebasController,
-    required this.juramentoController,
   });
 
   @override
-  State<IASuggestionCardTutela> createState() => _IASuggestionCardState();
+  State<IASuggestionHechosTutela> createState() => _IASuggestionHechosTutelaState();
 }
 
-class _IASuggestionCardState extends State<IASuggestionCardTutela> {
+class _IASuggestionHechosTutelaState extends State<IASuggestionHechosTutela> {
   bool cargando = false;
-  String? hechos;
-  String? derechosVulnerados;
-  String? pretensiones;
-  String? normasAplicables;
-  String? pruebas;
-  String? juramento;
-  bool mostrarSugerencias = false;
+  String? hechosGenerados;
+  bool mostrarResultado = false;
 
-  Future<void> _generarTextoExtendido() async {
+  Future<void> _generarHechos() async {
     setState(() {
       cargando = true;
-      mostrarSugerencias = false;
+      mostrarResultado = false;
     });
 
     try {
       final resultado = await IABackendService.generarTextoTutelaExtendido(
         categoria: widget.categoria,
         subcategoria: widget.subcategoria,
-        respuestasUsuario: widget.respuestasUsuario ?? [],
+        respuestasUsuario: widget.respuestasUsuario,
       );
+      print('🧪 Resultado desde IA Backend: $resultado');
 
       setState(() {
-        hechos = resultado['hechos'];
-        derechosVulnerados = resultado['derechos_vulnerados'];
-        pretensiones = resultado['pretensiones'];
-        normasAplicables = resultado['normas_aplicables'];
-        pruebas = resultado['pruebas'];
-        juramento = resultado['juramento'];
+        hechosGenerados = resultado['hechos'] ?? 'No se pudo generar el texto.';
+        mostrarResultado = true;
         cargando = false;
-        mostrarSugerencias = true;
       });
     } catch (e) {
       setState(() {
-        hechos = derechosVulnerados = pretensiones = normasAplicables = pruebas = juramento = '❌ Error generando texto con IA: $e';
+        hechosGenerados = '❌ Error generando hechos: $e';
+        mostrarResultado = true;
         cargando = false;
-        mostrarSugerencias = true;
       });
     }
   }
 
-  void _usarTexto() {
-    widget.hechosController.text = hechos ?? '';
-    widget.derechosVulneradosController.text = derechosVulnerados ?? '';
-    widget.pretensionesController.text = pretensiones ?? '';
-    widget.normasAplicablesController.text = normasAplicables ?? '';
-    widget.pruebasController.text = pruebas ?? '';
-    widget.juramentoController.text = juramento ?? '';
-    setState(() {
-      mostrarSugerencias = false;
-    });
+  void _usarHechos() {
+    if (hechosGenerados != null) {
+      widget.hechosController.text = hechosGenerados!;
+      setState(() {
+        mostrarResultado = false;
+      });
+    }
   }
 
   @override
@@ -95,7 +73,7 @@ class _IASuggestionCardState extends State<IASuggestionCardTutela> {
             TextButton.icon(
               icon: const Icon(Icons.auto_awesome),
               label: const Text("Generar IA"),
-              onPressed: cargando ? null : _generarTextoExtendido,
+              onPressed: cargando ? null : _generarHechos,
             )
           ],
         ),
@@ -104,8 +82,7 @@ class _IASuggestionCardState extends State<IASuggestionCardTutela> {
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(child: CircularProgressIndicator()),
           ),
-        if (mostrarSugerencias && hechos != null && derechosVulnerados != null && pretensiones != null
-            && normasAplicables != null && pruebas != null && juramento != null)
+        if (mostrarResultado && hechosGenerados != null)
           Card(
             elevation: 3,
             color: Colors.grey.shade100,
@@ -115,41 +92,23 @@ class _IASuggestionCardState extends State<IASuggestionCardTutela> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("🧠 Sugerencias de IA", style: TextStyle(fontWeight: FontWeight.bold)),
+                  const Text("🧠 Hechos sugeridos por IA", style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 8),
-                  _buildSection("Hechos", hechos!),
-                  _buildSection("Derechos Vulnerados", derechosVulnerados!),
-                  _buildSection("Pretensiones", pretensiones!),
-                  _buildSection("Normas Aplicaboles", normasAplicables!),
-                  _buildSection("Pruebas", pruebas!),
-                  _buildSection("Juramento", juramento!),
+                  Text(hechosGenerados!),
+                  const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton.icon(
                       icon: const Icon(Icons.check),
-                      label: const Text("Usar textos"),
-                      onPressed: _usarTexto,
+                      label: const Text("Usar texto"),
+                      onPressed: _usarHechos,
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildSection(String titulo, String contenido) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 4),
-          Text(contenido),
-        ],
-      ),
     );
   }
 }

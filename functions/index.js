@@ -9,6 +9,7 @@ const AWS = require("aws-sdk");
 const { Buffer } = require("buffer");
 const { getFirestore } = require("firebase-admin/firestore");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
+const OpenAI = require("openai");
 const puppeteer = require("puppeteer");
 
 
@@ -411,161 +412,102 @@ exports.generarTextoIAExtendido = onRequest({
       return res.status(400).json({ error: "Faltan campos requeridos" });
     }
 
+    const openai = new OpenAI({ apiKey: OPENAI_API_KEY.value() });
+
+    const esTutela = (req.body.tipo || '').toLowerCase().trim() === 'tutela';
+
     let prompt = '';
 
-    if (respuestasUsuario.length > 0) {
-      // 🔹 Prompt tradicional para derechos de petición con narrativa del acudiente
+    if (esTutela) {
+      // 🔹 Redactar "Hechos" igual que "Consideraciones"
       prompt = `
-      Redacta el cuerpo de un derecho de petición en Colombia para una persona privada de la libertad (PPL).
+Redacta la sección de "Hechos" de una acción de tutela en Colombia para una persona privada de la libertad (PPL).
 
-      🔒 Ya existe un encabezado con nombre, documento y centro penitenciario: **no repitas esos datos**.
+🔒 Ya existe un encabezado con nombre, documento, centro penitenciario y entidad dirigida. No repitas esos datos.
 
-      🧠 Las respuestas fueron dadas por un acudiente (familiar, amigo o persona de confianza), quien puede referirse al PPL en tercera persona ("mi hermano", "mi padre", etc.). Sin embargo, redacta el texto como si lo escribiera directamente la persona privada de la libertad, en primera persona. Interpreta correctamente que todo lo mencionado se refiere al PPL, y no al acudiente.
+🧠 Las respuestas fueron dadas por el propio usuario o por un acudiente (familiar, amigo o persona de confianza). Es posible que en las respuestas se use la tercera persona ("mi hermano", "mi padre", etc.).
 
-      🧠 Usa toda la información proporcionada para construir una sección sólida de “Consideraciones”, redactada en primera persona, con lenguaje técnico, claro y sin adornos emocionales.
+✒️ Sin embargo, redacta el texto como si lo escribiera directamente la persona privada de la libertad, en **primera persona**: por ejemplo, "me encuentro recluido", "he padecido", "me han vulnerado".
 
-      ✒️ Estructura el documento con estos títulos (tal cual):
+⚠️ Interpreta correctamente que todo lo mencionado en las respuestas se refiere a la persona privada de la libertad, y no al acudiente.
 
-      Consideraciones
+🧠 Usa toda la información proporcionada para construir un bloque de hechos, con redacción jurídica clara, técnica y sin adornos emocionales ni despedidas.
 
-      Fundamentos de derecho
+No utilices o coloques el subtitulo de Hechos: al iniciar el texto y no nombres el centro penitenciario en el texto ya que eso ya esta definido en otra parte. No lo incluyas.
 
-      Petición concreta
+Respuestas del usuario:
+${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
+      `.trim();
 
-      📌 Fundamentos de derecho debe incluir:
-      - Fundamento en la Constitución Política (con número de artículo y descripción).
-      - Fundamento en la Ley 65 de 1993 o normas penitenciarias pertinentes.
-      - Jurisprudencia relevante: cita número de sentencia, año y criterio aplicable.
+    } else if (respuestasUsuario.length > 0) {
+      // 🔹 Redactar cuerpo completo del derecho de petición
+      prompt = `
+Redacta el cuerpo de un derecho de petición en Colombia para una persona privada de la libertad (PPL).
 
-      📌 Petición concreta:
-      - Redacta en primera persona, con precisión y claridad.
-      - Expón de forma concreta lo que solicito y si se está vulnerando o amenazando otro derecho.
+🔒 Ya existe un encabezado con nombre, documento y centro penitenciario: **no repitas esos datos**.
 
-      Respuestas dadas por el acudiente:
-      ${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
+🧠 Las respuestas fueron dadas por un acudiente (familiar, amigo o persona de confianza), quien puede referirse al PPL en tercera persona ("mi hermano", "mi padre", etc.). Sin embargo, redacta el texto como si lo escribiera directamente la persona privada de la libertad, en primera persona. Interpreta correctamente que todo lo mencionado se refiere al PPL, y no al acudiente.
+
+🧠 Usa toda la información proporcionada para construir una sección sólida de “Consideraciones”, redactada en primera persona, con lenguaje técnico, claro y sin adornos emocionales.
+
+✒️ Estructura el documento con estos títulos (tal cual):
+
+Consideraciones
+
+Fundamentos de derecho
+
+Petición concreta
+
+📌 Fundamentos de derecho debe incluir:
+- Fundamento en la Constitución Política (con número de artículo y descripción).
+- Fundamento en la Ley 65 de 1993 o normas penitenciarias pertinentes.
+- Jurisprudencia relevante: cita número de sentencia, año y criterio aplicable.
+
+📌 Petición concreta:
+- Redacta en primera persona, con precisión y claridad.
+- Expón de forma concreta lo que solicito y si se está vulnerando o amenazando otro derecho.
+
+Respuestas dadas por el acudiente:
+${respuestasUsuario.map((r, i) => `• ${r}`).join("\n")}
       `.trim();
 
     } else {
-      // 🔹 Prompt adaptado según subcategoría sin respuestas
-      switch (subcategoria.toLowerCase()) {
-        case 'prisión domiciliaria':
-          // Prompt dentro del Cloud Function:
-          prompt = `
-          Redacta un documento jurídico en Colombia que respalde una solicitud de prisión domiciliaria para una persona privada de la libertad (PPL), exclusivamente por **cumplimiento del tiempo de condena** como requisito legal.
-
-          🔒 Ya existe un encabezado con los datos del solicitante: no repitas nombre, número de documento ni centro de reclusión.
-
-          ✒️ Estructura el texto legal con los siguientes títulos, escritos tal cual y separados con una línea en blanco entre secciones:
-
-          Consideraciones
-
-          Fundamentos de derecho
-
-          Petición concreta
-
-          📌 Consideraciones:
-          - Señala que el PPL ha cumplido con más del 50% de la condena impuesta, requisito exigido por la legislación para acceder a este beneficio.
-          - Indica que el delito por el cual fue condenado **no se encuentra excluido** de los beneficios establecidos en el artículo 38G del Código Penal u otras normas restrictivas.
-          - Expón que el PPL cuenta con un lugar de residencia fijo y un entorno familiar que respalda su proceso de resocialización y compromiso con la justicia.
-          - Señala que se adjuntan los documentos de soporte que acreditan la viabilidad de la medida, tales como:
-            - Dirección exacta del domicilio donde cumpliría la medida,
-            - Nombre y documento de identidad de la persona responsable en el hogar,
-            - Declaración juramentada que acredita su voluntad de asumir dicha responsabilidad.
-          - Usa un lenguaje técnico, claro y en tercera persona, sin adornos ni elementos personales.
-
-          📌 Fundamentos de derecho:
-          - Incluye fundamentos en la Constitución Política de Colombia (artículos relevantes).
-          - Incluye la Ley 65 de 1993 (Código Penitenciario y Carcelario) y sus reglamentos aplicables.
-          - Cita jurisprudencia de la Corte Constitucional y Corte Suprema relacionada con prisión domiciliaria y sustitución de la pena.
-          - Si aplica, incluye normas internacionales o tratados ratificados por Colombia que respalden el respeto por los derechos del PPL.
-
-          📌 Petición concreta:
-          - Solicita expresamente la sustitución de la pena privativa de la libertad por prisión domiciliaria, de forma clara, precisa y técnica.
-          - No incluyas despedidas, agradecimientos, firmas, nombres ni frases como "en espera de respuesta" o "atentamente".
-
-          🔎 No incluyas asteriscos (*), saltos de página, adornos innecesarios ni repitas datos ya conocidos del solicitante.
-          `.trim();
-
-          break;
-
-        case 'libertad condicional':
-          prompt = `
-Redacta un documento jurídico en Colombia para una **solicitud de libertad condicional** para una persona privada de la libertad (PPL), conforme a los requisitos legales y penitenciarios.
-
-Estructura el contenido con los siguientes apartados:
-
-Consideraciones
-Fundamentos de derecho
-Petición concreta
-
-📌 Consideraciones:
-- Argumenta por qué el PPL ha cumplido con los requisitos de tiempo, conducta y resocialización.
-
-📌 Fundamentos de derecho:
-- Constitución Política, Ley 65 de 1993 y otras normas penitenciarias aplicables.
-- Jurisprudencia que respalde la concesión de este beneficio.
-
-📌 Petición concreta:
-- Solicita formalmente la libertad condicional indicando el cumplimiento de requisitos legales.
-          `.trim();
-          break;
-
-        case 'permiso de 72 horas':
-          prompt = `
-Redacta un documento jurídico en Colombia que sustente una **solicitud de permiso de 72 horas** para una persona privada de la libertad (PPL).
-
-🔒 No repitas encabezado ni datos básicos del solicitante.
-
-Estructura el texto con estos apartados:
-
-Consideraciones
-Fundamentos de derecho
-Petición concreta
-
-📌 Consideraciones:
-- Expón los motivos humanitarios, familiares o médicos que justifican el permiso.
-- Usa lenguaje técnico y claro.
-
-📌 Fundamentos de derecho:
-- Cita la Ley 65 de 1993, reglamentos y sentencias que permitan este permiso.
-
-📌 Petición concreta:
-- Solicita de forma clara la autorización del permiso de 72 horas y su duración.
-          `.trim();
-          break;
-
-        default:
-          return res.status(400).json({ error: "Subcategoría no soportada" });
-      }
+      return res.status(400).json({ error: "Categoría o respuestas no válidas." });
     }
-
-    const OpenAI = require("openai");
-    const openai = new OpenAI({ apiKey: OPENAI_API_KEY.value() });
 
     const completion = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [
-        { role: "system", content: "Eres un redactor legal colombiano. Redactas en primera persona, con precisión jurídica, sin adornos personales. Redacción clara, técnica y estructurada." },
-        { role: "user", content: prompt }
+        {
+          role: "system",
+          content: "Eres un redactor legal colombiano. Redactas en primera persona, con precisión jurídica, sin adornos personales. Redacción clara, técnica y estructurada."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
       ],
       temperature: 0.6,
       max_tokens: 1200,
     });
 
-    const texto = completion.choices[0].message.content ?? '';
+    const texto = completion.choices[0].message.content?.trim() ?? '';
+    console.log("🧠 respuestasUsuario recibidas:", respuestasUsuario);
+    console.log("📝 Texto generado:", texto);
 
-    const consideraciones = texto.split(/Fundamentos de derecho/i)[0]
-      ?.replace(/Consideraciones[:\s]*/i, '')
-      ?.trim() ?? '';
+    if (esTutela) {
+      return res.status(200).json({ hechos: texto });
+    } else {
+      const consideraciones = texto.split(/Fundamentos de derecho/i)[0]?.replace(/Consideraciones[:\s]*/i, '')?.trim() ?? '';
+      const fundamentos = texto.match(/Fundamentos de derecho(.*?)Petición concreta/is)?.[1]?.trim() ?? '';
+      const peticion = texto.split(/Petición concreta/i)[1]?.trim() ?? '';
 
-    const fundamentos = texto.match(/Fundamentos de derecho(.*?)Petición concreta/is)?.[1]?.trim() ?? '';
-    const peticion = texto.split(/Petición concreta/i)[1]?.trim() ?? '';
-
-    return res.status(200).json({
-      consideraciones,
-      fundamentos,
-      peticion,
-    });
+      return res.status(200).json({
+        consideraciones,
+        fundamentos,
+        peticion,
+      });
+    }
 
   } catch (error) {
     console.error("❌ Error en generarTextoIAExtendido:", error);
@@ -576,6 +518,7 @@ Petición concreta
     });
   }
 });
+
 
 exports.eliminarUsuarioAuthHttp = functions.https.onRequest(async (req, res) => {
   const { uid, token } = req.body;

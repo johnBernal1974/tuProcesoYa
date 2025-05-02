@@ -47,9 +47,10 @@ class TutelaTemplate {
         <b>$entidad</b></p>
 
         <p>Asunto: <b>ACCIÓN DE TUTELA - $numeroSeguimiento</b><br>
-        Referencia: <b>$referencia</b></p>
+        Referencia: Acción de tutela en contra la  <b>$centroPenitenciario</b>, por la violación a los derechos fundamentales de $referencia
+        
 
-        <p>Me dirijo a usted en representación de <b>$nombrePpl $apellidoPpl</b>, identificado con <b>$identificacionPpl</b>, NUI: <b>$nui</b>, TD: <b>$td</b>, privado de la libertad en el establecimiento <b>$centroPenitenciario</b>, con el fin de ejercer la <b>acción de tutela</b> consagrada en el artículo 86 de la Constitución Política y el Decreto 2591 de 1991, por la vulneración de derechos fundamentales. A continuación, presento los hechos y fundamentos:</p>
+        <p> Yo, <b>$nombrePpl $apellidoPpl</b>, identificado con <b>$identificacionPpl</b>, NUI: <b>$nui</b>, TD: <b>$td</b>, actualmente privado de la libertad en el establecimiento <b>$centroPenitenciario</b>, en ejercicio del derecho consagrado en el artículo 86 de la Constitución Política de Colombia y desarrollado por el Decreto 2591 de 1991, interpongo la presente <b>acción de tutela</b> por la vulneración de mis derechos fundamentales. </p>
 
         <p><b>I. HECHOS</b><br>$hechos</p>
 
