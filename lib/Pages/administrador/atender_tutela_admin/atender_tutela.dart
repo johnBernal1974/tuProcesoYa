@@ -8,6 +8,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticionAdmin_controler.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/archivoViewerWeb2.dart';
@@ -1961,12 +1962,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
         );
 
         if (confirmacion ?? false) {
-
-          if(context.mounted){
-            // 🟢 Mostramos alerta de "Enviando correo..."
+          if (context.mounted) {
             showDialog(
               context: context,
-              barrierDismissible: false, // Evita que el usuario lo cierre
+              barrierDismissible: false,
               builder: (context) => const AlertDialog(
                 backgroundColor: blanco,
                 title: Text("Enviando correo..."),
@@ -1975,7 +1974,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                   children: [
                     Text("Espere mientras se envía el correo."),
                     SizedBox(height: 20),
-                    CircularProgressIndicator(), // Indicador de carga
+                    CircularProgressIndicator(),
                   ],
                 ),
               ),
@@ -1983,44 +1982,60 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
           }
 
           await enviarCorreoResend();
-          // ⬇️ Generar y subir PDF del correo enviado
+
           final html = accionTutela.generarTextoHtml();
           await subirHtmlCorreoADocumento(
             idDocumento: widget.idDocumento,
             htmlContent: html,
           );
 
-          if (mounted) {
-            // 🟢 Cerramos la alerta de "Enviando correo..."
-            Navigator.of(context).pop();
+          const urlApp = "https://www.tuprocesoya.com";
+          final numeroSeguimiento = widget.numeroSeguimiento;
 
-            // 🟢 Mostramos alerta de éxito
-            showDialog(
+          if (context.mounted) {
+            Navigator.of(context).pop(); // Cierra "enviando..."
+
+            final enviar = await showDialog<bool>(
               context: context,
               builder: (context) => AlertDialog(
                 backgroundColor: blanco,
-                title: const Text("Correo enviado"),
-                content: const Text("El correo ha sido enviado con éxito."),
+                title: const Text("¿Enviar Notificación?"),
+                content: const Text("¿Deseas notificar al usuario del envío por WhatsApp?"),
                 actions: [
                   TextButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      Navigator.pushReplacementNamed(
-                        context,
-                        'historial_solicitudes_tutelas_admin',
-                      );
-                    },
-                    child: const Text("OK"),
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text("No"),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text("Sí, enviar"),
                   ),
                 ],
               ),
             );
+
+            if (enviar == true) {
+              final celular = "+57${userData!.celular}";
+              final mensaje = Uri.encodeComponent(
+                  "Hola *${userData!.nombreAcudiente}*,\n\n"
+                      "Hemos enviado tu acción de tutela número *$numeroSeguimiento* a la autoridad correspondiente.\n\n"
+                      "Recuerda que la autoridad tiene un plazo de hasta 10 días para dar respuesta. Te estaremos informando sobre cualquier novedad.\n\n"
+                      "Puedes consultar el correo enviado en la aplicación desde el menú: Historiales > Tutelas:\n$urlApp\n\n"
+                      "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
+              );
+              final link = "https://wa.me/$celular?text=$mensaje";
+              await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
+            }
+            if(context.mounted){
+              Navigator.pushReplacementNamed(context, 'historial_solicitudes_tutelas_admin');
+            }
           }
         }
       },
       child: const Text("Enviar por correo"),
     );
   }
+
 
   Future<void> subirHtmlCorreoADocumento({
     required String idDocumento,
