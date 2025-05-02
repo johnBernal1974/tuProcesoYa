@@ -823,7 +823,7 @@ class _HistorialSolicitudesTutelaPageAdminState extends State<HistorialSolicitud
   String obtenerRutaSegunStatus(String status) {
     switch (status) {
       case "Enviado":
-        return 'tutelas_enviadas_por_correo';
+        return 'tutela_enviados_por_correo';
       default:
         return 'atender_tutela_page';
     }

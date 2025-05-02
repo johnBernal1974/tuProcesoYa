@@ -35,6 +35,7 @@ import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_envia
 import 'Pages/administrador/solicitudes_enviadas_por_correo/libertad_condicional_enviada_por_correo/libertad_condicional_enviada_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/permiso_72horas_enviadas_por_correo/permiso_72horas_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/prision_domiciliaria_enviada_por_correo/prision_domiciliaria_enviada_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/tutelas_enviadas_por_correo/tutelas_enviadas_por_correo.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import 'Pages/administrador/tutelas/derechos_tutelables_page.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
@@ -283,6 +284,24 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => DerechoSPeticionEnviadosPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",  // 👈 Evita error si es null
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'],
+                subcategoria: args['subcategoria'],
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
+                respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
+                sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
+          else if (settings.name == 'tutela_enviados_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => TutelasEnviadosPorCorreoPage(
                 status: args['status'] ?? "Diligenciado",  // 👈 Evita error si es null
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'],

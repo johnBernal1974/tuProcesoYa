@@ -5,39 +5,27 @@ class TextoDignidadHumana {
 
     if (sub == "condiciones de reclusión inhumanas") {
       return '''
-Las condiciones inhumanas de reclusión vulneran gravemente mi derecho fundamental a la dignidad humana, reconocido en el artículo 1 de la Constitución Política. La Corte Constitucional ha reiterado que el respeto por la dignidad es el eje estructurante del ordenamiento jurídico colombiano y debe guiar todas las actuaciones del Estado, especialmente respecto de las personas privadas de la libertad.
-
-La Sentencia T-388 de 2013 evidenció un estado de cosas inconstitucional en los centros penitenciarios del país, por situaciones de hacinamiento, insalubridad, escasez de alimentos, agua y servicios médicos, que violan derechos fundamentales como la dignidad, la integridad personal y la vida digna.
-
-Tales condiciones no solo afectan mi salud física y mental, sino que configuran una forma de trato cruel, inhumano y degradante prohibido por los estándares nacionales e internacionales.''';
+Las condiciones de reclusión que desconocen estándares mínimos de habitabilidad y trato humano vulneran el derecho fundamental a la dignidad humana (art. 1 CP), así como la prohibición de tratos crueles, inhumanos o degradantes (art. 12 CP), afectando directamente la integridad física y moral de la persona privada de la libertad.''';
     }
 
     if (sub == "falta de acceso a servicios básicos") {
       return '''
-La carencia prolongada de servicios básicos como agua potable, saneamiento, alimentación adecuada y atención médica vulnera directamente mi derecho a una existencia digna. La dignidad humana, como principio fundante del Estado Social de Derecho, exige que las condiciones de reclusión sean compatibles con el respeto mínimo por la humanidad de las personas.
-
-La Corte Constitucional ha señalado, en sentencias como la T-153 de 1998 y la T-762 de 2015, que la privación de servicios esenciales no puede considerarse una consecuencia legítima de la pena privativa de la libertad. Estas omisiones agravan la situación de vulnerabilidad y constituyen tratos inhumanos que deben ser corregidos de forma inmediata por el Estado.''';
+La carencia de servicios esenciales como agua potable, alimentación, higiene o acceso a baños en condiciones adecuadas vulnera el derecho a la dignidad humana (art. 1 CP), el mínimo vital (art. 11 CP) y el derecho a condiciones de vida compatibles con la salud y la existencia digna.''';
     }
 
     if (sub == "hacinamiento extremo") {
       return '''
-El hacinamiento extremo constituye una violación sistemática al derecho a la dignidad humana, afectando la salud, la integridad y la convivencia en los centros penitenciarios. La Corte Constitucional, en la Sentencia T-388 de 2013, declaró que el sistema penitenciario colombiano se encuentra en un estado de cosas inconstitucional, precisamente por esta problemática estructural.
-
-El artículo 1 de la Constitución, junto con tratados internacionales como la Convención Americana sobre Derechos Humanos, impone al Estado la obligación de garantizar que las condiciones de reclusión respeten la dignidad de los internos, lo cual es incompatible con celdas sobrepobladas, sin ventilación, higiene ni espacio personal.''';
+El hacinamiento penitenciario grave constituye una violación sistemática al derecho a la dignidad humana (art. 1 CP) y a la integridad personal, al someter a las personas privadas de la libertad a condiciones incompatibles con su humanidad, afectando su salud física y mental.''';
     }
 
     if (sub == "trato denigrante por personal penitenciario") {
       return '''
-El trato denigrante por parte del personal penitenciario vulnera mi derecho fundamental a la dignidad humana y configura un trato cruel, inhumano o degradante, prohibido por el artículo 12 de la Constitución y por instrumentos internacionales como el Pacto Internacional de Derechos Civiles y Políticos.
-
-La Corte Constitucional ha establecido en la Sentencia T-106 de 2004 que el trato respetuoso y digno debe ser garantizado a toda persona bajo custodia del Estado, sin distinción alguna. La autoridad no puede ejercer su poder mediante humillaciones, amenazas, gritos o tratos ofensivos, ya que ello implica una regresión inadmisible en materia de derechos humanos.''';
+El uso de lenguaje humillante, castigos arbitrarios o conductas agresivas por parte del personal penitenciario vulnera la dignidad humana (art. 1 CP), la integridad personal (art. 12 CP), y contraviene el deber estatal de tratar con respeto y humanidad a quienes se encuentran bajo su custodia.''';
     }
 
     if (sub == "falta de intimidad mínima") {
       return '''
-La ausencia de condiciones mínimas de intimidad en los espacios de reclusión vulnera mi derecho a la dignidad humana, reconocido como valor fundante del Estado colombiano en el artículo 1 de la Constitución. La Corte Constitucional ha sostenido que la dignidad exige el respeto de espacios privados, incluso en contextos carcelarios.
-
-La jurisprudencia constitucional (Sentencia T-542 de 1992) ha señalado que la privación de libertad no implica la pérdida de todos los derechos fundamentales. La negación de espacios personales mínimos, como baños sin divisiones, hacinamiento en celdas o ausencia de privacidad, afecta directamente mi integridad psíquica y emocional.''';
+La ausencia de espacios mínimos de privacidad para el aseo, descanso o necesidades fisiológicas vulnera la dignidad humana (art. 1 CP), el derecho a la intimidad personal (art. 15 CP), y constituye una afectación a la integridad psicosocial del interno.''';
     }
 
     return "Texto no disponible para esta subcategoría.";

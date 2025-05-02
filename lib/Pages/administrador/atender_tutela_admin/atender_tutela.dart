@@ -415,7 +415,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                     hechos = _hechosController.text.trim();
                     derechosVulnerados = _derechosVulneradosController.text.trim();
                     pretensiones = _pretensionesController.text.trim();
-                    _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
+                    normasAplicables = _normasAplicablesController.text.trim();
+                    pruebas = _pruebasController.text.trim();
+                    juramento = _juramentoController.text.trim();
+                    _mostrarVistaPrevia = !_mostrarVistaPrevia;
                   });
                 },
                 child: const Text("Vista previa"),
@@ -1380,8 +1383,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
 
       setState(() {
         _hechosController.text = resultado['hechos'] ?? '';
-        _derechosVulneradosController.text = resultado['derechos_vulnerados'] ?? '';
-        _pretensionesController.text = resultado['pretensiones'] ?? '';
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1827,8 +1828,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     );
   }
 
-  Future<void> enviarCorreoMailersend() async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithMailerSend");
+  Future<void> enviarCorreoResend() async {
+    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     var accionTutela = TutelaTemplate(
         dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
@@ -1889,6 +1890,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
+      "tipo": "tutelas",
     });
 
     final response = await http.post(
@@ -1980,7 +1982,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             );
           }
 
-          await enviarCorreoMailersend();
+          await enviarCorreoResend();
           // ⬇️ Generar y subir PDF del correo enviado
           final html = accionTutela.generarTextoHtml();
           await subirHtmlCorreoADocumento(
@@ -2139,7 +2141,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             "pretensiones": _pretensionesController.text,
             "normas_aplicables": _normasAplicablesController.text,
             "pruebas": _pruebasController.text,
-            "juramento": _pruebasController.text,
+            "juramento": _juramentoController.text,
           });
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(

@@ -5,47 +5,27 @@ class TextoIntimidad {
 
     if (sub == "revisión invasiva de correspondencia") {
       return '''
-El derecho fundamental a la intimidad, consagrado en el artículo 15 de la Constitución Política, ha sido vulnerado por la práctica de revisión invasiva de mi correspondencia personal sin autorización judicial previa ni fundamento legal que lo justifique.
-
-La Corte Constitucional ha establecido que, si bien en el contexto penitenciario pueden existir ciertos límites a la intimidad, éstos deben respetar los principios de razonabilidad y proporcionalidad. En la Sentencia T-562 de 2009, se precisó que toda revisión debe estar sustentada en razones de seguridad concretas y no puede implicar la lectura arbitraria del contenido de las comunicaciones personales.
-
-La correspondencia entre un interno y su familia hace parte del núcleo esencial de su privacidad y su intromisión injustificada afecta su dignidad humana y su derecho a mantener lazos afectivos durante la reclusión.''';
+La interceptación, apertura o revisión injustificada de la correspondencia personal vulnera el derecho fundamental a la intimidad (art. 15 CP) y el secreto de las comunicaciones, además de afectar la privacidad familiar y la autonomía del interno para comunicarse libremente.''';
     }
 
     if (sub == "divulgación de información médica sin autorización") {
       return '''
-Se vulnera el derecho a la intimidad (art. 15 CP) por la divulgación indebida de mi información médica personal sin mi autorización o sin orden legal o judicial que lo justifique.
-
-La Corte Constitucional, en Sentencia T-414 de 2009, señaló que la historia clínica y la información sobre el estado de salud de una persona son datos sensibles que hacen parte del núcleo esencial de la intimidad, y su manejo está protegido por el principio de confidencialidad médica.
-
-Su divulgación a terceros sin consentimiento constituye una transgresión grave a la privacidad y a la dignidad humana, y más aún si se trata de personas privadas de la libertad, en condición de especial sujeción frente al Estado.''';
+La revelación de datos médicos personales sin el consentimiento informado del paciente priva a la persona de su derecho a la intimidad (art. 15 CP) y a la confidencialidad de su historia clínica, derecho reconocido también por la Ley 1581 de 2012 sobre protección de datos.''';
     }
 
     if (sub == "violación de correspondencia personal") {
       return '''
-La intervención de mi correspondencia personal sin autorización judicial constituye una violación directa a mi derecho fundamental a la intimidad y al secreto de las comunicaciones, conforme a lo dispuesto en el artículo 15 de la Constitución.
-
-La Corte Constitucional, en la Sentencia T-332 de 2001, afirmó que ni siquiera en contextos de reclusión se puede justificar la interceptación o apertura de correspondencia sin una orden judicial expresa y con fines estrictamente necesarios.
-
-Esta conducta atenta contra la confianza en el sistema penitenciario, debilita los lazos familiares y socava los derechos fundamentales de las personas internas.''';
+La violación del contenido de cartas enviadas o recibidas por personas privadas de la libertad constituye una transgresión al derecho a la intimidad y a la libertad de comunicación, protegido por el artículo 15 de la Constitución y el artículo 42 de la Ley 65 de 1993.''';
     }
 
     if (sub == "uso de cámaras en espacios íntimos") {
       return '''
-Se vulnera gravemente mi derecho a la intimidad y dignidad humana al instalarse cámaras de videovigilancia en espacios que exigen privacidad, como duchas, sanitarios o zonas de cambio de ropa, sin ninguna justificación de seguridad proporcional ni autorización judicial.
-
-En la Sentencia T-851 de 2014, la Corte Constitucional reiteró que la videovigilancia en espacios íntimos debe limitarse estrictamente y justificarse con criterios de necesidad, idoneidad y proporcionalidad, ya que la protección de la vida privada sigue vigente incluso dentro del sistema penitenciario.
-
-El uso arbitrario de cámaras en espacios privados constituye una forma de trato denigrante e inhumano que vulnera derechos fundamentales de la población reclusa.''';
+La instalación de dispositivos de videovigilancia en baños, duchas o celdas sin justificación legal adecuada constituye una injerencia desproporcionada en la intimidad personal, vulnerando el derecho constitucional a la privacidad (art. 15 CP) y el principio de dignidad humana.''';
     }
 
     if (sub == "acceso no autorizado a comunicaciones familiares") {
       return '''
-La intervención o acceso no autorizado a mis comunicaciones familiares, incluyendo llamadas o videollamadas, vulnera el derecho fundamental a la intimidad y a la comunicación privada, protegido por el artículo 15 de la Constitución y el artículo 17 del Pacto Internacional de Derechos Civiles y Políticos.
-
-La Corte Constitucional, en la Sentencia T-881 de 2002, estableció que las comunicaciones entre personas privadas de la libertad y sus familiares forman parte del ejercicio pleno de su personalidad y derechos fundamentales, y no pueden ser objeto de restricción arbitraria o vigilancia injustificada.
-
-El monitoreo sin control judicial constituye una medida desproporcionada que afecta gravemente el vínculo familiar y la dignidad humana del interno.''';
+La intromisión en conversaciones familiares sin orden judicial o sin motivación legal válida vulnera el derecho a la intimidad (art. 15 CP), el secreto de las comunicaciones y la protección especial que debe brindarse al núcleo familiar del recluso (art. 42 CP).''';
     }
 
     return "Texto no disponible para esta subcategoría.";

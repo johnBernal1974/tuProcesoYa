@@ -6,32 +6,22 @@ class TextoDebidoProceso {
 
     if (sub == "falta de notificación de decisiones") {
       return '''
-La falta de notificación oportuna de decisiones judiciales o administrativas dentro del contexto penitenciario vulnera mi derecho fundamental al debido proceso, consagrado en el artículo 29 de la Constitución Política.
-
-Este derecho garantiza que toda persona tenga conocimiento de las actuaciones que le afectan, con el fin de ejercer su defensa, presentar recursos o actuar en consecuencia. La Corte Constitucional ha enfatizado en sentencias como la T-352 de 2016 y la T-1037 de 2008 que la omisión en notificar actos que incidan en la situación jurídica de un recluso constituye una violación del debido proceso y del acceso a la justicia.
-
-El desconocimiento de las decisiones impide ejercer el derecho de contradicción, vulnera el principio de publicidad procesal y afecta gravemente el derecho de defensa.''';
+La ausencia de notificación efectiva de decisiones judiciales o administrativas que afectan derechos individuales constituye una violación al debido proceso (art. 29 CP), al impedir el ejercicio del derecho de defensa, contradicción y acceso oportuno a la justicia.''';
     }
 
     if (sub == "negación del derecho a defensa") {
       return '''
-La negación del derecho a defensa dentro de procesos disciplinarios o judiciales en el contexto carcelario vulnera directamente el artículo 29 de la Constitución Política, que establece como garantía fundamental el derecho a ser oído, a presentar pruebas y a controvertir las que se alleguen en su contra.
-
-La Corte Constitucional, en sentencias como la T-1191 de 2004 y la T-452 de 2012, ha reiterado que el interno debe contar con oportunidades reales para ejercer su defensa técnica o material, incluso dentro de los procedimientos penitenciarios. La ausencia de garantías mínimas genera indefensión y afecta gravemente el principio de contradicción y el acceso a la justicia.''';
+La falta de oportunidad para intervenir en los procedimientos que afectan directamente a una persona privada de la libertad constituye una vulneración del derecho a la defensa técnica y material, lo cual atenta contra los principios de contradicción, legalidad y equidad (art. 29 CP).''';
     }
 
     if (sub == "falta de acceso a expediente judicial") {
       return '''
-La imposibilidad de acceder al expediente judicial que contiene información esencial para mi defensa y el ejercicio de mis derechos vulnera el derecho fundamental al debido proceso, consagrado en el artículo 29 de la Constitución.
-
-El acceso al expediente es una garantía mínima que permite conocer el contenido de las actuaciones, preparar argumentos y ejercer mecanismos de defensa. En la Sentencia T-631 de 2011, la Corte Constitucional estableció que negar el acceso a los documentos procesales configura una barrera inconstitucional al derecho de defensa, especialmente en contextos de reclusión donde las personas privadas de la libertad dependen del Estado para ejercer sus derechos.''';
+La negativa o dilación injustificada en permitir el acceso al expediente judicial limita la posibilidad de conocer, controvertir y participar activamente en el proceso, vulnerando el derecho al debido proceso y a la información pública (arts. 29 y 74 CP).''';
     }
 
     if (sub == "demora injustificada en decisiones judiciales") {
       return '''
-La demora excesiva en la resolución de solicitudes, recursos o decisiones judiciales relacionadas con mi situación jurídica constituye una violación al derecho fundamental al debido proceso, especialmente al principio de celeridad que debe regir toda actuación judicial o administrativa, conforme al artículo 29 de la Constitución Política.
-
-La Corte Constitucional ha indicado en múltiples pronunciamientos (T-118 de 2010, T-154 de 2014) que el retardo injustificado en la administración de justicia vulnera no solo el debido proceso, sino también el acceso a la justicia y la seguridad jurídica de las personas privadas de la libertad. Este retardo puede afectar directamente situaciones como redenciones de pena, solicitudes de libertad, recursos de apelación y demás trámites esenciales para la garantía de los derechos.''';
+La dilación excesiva en la resolución de asuntos judiciales o administrativos relacionados con la situación jurídica de una persona privada de la libertad vulnera el principio de celeridad procesal, el derecho al acceso oportuno a la justicia y el derecho a obtener una decisión en tiempo razonable (art. 29 CP y estándares internacionales).''';
     }
 
     return "Texto no disponible para esta subcategoría.";

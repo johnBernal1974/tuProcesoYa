@@ -5,37 +5,31 @@ class TextoVida {
 
     if (sub == "amenazas dentro del penal") {
       return '''
-La omisión de las autoridades penitenciarias frente a las amenazas recibidas dentro del establecimiento de reclusión constituye una vulneración directa a mi derecho fundamental a la vida, consagrado en el artículo 11 de la Constitución Política. Dicho derecho es inalienable e irrenunciable y exige del Estado una protección efectiva frente a riesgos ciertos e inminentes, como lo ha señalado reiteradamente la Corte Constitucional (Sentencia T-102 de 2011).
-
-El deber de custodia del Estado frente a las personas privadas de la libertad impone una obligación reforzada de protección frente a amenazas internas, particularmente si estas provienen de otros internos o del mismo personal. Así lo ha advertido la Corte en la Sentencia T-815 de 2005, donde enfatiza que la responsabilidad del Estado es aún mayor debido a la posición de indefensión del interno.''';
+Se vulnera el derecho fundamental a la vida (art. 11 de la Constitución Política) cuando las autoridades penitenciarias omiten adoptar medidas de protección ante amenazas internas, generando un riesgo real, cierto e inminente contra la existencia del recluso.''';
     }
 
     if (sub == "falta de medidas de protección") {
       return '''
-La ausencia de medidas efectivas de protección pese a la advertencia de riesgos concretos vulnera mi derecho fundamental a la vida, contemplado en el artículo 11 de la Constitución. La Corte Constitucional ha señalado que esta protección debe ser activa, no pasiva, y que las autoridades tienen el deber de prevenir daños previsibles (Sentencia T-312 de 2002).
-
-La omisión en implementar esquemas de protección adecuados a pesar de las denuncias o alertas constituye una falla en el deber positivo del Estado de garantizar la vida e integridad física de los reclusos, conforme al artículo 5 de la Convención Americana sobre Derechos Humanos.''';
+Se desconoce el derecho a la vida (art. 11 CP) y la obligación del Estado de proteger a las personas bajo su custodia, al no brindar medidas efectivas de protección frente a riesgos advertidos o denunciados por la persona privada de la libertad.''';
     }
 
     if (sub == "riesgo por condiciones insalubres") {
       return '''
-La permanencia prolongada en entornos insalubres, sin acceso a condiciones mínimas de higiene, ventilación o agua potable, pone en grave riesgo mi salud y vida, y por tanto constituye una violación del artículo 11 de la Constitución, así como del artículo 12 del Pacto Internacional de Derechos Económicos, Sociales y Culturales.
+Se vulnera el derecho a la vida en condiciones dignas (art. 11 CP) y el derecho a la salud (art. 49 CP), cuando el entorno de reclusión presenta condiciones insalubres, sin acceso a agua potable, higiene adecuada ni ventilación, generando un riesgo grave para la vida e integridad de la persona.
 
-La Corte Constitucional en la Sentencia T-153 de 1998 reconoció que las condiciones materiales de reclusión hacen parte del mínimo vital para una existencia digna, y que el incumplimiento de estándares básicos puede constituir una amenaza directa al derecho a la vida.''';
+''';
     }
 
     if (sub == "riesgo por hacinamiento") {
       return '''
-El hacinamiento carcelario configura una situación de riesgo cierto y grave para la vida, salud e integridad de las personas privadas de la libertad, conforme lo ha advertido la Corte Constitucional en la Sentencia T-388 de 2013, al declarar un estado de cosas inconstitucional sobre el sistema penitenciario colombiano.
+El hacinamiento carcelario vulnera el derecho a la vida (art. 11 CP) y a la dignidad humana (art. 1 CP), al generar riesgos inminentes de enfermedades, violencia y condiciones degradantes, sobrepasando la capacidad institucional de protección.
 
-El artículo 11 de la Constitución, junto con el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, imponen al Estado la obligación de garantizar que el cumplimiento de la pena no derive en condiciones que atenten contra la vida o expongan a tratos crueles, inhumanos o degradantes.''';
+''';
     }
 
     if (sub == "negligencia médica grave") {
       return '''
-La negligencia grave en la atención médica en contextos penitenciarios no solo vulnera el derecho a la salud, sino también el derecho fundamental a la vida (art. 11 CP), especialmente cuando omisiones, demoras o errores ponen en riesgo la supervivencia del recluso.
-
-La Corte Constitucional ha señalado que, en virtud del principio de dignidad humana (art. 1 CP), las personas privadas de la libertad tienen derecho a recibir atención médica oportuna y adecuada. En la Sentencia T-020 de 2017 se enfatizó que esta atención es inaplazable y que su omisión compromete seriamente la vida del interno.''';
+Se vulnera el derecho a la vida (art. 11 CP) cuando, por omisión, demora o errores graves en la atención médica, se pone en riesgo la supervivencia de la persona privada de la libertad, sin acceso a un tratamiento oportuno y adecuado.''';
     }
 
     return "Texto no disponible para esta subcategoría.";

@@ -62,15 +62,21 @@ class TutelaTemplate {
 
         <p><b>V. PRUEBAS</b><br>$pruebas</p>
 
-        <p><b>VI. CUMPLIMIENTO AL ARTÍCULO 37 DEL DECRETO 2591 DE 1991 – JURAMENTO</b><br>$juramento</p>
+        <p><b>VI. CUMPLIMIENTO AL ARTÍCULO 37 DEL DECRETO 2591 DE 1991 – JURAMENTO</b><br>$juramento</p><br>
+        
+        <p><b>VII. NOTIFICACIONES</b></p>
 
         <p>Solicito que las notificaciones sean enviadas a las siguientes direcciones electrónicas:<br>
         $emailAlternativo<br>
         $emailUsuario</p>
 
-        <p>Gracias por su atención y pronta respuesta.</p>
+        
 
-        <p>Atentamente,</p><br>
+        <p>Cordialmente,</p><br><br><br>
+        $nombrePpl $apellidoPpl<br>
+        Identificación: $identificacionPpl<br>
+        NUI: <b>$nui</b>
+        TD: <b>$td</b><br><br>
 
         <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="150" height="50"><br>
         <a href='https://www.tuprocesoya.com'>www.tuprocesoya.com</a>
