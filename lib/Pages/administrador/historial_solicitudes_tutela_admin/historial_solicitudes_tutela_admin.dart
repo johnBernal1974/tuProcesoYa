@@ -550,8 +550,8 @@ class _HistorialSolicitudesTutelaPageAdminState extends State<HistorialSolicitud
         DocumentSnapshot configDoc = configCollection.docs.first; // Obtener el primer documento disponible
 
         // 🔥 Extraer el valor del tiempo de respuesta
-        if (configDoc.data() != null && (configDoc.data() as Map<String, dynamic>).containsKey("tiempo_respuesta_derecho_peticion")) {
-          return (configDoc["tiempo_respuesta_derecho_peticion"] as num).toInt();
+        if (configDoc.data() != null && (configDoc.data() as Map<String, dynamic>).containsKey("tiempo_respuesta_tutela")) {
+          return (configDoc["tiempo_respuesta_tutela"] as num).toInt();
         }
       }
 

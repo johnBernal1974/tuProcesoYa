@@ -76,7 +76,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   final TextEditingController _normasAplicablesController = TextEditingController();
   final TextEditingController _pretensionesController = TextEditingController();
   final TextEditingController _pruebasController = TextEditingController();
-  final TextEditingController _juramentoController = TextEditingController();
   final AtenderTutelaAdminController _controller = AtenderTutelaAdminController();
 
   String hechos = "";
@@ -139,7 +138,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     _pretensionesController.addListener(_actualizarAltura);
     _normasAplicablesController.addListener(_actualizarAltura);
     _pruebasController.addListener(_actualizarAltura);
-    _juramentoController.addListener(_actualizarAltura);
     DocumentReference userDoc = FirebaseFirestore.instance.collection('Ppl').doc(widget.idUser);
     obtenerCorreosCentro(userDoc).then((correos) {
       setState(() {
@@ -152,7 +150,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       cargarPretensiones(widget.idDocumento);
       cargarNormasAplicables(widget.idDocumento);
       cargarPruebas(widget.idDocumento);
-      cargarJuramento(widget.idDocumento);
     });
     if (!_isFundamentosCargados && _derechosVulneradosController.text.trim().isEmpty) {
       final textoCompleto = TextoDerechosVulneradosHelper.obtenerTexto(
@@ -169,7 +166,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       _normasAplicablesController.text = fund['normas_aplicables'] ?? '';
       _pretensionesController.text = fund['pretensiones'] ?? '';
       _pruebasController.text = fund['pruebas'] ?? '';
-      _juramentoController.text = fund['juramento'] ?? '';
 
       _isFundamentosCargados = true;
     }
@@ -373,8 +369,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
               const SizedBox(height: 30),
               ingresarPruebas(),
               const SizedBox(height: 30),
-              ingresarJuramento(),
-              const SizedBox(height: 30),
             ],
           ),
 
@@ -418,7 +412,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                     pretensiones = _pretensionesController.text.trim();
                     normasAplicables = _normasAplicablesController.text.trim();
                     pruebas = _pruebasController.text.trim();
-                    juramento = _juramentoController.text.trim();
                     _mostrarVistaPrevia = !_mostrarVistaPrevia;
                   });
                 },
@@ -549,7 +542,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   void _guardarDatosEnVariables() {
     if (_hechosController.text.isEmpty || _derechosVulneradosController.text.isEmpty
         || _pretensionesController.text.isEmpty || _normasAplicablesController.text.isEmpty
-        || _pruebasController.text.isEmpty  || _juramentoController.text.isEmpty) {
+        || _pruebasController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("⚠️ Todos los campos deben estar llenos."),
@@ -568,7 +561,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       pretensiones = _pretensionesController.text;
       normasAplicables = _normasAplicablesController.text;
       pruebas = _pruebasController.text;
-      juramento = _juramentoController.text;
     });
     _mostrarBotonVistaPrevia = true;
   }
@@ -580,13 +572,11 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     _pretensionesController.removeListener(_actualizarAltura);
     _normasAplicablesController.removeListener(_actualizarAltura);
     _pruebasController.removeListener(_actualizarAltura);
-    _juramentoController.removeListener(_actualizarAltura);
     _hechosController.dispose();
     _derechosVulneradosController.dispose();
     _pretensionesController.dispose();
     _normasAplicablesController.dispose();
     _pruebasController.dispose();
-    _juramentoController.dispose();
     super.dispose();
   }
 
@@ -797,8 +787,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
               _derechosVulneradosController.text.trim().isNotEmpty &&
               _pretensionesController.text.trim().isNotEmpty &&
               _normasAplicablesController.text.trim().isNotEmpty &&
-              _pruebasController.text.trim().isNotEmpty &&
-              _juramentoController.text.trim().isNotEmpty;
+              _pruebasController.text.trim().isNotEmpty;
     });
   }
 
@@ -1168,6 +1157,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             correosCentro = correos;
           }
 
+          if (widget.archivos.isEmpty &&
+              _pruebasController.text.trim().isEmpty &&
+              !_isPruebasLoaded) {
+            _pruebasController.text = "No se adjuntan documentos en esta solicitud.";
+            _isPruebasLoaded = true;
+          }
+
           // 🔹 Inicializamos el derechoPeticion
           accionTutela = TutelaTemplate(
             dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
@@ -1181,7 +1177,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             derechosVulnerados: derechosVulnerados,
             normasAplicables: normasAplicables,
             pruebas: pruebas,
-            juramento: juramento,
+            juramento: juramento.trim().isEmpty ? null : juramento,
             pretensiones: pretensiones,
             emailUsuario: userData?.email?.trim() ?? "",
             td: userData?.td?.trim() ?? "",
@@ -1540,14 +1536,15 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
         final data = doc.data() as Map<String, dynamic>?;
 
         final texto = data?['pruebas'];
-        if (texto != null && texto is String) {
-          setState(() {
-            _pruebasController.text = texto;
-            _isPruebasLoaded = true;
-          });
 
-          verificarVistaPrevia();
-        }
+        setState(() {
+          _pruebasController.text = (texto != null && texto is String && texto.trim().isNotEmpty)
+              ? texto
+              : "No se adjuntan documentos en esta solicitud."; // <-- Aquí el valor por defecto
+          _isPruebasLoaded = true;
+        });
+
+        verificarVistaPrevia();
       }
     } catch (e) {
       if (kDebugMode) {
@@ -1556,32 +1553,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     }
   }
 
-  Future<void> cargarJuramento(String docId) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('tutelas_solicitados')
-          .doc(docId)
-          .get();
 
-      if (doc.exists && !_isJuramentoLoaded) {
-        final data = doc.data() as Map<String, dynamic>?;
-
-        final texto = data?['juramento'];
-        if (texto != null && texto is String) {
-          setState(() {
-            _juramentoController.text = texto;
-            _isJuramentoLoaded = true;
-          });
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando pruebas: $e");
-      }
-    }
-  }
 
   // corregido full - autollenado por IA o se puede escribir igualmente
   Widget ingresarHechos() {
@@ -1740,36 +1712,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       ],
     );
   }
-  Widget ingresarJuramento() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Juramento",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: _juramentoController,
-          minLines:1,
-          maxLines: null,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey.shade100, // Fondo gris claro
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          style: const TextStyle(fontSize: 14),
-          onChanged: (_) => verificarVistaPrevia(),
-        )
-      ],
-    );
-  }
 
   Widget vistaPreviaTutela(userData, String hechos, String derechosVulnerados, String pretensiones, String normasAplicables,
       String pruebas, String juramento) {
@@ -1785,8 +1727,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
         derechosVulnerados: derechosVulnerados,
         pretensiones: pretensiones,
         normasAplicables: normasAplicables,
-        pruebas: pruebas,
-        juramento: juramento,
+        pruebas: archivos.isEmpty && pruebas.trim().isEmpty
+          ? "No se adjuntan documentos en esta solicitud."
+          : pruebas,
+      juramento: juramento.trim().isEmpty ? null : juramento,
         emailUsuario: userData?.email?.trim() ?? "",
         td: userData?.td?.trim() ?? "",
         nui: userData?.nui?.trim() ?? "",
@@ -1844,8 +1788,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
         derechosVulnerados: derechosVulnerados,
         pretensiones: pretensiones,
         normasAplicables: normasAplicables,
-        pruebas: pruebas,
-        juramento: juramento,
+        pruebas: widget.archivos.isEmpty && pruebas.trim().isEmpty
+          ? "No se adjuntan documentos en esta solicitud."
+          : pruebas,
+        juramento: juramento.trim().isEmpty ? null : juramento,
         emailUsuario: userData?.email.trim() ?? "",
         nui: userData?.nui.trim() ?? "",
         td: userData?.td.trim() ?? "",
@@ -2156,7 +2102,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             "pretensiones": _pretensionesController.text,
             "normas_aplicables": _normasAplicablesController.text,
             "pruebas": _pruebasController.text,
-            "juramento": _juramentoController.text,
           });
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(
@@ -2208,7 +2153,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             "pretensiones": _pretensionesController.text,
             "normas_aplicables": _normasAplicablesController.text,
             "pruebas": _pruebasController.text,
-            "juramento": _pruebasController.text,
           });
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(
