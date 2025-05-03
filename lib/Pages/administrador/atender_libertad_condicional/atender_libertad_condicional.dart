@@ -2262,7 +2262,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "libertad_condicional",
+      "tipo": "condicional",
     });
 
     final response = await http.post(
@@ -2430,7 +2430,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "solicitudes_libertad_condicional/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+      final filePath = "condicional/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");

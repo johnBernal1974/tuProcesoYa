@@ -616,7 +616,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         });
 
         docIdSolicitud ??= FirebaseFirestore.instance.collection('prision_domiciliaria_solicitados').doc().id;
-        String path = 'solicitudes_prision_domiciliaria/$docIdSolicitud/${file.name}';
+        String path = 'domiciliaria/$docIdSolicitud/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,
@@ -673,7 +673,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
           if (!archivosHijos.any((f) => f.name == file.name)) {
             archivosHijos.add(file);
 
-            String path = 'solicitudes_prision_domiciliaria/$docIdSolicitud/hijos/${file.name}';
+            String path = 'domiciliaria/$docIdSolicitud/hijos/${file.name}';
 
             String? downloadUrl = await ArchivoUploader.subirArchivo(
               file: file,
@@ -954,7 +954,8 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
       for (PlatformFile file in _selectedFiles) {
         try {
-          String filePath = 'solicitudes_prision_domiciliaria/$docId/${file.name}';
+          String filePath = 'domiciliaria/$docId/archivos/${file.name}';
+
           Reference storageRef = FirebaseStorage.instance.ref(filePath);
           UploadTask uploadTask = kIsWeb
               ? storageRef.putData(file.bytes!)

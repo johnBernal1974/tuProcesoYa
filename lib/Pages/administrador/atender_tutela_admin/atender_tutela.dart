@@ -1994,7 +1994,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "tutela/$idDocumento/correos/$fileName";
+      final filePath = "tutelas/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");

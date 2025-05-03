@@ -2364,7 +2364,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "solicitudes_permiso_72horas/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+      final filePath = "permiso72horas/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");

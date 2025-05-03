@@ -662,7 +662,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         });
 
         docIdSolicitud ??= FirebaseFirestore.instance.collection('permiso_72horas_solicitados').doc().id;
-        String path = 'solicitudes_permiso_72horas/$docIdSolicitud/${file.name}';
+        String path = 'permiso72horas/$docIdSolicitud/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,
@@ -722,7 +722,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
           if (!archivosHijos.any((f) => f.name == file.name)) {
             archivosHijos.add(file);
 
-            String path = 'solicitudes_permiso_72horas/$docIdSolicitud/hijos/${file.name}';
+            String path = 'permiso72horas/$docIdSolicitud/hijos/${file.name}';
 
             String? downloadUrl = await ArchivoUploader.subirArchivo(
               file: file,
@@ -1008,7 +1008,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
 
       for (PlatformFile file in _selectedFiles) {
         try {
-          String filePath = 'solicitudes_permiso_72horas/$docId/${file.name}';
+          String filePath = 'permiso72horas/$docId/archivos/${file.name}';
           Reference storageRef = FirebaseStorage.instance.ref(filePath);
           UploadTask uploadTask = kIsWeb
               ? storageRef.putData(file.bytes!)

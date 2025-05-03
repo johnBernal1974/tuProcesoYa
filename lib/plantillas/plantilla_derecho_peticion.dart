@@ -52,8 +52,8 @@ class DerechoPeticionTemplate {
         $peticionConcreta<br><br><br>       
         Agradezco enormemente su colaboración y respuesta rápida y satisfactoria.<br><br><br><br>
         Atentamente,<br><br><br>
-        <b>$nombreAcudiente</b><br>
-        Acudiente del Ppl<br><br><br><br><br>
+        <b>$nombrePpl $apellidoPpl</b><br>
+        CC.$identificacionPpl<br><br><br><br><br>        
         Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
         $emailAlternativo<br>
         $emailUsuario<br>

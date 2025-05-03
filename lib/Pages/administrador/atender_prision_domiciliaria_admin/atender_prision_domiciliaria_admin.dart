@@ -2228,7 +2228,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "prision_domiciliaria",
+      "tipo": "domiciliaria",
     });
 
     final response = await http.post(
@@ -2385,7 +2385,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "solicitudes_prision_domiciliaria/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+      final filePath = "domiciliaria/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");

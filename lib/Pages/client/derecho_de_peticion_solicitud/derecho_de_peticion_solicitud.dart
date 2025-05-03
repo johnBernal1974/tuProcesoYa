@@ -439,14 +439,14 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       FirebaseStorage storage = FirebaseStorage.instance;
-
       String docId = firestore.collection('derechos_peticion_solicitados').doc().id;
+
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
       List<String> archivosUrls = [];
 
       for (PlatformFile file in _selectedFiles) {
         try {
-          String filePath = 'derechos_peticion/$docId/${file.name}';
+          String filePath = 'derechos_peticion/$docId/archivos/${file.name}';
           Reference storageRef = storage.ref(filePath);
           UploadTask uploadTask = kIsWeb
               ? storageRef.putData(file.bytes!)
@@ -454,7 +454,9 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
           TaskSnapshot snapshot = await uploadTask;
           String downloadUrl = await snapshot.ref.getDownloadURL();
           archivosUrls.add(downloadUrl);
-        } catch (_) {}
+        } catch (e) {
+          if (kDebugMode) print("Error al subir archivo ${file.name}: $e");
+        }
       }
 
       List<String> preguntas = PreguntasDerechoPeticionHelper.obtenerPreguntasPorCategoriaYSubcategoria(
@@ -510,6 +512,7 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
       }
     }
   }
+
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;

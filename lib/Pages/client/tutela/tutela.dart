@@ -13,6 +13,7 @@ class TutelaPage extends StatefulWidget {
 class _TutelaPageState extends State<TutelaPage> {
   bool _showQueEs = false;
   bool _showParaQueSirve = false;
+  bool _juramentoAceptado = false;
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +108,6 @@ class _TutelaPageState extends State<TutelaPage> {
                     ),
                   ),
 
-
                 const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(vertical: 5),
@@ -144,13 +144,61 @@ class _TutelaPageState extends State<TutelaPage> {
                     ),
                   ),
 
-                const SizedBox(height: 50),
+                const SizedBox(height: 30),
+
+                const Text(
+                  "CUMPLIMIENTO AL ARTÍCULO 37 DEL DECRETO 2591 DE 1991",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  "Manifiesto bajo la gravedad del juramento que no se ha presentado ninguna otra acción de tutela por los mismos hechos y derechos.",
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _juramentoAceptado,
+                      onChanged: (value) {
+                        setState(() {
+                          _juramentoAceptado = value ?? false;
+                        });
+                      },
+                    ),
+                    const Expanded(
+                      child: Text(
+                        "Acepto y declaro bajo la gravedad del juramento.",
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 80),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.white, backgroundColor: primary,
                   ),
                   onPressed: () {
-                    Navigator.pushNamed(context, "tutela_solicitud");
+                    if (_juramentoAceptado) {
+                      Navigator.pushNamed(context, "tutela_solicitud");
+                    } else {
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: Colors.white,
+                          title: const Text("Atención"),
+                          content: const Text("Debes aceptar el cumplimiento al artículo 37 para continuar."),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Aceptar"),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
                   },
                   child: const Text('Crear acción de tutela'),
                 ),

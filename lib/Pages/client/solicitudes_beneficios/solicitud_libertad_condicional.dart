@@ -510,7 +510,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         });
 
         docIdSolicitud ??= FirebaseFirestore.instance.collection('libertad_condicional_solicitados').doc().id;
-        String path = 'solicitudes_libertad_condicional/$docIdSolicitud/${file.name}';
+        String path = 'condicional/$docIdSolicitud/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,
@@ -567,7 +567,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
           if (!archivosHijos.any((f) => f.name == file.name)) {
             archivosHijos.add(file);
 
-            String path = 'solicitudes_libertad_condicional/$docIdSolicitud/hijos/${file.name}';
+            String path = 'condicional/$docIdSolicitud/hijos/${file.name}';
 
             String? downloadUrl = await ArchivoUploader.subirArchivo(
               file: file,
@@ -954,7 +954,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
       for (PlatformFile file in _selectedFiles) {
         try {
-          String filePath = 'solicitudes_libertad_condicional/$docId/${file.name}';
+          String filePath = 'condicional/$docId/archivos/${file.name}';
           Reference storageRef = FirebaseStorage.instance.ref(filePath);
           UploadTask uploadTask = kIsWeb ? storageRef.putData(file.bytes!) : storageRef.putFile(File(file.path!));
           TaskSnapshot snapshot = await uploadTask;

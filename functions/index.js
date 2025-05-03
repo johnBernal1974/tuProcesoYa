@@ -234,7 +234,7 @@ exports.sendEmailWithResend = onRequest({
   if (req.method === "OPTIONS") return res.status(204).send("");
 
   try {
-    const { to, cc, subject, html, archivos, idDocumento, enviadoPor, tipo = "derecho_peticion" } = req.body;
+    const { to, cc, subject, html, archivos, idDocumento, enviadoPor, tipo = "derechos_peticion" } = req.body;
 
     if (!to || !subject || !html || !idDocumento || !enviadoPor) {
       return res.status(400).json({ error: "Faltan campos obligatorios" });
@@ -397,7 +397,6 @@ exports.sendEmailWithResend = onRequest({
     return res.status(500).json({ error: "Error enviando correo" });
   }
 });
-
 
 
 exports.generarTextoIAExtendido = onRequest({

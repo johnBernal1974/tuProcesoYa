@@ -446,7 +446,7 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
 
       for (PlatformFile file in _selectedFiles) {
         try {
-          String filePath = 'tutelas/$docId/${file.name}';
+          String filePath = 'tutelas/$docId/archivos/${file.name}';
           Reference storageRef = storage.ref(filePath);
           UploadTask uploadTask = kIsWeb
               ? storageRef.putData(file.bytes!)
@@ -510,6 +510,7 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
       }
     }
   }
+
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;

@@ -1729,7 +1729,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "extincion_pena",
+      "tipo": "extincion",
     });
 
     final response = await http.post(
@@ -1894,7 +1894,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "solicitudes_extincion_pena/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+      final filePath = "extincion/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
