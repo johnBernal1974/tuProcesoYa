@@ -98,24 +98,30 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
           ? const Center(child: CircularProgressIndicator())
           : Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Configuraciones Generales",
-              style:
-              TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        child: SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height,
             ),
-            const SizedBox(height: 20),
-            _buildConfigField("Tiempo de Prueba", "tiempoDePrueba"),
-            _buildConfigField("Valor Derecho de Petición", "valor_derecho_peticion"),
-            _buildConfigField("Valor Suscripción", "valor_subscripcion"),
-            _buildConfigField("Valor Tutela", "valor_tutela"),
-            _buildConfigField("Valor Permiso de 72 horas", "valor_72h"),
-            _buildConfigField("Valor Prisión domiciliaria", "valor_domiciliaria"),
-            _buildConfigField("Valor Libertad condicional", "valor_condicional"),
-            _buildConfigField("Valor Extinción de la pena", "valor_extincion"),
-          ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Configuraciones Generales",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                _buildConfigField("Tiempo de Prueba", "tiempoDePrueba"),
+                _buildConfigField("Valor Derecho de Petición", "valor_derecho_peticion"),
+                _buildConfigField("Valor Suscripción", "valor_subscripcion"),
+                _buildConfigField("Valor Tutela", "valor_tutela"),
+                _buildConfigField("Valor Permiso de 72 horas", "valor_72h"),
+                _buildConfigField("Valor Prisión domiciliaria", "valor_domiciliaria"),
+                _buildConfigField("Valor Libertad condicional", "valor_condicional"),
+                _buildConfigField("Valor Extinción de la pena", "valor_extincion"),
+              ],
+            ),
+          ),
         ),
       ),
     );

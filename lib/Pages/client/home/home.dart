@@ -176,7 +176,7 @@ class _HomePageState extends State<HomePage> {
             stream: FirebaseFirestore.instance.collection('Ppl').doc(_uid).snapshots(),
             builder: (context, snapshot) {
               if (!snapshot.hasData || !snapshot.data!.exists) {
-                return const Center(child: Text('No se encontraron datos del usuario'));
+                return const Center(child: Text(''));
               }
 
               _ppl = Ppl.fromDocumentSnapshot(snapshot.data!);
