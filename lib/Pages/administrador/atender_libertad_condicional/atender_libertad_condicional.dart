@@ -2287,7 +2287,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
     }
   }
 
-
   Widget botonEnviarCorreo() {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(

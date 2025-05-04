@@ -133,7 +133,7 @@ class _HomePageState extends State<HomePage> {
           : StreamBuilder<List<QuerySnapshot>>(
         stream: CombineLatestStream.list([
           FirebaseFirestore.instance
-              .collection('permiso_72horas_solicitados')
+              .collection('permiso_solicitados')
               .where('idUser', isEqualTo: _uid)
               .snapshots(),
           FirebaseFirestore.instance
@@ -847,7 +847,7 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseFirestore.instance.collection('Ppl').doc(_uid);
 
     final solicitudes = [
-      {'coleccion': 'permiso_72horas_solicitados', 'id': 'permiso_72h'},
+      {'coleccion': 'permiso_solicitados', 'id': 'permiso_72h'},
       {'coleccion': 'prision_domiciliaria_solicitados', 'id': 'prision_domiciliaria'},
       {'coleccion': 'libertad_condicional_solicitados', 'id': 'libertad_condicional'},
       {'coleccion': 'extincion_pena_solicitados', 'id': 'extincion_pena'},

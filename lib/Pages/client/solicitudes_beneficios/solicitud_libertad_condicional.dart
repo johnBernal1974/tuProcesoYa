@@ -503,14 +503,19 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
             archivoDeclaracion = file.name;
           } else if (tipo == 'cedula_responsable') {
             archivoCedulaResponsable = file.name;
-          }
-          else if (tipo == 'insolvencia') {
+          } else if (tipo == 'insolvencia') {
             archivoInsolvencia = file.name;
           }
         });
 
-        docIdSolicitud ??= FirebaseFirestore.instance.collection('libertad_condicional_solicitados').doc().id;
-        String path = 'condicional/$docIdSolicitud/${file.name}';
+        // ID único para solicitud
+        docIdSolicitud ??= FirebaseFirestore.instance
+            .collection('libertad_condicional_solicitados')
+            .doc()
+            .id;
+
+        // 📁 Ruta ordenada en Storage
+        String path = 'libertad_condicional/$docIdSolicitud/archivos/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,
@@ -551,23 +556,27 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
       }
     } catch (e) {
       if (kDebugMode) {
-        print("Error al seleccionar archivo: $e");
+        print("❌ Error al seleccionar archivo: $e");
       }
     }
   }
+
 
   Future<void> pickMultipleFilesHijos() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null && result.files.isNotEmpty) {
-        docIdSolicitud ??= FirebaseFirestore.instance.collection('libertad_condicional_solicitados').doc().id;
+        docIdSolicitud ??= FirebaseFirestore.instance
+            .collection('libertad_condicional_solicitados')
+            .doc()
+            .id;
 
         for (PlatformFile file in result.files) {
           if (!archivosHijos.any((f) => f.name == file.name)) {
             archivosHijos.add(file);
 
-            String path = 'condicional/$docIdSolicitud/hijos/${file.name}';
+            String path = 'condicional/$docIdSolicitud/archivos/hijos/${file.name}';
 
             String? downloadUrl = await ArchivoUploader.subirArchivo(
               file: file,
@@ -588,6 +597,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
       }
     }
   }
+
 
   void validarYEnviar() async {
     if (_direccionController.text.trim().isEmpty ||

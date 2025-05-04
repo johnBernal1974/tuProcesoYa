@@ -609,14 +609,19 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
             archivoDeclaracion = file.name;
           } else if (tipo == 'cedula_responsable') {
             archivoCedulaResponsable = file.name;
-          }
-          else if (tipo == 'insolvencia') {
+          } else if (tipo == 'insolvencia') {
             archivoInsolvencia = file.name;
           }
         });
 
-        docIdSolicitud ??= FirebaseFirestore.instance.collection('prision_domiciliaria_solicitados').doc().id;
-        String path = 'domiciliaria/$docIdSolicitud/${file.name}';
+        // 🟣 Asegurar ID único para Firestore y Storage
+        docIdSolicitud ??= FirebaseFirestore.instance
+            .collection('prision_domiciliaria_solicitados')
+            .doc()
+            .id;
+
+        // 🟣 Ruta organizada dentro de carpeta "domiciliaria"
+        String path = 'domiciliaria/$docIdSolicitud/archivos/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,
@@ -639,7 +644,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text("Archivo seleccionado exitosamente."),
+                content: Text("Archivo subido exitosamente."),
                 backgroundColor: Colors.green,
               ),
             );
@@ -657,23 +662,27 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       }
     } catch (e) {
       if (kDebugMode) {
-        print("Error al seleccionar archivo: $e");
+        print("❌ Error al seleccionar archivo: $e");
       }
     }
   }
+
 
   Future<void> pickMultipleFilesHijos() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null && result.files.isNotEmpty) {
-        docIdSolicitud ??= FirebaseFirestore.instance.collection('prision_domiciliaria_solicitados').doc().id;
+        docIdSolicitud ??= FirebaseFirestore.instance
+            .collection('prision_domiciliaria_solicitados')
+            .doc()
+            .id;
 
         for (PlatformFile file in result.files) {
           if (!archivosHijos.any((f) => f.name == file.name)) {
             archivosHijos.add(file);
 
-            String path = 'domiciliaria/$docIdSolicitud/hijos/${file.name}';
+            String path = 'domiciliaria/$docIdSolicitud/archivos/hijos/${file.name}';
 
             String? downloadUrl = await ArchivoUploader.subirArchivo(
               file: file,
@@ -694,6 +703,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       }
     }
   }
+
 
   final List<Map<String, String>> _opcionesReparacion = [
     {

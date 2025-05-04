@@ -1251,7 +1251,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
     await _calculoCondenaController.calcularTiempo(widget.idUser);
 
     final doc = await FirebaseFirestore.instance
-        .collection('permiso_72horas_solicitados')
+        .collection('permiso_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -1536,7 +1536,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
   void fetchDocumentoPermiso72Horas() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('permiso_72horas_solicitados')
+          .collection('permiso_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -1709,7 +1709,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
   Future<void> cargarSinopsis(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('permiso_72horas_solicitados')
+          .collection('permiso_solicitados')
           .doc(docId)
           .get();
 
@@ -1736,7 +1736,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
   Future<void> cargarConsideraciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('permiso_72horas_solicitados')
+          .collection('permiso_solicitados')
           .doc(docId)
           .get();
 
@@ -1764,7 +1764,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
   Future<void> cargarFundamentosDeDerecho(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('permiso_72horas_solicitados')
+          .collection('permiso_solicitados')
           .doc(docId)
           .get();
 
@@ -1791,7 +1791,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
   Future<void> cargarPretenciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('permiso_72horas_solicitados')
+          .collection('permiso_solicitados')
           .doc(docId)
           .get();
 
@@ -1818,7 +1818,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
   Future<void> cargarAnexos(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('permiso_72horas_solicitados')
+          .collection('permiso_solicitados')
           .doc(docId)
           .get();
 
@@ -2097,7 +2097,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
-        .collection('permiso_72horas_solicitados')
+        .collection('permiso_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -2198,7 +2198,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "permiso_72horas",
+      "tipo": "permiso",
     });
 
     final response = await http.post(
@@ -2209,7 +2209,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
 
     if (response.statusCode == 200) {
       await FirebaseFirestore.instance
-          .collection('permiso_72horas_solicitados')
+          .collection('permiso_solicitados')
           .doc(widget.idDocumento)
           .update({
         "status": "Enviado",
@@ -2222,7 +2222,6 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       }
     }
   }
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -2364,7 +2363,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "permiso72horas/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+      final filePath = "permiso/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
@@ -2377,7 +2376,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
 
       // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("permiso_72horas_solicitados") // 🟣 Cambiar colección
+          .collection("permiso_solicitados") // 🟣 Cambiar colección
           .doc(idDocumento)
           .update({
         "correoHtmlUrl": downloadUrl,
@@ -2430,7 +2429,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
 
         try {
           await FirebaseFirestore.instance
-              .collection('permiso_72horas_solicitados')
+              .collection('permiso_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Diligenciado",
@@ -2500,7 +2499,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
 
         try {
           await FirebaseFirestore.instance
-              .collection('permiso_72horas_solicitados')
+              .collection('permiso_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Revisado",

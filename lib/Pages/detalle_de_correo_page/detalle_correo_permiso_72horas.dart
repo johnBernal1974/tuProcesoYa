@@ -25,7 +25,7 @@ class DetalleCorreoPermiso72HorasPage extends StatelessWidget {
       appBar: AppBar(title: const Text("Detalle del correo")),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
-            .collection('permiso_72horas_solicitados')
+            .collection('permiso_solicitados')
             .doc(idDocumento)
             .collection('log_correos')
             .doc(correoId)

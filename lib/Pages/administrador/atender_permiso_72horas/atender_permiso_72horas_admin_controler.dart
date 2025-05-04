@@ -8,7 +8,7 @@ class AtenderPermiso72HorasAdminController {
 
   Future<void> actualizarSolicitud(BuildContext context, String docId, Map<String, dynamic> nuevosDatos) async {
     try {
-      await _firestore.collection('permiso_72horas_solicitados').doc(docId).update(nuevosDatos);
+      await _firestore.collection('permiso_solicitados').doc(docId).update(nuevosDatos);
       print("✅ Solicitud actualizada correctamente");
 
       // Mostrar mensaje de éxito

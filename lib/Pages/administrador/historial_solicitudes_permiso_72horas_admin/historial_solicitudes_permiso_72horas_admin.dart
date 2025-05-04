@@ -60,7 +60,7 @@ class _HistorialSolicitudesPermiso72HorasAdminPageState extends State<HistorialS
               Expanded(
                   child:StreamBuilder<QuerySnapshot>(
                     stream: firestore
-                        .collection('permiso_72horas_solicitados')
+                        .collection('permiso_solicitados')
                         .orderBy('fecha', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
@@ -173,7 +173,7 @@ class _HistorialSolicitudesPermiso72HorasAdminPageState extends State<HistorialS
 
   Widget _buildEstadoCards(String role) {
     return StreamBuilder<QuerySnapshot>(
-      stream: firestore.collection('permiso_72horas_solicitados').snapshots(),
+      stream: firestore.collection('permiso_solicitados').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const CircularProgressIndicator();
@@ -356,7 +356,7 @@ class _HistorialSolicitudesPermiso72HorasAdminPageState extends State<HistorialS
         if (userRole == "pasante 1" && (asignadoA == null || asignadoA.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('permiso_72horas_solicitados')
+                .collection('permiso_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA': user.uid,
@@ -381,7 +381,7 @@ class _HistorialSolicitudesPermiso72HorasAdminPageState extends State<HistorialS
         if (userRole == "pasante 2" && (asignadoA_P2 == null || asignadoA_P2.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('permiso_72horas_solicitados')
+                .collection('permiso_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA_P2': user.uid,

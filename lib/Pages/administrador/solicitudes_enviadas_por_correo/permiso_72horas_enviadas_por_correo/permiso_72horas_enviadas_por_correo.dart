@@ -206,7 +206,7 @@ class _SolicitudesPermiso72HorasEnviadasPorCorreoPageState extends State<Solicit
                                         child:
                                         ListaCorreosWidget(
                                           solicitudId: widget.idDocumento,
-                                          nombreColeccion: "permiso_72horas_solicitados",
+                                          nombreColeccion: "permiso_solicitados",
                                           onTapCorreo: _mostrarDetalleCorreo,
                                         )
                                     ),
@@ -251,7 +251,7 @@ class _SolicitudesPermiso72HorasEnviadasPorCorreoPageState extends State<Solicit
                                       child:
                                       ListaCorreosWidget(
                                         solicitudId: widget.idDocumento,
-                                        nombreColeccion: "permiso_72horas_solicitados",
+                                        nombreColeccion: "permiso_solicitados",
                                         onTapCorreo: _mostrarDetalleCorreo,
                                       )
                                   ),
@@ -727,7 +727,7 @@ class _SolicitudesPermiso72HorasEnviadasPorCorreoPageState extends State<Solicit
 
       // 🔥 Obtener documento de Firestore
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('permiso_72horas_solicitados')
+          .collection('permiso_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -806,7 +806,7 @@ class _SolicitudesPermiso72HorasEnviadasPorCorreoPageState extends State<Solicit
               padding: const EdgeInsets.all(20),
               child: FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance
-                    .collection('permiso_72horas_solicitados')
+                    .collection('permiso_solicitados')
                     .doc(widget.idDocumento)
                     .collection('log_correos')
                     .doc(correoId)

@@ -41,7 +41,7 @@ class _HistorialSolicitudesPermiso72HorasPageState extends State<HistorialSolici
       return const Stream.empty();
     }
     return FirebaseFirestore.instance
-        .collection('permiso_72horas_solicitados')
+        .collection('permiso_solicitados')
         .where('idUser', isEqualTo: _userId)
         .orderBy('fecha', descending: true)
         .snapshots();
@@ -246,7 +246,7 @@ class _HistorialSolicitudesPermiso72HorasPageState extends State<HistorialSolici
                 const Text("Informe de Diligencias realizadas"),
                 FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
-                      .collection("permiso_72horas_solicitados")
+                      .collection("permiso_solicitados")
                       .doc(idDocumento)
                       .collection("log_correos")
                       .orderBy("timestamp", descending: true)
