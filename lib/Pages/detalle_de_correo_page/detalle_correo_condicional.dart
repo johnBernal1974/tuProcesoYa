@@ -25,7 +25,7 @@ class DetalleCorreoCondicionalPage extends StatelessWidget {
       appBar: AppBar(title: const Text("Detalle del correo")),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
-            .collection('libertad_condicional_solicitados')
+            .collection('condicional_solicitados')
             .doc(idDocumento)
             .collection('log_correos')
             .doc(correoId)

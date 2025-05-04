@@ -1249,7 +1249,7 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
 
     final doc = await FirebaseFirestore.instance
-        .collection('libertad_condicional_solicitados')
+        .collection('condicional_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -1579,7 +1579,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   void fetchDocumentoLibertadCondicional() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('condicional_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -1773,7 +1773,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarSinopsis(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('condicional_solicitados')
           .doc(docId)
           .get();
 
@@ -1800,7 +1800,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarConsideraciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('condicional_solicitados')
           .doc(docId)
           .get();
 
@@ -1828,7 +1828,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarFundamentosDeDerecho(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('condicional_solicitados')
           .doc(docId)
           .get();
 
@@ -1855,7 +1855,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarPretenciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('condicional_solicitados')
           .doc(docId)
           .get();
 
@@ -1882,7 +1882,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
   Future<void> cargarAnexos(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('condicional_solicitados')
           .doc(docId)
           .get();
 
@@ -2161,7 +2161,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
-        .collection('libertad_condicional_solicitados')
+        .collection('condicional_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -2273,7 +2273,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
     if (response.statusCode == 200) {
       await FirebaseFirestore.instance
-          .collection('libertad_condicional_solicitados')
+          .collection('condicional_solicitados')
           .doc(widget.idDocumento)
           .update({
         "status": "Enviado",
@@ -2442,7 +2442,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
       // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("libertad_condicional_solicitados") // 🟣 Cambiar colección
+          .collection("condicional_solicitados") // 🟣 Cambiar colección
           .doc(idDocumento)
           .update({
         "correoHtmlUrl": downloadUrl,
@@ -2495,7 +2495,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
         try {
           await FirebaseFirestore.instance
-              .collection('libertad_condicional_solicitados')
+              .collection('condicional_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Diligenciado",
@@ -2565,7 +2565,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
         try {
           await FirebaseFirestore.instance
-              .collection('libertad_condicional_solicitados')
+              .collection('condicional_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Revisado",

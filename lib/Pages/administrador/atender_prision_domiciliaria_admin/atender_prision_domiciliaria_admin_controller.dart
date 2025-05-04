@@ -8,7 +8,7 @@ class AtenderPrisionDomiciliariaAdminController {
 
   Future<void> actualizarSolicitud(BuildContext context, String docId, Map<String, dynamic> nuevosDatos) async {
     try {
-      await _firestore.collection('prision_domiciliaria_solicitados').doc(docId).update(nuevosDatos);
+      await _firestore.collection('domiciliaria_solicitados').doc(docId).update(nuevosDatos);
       print("✅ Solicitud actualizada correctamente");
 
       // Mostrar mensaje de éxito

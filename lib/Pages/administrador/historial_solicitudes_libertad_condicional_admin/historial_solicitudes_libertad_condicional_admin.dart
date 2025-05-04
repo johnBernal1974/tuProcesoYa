@@ -60,7 +60,7 @@ class _HistorialSolicitudesCondicionalAdminPageState extends State<HistorialSoli
               Expanded(
                   child:StreamBuilder<QuerySnapshot>(
                     stream: firestore
-                        .collection('libertad_condicional_solicitados')
+                        .collection('condicional_solicitados')
                         .orderBy('fecha', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
@@ -173,7 +173,7 @@ class _HistorialSolicitudesCondicionalAdminPageState extends State<HistorialSoli
 
   Widget _buildEstadoCards(String role) {
     return StreamBuilder<QuerySnapshot>(
-      stream: firestore.collection('libertad_condicional_solicitados').snapshots(),
+      stream: firestore.collection('condicional_solicitados').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const CircularProgressIndicator();
@@ -356,7 +356,7 @@ class _HistorialSolicitudesCondicionalAdminPageState extends State<HistorialSoli
         if (userRole == "pasante 1" && (asignadoA == null || asignadoA.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('libertad_condicional_solicitados')
+                .collection('condicional_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA': user.uid,
@@ -381,7 +381,7 @@ class _HistorialSolicitudesCondicionalAdminPageState extends State<HistorialSoli
         if (userRole == "pasante 2" && (asignadoA_P2 == null || asignadoA_P2.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('libertad_condicional_solicitados')
+                .collection('condicional_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA_P2': user.uid,

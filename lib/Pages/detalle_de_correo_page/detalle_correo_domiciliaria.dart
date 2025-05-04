@@ -25,7 +25,7 @@ class DetalleCorreoDomiciliariaPage extends StatelessWidget {
       appBar: AppBar(title: const Text("Detalle del correo")),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
-            .collection('prision_domiciliaria_solicitados')
+            .collection('domiciliaria_solicitados')
             .doc(idDocumento)
             .collection('log_correos')
             .doc(correoId)

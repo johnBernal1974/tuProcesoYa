@@ -8,7 +8,7 @@ class AtenderLibertadCondicionalAdminController {
 
   Future<void> actualizarSolicitud(BuildContext context, String docId, Map<String, dynamic> nuevosDatos) async {
     try {
-      await _firestore.collection('libertad_condicional_solicitados').doc(docId).update(nuevosDatos);
+      await _firestore.collection('condicional_solicitados').doc(docId).update(nuevosDatos);
       print("✅ Solicitud actualizada correctamente");
 
       // Mostrar mensaje de éxito

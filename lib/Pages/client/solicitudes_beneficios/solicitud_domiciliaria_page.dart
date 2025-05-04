@@ -55,6 +55,11 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
   bool tieneHijosConvivientes = false;
 
 
+  @override
+  void initState() {
+    super.initState();
+    docIdSolicitud = FirebaseFirestore.instance.collection('domiciliaria_solicitados').doc().id;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -614,14 +619,8 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
           }
         });
 
-        // 🟣 Asegurar ID único para Firestore y Storage
-        docIdSolicitud ??= FirebaseFirestore.instance
-            .collection('prision_domiciliaria_solicitados')
-            .doc()
-            .id;
-
-        // 🟣 Ruta organizada dentro de carpeta "domiciliaria"
-        String path = 'domiciliaria/$docIdSolicitud/archivos/${file.name}';
+        final String docId = docIdSolicitud!;
+        String path = 'domiciliaria/$docId/archivos/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,
@@ -673,16 +672,13 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(allowMultiple: true);
 
       if (result != null && result.files.isNotEmpty) {
-        docIdSolicitud ??= FirebaseFirestore.instance
-            .collection('prision_domiciliaria_solicitados')
-            .doc()
-            .id;
+        final String docId = docIdSolicitud!;
 
         for (PlatformFile file in result.files) {
           if (!archivosHijos.any((f) => f.name == file.name)) {
             archivosHijos.add(file);
 
-            String path = 'domiciliaria/$docIdSolicitud/archivos/hijos/${file.name}';
+            String path = 'domiciliaria/$docId/archivos/hijos/${file.name}';
 
             String? downloadUrl = await ArchivoUploader.subirArchivo(
               file: file,
@@ -956,8 +952,12 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
     }
 
     try {
+      if (docIdSolicitud == null) {
+        throw Exception("docIdSolicitud no ha sido inicializado.");
+      }
+
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      String docId = firestore.collection('prision_domiciliaria_solicitados').doc().id;
+      final String docId = docIdSolicitud!;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
       List<String> urls = [];
@@ -976,7 +976,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         } catch (_) {}
       }
 
-      await firestore.collection('prision_domiciliaria_solicitados').doc(docId).set({
+      await firestore.collection('domiciliaria_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
         'numero_seguimiento': numeroSeguimiento,
@@ -1001,16 +1001,17 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
         'reparacion': _opcionReparacionSeleccionada,
       });
-      await descontarSaldo(valorDomiciliaria);
 
+      await descontarSaldo(valorDomiciliaria);
 
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                SolicitudExitosaDomiciliariaPage(numeroSeguimiento: numeroSeguimiento),
+            builder: (context) => SolicitudExitosaDomiciliariaPage(
+              numeroSeguimiento: numeroSeguimiento,
+            ),
           ),
         );
       }
@@ -1023,13 +1024,20 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
             title: const Text("Error"),
             content: const Text("Hubo un problema al guardar la solicitud."),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Aceptar")),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Aceptar"),
+              ),
             ],
           ),
         );
       }
+      if (kDebugMode) {
+        print("❌ Error al guardar solicitud: $e");
+      }
     }
   }
+
 
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;

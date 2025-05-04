@@ -60,7 +60,7 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
               Expanded(
                   child:StreamBuilder<QuerySnapshot>(
                     stream: firestore
-                        .collection('prision_domiciliaria_solicitados')
+                        .collection('domiciliaria_solicitados')
                         .orderBy('fecha', descending: true)
                         .snapshots(),
                     builder: (context, snapshot) {
@@ -173,7 +173,7 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
 
   Widget _buildEstadoCards(String role) {
     return StreamBuilder<QuerySnapshot>(
-      stream: firestore.collection('prision_domiciliaria_solicitados').snapshots(),
+      stream: firestore.collection('domiciliaria_solicitados').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const CircularProgressIndicator();
@@ -357,7 +357,7 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
         if (userRole == "pasante 1" && (asignadoA == null || asignadoA.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('prision_domiciliaria_solicitados')
+                .collection('domiciliaria_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA': user.uid,
@@ -382,7 +382,7 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
         if (userRole == "pasante 2" && (asignadoA_P2 == null || asignadoA_P2.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('prision_domiciliaria_solicitados')
+                .collection('domiciliaria_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA_P2': user.uid,

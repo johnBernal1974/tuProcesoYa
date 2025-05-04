@@ -137,11 +137,11 @@ class _HomePageState extends State<HomePage> {
               .where('idUser', isEqualTo: _uid)
               .snapshots(),
           FirebaseFirestore.instance
-              .collection('prision_domiciliaria_solicitados')
+              .collection('domiciliaria_solicitados')
               .where('idUser', isEqualTo: _uid)
               .snapshots(),
           FirebaseFirestore.instance
-              .collection('libertad_condicional_solicitados')
+              .collection('condicional_solicitados')
               .where('idUser', isEqualTo: _uid)
               .snapshots(),
           FirebaseFirestore.instance
@@ -848,8 +848,8 @@ class _HomePageState extends State<HomePage> {
 
     final solicitudes = [
       {'coleccion': 'permiso_solicitados', 'id': 'permiso_72h'},
-      {'coleccion': 'prision_domiciliaria_solicitados', 'id': 'prision_domiciliaria'},
-      {'coleccion': 'libertad_condicional_solicitados', 'id': 'libertad_condicional'},
+      {'coleccion': 'domiciliaria_solicitados', 'id': 'prision_domiciliaria'},
+      {'coleccion': 'condicional_solicitados', 'id': 'libertad_condicional'},
       {'coleccion': 'extincion_pena_solicitados', 'id': 'extincion_pena'},
     ];
 

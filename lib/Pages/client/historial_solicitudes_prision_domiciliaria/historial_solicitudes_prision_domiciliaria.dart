@@ -42,7 +42,7 @@ class _HistorialSolicitudesPrisionDomiciliariaPageState extends State<HistorialS
       return const Stream.empty();
     }
     return FirebaseFirestore.instance
-        .collection('prision_domiciliaria_solicitados')
+        .collection('domiciliaria_solicitados')
         .where('idUser', isEqualTo: _userId)
         .orderBy('fecha', descending: true)
         .snapshots();
@@ -247,7 +247,7 @@ class _HistorialSolicitudesPrisionDomiciliariaPageState extends State<HistorialS
                 const Text("Informe de Diligencias realizadas"),
                 FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
-                      .collection("prision_domiciliaria_solicitados")
+                      .collection("domiciliaria_solicitados")
                       .doc(idDocumento)
                       .collection("log_correos")
                       .orderBy("timestamp", descending: true)

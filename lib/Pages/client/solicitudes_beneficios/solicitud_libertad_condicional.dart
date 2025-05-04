@@ -510,12 +510,12 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
         // ID único para solicitud
         docIdSolicitud ??= FirebaseFirestore.instance
-            .collection('libertad_condicional_solicitados')
+            .collection('condicional_solicitados')
             .doc()
             .id;
 
         // 📁 Ruta ordenada en Storage
-        String path = 'libertad_condicional/$docIdSolicitud/archivos/${file.name}';
+        String path = 'condicional/$docIdSolicitud/archivos/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,
@@ -568,7 +568,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
       if (result != null && result.files.isNotEmpty) {
         docIdSolicitud ??= FirebaseFirestore.instance
-            .collection('libertad_condicional_solicitados')
+            .collection('condicional_solicitados')
             .doc()
             .id;
 
@@ -956,8 +956,12 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     }
 
     try {
+      if (docIdSolicitud == null) {
+        throw Exception("❌ Error: No se ha generado un ID de solicitud. Asegúrate de haber subido al menos un archivo.");
+      }
+
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      String docId = firestore.collection('libertad_condicional_solicitados').doc().id;
+      final String docId = docIdSolicitud!;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
       List<String> urls = [];
@@ -973,7 +977,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         } catch (_) {}
       }
 
-      await firestore.collection('libertad_condicional_solicitados').doc(docId).set({
+      await firestore.collection('condicional_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
         'numero_seguimiento': numeroSeguimiento,
@@ -998,6 +1002,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
         'reparacion': _opcionReparacionSeleccionada,
       });
+
       await descontarSaldo(valorCondicional);
 
       if (context.mounted) {
@@ -1005,8 +1010,9 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                SolicitudExitosaLibertadCondicionalPage(numeroSeguimiento: numeroSeguimiento),
+            builder: (context) => SolicitudExitosaLibertadCondicionalPage(
+              numeroSeguimiento: numeroSeguimiento,
+            ),
           ),
         );
       }
@@ -1024,8 +1030,10 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
           ),
         );
       }
+      if (kDebugMode) print("❌ Error al guardar solicitud: $e");
     }
   }
+
 
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;

@@ -1246,7 +1246,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
 
     final doc = await FirebaseFirestore.instance
-        .collection('prision_domiciliaria_solicitados')
+        .collection('domiciliaria_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -1539,7 +1539,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
   void fetchDocumentoPrisionDomiciliaria() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitados')
+          .collection('domiciliaria_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -1733,7 +1733,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
   Future<void> cargarSinopsis(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitados')
+          .collection('domiciliaria_solicitados')
           .doc(docId)
           .get();
 
@@ -1760,7 +1760,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
   Future<void> cargarConsideraciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitados')
+          .collection('domiciliaria_solicitados')
           .doc(docId)
           .get();
 
@@ -1788,7 +1788,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
   Future<void> cargarFundamentosDeDerecho(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitados')
+          .collection('domiciliaria_solicitados')
           .doc(docId)
           .get();
 
@@ -1815,7 +1815,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
   Future<void> cargarPretenciones(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitados')
+          .collection('domiciliaria_solicitados')
           .doc(docId)
           .get();
 
@@ -1842,7 +1842,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
   Future<void> cargarAnexos(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitados')
+          .collection('domiciliaria_solicitados')
           .doc(docId)
           .get();
 
@@ -2128,7 +2128,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
-        .collection('prision_domiciliaria_solicitados')
+        .collection('domiciliaria_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -2239,7 +2239,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
 
     if (response.statusCode == 200) {
       await FirebaseFirestore.instance
-          .collection('prision_domiciliaria_solicitados')
+          .collection('domiciliaria_solicitados')
           .doc(widget.idDocumento)
           .update({
         "status": "Enviado",
@@ -2398,7 +2398,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
 
       // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("prision_domiciliaria_solicitados") // 🟣 Cambiar colección
+          .collection("domiciliaria_solicitados") // 🟣 Cambiar colección
           .doc(idDocumento)
           .update({
         "correoHtmlUrl": downloadUrl,
@@ -2451,7 +2451,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
 
         try {
           await FirebaseFirestore.instance
-              .collection('prision_domiciliaria_solicitados')
+              .collection('domiciliaria_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Diligenciado",
@@ -2520,7 +2520,7 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
 
         try {
           await FirebaseFirestore.instance
-              .collection('prision_domiciliaria_solicitados')
+              .collection('domiciliaria_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Revisado",
