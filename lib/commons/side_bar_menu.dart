@@ -266,6 +266,8 @@ class _SideBarState extends State<SideBar> {
           ),
           _buildDrawerTile(context, " Historial Transacciones", Icons.monitor_heart_rounded,
               'admin_transacciones'),
+          _buildDrawerTile(context, " Referidores", Icons.double_arrow_outlined,
+              'referidores_page_admin'),
           _buildDrawerTile(
               context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
               'buzon_sugerencias_administrador',
