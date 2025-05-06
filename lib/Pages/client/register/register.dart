@@ -60,6 +60,8 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController direccionPplController = TextEditingController();
   final TextEditingController otpController = TextEditingController();
   final TextEditingController pinController = TextEditingController();
+  final TextEditingController codigoReferidoController = TextEditingController();
+
   String? selectedRegional;
   String? selectedCentro;
   String? departamentoSeleccionado;
@@ -145,6 +147,7 @@ class _RegistroPageState extends State<RegistroPage> {
   bool _mostrarPin = false;
   bool _verificandoOTP = false;
   bool _recaptchaValidado = false;
+  String? codigoReferido;
 
   @override
   void initState() {
@@ -461,6 +464,15 @@ class _RegistroPageState extends State<RegistroPage> {
                 ],
               ),
             ),
+            const SizedBox(height: 40),
+            const Text("Código de referido", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text("Si alguien te refirió coloca su código, de lo contrario da click en el boton siguiente", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 40),
+            TextFormField(
+              keyboardType: TextInputType.number,
+              controller: codigoReferidoController,
+              decoration: _buildInputDecoration('Código referido'),
+            ),
             const SizedBox(height: 130),
             Container(
               alignment: Alignment.centerRight,
@@ -521,6 +533,48 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
+  Future<void> _agregarSubcoleccionReferido({
+    required String codigoReferidor,
+    required String nombre,
+    required String apellido,
+    required String ciudad,
+  }) async {
+    final query = await FirebaseFirestore.instance
+        .collection('referidores')
+        .where('codigo', isEqualTo: codigoReferidor)
+        .limit(1)
+        .get();
+
+    if (query.docs.isNotEmpty) {
+      final docRef = query.docs.first.reference;
+
+      await docRef.collection('referidos').add({
+        'nombre': nombre,
+        'apellido': apellido,
+        'ciudad': ciudad,
+        'fechaRegistro': FieldValue.serverTimestamp(),
+      });
+    }
+  }
+
+  Future<void> _incrementarContadorReferidos(String codigoReferidor) async {
+    final query = await FirebaseFirestore.instance
+        .collection('referidores')
+        .where('codigo', isEqualTo: codigoReferidor)
+        .limit(1)
+        .get();
+
+    if (query.docs.isNotEmpty) {
+      final docRef = query.docs.first.reference;
+
+      // Incrementar en +1 el contador de referidos
+      await docRef.update({
+        'totalReferidos': FieldValue.increment(1),
+      });
+    }
+  }
+
+
 
   Widget _buildCelularAcudienteForm() {
     return Form(
@@ -1482,6 +1536,10 @@ class _RegistroPageState extends State<RegistroPage> {
 
   void _guardarConPin() async {
     final pin = pinController.text.trim();
+    final codigoReferidor = codigoReferidoController.text.trim();
+    final nombre = nombrePplController.text.trim();
+    final apellido = apellidoPplController.text.trim();
+    final ciudad = municipioSeleccionado ?? "";
 
     if (pin.isEmpty || pin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(pin)) {
       _mostrarMensaje("El PIN debe tener exactamente 4 dígitos.");
@@ -1504,8 +1562,8 @@ class _RegistroPageState extends State<RegistroPage> {
         "parentesco_representante": parentesco ?? "",
         "celular": celularController.text.trim(),
         "email": "", // vacío si no se usa
-        "nombre_ppl": nombrePplController.text.trim(),
-        "apellido_ppl": apellidoPplController.text.trim(),
+        "nombre_ppl": nombre,
+        "apellido_ppl": apellido,
         "tipo_documento_ppl": tipoDocumento ?? "",
         "numero_documento_ppl": numeroDocumentoPplController.text.trim(),
         "regional": selectedRegional ?? "",
@@ -1530,14 +1588,29 @@ class _RegistroPageState extends State<RegistroPage> {
         "fecha_captura": null,
         "saldo": 0,
         "departamento": departamentoSeleccionado ?? "",
-        "municipio": municipioSeleccionado ?? "",
+        "municipio": ciudad,
         "situacion": situacionActual ?? "",
         "direccion": direccionPplController.text.trim(),
         "pin_respaldo": sha256.convert(utf8.encode(pin)).toString(),
-
+        "referidoPor": codigoReferidor,
       };
 
       await FirebaseFirestore.instance.collection("Ppl").doc(userId).set(userData);
+
+      // 👉 Verifica y registra al referido si el código existe
+      if (codigoReferidor.isNotEmpty) {
+        final valido = await _codigoReferidoEsValido(codigoReferidor);
+        if (valido) {
+          await _agregarSubcoleccionReferido(
+            codigoReferidor: codigoReferidor,
+            nombre: nombre,
+            apellido: apellido,
+            ciudad: ciudad,
+          );
+
+          await _incrementarContadorReferidos(codigoReferidor);
+        }
+      }
 
       if (context.mounted) {
         Navigator.of(context).pop(); // cierra loading
@@ -1551,6 +1624,7 @@ class _RegistroPageState extends State<RegistroPage> {
       _mostrarMensaje("Error al guardar el PIN y datos: ${e.toString()}");
     }
   }
+
 
   void _verificarOTP() async {
     final codigo = otpController.text.trim();
@@ -1628,6 +1702,27 @@ class _RegistroPageState extends State<RegistroPage> {
       );
       return;
     }
+    if (_currentPage == 1) {
+      final referidoPor = codigoReferidoController.text.trim();
+
+      // Si el campo no está vacío, validar que el código exista
+      if (referidoPor.isNotEmpty) {
+        final esValido = await _codigoReferidoEsValido(referidoPor);
+        if (!esValido) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("El código de referido ingresado no es válido."),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+          return;
+        }
+      }
+    }
+
 
     if (_currentPage == 2 && !_formKeyAcudiente.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2043,6 +2138,17 @@ class _RegistroPageState extends State<RegistroPage> {
       );
     }
   }
+
+  Future<bool> _codigoReferidoEsValido(String referidoPor) async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('referidores')
+        .where('codigo', isEqualTo: referidoPor)
+        .limit(1)
+        .get();
+
+    return snapshot.docs.isNotEmpty;
+  }
+
 
   InputDecoration _buildInputDecoration(String label) {
     return InputDecoration(
