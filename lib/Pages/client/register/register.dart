@@ -537,6 +537,7 @@ class _RegistroPageState extends State<RegistroPage> {
     required String codigoReferidor,
     required String nombre,
     required String apellido,
+    required String idUser,
   }) async {
     final query = await FirebaseFirestore.instance
         .collection('referidores')
@@ -550,6 +551,7 @@ class _RegistroPageState extends State<RegistroPage> {
       await docRef.collection('referidos').add({
         'nombre': nombre,
         'apellido': apellido,
+        'id': idUser,
         'fechaRegistro': FieldValue.serverTimestamp(),
       });
     }
@@ -1603,9 +1605,8 @@ class _RegistroPageState extends State<RegistroPage> {
             codigoReferidor: codigoReferidor,
             nombre: nombre,
             apellido: apellido,
-
+            idUser: userId,
           );
-
           await _incrementarContadorReferidos(codigoReferidor);
         }
       }
