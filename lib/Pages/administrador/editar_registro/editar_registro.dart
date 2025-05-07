@@ -16,6 +16,7 @@ import '../../../models/ppl.dart';
 import '../../../providers/ppl_provider.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/exento.dart';
 import '../home_admin/home_admin.dart';
 
 class EditarRegistroPage extends StatefulWidget {
@@ -111,6 +112,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   bool _isLoadingJuzgados = false; //
   late Ppl ppl;
+  bool isExento = false;
+  bool cargando = true;
 
 
   /// opciones de documento de identidad
@@ -128,6 +131,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     });
     ppl = Ppl.fromJson(widget.doc.data() as Map<String, dynamic>);
     _obtenerDatos();
+    _cargarDatos();
     _asignarDocumento(); // Bloquea el documento al abrirlo
     _adminProvider.loadAdminData(); // 🔥 Cargar info del admin
     calcularTotalRedenciones(widget.doc.id); // 🔥 Llama la función aquí
@@ -230,7 +234,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             future: calcularTotalRedenciones(widget.doc.id),
             builder: (context, snapshot) {
               double totalRedimido = snapshot.data ?? 0.0;
-              return _datosEjecucionCondena(totalRedimido);
+              return _datosEjecucionCondena(totalRedimido, isExento);
             },
           ),
 
@@ -337,6 +341,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
               widget.doc["situacion"] == "En libertad condicional")
             infoPplNoRecluido(),
+          const SizedBox(height: 20),
+          EditarExclusionWidget(
+            pplId: widget.doc['id'],
+            exentoInicial: widget.doc['exento'] ?? false,
+          ),
           const SizedBox(height: 20),
           EditarBeneficiosWidget(
             pplId: widget.doc["id"],
@@ -1714,6 +1723,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
+  Future<void> _cargarDatos() async {
+    final doc = await FirebaseFirestore.instance.collection('Ppl').doc(widget.doc.id).get();
+    if (doc.exists) {
+      final data = doc.data()!;
+      setState(() {
+        isExento = data['exento'] ?? false;
+        cargando = false;
+      });
+    }
+  }
+
   void _initCalculoCondena() async {
     try {
       final fechaCapturaRaw = widget.doc.get('fecha_captura');
@@ -1772,18 +1792,49 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _direccionController.text = widget.doc['direccion'] ?? '';
   }
 
-  Widget _datosEjecucionCondena(double totalDiasRedimidos){
-    return  DatosEjecucionCondena(
-      mesesEjecutado: mesesEjecutado,
-      diasEjecutadoExactos: diasEjecutadoExactos,
-      mesesRestante: mesesRestante,
-      diasRestanteExactos: diasRestanteExactos,
-      totalDiasRedimidos: totalDiasRedimidos,
-      porcentajeEjecutado: porcentajeEjecutado,
-      primary: Colors.grey,
-      negroLetras: Colors.black,
+  Widget _datosEjecucionCondena(double totalDiasRedimidos, bool isExento) {
+    return Column(
+      children: [
+        if (isExento)
+          Card(
+            color: Colors.amber.shade50,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Colors.red, width: 2),
+            ),
+            elevation: 3,
+            child: const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.red),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Esta persona ha sido determinada como EXENTA según el Artículo 68A. Imposibilidad de solicitud de beneficios penitenciarios',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 20),
+        DatosEjecucionCondena(
+          mesesEjecutado: mesesEjecutado,
+          diasEjecutadoExactos: diasEjecutadoExactos,
+          mesesRestante: mesesRestante,
+          diasRestanteExactos: diasRestanteExactos,
+          totalDiasRedimidos: totalDiasRedimidos,
+          porcentajeEjecutado: porcentajeEjecutado,
+          primary: Colors.grey,
+          negroLetras: Colors.black,
+        ),
+      ],
     );
   }
+
+
 
   Widget nombrePpl() {
     return textFormField(
