@@ -24,13 +24,13 @@ class _EstamosValidandoPageState extends State<EstamosValidandoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(""),
-        // actions: [
-        //   TextButton.icon(
-        //     onPressed: _signOut,
-        //     icon: const Icon(Icons.logout, color: Colors.black87),
-        //     label: const Text('Cerrar Sesión', style: TextStyle(color: Colors.black87)),
-        //   ),
-        // ],
+        actions: [
+          TextButton.icon(
+            onPressed: _signOut,
+            icon: const Icon(Icons.logout, color: Colors.black87),
+            label: const Text('Cerrar Sesión', style: TextStyle(color: Colors.black87)),
+          ),
+        ],
       ),
       backgroundColor: blanco,
       body: Center(

@@ -466,7 +466,10 @@ class _RegistroPageState extends State<RegistroPage> {
             ),
             const SizedBox(height: 40),
             const Text("Código de referido", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Text("No es obligatorio**", style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 25),
             const Text("Si alguien te refirió coloca su código, de lo contrario da click en el boton siguiente", style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+
             const SizedBox(height: 40),
             TextFormField(
               keyboardType: TextInputType.number,
@@ -1590,6 +1593,7 @@ class _RegistroPageState extends State<RegistroPage> {
         "departamento": departamentoSeleccionado ?? "",
         "municipio": ciudad,
         "situacion": situacionActual ?? "",
+        "exento": false,
         "direccion": direccionPplController.text.trim(),
         "pin_respaldo": sha256.convert(utf8.encode(pin)).toString(),
         "referidoPor": codigoReferidor,
