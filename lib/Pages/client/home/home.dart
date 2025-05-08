@@ -630,7 +630,6 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🔹 Título del beneficio SIEMPRE
           Row(
             children: [
               Icon(
@@ -673,73 +672,105 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              if (!adquirido && !negado && !cumple && !(esExento && !esExtincion))
-                Text(
-                  "Restan: $diasFaltantes días",
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                ),
             ],
           ),
+
           const SizedBox(height: 4),
-
-          if (_ppl?.exento == true && idBeneficio.toLowerCase().trim() != "extincion_pena") ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 6.0),
-              child: RichText(
-                text: const TextSpan(
-                  style: TextStyle(fontSize: 14, color: Colors.black),
-                  children: [
-                    TextSpan(
-                      text: "Según el artículo 68A del Código Penal, ",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(
-                      text: "esta persona está exenta de acceder a este beneficio por disposición legal.\n\n",
-                    ),
-                    TextSpan(
-                      text: "Sin embargo, existen excepciones legales en las que podría evaluarse la concesión del beneficio, tales como:\n\n",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(text: "• ", children: [
-                      TextSpan(text: "Mujer embarazada\n"),
-                      TextSpan(text: "• Madre lactante\n"),
-                      TextSpan(text: "• Persona con enfermedad grave o terminal\n"),
-                      TextSpan(text: "• Persona mayor de 60 años\n"),
-                      TextSpan(text: "• Único responsable del cuidado de hijos menores, adultos mayores o personas con discapacidad\n"),
-                      TextSpan(text: "• Persona con discapacidad física, sensorial, cognitiva o mental que impida su permanencia en un centro penitenciario\n"),
-                      TextSpan(text: "• Casos excepcionales donde se afecten gravemente derechos fundamentales, reconocidos vía acción de tutela o jurisprudencia\n\n"),
-                    ]),
-                    TextSpan(
-                      text: "Si usted cuenta con alguna de estas condiciones, ",
-                    ),
-                    TextSpan(
-                      text: "puede hacer clic en el botón 'Solicitar' ",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    TextSpan(
-                      text: "para que su caso sea evaluado por nuestro equipo.",
-                    ),
-                  ],
-                ),
-              )
-
+          if (negado) ...[
+            const SizedBox(height: 4),
+            Text(
+              "Según los registros, el beneficio de $titulo fue negado previamente.",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade700,
+              ),
             ),
-            const SizedBox(height: 10),
+          ],
+
+          if (adquirido) ...[
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified, color: Colors.blue, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "Según los registros, ya le fue otorgado el beneficio de $titulo.",
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          if (esExento && !esExtincion && !cumple) ...[
+            const Text(
+              "No se ha cumplido el tiempo establecido para acceder a este beneficio.",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Restan: $diasFaltantes días",
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey),
+            ),
+          ],
+
+          if (!cumple && !adquirido && !negado && (!esExento || esExtincion)) ...[
+            const SizedBox(height: 4),
+            const Text(
+              "No se ha cumplido el tiempo establecido para acceder a este beneficio.",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black54),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "Restan: $diasFaltantes días",
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey),
+            ),
+          ],
+
+          // 🔹 Si cumple el tiempo, no ha sido adquirido/negado y no está en proceso
+          if (_statusLoaded &&
+              cumple &&
+              !adquirido &&
+              !negado &&
+              !estaEnProceso &&
+              (!esExento || esExtincion)) ...[
+            const SizedBox(height: 6),
+            Text(
+              "Buena noticia! Ya se puede solicitar $accion",
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 8),
             Align(
               alignment: Alignment.centerRight,
               child: SizedBox(
                 height: 28,
                 child: ElevatedButton(
-                  onPressed: () {
-                    // Aquí puedes colocar tu lógica real más adelante
-                    print("🔎 El usuario indicó que aplica a una excepción del artículo 68A");
-                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                    backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                   ),
+                  onPressed: () => _navegarAInfoPreviaSolicitud(idBeneficio),
                   child: const Text("Solicitar"),
                 ),
               ),
@@ -747,87 +778,80 @@ class _HomePageState extends State<HomePage> {
           ],
 
 
-          // 🔸 Mensaje normal si NO es exento
-          if (!esExento || esExtincion)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    adquirido
-                        ? "Según los registros, ya le fue otorgado el beneficio de $titulo."
-                        : negado
-                        ? "Según los registros, el beneficio de $titulo fue negado previamente."
-                        : !cumple
-                        ? "No se ha cumplido el tiempo establecido para obtener este beneficio."
-                        : "",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: adquirido || negado ? Colors.black : cumple ? Colors.black : Colors.grey,
-                    ),
-                  ),
-                ),
-              ],
+          if (esExento && !esExtincion && cumple) ...[
+            const Text(
+              "Se ha cumplido el tiempo mínimo requerido por la ley para acceder a este beneficio.",
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.green),
             ),
-
-          // 🔸 Botón "Solicitar"
-          if (_statusLoaded && cumple && !adquirido && !negado && !estaEnProceso && (!esExento || esExtincion))
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  height: 25,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    onPressed: () => _navegarAInfoPreviaSolicitud(idBeneficio),
-                    child: const Text("Solicitar"),
-                  ),
-                ),
-              ),
+            const SizedBox(height: 4),
+            const Text(
+              "Restan: 0 días",
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.grey),
             ),
-
-          // 🔸 Estado de solicitud si está en proceso
-          if (_statusLoaded && cumple && !adquirido && !negado && estaEnProceso)
-            Container(
-              margin: const EdgeInsets.only(top: 4),
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Row(
+            const SizedBox(height: 6),
+            RichText(
+              text: const TextSpan(
+                style: TextStyle(fontSize: 14, color: Colors.black),
                 children: [
-                  Icon(Icons.info_outline, size: 18, color: Colors.grey),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      switch (normalizedStatus) {
-                        "solicitado" => "Hemos recibido la solicitud de $titulo",
-                        "diligenciado" => "Se está analizando la solicitud de $titulo",
-                        "revisado" => "La solicitud de $titulo está lista para ser enviada",
-                        "enviado" => "La solicitud de $titulo fue enviada a la autoridad competente",
-                        "negado" => "La solicitud de $titulo fue negada por la autoridad competente",
-                        "concedido" => "¡La solicitud de $titulo fue concedida por la autoridad competente!",
-                        _ => "Estado desconocido para la solicitud de $titulo",
-                      },
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-                    ),
-                  )
+                  TextSpan(
+                    text: "Según el artículo 68A del Código Penal, ",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text: "esta persona está exenta de acceder a este beneficio por disposición legal.\n\n",
+                  ),
+                  TextSpan(
+                    text: "Sin embargo, existen excepciones legales en las que podría evaluarse la concesión del beneficio, tales como:\n\n",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(text: "• Mujer embarazada\n"),
+                  TextSpan(text: "• Madre lactante\n"),
+                  TextSpan(text: "• Persona con enfermedad grave o terminal\n"),
+                  TextSpan(text: "• Persona mayor de 60 años\n"),
+                  TextSpan(text: "• Único responsable del cuidado de hijos menores, adultos mayores o personas con discapacidad\n"),
+                  TextSpan(text: "• Persona con discapacidad física, sensorial, cognitiva o mental\n"),
+                  TextSpan(text: "• Casos excepcionales donde se afecten gravemente derechos fundamentales\n\n"),
+                  TextSpan(text: "Si el PPL cuenta con alguna de estas condiciones, puede hacer clic en el botón 'Solicitar' para que su caso sea evaluado.\n\n"),
+                  TextSpan(text: "Por favor abstenerse de enviar la solicitud si no cuenta con una de las anteriores condiciones.\n\n"),
                 ],
               ),
             ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: () {
+                  final ruta = switch (idBeneficio.toLowerCase().trim()) {
+                    'prision_domiciliaria' => 'solicitud_domiciliaria_page',
+                    'libertad_condicional' => 'solicitud_condicional_page',
+                    'permiso_72h' => 'solicitud_72h_page',
+                    'extincion_pena' => 'solicitud_extincion_pena_page',
+                    _ => 'solicitud_generica_page',
+                  };
+                  Navigator.pushNamed(
+                    context,
+                    ruta,
+                    arguments: {
+                      'tipoSolicitud': idBeneficio,
+                      'excepcionActivada': true,
+                    },
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
+                child: const Text("Solicitar"),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
+
 
   Future<void> _cargarStatusSolicitudes() async {
     final user = FirebaseFirestore.instance.collection('Ppl').doc(_uid);
