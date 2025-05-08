@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../src/colors/colors.dart';
 import 'mensajes_whatsApp_opciones.dart';
 
 class WhatsAppCardWidget extends StatefulWidget {
@@ -35,50 +36,83 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
   Widget build(BuildContext context) {
     return Card(
       color: Colors.white,
-      child: InkWell(
-        onTap: () async {
-          if (opcionSeleccionada != null) {
-            await enviarMensajeWhatsAppEventos(widget.celular, widget.docId, opcionSeleccionada!);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Debes seleccionar una opción antes de enviar.")),
-            );
-          }
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(12.0),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Image.asset("assets/images/icono_whatsapp.png", height: 32), // Reemplaza con tu icono
-                  const SizedBox(width: 10),
-                  const Text(
-                    "Comunicar al usuario",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
+      surfaceTintColor: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.grey, width: 1), // 🔹 Borde gris suave
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 🔹 Encabezado con ícono y título
+            Row(
+              children: [
+                Image.asset("assets/images/icono_whatsapp.png", height: 28),
+                const SizedBox(width: 10),
+                const Text(
+                  "Comunicar al usuario",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+            const Divider(thickness: 1, color: Colors.grey),
+
+            // 🔹 Opciones con checkboxes
+            Column(
+              children: opciones.entries.map((entry) {
+                return CheckboxListTile(
+                  value: entry.value,
+                  title: Text(_tituloOpcion(entry.key)),
+                  onChanged: (bool? value) {
+                    if (value == true) {
+                      _seleccionarOpcion(entry.key);
+                    }
+                  },
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 16),
+
+            // 🔹 Botón de enviar mensaje
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () async {
+                  if (opcionSeleccionada != null) {
+                    await enviarMensajeWhatsAppEventos(
+                      widget.celular,
+                      widget.docId,
+                      opcionSeleccionada!,
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Debes seleccionar una opción antes de enviar.")),
+                    );
+                  }
+                },
+                child: const Text(
+                  "Enviar mensaje",
+                  style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
               ),
-              const SizedBox(height: 12),
-              Column(
-                children: opciones.entries.map((entry) {
-                  return CheckboxListTile(
-                    value: entry.value,
-                    title: Text(_tituloOpcion(entry.key)),
-                    onChanged: (bool? value) {
-                      if (value == true) {
-                        _seleccionarOpcion(entry.key);
-                      }
-                    },
-                  );
-                }).toList(),
-              )
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
+
 
   String _tituloOpcion(String key) {
     switch (key) {

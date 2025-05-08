@@ -375,19 +375,20 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
                 const SizedBox(height: 10),
                 historialAccionUsuario(),
-                const SizedBox(height: 20),
               ],
             ),
           ),
+
+          const SizedBox(height: 50),
           WhatsAppCardWidget(
             celular: widget.doc['celular'] ?? '',
             docId: widget.doc.id,
           ),
+
         ],
       ),
     );
   }
-
 
   //para seleccionar fecha redenciones
   /// 🔥 Mostrar un DatePicker para seleccionar la fecha de redención
