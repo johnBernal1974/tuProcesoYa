@@ -15,8 +15,10 @@ import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
 import '../../../providers/ppl_provider.dart';
 import '../../../src/colors/colors.dart';
+import '../../../widgets/card_comuncar_con_el_usuario.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/exento.dart';
+import '../../../widgets/mensajes_whatsApp_opciones.dart';
 import '../home_admin/home_admin.dart';
 
 class EditarRegistroPage extends StatefulWidget {
@@ -352,8 +354,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             beneficiosAdquiridosInicial: ppl.beneficiosAdquiridos,
             beneficiosNegadosInicial: ppl.beneficiosNegados, // 🔥 Añadir esta línea
           ),
-
-
           agregarRedenciones(),
           const SizedBox(height: 20),
           Container(
@@ -378,6 +378,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 const SizedBox(height: 20),
               ],
             ),
+          ),
+          WhatsAppCardWidget(
+            celular: widget.doc['celular'] ?? '',
+            docId: widget.doc.id,
           ),
         ],
       ),
@@ -2001,8 +2005,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
-
   Widget tdPpl(){
     return textFormField(
       controller: _tdController,
@@ -2041,8 +2043,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
-
-
 
   Widget nombreAcudiente(){
     return textFormField(
@@ -2659,7 +2659,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
   Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {
     return await showDialog(
@@ -2793,7 +2792,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
     }
   }
-
 
   Future<void> validarYEnviarMensaje() async
   {
