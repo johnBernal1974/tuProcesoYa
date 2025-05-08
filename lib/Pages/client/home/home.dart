@@ -598,7 +598,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   // para idPaid true
   Widget _buildBeneficioFila(
       String titulo,
@@ -620,30 +619,33 @@ class _HomePageState extends State<HomePage> {
 
     final normalizedStatus = status?.toLowerCase().trim();
     final bool estaEnProceso = [
-      'solicitado',
-      'diligenciado',
-      'revisado',
-      'enviado',
-      'negado',
-      'concedido',
+      'solicitado', 'diligenciado', 'revisado', 'enviado', 'negado', 'concedido',
     ].contains(normalizedStatus);
+
+    final bool esExtincion = idBeneficio.toLowerCase().contains("extincion");
+    final bool esExento = _ppl?.exento ?? false;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 🔹 Título del beneficio SIEMPRE
           Row(
             children: [
               Icon(
-                adquirido
+                esExento && !esExtincion
+                    ? Icons.block
+                    : adquirido
                     ? Icons.verified
                     : negado
                     ? Icons.cancel
                     : cumple
                     ? Icons.check_circle
                     : Icons.warning,
-                color: adquirido
+                color: esExento && !esExtincion
+                    ? Colors.deepOrange
+                    : adquirido
                     ? Colors.blue
                     : negado
                     ? Colors.red
@@ -659,7 +661,9 @@ class _HomePageState extends State<HomePage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
-                    color: adquirido
+                    color: esExento && !esExtincion
+                        ? Colors.deepOrange
+                        : adquirido
                         ? Colors.blue
                         : negado
                         ? Colors.red
@@ -669,57 +673,105 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              if (!adquirido && !negado && !cumple)
+              if (!adquirido && !negado && !cumple && !(esExento && !esExtincion))
                 Text(
                   "Restan: $diasFaltantes días",
                   style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
                 ),
             ],
           ),
-
           const SizedBox(height: 4),
 
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  adquirido
-                      ? "Según los registros, ya le fue otorgado el beneficio de $titulo."
-                      : negado
-                      ? "Según los registros, el beneficio de $titulo fue negado previamente."
-                      : !cumple
-                      ? "No se ha cumplido el tiempo establecido para obtener este beneficio."
-                      : "",
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: adquirido || negado ? Colors.black : cumple ? Colors.black : Colors.grey,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          if (_statusLoaded && cumple && !adquirido && !negado && !estaEnProceso)
+          if (_ppl?.exento == true && idBeneficio.toLowerCase().trim() != "extincion_pena") ...[
             Padding(
               padding: const EdgeInsets.only(top: 6.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      "Ya se puede solicitar $accion",
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+              child: RichText(
+                text: const TextSpan(
+                  style: TextStyle(fontSize: 14, color: Colors.black),
+                  children: [
+                    TextSpan(
+                      text: "Según el artículo 68A del Código Penal, ",
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
+                    TextSpan(
+                      text: "esta persona está exenta de acceder a este beneficio por disposición legal.\n\n",
+                    ),
+                    TextSpan(
+                      text: "Sin embargo, existen excepciones legales en las que podría evaluarse la concesión del beneficio, tales como:\n\n",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(text: "• ", children: [
+                      TextSpan(text: "Mujer embarazada\n"),
+                      TextSpan(text: "• Madre lactante\n"),
+                      TextSpan(text: "• Persona con enfermedad grave o terminal\n"),
+                      TextSpan(text: "• Persona mayor de 60 años\n"),
+                      TextSpan(text: "• Único responsable del cuidado de hijos menores, adultos mayores o personas con discapacidad\n"),
+                      TextSpan(text: "• Persona con discapacidad física, sensorial, cognitiva o mental que impida su permanencia en un centro penitenciario\n"),
+                      TextSpan(text: "• Casos excepcionales donde se afecten gravemente derechos fundamentales, reconocidos vía acción de tutela o jurisprudencia\n\n"),
+                    ]),
+                    TextSpan(
+                      text: "Si usted cuenta con alguna de estas condiciones, ",
+                    ),
+                    TextSpan(
+                      text: "puede hacer clic en el botón 'Solicitar' ",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text: "para que su caso sea evaluado por nuestro equipo.",
+                    ),
+                  ],
+                ),
+              )
+
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.centerRight,
+              child: SizedBox(
+                height: 28,
+                child: ElevatedButton(
+                  onPressed: () {
+                    // Aquí puedes colocar tu lógica real más adelante
+                    print("🔎 El usuario indicó que aplica a una excepción del artículo 68A");
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                   ),
-                ],
+                  child: const Text("Solicitar"),
+                ),
               ),
             ),
+          ],
 
-          if (_statusLoaded && !adquirido && !negado && cumple && !estaEnProceso)
+
+          // 🔸 Mensaje normal si NO es exento
+          if (!esExento || esExtincion)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    adquirido
+                        ? "Según los registros, ya le fue otorgado el beneficio de $titulo."
+                        : negado
+                        ? "Según los registros, el beneficio de $titulo fue negado previamente."
+                        : !cumple
+                        ? "No se ha cumplido el tiempo establecido para obtener este beneficio."
+                        : "",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: adquirido || negado ? Colors.black : cumple ? Colors.black : Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+          // 🔸 Botón "Solicitar"
+          if (_statusLoaded && cumple && !adquirido && !negado && !estaEnProceso && (!esExento || esExtincion))
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Align(
@@ -741,47 +793,19 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-          // Mensaje de estado en proceso
+          // 🔸 Estado de solicitud si está en proceso
           if (_statusLoaded && cumple && !adquirido && !negado && estaEnProceso)
             Container(
               margin: const EdgeInsets.only(top: 4),
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: switch (normalizedStatus) {
-                  "solicitado" => Colors.orange.shade50,
-                  "diligenciado" => Colors.amber.shade50,
-                  "revisado" => Colors.teal.shade50,
-                  "enviado" => Colors.green.shade50,
-                  "negado" => Colors.red.shade700,
-                  "concedido" => Colors.green.shade700,
-                  _ => Colors.grey.shade100,
-                },
+                color: Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: Colors.grey.shade300),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    switch (normalizedStatus) {
-                      "solicitado" => Icons.assignment_outlined,
-                      "diligenciado" => Icons.search,
-                      "revisado" => Icons.check_circle_outline,
-                      "enviado" => Icons.send_outlined,
-                      "negado" => Icons.cancel_outlined,
-                      "concedido" => Icons.account_balance,
-                      _ => Icons.help_outline,
-                    },
-                    size: 18,
-                    color: switch (normalizedStatus) {
-                      "solicitado" => Colors.orange,
-                      "diligenciado" => Colors.amber.shade700,
-                      "revisado" => Colors.teal,
-                      "enviado" => Colors.green,
-                      "negado" => Colors.white,
-                      "concedido" => Colors.white,
-                      _ => Colors.grey,
-                    },
-                  ),
+                  Icon(Icons.info_outline, size: 18, color: Colors.grey),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -791,57 +815,19 @@ class _HomePageState extends State<HomePage> {
                         "revisado" => "La solicitud de $titulo está lista para ser enviada",
                         "enviado" => "La solicitud de $titulo fue enviada a la autoridad competente",
                         "negado" => "La solicitud de $titulo fue negada por la autoridad competente",
-                        "concedido" => "¡Muy buenas noticias! La solicitud de $titulo fue concedida por la autoridad competente",
+                        "concedido" => "¡La solicitud de $titulo fue concedida por la autoridad competente!",
                         _ => "Estado desconocido para la solicitud de $titulo",
                       },
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: normalizedStatus == "concedido"
-                            ? Colors.white
-                            : normalizedStatus == "negado"
-                            ? Colors.white
-                            : Colors.black87,
-                      ),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                   )
                 ],
-              ),
-            ),
-
-          // Botón "Impugnar" si fue negado
-          if (_statusLoaded && normalizedStatus == "negado")
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: SizedBox(
-                  height: 28,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                      textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                    ),
-                    onPressed: () {
-                      Navigator.pushNamed(context, 'info_previa_impugnacion_page', arguments: {
-                        'beneficio': idBeneficio,
-                        'titulo': titulo,
-                      });
-                    },
-                    child: const Text("Impugnar"),
-                  ),
-                ),
               ),
             ),
         ],
       ),
     );
   }
-
-
 
   Future<void> _cargarStatusSolicitudes() async {
     final user = FirebaseFirestore.instance.collection('Ppl').doc(_uid);
@@ -876,7 +862,6 @@ class _HomePageState extends State<HomePage> {
       _statusLoaded = true;
     });
   }
-
 
   void _navegarAInfoPreviaSolicitud(String idBeneficio) {
     switch (idBeneficio.toLowerCase().trim()) {
