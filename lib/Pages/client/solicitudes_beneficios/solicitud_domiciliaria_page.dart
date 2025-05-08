@@ -55,13 +55,24 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
 
   bool tieneHijosConvivientes = false;
   List<PlatformFile> excepcionArchivos = [];
-
+  bool excepcionActivada = false;
+  String? tipoExcepcionSeleccionada;
+  String? descripcionExcepcion;
 
 
   @override
   void initState() {
     super.initState();
     docIdSolicitud = FirebaseFirestore.instance.collection('domiciliaria_solicitados').doc().id;
+    // Recuperar bandera desde argumentos
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map && args['excepcionActivada'] == true) {
+        setState(() {
+          excepcionActivada = true;
+        });
+      }
+    });
   }
 
   @override
@@ -107,11 +118,19 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                   ),
                   const SizedBox(height: 12),
                   FormularioExcepcion68A(
-                    onArchivosSeleccionados: (archivos) {
-                      // 🔸 Puedes guardar estos archivos en una lista temporal
-                      excepcionArchivos = archivos;
+                    onCambioDatos: ({
+                      required List<PlatformFile> archivos,
+                      required String? tipoExcepcion,
+                      required String? descripcion,
+                    }) {
+                      setState(() {
+                        excepcionArchivos = archivos;
+                        tipoExcepcionSeleccionada = tipoExcepcion;
+                        descripcionExcepcion = descripcion;
+                      });
                     },
                   ),
+
                   const SizedBox(height: 24),
                 ],
                 const SizedBox(height: 24),
@@ -508,6 +527,38 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       return false;
     }
 
+    if (excepcionActivada) {
+      if (tipoExcepcionSeleccionada == null || tipoExcepcionSeleccionada!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor, selecciona una condición que aplique como excepción al artículo 68A."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+
+      if (descripcionExcepcion == null || descripcionExcepcion!.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor, escribe una descripción detallada de la situación que justifica la excepción."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+
+      if (excepcionArchivos.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor, sube al menos un archivo soporte que respalde la excepción al artículo 68A."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+    }
+
     final celular = _celularResponsableController.text.trim();
     if (celular.length != 10 || !RegExp(r'^\d+$').hasMatch(celular)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -556,6 +607,16 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
           return false;
         }
       }
+    }
+
+    if (excepcionActivada && excepcionArchivos.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Debes subir los archivos que certifiquen la condición para exepción del art.68A."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
     }
 
     return true; // ✅ Todo validado bien
@@ -999,6 +1060,18 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
           archivosUrls.add(downloadUrl);
         } catch (_) {}
       }
+      List<String> urlsExcepcion68A = [];
+
+      for (PlatformFile file in excepcionArchivos) {
+        String filePath = 'domiciliaria/$docId/archivos/excepcion_68a/${file.name}';
+        String? downloadUrl = await ArchivoUploader.subirArchivo(
+          file: file,
+          rutaDestino: filePath,
+        );
+        if (downloadUrl != null) {
+          urlsExcepcion68A.add(downloadUrl);
+        }
+      }
 
       await firestore.collection('domiciliaria_solicitados').doc(docId).set({
         'id': docId,
@@ -1024,7 +1097,13 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         if (tieneHijosConvivientes) 'hijos': hijos,
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
         'reparacion': _opcionReparacionSeleccionada,
+        if (excepcionActivada) ...{
+          'tipo_excepcion_68a': tipoExcepcionSeleccionada,
+          'descripcion_excepcion_68a': descripcionExcepcion,
+          'archivos_excepcion_68a': urlsExcepcion68A,
+        },
       });
+
 
       await descontarSaldo(valorDomiciliaria);
 

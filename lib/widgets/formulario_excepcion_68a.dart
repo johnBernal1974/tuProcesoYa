@@ -2,9 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 
 class FormularioExcepcion68A extends StatefulWidget {
-  final void Function(List<PlatformFile>) onArchivosSeleccionados;
+  final void Function({
+  required List<PlatformFile> archivos,
+  required String? tipoExcepcion,
+  required String? descripcion,
+  }) onCambioDatos;
 
-  const FormularioExcepcion68A({super.key, required this.onArchivosSeleccionados});
+  const FormularioExcepcion68A({
+    super.key,
+    required this.onCambioDatos,
+  });
 
   @override
   State<FormularioExcepcion68A> createState() => _FormularioExcepcion68AState();
@@ -25,21 +32,29 @@ class _FormularioExcepcion68AState extends State<FormularioExcepcion68A> {
     "Excepciones reconocidas (tutela, jurisprudencia, etc.)"
   ];
 
+  void _actualizarDatos() {
+    widget.onCambioDatos(
+      archivos: archivosAdjuntos,
+      tipoExcepcion: excepcionSeleccionada,
+      descripcion: comentariosController.text.trim(),
+    );
+  }
+
   Future<void> _seleccionarArchivos() async {
     final result = await FilePicker.platform.pickFiles(allowMultiple: true);
     if (result != null && result.files.isNotEmpty) {
       setState(() {
         archivosAdjuntos.addAll(result.files);
       });
-      widget.onArchivosSeleccionados(archivosAdjuntos);
+      _actualizarDatos();
     }
   }
 
   void _eliminarArchivo(PlatformFile file) {
     setState(() {
       archivosAdjuntos.remove(file);
-      widget.onArchivosSeleccionados(archivosAdjuntos);
     });
+    _actualizarDatos();
   }
 
   @override
@@ -61,6 +76,7 @@ class _FormularioExcepcion68AState extends State<FormularioExcepcion68A> {
             setState(() {
               excepcionSeleccionada = value;
             });
+            _actualizarDatos();
           },
           decoration: const InputDecoration(
             labelText: "Seleccionar la condición",
@@ -72,7 +88,9 @@ class _FormularioExcepcion68AState extends State<FormularioExcepcion68A> {
           ),
         ),
         const SizedBox(height: 12),
-        const Text("Describe detalladamente la situación que justifica tu solicitud, indicando por qué consideras que cumples con una de las excepciones al artículo 68A."),
+        const Text(
+          "Describe detalladamente la situación que justifica tu solicitud, indicando por qué consideras que cumples con una de las excepciones al artículo 68A.",
+        ),
         const SizedBox(height: 20),
         TextFormField(
           controller: comentariosController,
@@ -86,6 +104,7 @@ class _FormularioExcepcion68AState extends State<FormularioExcepcion68A> {
               borderSide: BorderSide(color: Colors.grey),
             ),
           ),
+          onChanged: (_) => _actualizarDatos(),
         ),
         const SizedBox(height: 12),
         GestureDetector(
@@ -99,7 +118,9 @@ class _FormularioExcepcion68AState extends State<FormularioExcepcion68A> {
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  archivosAdjuntos.isNotEmpty ? 'Archivos seleccionados' : 'Subir archivos soporte',
+                  archivosAdjuntos.isNotEmpty
+                      ? 'Archivos seleccionados'
+                      : 'Subir archivos soporte',
                   style: TextStyle(
                     color: archivosAdjuntos.isNotEmpty ? Colors.black : Colors.deepPurple,
                     decoration: archivosAdjuntos.isNotEmpty
