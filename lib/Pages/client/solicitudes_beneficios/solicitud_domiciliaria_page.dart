@@ -12,6 +12,7 @@ import '../../../commons/base_textfield.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
+import '../../../widgets/formulario_excepcion_68a.dart';
 import '../solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
 
 class SolicitudDomiciliariaPage extends StatefulWidget {
@@ -53,6 +54,8 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
   final TextEditingController _edadHijoController = TextEditingController();
 
   bool tieneHijosConvivientes = false;
+  List<PlatformFile> excepcionArchivos = [];
+
 
 
   @override
@@ -93,6 +96,24 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                   'Es necesario suministrar información veraz y completa, así como subir los documentos requeridos para la evaluación de la solicitud.',
                   style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                 ),
+                if (ModalRoute.of(context)?.settings.arguments is Map &&
+                    (ModalRoute.of(context)?.settings.arguments as Map)['excepcionActivada'] == true) ...[
+                  const SizedBox(height: 24),
+                  const Divider(color: negroLetras, height: 1),
+                  const SizedBox(height: 24),
+                  const Text(
+                    'Informaste que cuentas con una de las condiciones para acceder a este beneficio excluido según el art. 68A',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red),
+                  ),
+                  const SizedBox(height: 12),
+                  FormularioExcepcion68A(
+                    onArchivosSeleccionados: (archivos) {
+                      // 🔸 Puedes guardar estos archivos en una lista temporal
+                      excepcionArchivos = archivos;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
@@ -350,6 +371,9 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                 const SizedBox(height: 24),
                 ingresarReparacionVictima(),
                 const SizedBox(height: 24),
+
+                // 🔹 Widget adicional si hay excepción activada por Art. 68A
+
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
                 CheckboxListTile(

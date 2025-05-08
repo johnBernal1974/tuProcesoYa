@@ -27,6 +27,15 @@ class MensajesWhatsapp {
             "🔗 Puedes ingresar a la plataforma aquí:\nhttps://www.tuprocesoya.com\n\n"
             "*El equipo de Tu Proceso Ya*";
 
+      case 'sin_juzgado_ejecucion':
+        return "Hola *$nombre*,\n\n"
+            "Actualmente tu proceso *todavía no cuenta con un Juzgado de Ejecución de Penas asignado*. Esto suele ocurrir cuando la sentencia aún no ha sido remitida por el juzgado de conocimiento o cuando el proceso está en tránsito hacia la jurisdicción actual correspondiente.\n\n"
+            "Mientras no exista un juzgado asignado para la etapa de ejecución, *no es posible tramitar solicitudes de beneficios penitenciarios* como prisión domiciliaria, libertad condicional o permisos especiales, ya que estas dependen directamente de ese despacho judicial.\n\n"
+            "Desde *Tu Proceso Ya* realizamos seguimiento constante al estado de tu proceso. Si identificamos que hay *retrasos anormales* en la asignación, te ayudaremos a presentar un *derecho de petición* o una *acción de tutela* para exigir que se agilicen los trámites pendientes.\n\n"
+            "Tan pronto se asigne el juzgado correspondiente, te notificaremos para evaluar las opciones disponibles.\n\n"
+            "🔗 Puedes ingresar a la plataforma aquí:\nhttps://www.tuprocesoya.com\n\n"
+            "*El equipo de Tu Proceso Ya*";
+
 
       default:
         return "Hola *$nombre*,\n\n"

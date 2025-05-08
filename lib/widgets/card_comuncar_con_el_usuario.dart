@@ -19,6 +19,7 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
   Map<String, bool> opciones = {
     'exclusion_art_68': false,
     'proceso_en_tribunal': false,
+    'sin_juzgado_ejecucion': false,
 
 
   };
@@ -120,6 +121,8 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
         return 'Exclusión art. 68';
       case 'proceso_en_tribunal':
         return 'Proceso en tribunal';
+      case 'sin_juzgado_ejecucion':
+        return 'Juzgado EP sin asignar';
       default:
         return 'Opción desconocida';
     }
