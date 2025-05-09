@@ -18,6 +18,7 @@ import '../../../src/colors/colors.dart';
 import '../../../widgets/card_comuncar_con_el_usuario.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/exento.dart';
+import '../../../widgets/ingresar_juzgado_conocimiento.dart';
 import '../../../widgets/mensajes_whatsApp_opciones.dart';
 import '../home_admin/home_admin.dart';
 
@@ -88,6 +89,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   bool _mostrarDropdownJuzgadoEjecucion = false;
   bool _mostrarDropdownJuzgadoCondeno = false;
   bool _mostrarDropdownDelito = false;
+  final TextEditingController _autocompleteController = TextEditingController();
+
 
   /// variables para calcular el tiempo de condena
   final CalculoCondenaController _calculoCondenaController = CalculoCondenaController(PplProvider());
@@ -843,8 +846,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  Future<void> _fetchTodosJuzgadosConocimiento() async {
-    if (juzgadosConocimiento.isNotEmpty) return; // Si ya se cargaron, no volver a hacer la petición
+  Future<void> _fetchTodosJuzgadosConocimiento({bool forzar = false}) async {
+    if (!forzar && juzgadosConocimiento.isNotEmpty) return;
 
     if (_isLoadingJuzgados) return; // Si ya está cargando, evitar múltiples llamadas
     _isLoadingJuzgados = true;
@@ -1228,6 +1231,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               displayStringForOption: (Map<String, String> option) =>
               option['nombre']!,
               fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+                textEditingController = _autocompleteController;
                 return TextField(
                   controller: textEditingController,
                   focusNode: focusNode,
@@ -1682,7 +1686,20 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               },
             ),
             const SizedBox(height: 10),
+            if (selectedJuzgadoNombre != null && selectedCiudad != null) ...[
+              const SizedBox(height: 12),
+              const Text("Ciudad del Juzgado", style: TextStyle(fontSize: 11)),
+              Text(
+                selectedCiudad!,
+                style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Correo: ${selectedJuzgadoConocimientoEmail ?? 'No disponible'}',
+                style: const TextStyle(fontSize: 12, height: 1.3),
+              ),
 
+            ],
             // 🔹 Botón para cancelar 🔹
             Align(
               alignment: Alignment.center,
@@ -1701,6 +1718,55 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     Icon(Icons.cancel, size: 15),
                     Text("Cancelar", style: TextStyle(fontSize: 11)),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Align(
+              alignment: Alignment.center,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final textoAnterior = _autocompleteController.text;
+                  // Abrir el widget de ingreso de juzgado en un modal
+                  await showDialog(
+                    context: context,
+                    builder: (context) => Dialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: const SizedBox(
+                        width: 600,
+                        child: Padding(
+                          padding: EdgeInsets.all(0),
+                          child: IngresarJuzgadoCondenoWidget(),
+                        ),
+                      ),
+                    ),
+                  ).then((_) async {
+                    await _fetchTodosJuzgadosConocimiento(forzar: true);
+
+                    // 🔄 Forzar refresco del Autocomplete
+                    setState(() {
+                      _autocompleteController.text = ''; // limpiar primero
+                    });
+
+                    Future.delayed(const Duration(milliseconds: 50), () {
+                      setState(() {
+                        _autocompleteController.text = textoAnterior; // reescribir para disparar filtro
+                        _autocompleteController.selection = TextSelection.fromPosition(
+                          TextPosition(offset: _autocompleteController.text.length),
+                        );
+                      });
+                    });
+                  });
+                  // 🔄 Recargar los datos luego de cerrar
+                  _fetchTodosJuzgadosConocimiento(forzar: true);
+                },
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text("Crear nuevo juzgado"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  textStyle: const TextStyle(fontSize: 13),
                 ),
               ),
             ),

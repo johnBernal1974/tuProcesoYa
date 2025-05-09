@@ -2189,11 +2189,12 @@ class _RegistroPageState extends State<RegistroPage> {
     if (value == null || value.trim().isEmpty) {
       return 'Por favor ingresa el número de documento';
     }
-    if (!RegExp(r'^\d{8}$|^\d{10}$').hasMatch(value)) {
-      return 'Debe tener exactamente 8 o 10 dígitos';
+    if (!RegExp(r'^\d{6,10}$').hasMatch(value)) {
+      return 'Debe tener entre 6 y 10 dígitos numéricos';
     }
     return null;
   }
+
 
   Future<bool> _fetchTodosCentrosReclusion() async {
     try {
