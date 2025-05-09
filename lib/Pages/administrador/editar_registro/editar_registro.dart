@@ -315,39 +315,32 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             ),
             child: Column(
               children: [
-                FutureBuilder<DocumentSnapshot>(
-                  future: FirebaseFirestore.instance
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
                       .collection('Ppl')
                       .doc(widget.doc.id)
                       .collection('eventos')
-                      .doc('sin_juzgado_ejecucion')
-                      .get(),
+                      .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) return const SizedBox();
-                    if (snapshot.hasData && snapshot.data!.exists) {
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.yellow.shade100,
-                          border: Border.all(color: Colors.amber, width: 1.5),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.warning_amber, color: Colors.amber),
-                            SizedBox(width: 10),
-                            Expanded(
-                              child: Text(
-                                "Este registro se puede guardar sin juzgado ni condena porque fue marcado como 'Juzgado EP sin asignar'.",
-                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                    if (!snapshot.hasData) return const SizedBox();
+
+                    final eventos = snapshot.data!.docs.map((doc) => doc.id).toSet();
+                    final List<Widget> mensajes = [];
+
+                    if (eventos.contains('sin_juzgado_ejecucion')) {
+                      mensajes.add(_mensajeAdvertencia(
+                        "Este registro se puede guardar sin juzgado ni condena porque fue marcado como 'Juzgado EP sin asignar'.",
+                      ));
                     }
-                    return const SizedBox();
+
+                    if (eventos.contains('proceso_en_tribunal')) {
+                      mensajes.add(_mensajeAdvertencia(
+                        "Este registro tiene un proceso en tribunal. Se puede guardar, sin JEP ni condena. Revise cuidadosamente antes de continuar.",
+                      ));
+                    }
+
+                    return Column(children: mensajes);
                   },
                 ),
                 Row(
@@ -374,6 +367,32 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
+  Widget _mensajeAdvertencia(String texto) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.yellow.shade100,
+        border: Border.all(color: Colors.amber, width: 1.5),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.warning_amber, color: Colors.amber),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              texto,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
   /// 🔹 Widgets adicionales (Historial y acciones)
   Widget _buildExtraWidget() {
     return SingleChildScrollView(
@@ -424,6 +443,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             celular: widget.doc['celular'] ?? '',
             docId: widget.doc.id,
           ),
+          const SizedBox(height: 50),
 
         ],
       ),
@@ -2611,7 +2631,21 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
             if (!confirmar) return;
 
-            if (!_formKey.currentState!.validate()) {
+            // 🔍 Primero verificamos si existe el evento
+            bool excepcionPermitida = false;
+            final eventoSnap = await FirebaseFirestore.instance
+                .collection('Ppl')
+                .doc(widget.doc.id)
+                .collection('eventos')
+                .doc('sin_juzgado_ejecucion')
+                .get();
+
+            if (eventoSnap.exists) {
+              excepcionPermitida = true;
+            }
+
+            // 🔍 Validamos solo si NO hay excepción
+            if (!excepcionPermitida && !_formKey.currentState!.validate()) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   backgroundColor: Colors.red,
@@ -2625,39 +2659,32 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               return;
             }
 
+            // 🔍 Validamos campos requeridos
             List<String> camposFaltantes = [];
 
             if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
             if ((selectedRegional ?? widget.doc['regional']) == null) camposFaltantes.add("Regional");
             if ((selectedCiudad ?? widget.doc['ciudad']) == null) camposFaltantes.add("Ciudad");
-            if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) camposFaltantes.add("Juzgado de Ejecución de Penas");
-            if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) camposFaltantes.add("Juzgado que Condenó");
-            if ((selectedDelito == null || selectedDelito!.trim().isEmpty) && (widget.doc['delito'] == null || widget.doc['delito'].toString().trim().isEmpty)) {
+            if ((selectedDelito == null || selectedDelito!.trim().isEmpty) &&
+                (widget.doc['delito'] == null || widget.doc['delito'].toString().trim().isEmpty)) {
               camposFaltantes.add("Delito");
             }
-
             if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
             if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
             if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
-            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
-            if (tiempoCondena == 0) camposFaltantes.add("Tiempo de condena");
 
-            bool excepcionPermitida = false;
-
-// 🔍 Verificamos si existe el evento 'sin_juzgado_ejecucion'
-            final eventoSnap = await FirebaseFirestore.instance
-                .collection('Ppl')
-                .doc(widget.doc.id)
-                .collection('eventos')
-                .doc('sin_juzgado_ejecucion')
-                .get();
-
-            if (eventoSnap.exists) {
-              excepcionPermitida = true;
+            if (!excepcionPermitida) {
+              if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) {
+                camposFaltantes.add("Juzgado de Ejecución de Penas");
+              }
+              if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) {
+                camposFaltantes.add("Juzgado que Condenó");
+              }
+              int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
+              if (tiempoCondena == 0) camposFaltantes.add("Tiempo de condena");
             }
 
-// ⚠️ Condición para permitir guardar solo si hay evento
-            if (camposFaltantes.isNotEmpty && !excepcionPermitida) {
+            if (camposFaltantes.isNotEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   backgroundColor: Colors.red,
@@ -2668,7 +2695,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               return;
             }
 
-
+            // 🔽 Tu código de guardado sigue igual
             Map<String, String> correosCentro = {
               'correo_direccion': '',
               'correo_juridica': '',
@@ -2697,6 +2724,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             SystemChannels.textInput.invokeMethod('TextInput.hide');
 
             try {
+              int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
               await widget.doc.reference.update({
                 'nombre_ppl': _nombreController.text,
                 'apellido_ppl': _apellidoController.text,
@@ -2778,6 +2806,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
+
 
   /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
   Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {
