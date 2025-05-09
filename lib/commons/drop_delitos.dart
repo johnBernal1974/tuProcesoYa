@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-
 import '../src/colors/colors.dart';
 
-class DelitosDropdownWidget extends StatelessWidget {
+class DelitosAutocompleteWidget extends StatefulWidget {
   final String? categoriaSeleccionada;
   final String? delitoSeleccionado;
   final Function(String, String) onDelitoChanged;
 
-  const DelitosDropdownWidget({
+  const DelitosAutocompleteWidget({
     Key? key,
     required this.categoriaSeleccionada,
     required this.delitoSeleccionado,
@@ -15,119 +14,82 @@ class DelitosDropdownWidget extends StatelessWidget {
   }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final Map<String, List<String>> delitosPorCategoria = {
+  State<DelitosAutocompleteWidget> createState() => _DelitosAutocompleteWidgetState();
+}
+
+class _DelitosAutocompleteWidgetState extends State<DelitosAutocompleteWidget> {
+  final TextEditingController _categoriaController = TextEditingController();
+  final TextEditingController _delitoController = TextEditingController();
+
+  late final Map<String, List<String>> delitosPorCategoria;
+  late final Map<String, String> delitoACategoria;
+  late final List<String> listaDelitosOrdenada;
+
+  @override
+  void initState() {
+    super.initState();
+
+    delitosPorCategoria = {
       "Delitos contra la vida y la integridad personal": [
-        "Homicidio",
-        "Feminicidio",
-        "Lesiones personales",
-        "Inducción al suicidio",
-        "Aborto",
-        "Omisión de socorro"
+        "Aborto", "Feminicidio", "Homicidio", "Inducción al suicidio", "Lesiones personales", "Omisión de socorro",
       ],
       "Delitos contra personas y bienes protegidos por el DIH": [
-        "Homicidio en persona protegida",
-        "Tortura en persona protegida",
-        "Actos de terrorismo",
-        "Toma de rehenes"
+        "Actos de terrorismo", "Homicidio en persona protegida", "Toma de rehenes", "Tortura en persona protegida",
       ],
       "Delitos contra la libertad individual y otras garantías": [
-        "Secuestro extorsivo",
-        "Secuestro simple",
-        "Desaparición forzada",
-        "Amenazas",
-        "Tráfico de menores",
-        "Trata de personas",
-        "Violación de habitación ajena"
+        "Amenazas", "Desaparición forzada", "Secuestro extorsivo", "Secuestro simple", "Tráfico de menores", "Trata de personas", "Violación de habitación ajena",
       ],
       "Delitos contra la libertad y formación sexuales": [
-        "Acceso carnal violento",
-        "Acceso carnal abusivo con menor de 14 años",
-        "Actos sexuales abusivos",
-        "Pornografía infantil",
-        "Proxenetismo con menor",
-        "Estímulo a la prostitución de menores"
+        "Acceso carnal abusivo con menor de 14 años", "Acceso carnal violento", "Actos sexuales abusivos", "Estímulo a la prostitución de menores", "Pornografía infantil", "Proxenetismo con menor",
       ],
       "Delitos contra el patrimonio económico": [
-        "Hurto calificado y agravado",
-        "Hurto simple",
-        "Extorsión",
-        "Estafa",
-        "Abuso de confianza",
-        "Receptación",
-        "Daño en bien ajeno"
+        "Abuso de confianza", "Daño en bien ajeno", "Estafa", "Extorsión", "Hurto calificado y agravado", "Hurto simple", "Receptación",
       ],
       "Delitos contra la seguridad pública": [
-        "Concierto para delinquir",
-        "Terrorismo",
-        "Amenaza terrorista",
-        "Instigación a delinquir",
-        "Falsedad en documento público",
-        "Falsedad en documento privado"
+        "Concierto para delinquir", "Falsedad en documento privado", "Falsedad en documento público", "Instigación a delinquir", "Terrorismo", "Amenaza terrorista",
       ],
       "Delitos contra la seguridad pública y tranquilidad ciudadana": [
-        "Fabricación, tráfico o porte de armas de fuego",
-        "Porte de armas de uso privativo",
-        "Fabricación de explosivos",
-        "Perturbación del orden público"
+        "Fabricación de explosivos", "Fabricación, tráfico o porte de armas de fuego", "Perturbación del orden público", "Porte de armas de uso privativo",
       ],
       "Delitos contra la salud pública": [
-        "Tráfico, fabricación o porte de estupefacientes",
-        "Cultivo ilícito",
-        "Microtráfico",
-        "Distribución ilegal de medicamentos"
+        "Cultivo ilícito", "Distribución ilegal de medicamentos", "Microtráfico", "Tráfico, fabricación o porte de estupefacientes",
       ],
       "Delitos contra la administración pública": [
-        "Cohecho propio",
-        "Concusión",
-        "Peculado por apropiación",
-        "Enriquecimiento ilícito",
-        "Prevaricato por acción u omisión",
-        "Omisión de denuncia"
+        "Cohecho propio", "Concusión", "Enriquecimiento ilícito", "Omisión de denuncia", "Peculado por apropiación", "Prevaricato por acción u omisión",
       ],
       "Delitos contra la fe pública": [
-        "Falsedad personal",
-        "Falsedad material en documento público",
-        "Uso de documento falso",
-        "Suplantación de identidad",
-        "Alteración de documento de identidad"
+        "Alteración de documento de identidad", "Falsedad material en documento público", "Falsedad personal", "Suplantación de identidad", "Uso de documento falso",
       ],
       "Delitos contra la familia": [
-        "Violencia intrafamiliar",
-        "Incumplimiento de obligaciones alimentarias",
-        "Abandono de menor o persona en estado de vulnerabilidad",
-        "Bigamia"
+        "Abandono de menor o persona en estado de vulnerabilidad", "Bigamia", "Incumplimiento de obligaciones alimentarias", "Violencia intrafamiliar",
       ],
       "Delitos informáticos": [
-        "Acceso abusivo a un sistema informático",
-        "Violación de datos personales",
-        "Suplantación de sitios web",
-        "Interceptación de datos informáticos",
-        "Obstrucción ilegítima de datos"
+        "Acceso abusivo a un sistema informático", "Interceptación de datos informáticos", "Obstrucción ilegítima de datos", "Suplantación de sitios web", "Violación de datos personales",
       ],
       "Delitos contra el medio ambiente": [
-        "Contaminación ambiental",
-        "Deforestación ilegal",
-        "Caza o tráfico de fauna silvestre",
-        "Explotación ilícita de yacimientos mineros"
+        "Caza o tráfico de fauna silvestre", "Contaminación ambiental", "Deforestación ilegal", "Explotación ilícita de yacimientos mineros",
       ],
       "Otros delitos": [
-        "Lavado de activos",
-        "Omisión del agente retenedor",
-        "Evasión de presos",
-        "Fuga de presos",
-        "Violación de medidas sanitarias"
-      ]
-      // Agrega más categorías aquí
+        "Evasión de presos", "Fuga de presos", "Lavado de activos", "Omisión del agente retenedor", "Violación de medidas sanitarias",
+      ],
     };
 
-    final List<String> delitosDisponibles = categoriaSeleccionada != null
-        ? delitosPorCategoria[categoriaSeleccionada!] ?? []
-        : [];
-    print("🔎 categoriaDelito: $categoriaSeleccionada");
-    print("🔎 selectedDelito: $delitoSeleccionado");
+    delitoACategoria = {};
+    for (var entry in delitosPorCategoria.entries) {
+      for (var delito in entry.value) {
+        delitoACategoria[delito] = entry.key;
+      }
+    }
 
+    listaDelitosOrdenada = delitoACategoria.keys.toList()..sort();
 
+    _delitoController.text = widget.delitoSeleccionado ?? '';
+    _categoriaController.text =
+        delitoACategoria[widget.delitoSeleccionado ?? ''] ?? widget.categoriaSeleccionada ?? '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -143,51 +105,76 @@ class DelitosDropdownWidget extends StatelessWidget {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, height: 1.1),
           ),
           const SizedBox(height: 20),
-          DropdownButtonFormField<String>(
-            dropdownColor: blanco,
-            isExpanded: true,
-            value: categoriaSeleccionada,
-            decoration: _inputDecoration("Categoría del delito"),
-            items: delitosPorCategoria.keys.map((String categoria) {
-              return DropdownMenuItem<String>(
-                value: categoria,
-                child: Text(categoria),
-              );
-            }).toList(),
-            onChanged: (String? nuevaCategoria) {
-              if (nuevaCategoria != null) {
-                onDelitoChanged(nuevaCategoria, '');
-              }
-            },
+
+          Container(
+            color: blanco,
+            child: Autocomplete<String>(
+              initialValue: TextEditingValue(text: widget.delitoSeleccionado ?? ''),
+              optionsBuilder: (TextEditingValue textEditingValue) {
+                if (textEditingValue.text.isEmpty) return const Iterable<String>.empty();
+                return listaDelitosOrdenada.where((delito) =>
+                    delito.toLowerCase().contains(textEditingValue.text.toLowerCase()));
+              },
+              onSelected: (String nuevoDelito) {
+                final categoria = delitoACategoria[nuevoDelito] ?? "Otros delitos";
+                _delitoController.text = nuevoDelito;
+                _categoriaController.text = categoria;
+                widget.onDelitoChanged(categoria, nuevoDelito);
+                setState(() {}); // fuerza el rebuild
+              },
+              fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                controller.text = _delitoController.text;
+                return TextField(
+                  controller: controller,
+                  focusNode: focusNode,
+                  decoration: _inputDecoration("Buscar delito").copyWith(
+                    suffixIcon: controller.text.isNotEmpty
+                        ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        controller.clear();
+                        _delitoController.clear();
+                        _categoriaController.clear();
+                        widget.onDelitoChanged('', '');
+                        setState(() {}); // fuerza actualización de la UI
+                      },
+                    )
+                        : null,
+                  ),
+                );
+              },
+              optionsViewBuilder: (context, onSelected, options) {
+                return Align(
+                  alignment: Alignment.topLeft,
+                  child: Material(
+                    elevation: 4,
+                    color: Colors.amber.shade50,
+                    child: ListView.builder(
+                      padding: EdgeInsets.zero,
+                      shrinkWrap: true,
+                      itemCount: options.length,
+                      itemBuilder: (context, index) {
+                        final option = options.elementAt(index);
+                        return ListTile(
+                          title: Text(option),
+                          onTap: () => onSelected(option),
+                        );
+                      },
+                    ),
+                  )
+
+                );
+              },
+            ),
           ),
+
           const SizedBox(height: 20),
 
-          delitosDisponibles.isNotEmpty
-              ? DropdownButtonFormField<String>(
-            dropdownColor: blanco,
-            isExpanded: true,
-            value: (delitoSeleccionado != null &&
-                delitoSeleccionado!.isNotEmpty &&
-                delitosDisponibles.contains(delitoSeleccionado))
-                ? delitoSeleccionado
-                : null,
-
-            decoration: _inputDecoration("Delito"),
-            items: delitosDisponibles.map((String delito) {
-              return DropdownMenuItem<String>(
-                value: delito,
-                child: Text(delito),
-              );
-            }).toList(),
-            onChanged: (String? nuevoDelito) {
-              if (nuevoDelito != null && categoriaSeleccionada != null) {
-                onDelitoChanged(categoriaSeleccionada!, nuevoDelito);
-              }
-            },
-          )
-              : const SizedBox.shrink(),
-
-
+          TextFormField(
+            controller: _categoriaController,
+            readOnly: true,
+            decoration: _inputDecoration("Categoría del delito"),
+          ),
         ],
       ),
     );
@@ -212,3 +199,4 @@ class DelitosDropdownWidget extends StatelessWidget {
     );
   }
 }
+

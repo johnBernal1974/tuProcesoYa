@@ -258,7 +258,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           const SizedBox(height: 15),
           seleccionarJuzgadoQueCondeno(),
           const SizedBox(height: 15),
-          DelitosDropdownWidget(
+          DelitosAutocompleteWidget(
             categoriaSeleccionada: categoriaDelito,
             delitoSeleccionado: selectedDelito,
             onDelitoChanged: (categoria, delito) {
