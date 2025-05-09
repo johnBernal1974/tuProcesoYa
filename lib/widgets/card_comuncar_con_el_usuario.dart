@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -163,6 +164,17 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
     } else {
       await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
     }
-  }
 
+    // ✅ Guardar evento en subcolección 'eventos'
+    await FirebaseFirestore.instance
+        .collection('Ppl')
+        .doc(docId)
+        .collection('eventos')
+        .doc(tipoMensaje)
+        .set({
+      'tipo': tipoMensaje,
+      'enviadoPor': FirebaseAuth.instance.currentUser?.uid ?? "admin",
+      'fecha': FieldValue.serverTimestamp(),
+    });
+  }
 }

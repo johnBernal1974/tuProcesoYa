@@ -313,30 +313,67 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               border: Border.all(color: Colors.grey),
               color: Colors.white,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            child: Column(
               children: [
-                if (widget.doc["status"] != "bloqueado") ...[
-                  botonGuardar(),
-                  bloquearUsuario(),
-                ] else
-                  FutureBuilder<bool>(
-                    future: _adminPuedeDesbloquear(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const SizedBox();
-                      return snapshot.data == true ? desbloquearUsuario() : const SizedBox();
-                    },
-                  ),
+                FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('Ppl')
+                      .doc(widget.doc.id)
+                      .collection('eventos')
+                      .doc('sin_juzgado_ejecucion')
+                      .get(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) return const SizedBox();
+                    if (snapshot.hasData && snapshot.data!.exists) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.yellow.shade100,
+                          border: Border.all(color: Colors.amber, width: 1.5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.warning_amber, color: Colors.amber),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                "Este registro se puede guardar sin juzgado ni condena porque fue marcado como 'Juzgado EP sin asignar'.",
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    return const SizedBox();
+                  },
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    if (widget.doc["status"] != "bloqueado") ...[
+                      botonGuardar(),
+                      bloquearUsuario(),
+                    ] else
+                      FutureBuilder<bool>(
+                        future: _adminPuedeDesbloquear(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) return const SizedBox();
+                          return snapshot.data == true ? desbloquearUsuario() : const SizedBox();
+                        },
+                      ),
+                  ],
+                ),
               ],
             ),
+
           ),
         ],
       ),
     );
   }
-
-
-
   /// 🔹 Widgets adicionales (Historial y acciones)
   Widget _buildExtraWidget() {
     return SingleChildScrollView(
@@ -2605,7 +2642,22 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
             if (tiempoCondena == 0) camposFaltantes.add("Tiempo de condena");
 
-            if (camposFaltantes.isNotEmpty) {
+            bool excepcionPermitida = false;
+
+// 🔍 Verificamos si existe el evento 'sin_juzgado_ejecucion'
+            final eventoSnap = await FirebaseFirestore.instance
+                .collection('Ppl')
+                .doc(widget.doc.id)
+                .collection('eventos')
+                .doc('sin_juzgado_ejecucion')
+                .get();
+
+            if (eventoSnap.exists) {
+              excepcionPermitida = true;
+            }
+
+// ⚠️ Condición para permitir guardar solo si hay evento
+            if (camposFaltantes.isNotEmpty && !excepcionPermitida) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   backgroundColor: Colors.red,
@@ -2615,6 +2667,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
               return;
             }
+
 
             Map<String, String> correosCentro = {
               'correo_direccion': '',
