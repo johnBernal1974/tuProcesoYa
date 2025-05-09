@@ -635,11 +635,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           child: Container(
             color: blancoCards,
-            width: MediaQuery.of(context).size.width * 0.8, // 🔥 Usa el 80% del ancho de la pantalla
-            height: MediaQuery.of(context).size.height * 1, // 🔹 Ocupa el 80% de la altura
+            width: MediaQuery.of(context).size.width * 0.8,
+            height: MediaQuery.of(context).size.height * 1,
             child: Column(
               children: [
-                // 🔥 Encabezado
                 Container(
                   color: blancoCards,
                   child: Padding(
@@ -653,15 +652,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                         ),
                         IconButton(
                           icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context), // 🔹 Cerrar el modal
+                          onPressed: () => Navigator.pop(context),
                         ),
                       ],
                     ),
                   ),
                 ),
                 const Divider(),
-
-                // 🔥 Contenedor con desplazamiento
                 Expanded(
                   child: FutureBuilder<List<Map<String, dynamic>>>(
                     future: _obtenerRedenciones(),
@@ -678,17 +675,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                         );
                       }
 
-                      // 🔹 Calcular sumatoria
                       double totalDiasRedimidos = snapshot.data!
                           .map((r) => r['dias_redimidos'] as double)
                           .fold(0, (prev, curr) => prev + curr);
 
                       return SingleChildScrollView(
-                        scrollDirection: Axis.vertical, // 🔥 Scroll vertical para ver toda la tabla
+                        scrollDirection: Axis.vertical,
                         child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal, // 🔥 Scroll horizontal si la tabla es ancha
+                          scrollDirection: Axis.horizontal,
                           child: DataTable(
-                            columnSpacing: 50, // 🔥 Ajusta el espacio entre columnas
+                            columnSpacing: 50,
                             headingRowColor: MaterialStateColor.resolveWith((states) => Colors.grey.shade300),
                             columns: const [
                               DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -701,27 +697,27 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                               ),
                               DataColumn(label: Text('Cargó redención', style: TextStyle(fontWeight: FontWeight.bold))),
                               DataColumn(label: Text('Fecha actualización', style: TextStyle(fontWeight: FontWeight.bold))),
+                              DataColumn(label: Text('')),
                             ],
                             rows: [
-                              // 🔹 Redenciones
                               ...snapshot.data!.map(
                                     (redencion) => DataRow(cells: [
                                   DataCell(Text(
                                     DateFormat("d 'de' MMMM 'de' y").format(redencion['fecha']),
                                     style: const TextStyle(fontSize: 13),
                                   )),
-                                      DataCell(
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: Text(
-                                            (redencion['dias_redimidos'] % 1 == 0
-                                                ? (redencion['dias_redimidos'] as double).toStringAsFixed(0)
-                                                : (redencion['dias_redimidos'] as double).toStringAsFixed(1)),
-                                            style: const TextStyle(fontSize: 13),
-                                          ),
-                                        ),
+                                  DataCell(
+                                    Align(
+                                      alignment: Alignment.centerRight,
+                                      child: Text(
+                                        (redencion['dias_redimidos'] % 1 == 0
+                                            ? (redencion['dias_redimidos'] as double).toStringAsFixed(0)
+                                            : (redencion['dias_redimidos'] as double).toStringAsFixed(1)),
+                                        style: const TextStyle(fontSize: 13),
                                       ),
-                                      DataCell(Text("${redencion['admin_nombre']} ${redencion['admin_apellido']}",
+                                    ),
+                                  ),
+                                  DataCell(Text("${redencion['admin_nombre']} ${redencion['admin_apellido']}",
                                       style: const TextStyle(fontSize: 13))),
                                   DataCell(
                                     Text(
@@ -732,10 +728,42 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                       style: const TextStyle(fontSize: 13),
                                     ),
                                   ),
+                                  DataCell(
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      tooltip: "Eliminar redención",
+                                      onPressed: () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            backgroundColor: blanco,
+                                            title: const Text("Confirmar eliminación"),
+                                            content: const Text("¿Estás seguro de que deseas eliminar esta redención?"),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Cancelar")),
+                                              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Eliminar")),
+                                            ],
+                                          ),
+                                        );
+
+                                        if (confirm == true) {
+                                          await FirebaseFirestore.instance
+                                              .collection('Ppl')
+                                              .doc(widget.doc.id)
+                                              .collection('redenciones')
+                                              .doc(redencion['id'])
+                                              .delete();
+
+                                          if (context.mounted) {
+                                            Navigator.pop(context);
+                                            _mostrarHistorialRedenciones(context);
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ),
                                 ]),
                               ),
-
-                              // 🔹 Fila de sumatoria al final
                               DataRow(
                                 color: MaterialStateColor.resolveWith((states) => Colors.grey.shade200),
                                 cells: [
@@ -751,8 +779,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                       ),
                                     ),
                                   ),
-                                  const DataCell(Text("")), // Espacio vacío
-                                  const DataCell(Text("")), // Espacio vacío
+                                  const DataCell(Text("")),
+                                  const DataCell(Text("")),
+                                  const DataCell(Text("")),
                                 ],
                               ),
                             ],
@@ -770,14 +799,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+
   /// 🔥 Método para obtener redenciones desde Firebase
   Future<List<Map<String, dynamic>>> _obtenerRedenciones() async {
     try {
       QuerySnapshot redencionesSnapshot = await FirebaseFirestore.instance
           .collection('Ppl')
-          .doc(widget.doc.id) // 🔹 Asegurar que el ID es correcto
+          .doc(widget.doc.id)
           .collection('redenciones')
-          .orderBy('fecha_redencion', descending: true) // 🔥 Ordenar en Firestore
+          .orderBy('fecha_redencion', descending: true)
           .get();
 
       List<Map<String, dynamic>> redenciones = redencionesSnapshot.docs.map((doc) {
@@ -792,7 +822,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           fecha = DateTime(2000, 1, 1);
         }
 
-        // 🔹 Verificar `fecha_actualizacion` (Timestamp o String)
         if (doc['fecha_actualizacion'] != null) {
           if (doc['fecha_actualizacion'] is Timestamp) {
             fechaActualizacion = (doc['fecha_actualizacion'] as Timestamp).toDate();
@@ -806,23 +835,23 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         }
 
         return {
-          'dias_redimidos': (doc['dias_redimidos'] ?? 0).toDouble(), // 🔹 Asegurar que sea un double
+          'id': doc.id, // 🔥 Aquí incluyes el ID para futuras acciones
+          'dias_redimidos': (doc['dias_redimidos'] ?? 0).toDouble(),
           'fecha': fecha,
           'admin_nombre': doc['admin_nombre'] ?? "Desconocido",
           'admin_apellido': doc['admin_apellido'] ?? "",
-          'fecha_actualizacion': fechaActualizacion, // 🔥 Ahora incluye la fecha de actualización
+          'fecha_actualizacion': fechaActualizacion,
         };
       }).toList();
 
-      // 🔹 Validar que esté ordenado correctamente (por si Firestore falla)
       redenciones.sort((a, b) => b['fecha'].compareTo(a['fecha']));
-
       return redenciones;
     } catch (e) {
       debugPrint("❌ Error al obtener redenciones: $e");
       return [];
     }
   }
+
 
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDias = 0.0;
