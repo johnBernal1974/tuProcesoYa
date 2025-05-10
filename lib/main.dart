@@ -28,6 +28,7 @@ import 'Pages/administrador/historial_solicitudes_tutela_admin/historial_solicit
 import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
+import 'Pages/administrador/referidores/agregar_referidores.dart';
 import 'Pages/administrador/referidores/referidores.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
@@ -171,6 +172,7 @@ class MyApp extends StatelessWidget {
         'configuraciones': (context) => ConfiguracionesPage(),
         'derechos_tutelables_page': (context) => const DerechosTutelablesPage(),
         'referidores_page_admin': (context) => const AdminReferidoresPage(),
+        'registrar_referidores_page_admin': (context) => const RegistrarReferidorPage(),
 
         //Usuario
         'home': (context) => const HomePage(), // Página principal
