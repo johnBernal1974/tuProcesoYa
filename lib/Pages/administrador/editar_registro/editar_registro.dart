@@ -1444,6 +1444,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   _mostrarDropdownJuzgadoEjecucion = true;
                   selectedJuzgadoEjecucionPenas = null;
                   selectedJuzgadoEjecucionEmail = null;
+                  selectedCiudad = null;
                 });
                 _fetchJuzgadosEjecucion();
               },
@@ -1494,59 +1495,83 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 return const Iterable<Map<String, String>>.empty();
               }
               return juzgadosEjecucionPenas
-                  .where((juzgado) =>
-                  (juzgado['juzgadoEP'] ?? '')
-                      .toLowerCase()
-                      .contains(textEditingValue.text.toLowerCase()))
-
-                  .map((juzgado) => {
-                'juzgadoEP': juzgado['juzgadoEP'] ?? '',
-                'email': juzgado['email'] ?? ''
+                  .where((juzgado) => (juzgado['juzgadoEP'] ?? '')
+                  .toLowerCase()
+                  .contains(textEditingValue.text.toLowerCase()))
+                  .map((juzgado) {
+                final nombre = juzgado['juzgadoEP'] ?? '';
+                final ciudad = nombre.contains(' - ') ? nombre.split(' - ')[0].trim() : '';
+                return {
+                  'juzgadoEP': nombre,
+                  'email': juzgado['email'] ?? '',
+                  'ciudad': ciudad,
+                };
               });
-
             },
             displayStringForOption: (option) => option['juzgadoEP']!,
-            fieldViewBuilder:
-                (context, textEditingController, focusNode, onFieldSubmitted) {
-              return TextField(
-                controller: textEditingController,
-                focusNode: focusNode,
-                decoration: InputDecoration(
-                  hintText: "Busca ingresando el nombre",
-                  labelText: "Juzgado de Ejecución de Penas",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+            fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: textEditingController,
+                    focusNode: focusNode,
+                    decoration: InputDecoration(
+                      hintText: "Busca ingresando el nombre",
+                      labelText: "Juzgado de Ejecución de Penas",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.grey, width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.grey, width: 1),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: Colors.grey, width: 1),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      suffixIcon: selectedJuzgadoEjecucionPenas != null
+                          ? IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.red),
+                        onPressed: () {
+                          setState(() {
+                            selectedJuzgadoEjecucionPenas = null;
+                            selectedJuzgadoEjecucionEmail = null;
+                            selectedCiudad = null;
+                            textEditingController.clear();
+                          });
+                        },
+                      )
+                          : null,
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: Colors.grey, width: 1),
-                  ),
-                  contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  suffixIcon: selectedJuzgadoEjecucionPenas != null
-                      ? IconButton(
-                    icon: const Icon(Icons.clear, color: Colors.red),
-                    onPressed: () {
-                      setState(() {
-                        selectedJuzgadoEjecucionPenas = null;
-                        selectedJuzgadoEjecucionEmail = null;
-                        textEditingController.clear();
-                      });
-                    },
-                  )
-                      : null,
-                ),
+                  const SizedBox(height: 8),
+                  if (selectedCiudad != null || selectedJuzgadoEjecucionEmail != null) ...[
+                    if (selectedCiudad != null) ...[
+                      const Text("Ciudad del Juzgado", style: TextStyle(fontSize: 11)),
+                      Text(
+                        selectedCiudad!,
+                        style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    if (selectedJuzgadoEjecucionEmail != null) ...[
+                      Text(
+                        'Correo: ${selectedJuzgadoEjecucionEmail ?? 'No disponible'}',
+                        style: const TextStyle(fontSize: 12, height: 1.3),
+                      ),
+                    ]
+                  ],
+                ],
               );
             },
             onSelected: (Map<String, String> option) {
               setState(() {
                 selectedJuzgadoEjecucionPenas = option['juzgadoEP'];
                 selectedJuzgadoEjecucionEmail = option['email'];
+                selectedCiudad = option['ciudad'];
               });
             },
             optionsViewBuilder: (context, onSelected, options) {
@@ -1563,6 +1588,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       final option = options.elementAt(index);
                       return ListTile(
                         title: Text(option['juzgadoEP']!),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Ciudad: ${option['ciudad']}"),
+                            Text("Correo: ${option['email'] ?? 'No disponible'}"),
+                          ],
+                        ),
                         onTap: () => onSelected(option),
                       );
                     },
@@ -1571,9 +1603,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
             },
           ),
-          const SizedBox(height: 25),
 
-          // 🔹 Botón cancelar
+          const SizedBox(height: 25),
           Align(
             alignment: Alignment.center,
             child: GestureDetector(
@@ -1582,6 +1613,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   _mostrarDropdownJuzgadoEjecucion = false;
                   selectedJuzgadoEjecucionPenas = widget.doc['juzgado_ejecucion_penas'];
                   selectedJuzgadoEjecucionEmail = widget.doc['juzgado_ejecucion_penas_email'];
+                  selectedCiudad = null;
                 });
               },
               child: const Row(
@@ -1608,8 +1640,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     ),
                   ),
                 ).then((_) async {
-                  await _fetchJuzgadosEjecucion(); // recargar después de cerrar
-                  setState(() {}); // refrescar UI si es necesario
+                  await _fetchJuzgadosEjecucion();
+                  setState(() {});
                 });
               },
               icon: const Icon(Icons.add),
@@ -1627,6 +1659,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
 
   Widget seleccionarJuzgadoQueCondeno() {
     if (!_mostrarDropdownJuzgadoCondeno &&

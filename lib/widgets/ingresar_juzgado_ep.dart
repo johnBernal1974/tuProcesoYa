@@ -36,7 +36,8 @@ class _IngresarJuzgadoEjecucionWidgetState extends State<IngresarJuzgadoEjecucio
     'TUNJA',
     'VALLEDUPAR',
     'VILLAVICENCIO',
-    'YOPAL'
+    'YOPAL',
+    "PRUEBAS"
   ];
 
   final List<String> _numerosJuzgado = List.generate(50, (i) => (i + 1).toString().padLeft(3, '0'));
