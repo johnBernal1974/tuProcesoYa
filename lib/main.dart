@@ -31,6 +31,7 @@ import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
 import 'Pages/administrador/referidores/agregar_referidores.dart';
 import 'Pages/administrador/referidores/referidores.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
+import 'Pages/administrador/registro_asistido_admin/registro_asistido_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_enviada_por_correo/extincion_perna_enviados_por_correo.dart';
@@ -173,6 +174,7 @@ class MyApp extends StatelessWidget {
         'derechos_tutelables_page': (context) => const DerechosTutelablesPage(),
         'referidores_page_admin': (context) => const AdminReferidoresPage(),
         'registrar_referidores_page_admin': (context) => const RegistrarReferidorPage(),
+        'registraro_asistido_page_admin': (context) => const RegistroAsistidoPage(),
 
         //Usuario
         'home': (context) => const HomePage(), // Página principal

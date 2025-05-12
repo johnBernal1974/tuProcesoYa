@@ -274,6 +274,9 @@ class _SideBarState extends State<SideBar> {
               context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
               'buzon_sugerencias_administrador',
               showBadge: _pendingSuggestions > 0),
+          _buildDrawerTile(
+              context, "Registro asistido usuarios", Icons.add,
+              'registraro_asistido_page_admin'),
 
           _buildDrawerTile(
               context, "Registrar Operadores", Icons.app_registration,

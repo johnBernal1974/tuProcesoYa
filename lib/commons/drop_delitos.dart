@@ -31,7 +31,8 @@ class _DelitosAutocompleteWidgetState extends State<DelitosAutocompleteWidget> {
 
     delitosPorCategoria = {
       "Delitos contra la vida y la integridad personal": [
-        "Aborto", "Feminicidio", "Homicidio", "Inducción al suicidio", "Lesiones personales", "Omisión de socorro",
+        "Aborto", "Feminicidio", "Homicidio", "Inducción al suicidio", "Lesiones personales", "Omisión de socorro", "Tentativa de homicidio",
+        "Tentativa de femenicidio",
       ],
       "Delitos contra personas y bienes protegidos por el DIH": [
         "Actos de terrorismo", "Homicidio en persona protegida", "Toma de rehenes", "Tortura en persona protegida",

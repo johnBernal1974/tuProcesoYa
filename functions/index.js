@@ -542,5 +542,36 @@ exports.eliminarUsuarioAuthHttp = functions.https.onRequest(async (req, res) => 
   }
 });
 
+// 🔑 Crear usuario por celular (con verificacion previa)
+exports.crearUsuarioPorCelular = functions.https.onCall(async (data, context) => {
+  const numero = data.celular;
+
+  if (!numero || !numero.startsWith("+")) {
+    throw new functions.https.HttpsError("invalid-argument", "Número de celular requerido y debe comenzar con '+'.");
+  }
+
+  try {
+    // Verificar si ya existe
+    const existingUser = await admin.auth().getUserByPhoneNumber(numero).catch(() => null);
+    if (existingUser) {
+      throw new functions.https.HttpsError("already-exists", "Este número ya está registrado.");
+    }
+
+    // Crear usuario nuevo
+    const userRecord = await admin.auth().createUser({
+      phoneNumber: numero,
+    });
+
+    return { uid: userRecord.uid };
+  } catch (error) {
+    if (error.code && error.code.startsWith("auth/")) {
+      throw new functions.https.HttpsError("already-exists", "El número ya está registrado o es inválido.");
+    }
+    console.error("Error creando usuario:", error);
+    throw new functions.https.HttpsError("unknown", "Error al crear usuario por celular.");
+  }
+});
+
+
 
 
