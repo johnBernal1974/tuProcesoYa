@@ -19,6 +19,7 @@ import '../../../widgets/card_comuncar_con_el_usuario.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/exento.dart';
 import '../../../widgets/ingresar_juzgado_conocimiento.dart';
+import '../../../widgets/ingresar_juzgado_ep.dart';
 import '../../../widgets/mensajes_whatsApp_opciones.dart';
 import '../home_admin/home_admin.dart';
 
@@ -1570,7 +1571,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
             },
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 25),
 
           // 🔹 Botón cancelar
           Align(
@@ -1584,7 +1585,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 });
               },
               child: const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   Icon(Icons.cancel, size: 15),
                   Text("Cancelar", style: TextStyle(fontSize: 11)),
@@ -1592,14 +1593,42 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               ),
             ),
           ),
+          const SizedBox(height: 25),
+          Align(
+            alignment: Alignment.topRight,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                await showDialog(
+                  context: context,
+                  builder: (context) => Dialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: const SizedBox(
+                      width: 600,
+                      child: IngresarJuzgadoEjecucionWidget(),
+                    ),
+                  ),
+                ).then((_) async {
+                  await _fetchJuzgadosEjecucion(); // recargar después de cerrar
+                  setState(() {}); // refrescar UI si es necesario
+                });
+              },
+              icon: const Icon(Icons.add),
+              label: const Text("Crear nuevo juzgado de Ejecución"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                textStyle: const TextStyle(fontSize: 13),
+              ),
+            ),
+          ),
+          const SizedBox(height: 25),
         ],
       ),
     );
   }
 
   Widget seleccionarJuzgadoQueCondeno() {
-    // Si ya existe información guardada en el documento y no estamos en modo edición,
-    // se muestra el contenedor con la información almacenada.
     if (!_mostrarDropdownJuzgadoCondeno &&
         widget.doc['juzgado_que_condeno'] != null &&
         widget.doc['juzgado_que_condeno'].toString().trim().isNotEmpty) {
@@ -1650,217 +1679,199 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
               ],
             ),
-
-          ],
-        ),
-      );
-    } else {
-      if (juzgadosConocimiento.isEmpty) {
-        Future.microtask(() => _fetchTodosJuzgadosConocimiento());
-      }
-
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          border: Border.all(color: primary),
-          borderRadius: BorderRadius.circular(4),
-          color: Colors.white,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Buscar Juzgado de Conocimiento",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-
-            // 🔹 AUTOCOMPLETE 🔹
-            Autocomplete<Map<String, String>>(
-              optionsBuilder: (TextEditingValue textEditingValue) {
-                if (textEditingValue.text.isEmpty) {
-                  return const Iterable<Map<String, String>>.empty();
-                }
-                return juzgadosConocimiento
-                    .map((juzgado) => {
-                  'id': juzgado['id'].toString(),
-                  'nombre': juzgado['nombre'].toString(),
-                  'correo': juzgado['correo'].toString(),
-                  'ciudad': juzgado['ciudad'].toString(),
-                })
-                    .where(
-                      (juzgado) =>
-                      juzgado['nombre']!
-                          .toLowerCase()
-                          .contains(textEditingValue.text.toLowerCase()),
-                );
-              },
-              displayStringForOption: (Map<String, String> option) => option['nombre']!,
-              fieldViewBuilder:
-                  (context, textEditingController, focusNode, onFieldSubmitted) {
-                return TextField(
-                  controller: textEditingController,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(
-                    hintText: "Busca ingresando el nombre",
-                    labelText: "Juzgado de conocimiento",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                    suffixIcon: selectedJuzgadoNombre != null
-                        ? IconButton(
-                      icon: const Icon(Icons.clear, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          selectedJuzgadoNombre = null;
-                          selectedCiudad = null;
-                          selectedJuzgadoConocimientoEmail = null;
-                          textEditingController.clear(); // 🔥 Limpiar el campo del Autocomplete
-                        });
-                        debugPrint("❌ Selección de juzgado eliminada.");
-                      },
-                    )
-                        : null,
-                  ),
-                );
-              },
-              optionsViewBuilder: (context, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    elevation: 4.0,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.grey[200], // 🔹 Cambia este color según lo que necesites
-                        borderRadius: BorderRadius.circular(10), // Opcional: Bordes redondeados
-                      ),
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (context, index) {
-                          final Map<String, String> option = options.elementAt(index);
-                          return ListTile(
-                            title: Text(option['nombre']!),
-                            subtitle: Text("Ciudad: ${option['ciudad']!}"),
-                            onTap: () {
-                              onSelected(option);
-                              setState(() {
-                                selectedJuzgadoNombre = option['nombre'];
-                                selectedCiudad = option['ciudad'];
-                                selectedJuzgadoConocimientoEmail = option['correo'];
-                              });
-                              debugPrint("📌 Juzgado seleccionado: ${option['nombre']}");
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 10),
-            if (selectedJuzgadoNombre != null && selectedCiudad != null) ...[
-              const SizedBox(height: 12),
-              const Text("Ciudad del Juzgado", style: TextStyle(fontSize: 11)),
-              Text(
-                selectedCiudad!,
-                style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Correo: ${selectedJuzgadoConocimientoEmail ?? 'No disponible'}',
-                style: const TextStyle(fontSize: 12, height: 1.3),
-              ),
-
-            ],
-            // 🔹 Botón para cancelar 🔹
-            Align(
-              alignment: Alignment.center,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdownJuzgadoCondeno = false;
-                    selectedJuzgadoNombre = null;
-                    selectedCiudad = null;
-                    selectedJuzgadoConocimientoEmail = null;
-                  });
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel, size: 15),
-                    Text("Cancelar", style: TextStyle(fontSize: 11)),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.center,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  final textoAnterior = _autocompleteController.text;
-                  // Abrir el widget de ingreso de juzgado en un modal
-                  await showDialog(
-                    context: context,
-                    builder: (context) => Dialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      child: const SizedBox(
-                        width: 600,
-                        child: Padding(
-                          padding: EdgeInsets.all(0),
-                          child: IngresarJuzgadoCondenoWidget(),
-                        ),
-                      ),
-                    ),
-                  ).then((_) async {
-                    await _fetchTodosJuzgadosConocimiento(forzar: true);
-
-                    // 🔄 Forzar refresco del Autocomplete
-                    setState(() {
-                      _autocompleteController.text = ''; // limpiar primero
-                    });
-
-                    Future.delayed(const Duration(milliseconds: 50), () {
-                      setState(() {
-                        _autocompleteController.text = textoAnterior; // reescribir para disparar filtro
-                        _autocompleteController.selection = TextSelection.fromPosition(
-                          TextPosition(offset: _autocompleteController.text.length),
-                        );
-                      });
-                    });
-                  });
-                  // 🔄 Recargar los datos luego de cerrar
-                  _fetchTodosJuzgadosConocimiento(forzar: true);
-                },
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text("Crear nuevo juzgado"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  textStyle: const TextStyle(fontSize: 13),
-                ),
-              ),
-            ),
           ],
         ),
       );
     }
+
+    if (juzgadosConocimiento.isEmpty) {
+      Future.microtask(() => _fetchTodosJuzgadosConocimiento());
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(color: primary),
+        borderRadius: BorderRadius.circular(4),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Buscar Juzgado de Conocimiento",
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+          ),
+          const SizedBox(height: 8),
+
+          Autocomplete<Map<String, String>>(
+            optionsBuilder: (TextEditingValue textEditingValue) {
+              if (textEditingValue.text.isEmpty) {
+                return const Iterable<Map<String, String>>.empty();
+              }
+              return juzgadosConocimiento
+                  .map((juzgado) => {
+                'nombre': juzgado['nombre'].toString(),
+                'correo': juzgado['correo'].toString(),
+                'ciudad': juzgado['ciudad'].toString(),
+              })
+                  .where((juzgado) =>
+                  juzgado['nombre']!
+                      .toLowerCase()
+                      .contains(textEditingValue.text.toLowerCase()));
+            },
+            displayStringForOption: (option) => option['nombre']!,
+            fieldViewBuilder:
+                (context, textEditingController, focusNode, onFieldSubmitted) {
+              return TextField(
+                controller: textEditingController,
+                focusNode: focusNode,
+                decoration: InputDecoration(
+                  hintText: "Busca ingresando el nombre",
+                  labelText: "Juzgado de conocimiento",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey, width: 1),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  suffixIcon: selectedJuzgadoNombre != null
+                      ? IconButton(
+                    icon: const Icon(Icons.clear, color: Colors.red),
+                    onPressed: () {
+                      setState(() {
+                        selectedJuzgadoNombre = null;
+                        selectedCiudad = null;
+                        selectedJuzgadoConocimientoEmail = null;
+                        textEditingController.clear();
+                      });
+                    },
+                  )
+                      : null,
+                ),
+              );
+            },
+            onSelected: (option) {
+              setState(() {
+                selectedJuzgadoNombre = option['nombre'];
+                selectedCiudad = option['ciudad'];
+                selectedJuzgadoConocimientoEmail = option['correo'];
+              });
+            },
+            optionsViewBuilder: (context, onSelected, options) {
+              return Align(
+                alignment: Alignment.topLeft,
+                child: Material(
+                  color: Colors.grey[200],
+                  elevation: 4.0,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    itemCount: options.length,
+                    itemBuilder: (context, index) {
+                      final option = options.elementAt(index);
+                      return ListTile(
+                        title: Text(option['nombre']!),
+                        subtitle: Text("Ciudad: ${option['ciudad']!}"),
+                        onTap: () => onSelected(option),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+
+          const SizedBox(height: 10),
+          if (selectedJuzgadoNombre != null && selectedCiudad != null) ...[
+            const Text("Ciudad del Juzgado", style: TextStyle(fontSize: 11)),
+            Text(
+              selectedCiudad!,
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Correo: ${selectedJuzgadoConocimientoEmail ?? 'No disponible'}',
+              style: const TextStyle(fontSize: 12, height: 1.3),
+            ),
+          ],
+
+          const SizedBox(height: 25),
+          Align(
+            alignment: Alignment.center,
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _mostrarDropdownJuzgadoCondeno = false;
+                  selectedJuzgadoNombre = null;
+                  selectedCiudad = null;
+                  selectedJuzgadoConocimientoEmail = null;
+                });
+              },
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(Icons.cancel, size: 15),
+                  Text("Cancelar", style: TextStyle(fontSize: 11)),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 25),
+          Align(
+            alignment: Alignment.topRight,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final textoAnterior = _autocompleteController.text;
+                await showDialog(
+                  context: context,
+                  builder: (context) => Dialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: const SizedBox(
+                      width: 600,
+                      child: Padding(
+                        padding: EdgeInsets.all(0),
+                        child: IngresarJuzgadoCondenoWidget(),
+                      ),
+                    ),
+                  ),
+                ).then((_) async {
+                  await _fetchTodosJuzgadosConocimiento(forzar: true);
+                  setState(() {
+                    _autocompleteController.text = '';
+                  });
+                  Future.delayed(const Duration(milliseconds: 50), () {
+                    setState(() {
+                      _autocompleteController.text = textoAnterior;
+                      _autocompleteController.selection = TextSelection.fromPosition(
+                        TextPosition(offset: _autocompleteController.text.length),
+                      );
+                    });
+                  });
+                });
+              },
+              icon: const Icon(Icons.add),
+              label: const Text("Crear nuevo juzgado de conocimiento"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                textStyle: const TextStyle(fontSize: 13),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
+
 
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;

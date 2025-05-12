@@ -27,7 +27,7 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
   ];
 
   Future<void> guardarJuzgado() async {
-    final correo = _correoController.text.trim();
+    final correo = _correoController.text.trim().toLowerCase();
     final nombre = _nombreJuzgadoController.text.trim().toUpperCase();
 
     if (ciudadSeleccionada == null || correo.isEmpty || nombre.isEmpty) {
