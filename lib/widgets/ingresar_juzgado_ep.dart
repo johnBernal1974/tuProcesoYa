@@ -12,6 +12,7 @@ class _IngresarJuzgadoEjecucionWidgetState extends State<IngresarJuzgadoEjecucio
   final TextEditingController _emailController = TextEditingController();
 
   final List<String> _ciudadesDisponibles = [
+    'ACACÍAS',
     'ARMENIA',
     'BARRANQUILLA',
     'BOGOTÁ',
@@ -123,9 +124,31 @@ class _IngresarJuzgadoEjecucionWidgetState extends State<IngresarJuzgadoEjecucio
     final nombre = "${_ciudadSeleccionada!} - JUZGADO $_numeroJuzgadoSeleccionado DE EJECUCIÓN DE PENAS Y MEDIDAS DE SEGURIDAD DE ${_ciudadSeleccionada!}".toUpperCase();
     final email = _emailController.text.trim().toLowerCase();
 
+    if (email.isEmpty || !email.contains("@") || !email.contains(".")) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Por favor ingresa un correo válido del juzgado")),
+      );
+      return;
+    }
+
     setState(() => _guardando = true);
 
     try {
+      // Verificar si ya existe un juzgado con el mismo nombre
+      final existente = await FirebaseFirestore.instance
+          .collection('ejecucion_penas')
+          .where('juzgadoEP', isEqualTo: nombre)
+          .limit(1)
+          .get();
+
+      if (existente.docs.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Este juzgado ya fue registrado")),
+        );
+        setState(() => _guardando = false);
+        return;
+      }
+
       await FirebaseFirestore.instance.collection('ejecucion_penas').add({
         'juzgadoEP': nombre,
         'email': email,
@@ -142,6 +165,7 @@ class _IngresarJuzgadoEjecucionWidgetState extends State<IngresarJuzgadoEjecucio
 
     setState(() => _guardando = false);
   }
+
 
   @override
   void dispose() {

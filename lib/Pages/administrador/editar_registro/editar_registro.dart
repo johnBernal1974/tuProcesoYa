@@ -2920,7 +2920,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     return comentario;
   }
-
   bool _camposCompletos() {
     bool camposValidos(dynamic valor) => valor != null && valor.toString().trim().isNotEmpty;
 
@@ -2944,7 +2943,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   dynamic getCampoSeguro(String key) {
     return widget.doc.data().toString().contains(key) ? widget.doc[key] : null;
   }
-
 
   void _mostrarComentarios(BuildContext context, String docId) async {
     final comentariosSnapshot = await FirebaseFirestore.instance
