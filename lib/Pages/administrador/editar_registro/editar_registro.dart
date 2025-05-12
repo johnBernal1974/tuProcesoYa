@@ -207,6 +207,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   /// 🔹 Contenido principal (Información del PPL y Acudiente)
   Widget _buildMainContent() {
+    final status = widget.doc["status"]?.toString().toLowerCase() ?? '';
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,6 +236,22 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
           Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
           const SizedBox(height: 20),
+          if (status == 'pendiente') ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.comment),
+                label: const Text("Ver comentarios"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => _mostrarComentarios(context, widget.doc["status"]),
+              ),
+            ),
+          ],
+
 
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.doc.id),
@@ -2704,71 +2721,59 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
             if (!confirmar) return;
 
-            // 🔍 Primero verificamos si existe el evento
-            bool excepcionPermitida = false;
-            final eventoSnap = await FirebaseFirestore.instance
-                .collection('Ppl')
-                .doc(widget.doc.id)
-                .collection('eventos')
-                .doc('sin_juzgado_ejecucion')
-                .get();
-
-            if (eventoSnap.exists) {
-              excepcionPermitida = true;
-            }
-
-            // 🔍 Validamos solo si NO hay excepción
-            if (!excepcionPermitida && !_formKey.currentState!.validate()) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  backgroundColor: Colors.red,
-                  content: Text(
-                    'No se puede guardar hasta que todos los campos estén llenos',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-              return;
-            }
-
-            // 🔍 Validamos campos requeridos
             List<String> camposFaltantes = [];
 
-            if ((selectedCentro ?? widget.doc['centro_reclusion']) == null) camposFaltantes.add("Centro de Reclusión");
-            if ((selectedRegional ?? widget.doc['regional']) == null) camposFaltantes.add("Regional");
-            if ((selectedCiudad ?? widget.doc['ciudad']) == null) camposFaltantes.add("Ciudad");
-            if ((selectedDelito == null || selectedDelito!.trim().isEmpty) &&
-                (widget.doc['delito'] == null || widget.doc['delito'].toString().trim().isEmpty)) {
-              camposFaltantes.add("Delito");
-            }
-            if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
-            if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
-            if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
+            String? centro = selectedCentro ?? widget.doc['centro_reclusion'];
+            if (centro == null || centro.toString().trim().isEmpty) camposFaltantes.add("Centro de Reclusión");
 
-            if (!excepcionPermitida) {
-              if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) {
-                camposFaltantes.add("Juzgado de Ejecución de Penas");
-              }
-              if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) {
-                camposFaltantes.add("Juzgado que Condenó");
-              }
-              int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
-              if (tiempoCondena == 0) camposFaltantes.add("Tiempo de condena");
+            String? regional = selectedRegional ?? widget.doc['regional'];
+            if (regional == null || regional.toString().trim().isEmpty) camposFaltantes.add("Regional");
+
+            String? ciudad = selectedCiudad ?? widget.doc['ciudad'];
+            if (ciudad == null || ciudad.toString().trim().isEmpty) camposFaltantes.add("Ciudad");
+
+            String? delito = selectedDelito ?? widget.doc['delito'];
+            if (delito == null || delito.toString().trim().isEmpty) camposFaltantes.add("Delito");
+
+            String? juzgadoEjecucion = selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'];
+            if (juzgadoEjecucion == null || juzgadoEjecucion.toString().trim().isEmpty) camposFaltantes.add("Juzgado de Ejecución de Penas");
+
+            String? juzgadoCondeno = selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'];
+            if (juzgadoCondeno == null || juzgadoCondeno.toString().trim().isEmpty) camposFaltantes.add("Juzgado que Condenó");
+
+            if (_radicadoController.text.trim().isEmpty) camposFaltantes.add("Radicado");
+
+            String? nombre = _nombreController.text.trim();
+            if (nombre.isEmpty) camposFaltantes.add("Nombre");
+
+            String? apellido = _apellidoController.text.trim();
+            if (apellido.isEmpty) camposFaltantes.add("Apellido");
+
+            String? numeroDocumento = _numeroDocumentoController.text.trim();
+            if (numeroDocumento.isEmpty) camposFaltantes.add("Número de Documento");
+
+            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
+
+            if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) {
+              camposFaltantes.add("Juzgado de Ejecución de Penas");
             }
+
+            if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) {
+              camposFaltantes.add("Juzgado que Condenó");
+            }
+
+            if (tiempoCondena == 0) camposFaltantes.add("Tiempo de condena");
+
+            // Mostrar comentario si hay campos faltantes
+            String comentario = "";
+            String nuevoStatus = "activado";
 
             if (camposFaltantes.isNotEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  backgroundColor: Colors.red,
-                  content: Text("Faltan los siguientes campos:\n${camposFaltantes.join('\n')}"),
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-              return;
+              comentario = await _mostrarDialogoComentarioPendiente(context, camposFaltantes.join(", "));
+              if (comentario.trim().isEmpty) return;
+              nuevoStatus = "pendiente";
             }
 
-            // 🔽 Tu código de guardado sigue igual
             Map<String, String> correosCentro = {
               'correo_direccion': '',
               'correo_juridica': '',
@@ -2794,10 +2799,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
             }
 
-            SystemChannels.textInput.invokeMethod('TextInput.hide');
-
             try {
-              int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
               await widget.doc.reference.update({
                 'nombre_ppl': _nombreController.text,
                 'apellido_ppl': _apellidoController.text,
@@ -2823,41 +2825,36 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'parentesco_representante': _parentescoAcudienteController.text,
                 'celular': _celularAcudienteController.text,
                 'email': _emailAcudienteController.text,
-                'status': 'activado',
+                'status': _camposCompletos() ? 'activado' : 'pendiente',
               });
 
               await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
 
-              String accion = widget.doc['status'] == 'registrado' ? 'activado' : 'actualización';
+              if (comentario.isNotEmpty) {
+                await widget.doc.reference.collection('comentarios').add({
+                  'comentario': comentario,
+                  'autor': adminFullName,
+                  'fecha': DateTime.now(),
+                });
+              }
+
               await widget.doc.reference.collection('historial_acciones').add({
                 'admin': adminFullName,
-                'accion': accion,
+                'accion': nuevoStatus == 'activado' ? 'activado' : 'guardado pendiente',
                 'fecha': DateTime.now().toString(),
               });
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Datos guardados con éxito. Correos actualizados.'),
-                    duration: Duration(seconds: 2),
+                  SnackBar(
+                    content: Text('Información guardada como "$nuevoStatus".'),
+                    backgroundColor: nuevoStatus == "activado" ? Colors.green : Colors.orange,
+                    duration: const Duration(seconds: 2),
                   ),
                 );
-              }
-
-              Future.delayed(const Duration(seconds: 1), () {
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
-                );
-              });
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Se guardó la información de manera exitosa'),
-                    duration: Duration(seconds: 2),
-                    backgroundColor: Colors.green,
-                  ),
                 );
               }
 
@@ -2867,8 +2864,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error al guardar: $error'),
-                    duration: const Duration(seconds: 2),
                     backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 2),
                   ),
                 );
               }
@@ -2880,7 +2877,128 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  Future<String> _mostrarDialogoComentarioPendiente(BuildContext context, String faltantes) async {
+    final TextEditingController _comentarioController = TextEditingController();
+    String comentario = "";
 
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Campos incompletos"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Faltan los siguientes campos:\n$faltantes"),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _comentarioController,
+              decoration: const InputDecoration(
+                labelText: "Agrega un comentario para seguimiento",
+                border: OutlineInputBorder(),
+              ),
+              minLines: 2,
+              maxLines: 4,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              comentario = _comentarioController.text.trim();
+              Navigator.pop(context);
+            },
+            child: const Text("Guardar como pendiente"),
+          ),
+        ],
+      ),
+    );
+
+    return comentario;
+  }
+
+  bool _camposCompletos() {
+    bool camposValidos(dynamic valor) => valor != null && valor.toString().trim().isNotEmpty;
+
+    int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
+
+    return camposValidos(_nombreController.text) &&
+        camposValidos(_apellidoController.text) &&
+        camposValidos(_numeroDocumentoController.text) &&
+        camposValidos(_fechaDeCapturaController.text) &&
+        camposValidos(_radicadoController.text) &&
+        camposValidos(selectedCentro ?? getCampoSeguro('centro_reclusion')) &&
+        camposValidos(selectedRegional ?? getCampoSeguro('regional')) &&
+        camposValidos(selectedCiudad ?? getCampoSeguro('ciudad')) &&
+        camposValidos(selectedDelito ?? getCampoSeguro('delito')) &&
+        camposValidos(selectedJuzgadoEjecucionPenas ?? getCampoSeguro('juzgado_ejecucion_penas')) &&
+        camposValidos(selectedJuzgadoNombre ?? getCampoSeguro('juzgado_que_condeno')) &&
+        tiempoCondena > 0;
+  }
+
+
+  dynamic getCampoSeguro(String key) {
+    return widget.doc.data().toString().contains(key) ? widget.doc[key] : null;
+  }
+
+
+  void _mostrarComentarios(BuildContext context, String docId) async {
+    final comentariosSnapshot = await FirebaseFirestore.instance
+        .collection('Ppl')
+        .doc(widget.doc.id)
+        .collection('comentarios')
+        .orderBy('fecha', descending: true)
+        .get();
+
+    final comentarios = comentariosSnapshot.docs;
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: blanco,
+            title: const Text("Comentarios del caso"),
+            content: SizedBox(
+              width: 400,
+              child: comentarios.isEmpty
+                  ? const Text("No hay comentarios registrados.")
+                  : ListView.separated(
+                shrinkWrap: true,
+                itemCount: comentarios.length,
+                separatorBuilder: (context, index) => const Divider(
+                  color: Colors.grey,
+                  height: 10,
+                ),
+                itemBuilder: (context, index) {
+                  final comentario = comentarios[index].data();
+                  return ListTile(
+                    title: Text(comentario['comentario'] ?? ''),
+                    subtitle: Text(
+                      "${comentario['autor'] ?? 'Desconocido'} — ${DateFormat("dd/MM/yyyy hh:mm a").format(
+                        (comentario['fecha'] as Timestamp).toDate(),
+                      )}",
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(
+                child: const Text("Cerrar"),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
 
   /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
   Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {

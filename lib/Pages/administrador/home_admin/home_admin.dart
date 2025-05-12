@@ -107,6 +107,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                     final int countActivado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'activado').length;
                     final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
+                    final int countPendiente = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'pendiente').length;
+
 
                     final int countTotal = docs.where((doc) {
                       final assignedTo = doc.get('assignedTo') ?? "";
@@ -186,7 +188,15 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               });
                             }, isSelected: filterStatus == "bloqueado"),
 
-                            _buildStatCard("Total Usuarios", countTotal, Colors.amber, () {
+                            _buildStatCard("Pendientes", countPendiente, Colors.orange, () {
+                              setState(() {
+                                filterStatus = "pendiente";
+                                filterIsPaid = null;
+                              });
+                            }, isSelected: filterStatus == "pendiente"),
+
+
+                            _buildStatCard("Total Usuarios", countTotal, Colors.black87, () {
                               setState(() {
                                 filterStatus = null;
                                 filterIsPaid = null;
