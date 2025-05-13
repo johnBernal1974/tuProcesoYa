@@ -2799,7 +2799,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             }
 
             try {
-              await widget.doc.reference.update({
+              final Map<String, dynamic> datosActualizados = {
                 'nombre_ppl': _nombreController.text,
                 'apellido_ppl': _apellidoController.text,
                 'numero_documento_ppl': _numeroDocumentoController.text,
@@ -2824,8 +2824,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'parentesco_representante': _parentescoAcudienteController.text,
                 'celular': _celularAcudienteController.text,
                 'email': _emailAcudienteController.text,
-                'status': _camposCompletos() ? 'activado' : 'pendiente',
-              });
+                'status': nuevoStatus,
+              };
+
+              // 👇 Agregar campo solo si se activó
+              if (nuevoStatus == 'activado') {
+                datosActualizados['fechaActivacion'] = DateTime.now();
+              }
+
+              await widget.doc.reference.update(datosActualizados);
+
 
               await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
 

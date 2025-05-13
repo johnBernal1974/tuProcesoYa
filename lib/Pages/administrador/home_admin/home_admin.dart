@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
+import 'dart:html' as html;
+
 
 import '../../../src/colors/colors.dart';
 
@@ -19,6 +21,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   String? filterStatus = "registrado";
   bool? filterIsPaid;
   String searchQuery = "";
+  int? _tiempoDePruebaDias;
   final TextEditingController _searchController = TextEditingController();
 
   // para barra de busqueda de operadoresa asignados
@@ -67,6 +70,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       mostrarFiltroAdmin = !mostrarFiltroAdmin; // 🔥 Alternar visibilidad del filtro
       filterStatus = null; // 🔥 Establecer filtro en "Total Usuarios"
     });
+  }
+  @override
+  void initState() {
+    super.initState();
+    _cargarTiempoDePrueba();
   }
 
 
@@ -240,6 +248,21 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _cargarTiempoDePrueba() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+      if (snapshot.docs.isNotEmpty) {
+        final doc = snapshot.docs.first;
+        final valor = doc.get('tiempoDePrueba');
+        setState(() {
+          _tiempoDePruebaDias = valor is int ? valor : int.tryParse(valor.toString());
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar tiempoDePrueba: $e');
+    }
   }
 
   Future<void> _fetchAdminNames() async {
@@ -525,6 +548,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         DataColumn(label: Text('Acudiente')),
                         DataColumn(label: Text('Celular')),
                         DataColumn(label: Text('Pago')),
+                        DataColumn(label: Text('Prueba')),
                         DataColumn(label: Text('Registro')),
                       ],
                       rows: registros.map((doc) {
@@ -622,6 +646,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               color: doc.get('isPaid') ? Colors.blue : Colors.grey,
                             )),
 
+                            DataCell(iconoPruebaYPago(doc)),
                             // Fecha
                             DataCell(
                               Column(
@@ -655,6 +680,110 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         );
       },
     );
+  }
+
+  Widget iconoPruebaYPago(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final isPaid = data['isPaid'] == true;
+
+    if (!data.containsKey('fechaActivacion')) {
+      return const Tooltip(
+        message: "Usuario aún no ha sido activado",
+        child: Icon(Icons.help_outline, color: Colors.grey),
+      );
+    }
+
+    if (_tiempoDePruebaDias == null) {
+      return const Tooltip(
+        message: "Cargando configuración de prueba...",
+        child: Icon(Icons.hourglass_top, color: Colors.grey),
+      );
+    }
+
+    final fechaActivacion = _convertirTimestampADateTime(data['fechaActivacion']);
+    if (fechaActivacion == null) {
+      return const Tooltip(
+        message: "Fecha de activación no válida",
+        child: Icon(Icons.error_outline, color: Colors.red),
+      );
+    }
+
+    final diasDesdeActivacion = DateTime.now().difference(fechaActivacion).inDays;
+
+    if (isPaid) {
+      return const Tooltip(
+        message: "Pago realizado",
+        child: Icon(Icons.verified_user, color: Colors.green),
+      );
+    }
+
+    if (diasDesdeActivacion < _tiempoDePruebaDias!) {
+      final diasRestantes = _tiempoDePruebaDias! - diasDesdeActivacion;
+      return Tooltip(
+        message: "En periodo de prueba ($diasRestantes días restantes)",
+        child: const Icon(Icons.lock_clock, color: Colors.orange),
+      );
+    }
+
+    return Tooltip(
+      message: "Prueba vencida sin pago",
+      child: InkWell(
+        onTap: () {
+          _mostrarDialogoPagoPendiente(doc);
+        },
+        child: const Icon(Icons.lock_outline, color: Colors.red),
+      ),
+    );
+  }
+
+
+  void _mostrarDialogoPagoPendiente(QueryDocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final nombre = data['nombre_ppl'] ?? '';
+    final apellido = data['apellido_ppl'] ?? '';
+    final celular = data['celular']?.toString().replaceAll(' ', '') ?? '';
+
+    final nombreAcudiente = data['nombre_acudiente'] ?? '';
+    final mensaje = Uri.encodeComponent(
+      "Hola $nombreAcudiente, soy del equipo de Tu Proceso Ya.\n\n"
+          "Tu periodo de prueba ha finalizado, por lo cual, desafortunadamente ya no tienes acceso a la información de tu proceso.\n\n"
+          "Si deseas continuar usando la plataforma, por favor realiza el pago correspondiente.\n\n"
+          "Estamos disponibles para ayudarte.\n\n"
+          "Ingresa ahora mismo a https://www.tuprocesoya.com",
+    );
+
+    final urlWhatsapp = "https://wa.me/57$celular?text=$mensaje";
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Enviar recordatorio"),
+          content: Text(
+            "El usuario $nombre $apellido ha superado su periodo de prueba y no ha hecho el respectivo pago.\n\n¿Deseas enviarle un mensaje de recordatorio por WhatsApp?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar"),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                _abrirEnlace(urlWhatsapp);
+              },
+              icon: const Icon(Icons.chat),
+              label: const Text("Enviar WhatsApp"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _abrirEnlace(String url) {
+    html.window.open(url, '_blank');
   }
 
   String _obtenerRangoSemana(DateTime fecha) {

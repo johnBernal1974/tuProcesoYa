@@ -62,7 +62,7 @@ class _DelitosAutocompleteWidgetState extends State<DelitosAutocompleteWidget> {
         "Alteración de documento de identidad", "Falsedad material en documento público", "Falsedad personal", "Suplantación de identidad", "Uso de documento falso",
       ],
       "Delitos contra la familia": [
-        "Abandono de menor o persona en estado de vulnerabilidad", "Bigamia", "Incumplimiento de obligaciones alimentarias", "Violencia intrafamiliar",
+        "Abandono de menor o persona en estado de vulnerabilidad", "Bigamia", "Incumplimiento de obligaciones alimentarias", "Violencia intrafamiliar", "Inasistencia alimentaria"
       ],
       "Delitos informáticos": [
         "Acceso abusivo a un sistema informático", "Interceptación de datos informáticos", "Obstrucción ilegítima de datos", "Suplantación de sitios web", "Violación de datos personales",
