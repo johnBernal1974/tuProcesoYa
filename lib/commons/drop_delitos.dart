@@ -44,7 +44,7 @@ class _DelitosAutocompleteWidgetState extends State<DelitosAutocompleteWidget> {
         "Acceso carnal abusivo con menor de 14 años", "Acceso carnal violento", "Actos sexuales abusivos", "Estímulo a la prostitución de menores", "Pornografía infantil", "Proxenetismo con menor",
       ],
       "Delitos contra el patrimonio económico": [
-        "Abuso de confianza", "Daño en bien ajeno", "Estafa", "Extorsión", "Hurto calificado y agravado", "Hurto simple", "Receptación",
+        "Abuso de confianza", "Daño en bien ajeno", "Estafa", "Extorsión", "Hurto calificado y agravado", "Hurto simple", "Receptación", "Tentativa de hurto", "Tentativa de hurto calificado",
       ],
       "Delitos contra la seguridad pública": [
         "Concierto para delinquir", "Falsedad en documento privado", "Falsedad en documento público", "Instigación a delinquir", "Terrorismo", "Amenaza terrorista",

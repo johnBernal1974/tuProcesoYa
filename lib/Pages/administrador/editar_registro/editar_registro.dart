@@ -1335,7 +1335,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               displayStringForOption: (Map<String, String> option) =>
               option['nombre']!,
               fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                textEditingController = _autocompleteController;
                 return TextField(
                   controller: textEditingController,
                   focusNode: focusNode,

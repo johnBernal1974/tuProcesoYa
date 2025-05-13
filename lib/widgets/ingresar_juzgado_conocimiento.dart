@@ -20,7 +20,7 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
   final List<String> ciudades = [
     'Antioquia', 'Arauca', 'Armenia', 'Barranquilla', 'Bello', 'Bogotá', 'Bucaramanga', 'Buenaventura', 'Buga',
     'Cali', 'Cartagena', 'Cartago', 'Chiquinquirá', 'Cúcuta', 'Duitama', 'Envigado', 'Florencia',
-    'Funza', 'Fusagasugá', 'Garzón', 'Girardota', 'Ibagué', 'Manizales', 'Medellín', 'Mocoa',
+    'Funza', 'Fusagasugá', 'Garzón', 'Girardota', 'Ibagué', 'Madrid', 'Manizales','Medellín', 'Mocoa',
     'Montería', 'Neiva', 'Palmira', 'Pasto', 'Pereira', 'Popayán', 'Prueba', 'Quibdó', 'Riohacha',
     'Rionegro', 'Santa Marta', 'Sincelejo', 'Soacha', 'Sogamoso', 'Tuluá', 'Tunja', 'Valledupar',
     'Villavicencio', 'Yopal', 'Zipaquirá'

@@ -3,10 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../src/colors/colors.dart';
+import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
+import 'dart:html' as html;
+
 
 class RegistroAsistidoPage extends StatefulWidget {
   const RegistroAsistidoPage({super.key});
@@ -46,12 +50,50 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
   String? selectedRegional;
   List<Map<String, String>> centrosReclusionTodos = [];
   String? selectedCentroNombre;
+  String? _verificationId;
+  bool _otpEnviado = false;
+  final TextEditingController otpController = TextEditingController();
+  User? _usuarioVerificado;
+  bool _recaptchaValidado = false;
+  late ConfirmationResult _confirmationResult;
+  RecaptchaVerifier? recaptchaVerifier;
+
+
 
 
   @override
   void initState() {
     super.initState();
     _centrosFuture = _fetchTodosCentrosReclusion();
+    if (kIsWeb) {
+      recaptchaVerifier = RecaptchaVerifier(
+        auth: FirebaseAuthPlatform.instance,
+        container: 'recaptcha-container',
+        size: RecaptchaVerifierSize.normal,
+        theme: RecaptchaVerifierTheme.light,
+        onSuccess: () {
+          if (kDebugMode) print("✅ reCAPTCHA resuelto");
+          Future.delayed(Duration(milliseconds: 500), () {
+            final recaptchaElement = html.document.getElementById('recaptcha-container');
+            if (recaptchaElement != null) {
+              recaptchaElement.style.display = 'none';
+            } else {
+              print("⚠️ No se encontró #recaptcha-container aún.");
+            }
+          });
+
+          setState(() {
+            _recaptchaValidado = true;
+          });
+        },
+        onError: (error) {
+          _mostrarMensaje("❌ Error en reCAPTCHA: $error");
+        },
+        onExpired: () {
+          _mostrarMensaje("⚠️ El reCAPTCHA ha expirado");
+        },
+      );
+    }
   }
 
 
@@ -83,7 +125,17 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
                   if (_currentPage > 0)
                     TextButton(onPressed: _prevPage, child: const Text("Anterior")),
                   ElevatedButton(
-                    onPressed: _currentPage == _buildPages().length - 1 ? _guardar : _nextPage,
+                    onPressed: _currentPage == _buildPages().length - 1
+                        ? () async {
+                      if (_usuarioVerificado == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Primero valida el código OTP.")),
+                        );
+                        return;
+                      }
+                      await _guardar(_usuarioVerificado!);
+                    }
+                        : _nextPage,
                     child: Text(_currentPage == _buildPages().length - 1 ? "Finalizar" : "Siguiente"),
                   ),
                 ],
@@ -94,6 +146,57 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
       ),
     );
   }
+
+  void _enviarCodigoOTP() async {
+    final celular = celularController.text.trim();
+
+    if (!RegExp(r'^[0-9]{10}$').hasMatch(celular)) {
+      _mostrarMensaje("Número de celular inválido. Debe tener 10 dígitos.");
+      return;
+    }
+
+    if (recaptchaVerifier == null) {
+      _mostrarMensaje("No se pudo inicializar el reCAPTCHA");
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final numero = "+57$celular";
+
+      final confirmationResult = await FirebaseAuth.instance.signInWithPhoneNumber(
+        numero,
+        recaptchaVerifier!,
+      );
+
+      if (context.mounted) {
+        Navigator.of(context).pop(); // Cierra el loading
+      }
+
+      setState(() {
+        _confirmationResult = confirmationResult;
+        _otpEnviado = true;
+        _recaptchaValidado = true;
+      });
+
+      _mostrarMensaje("✅ Código enviado. Ingrésalo cuando el usuario te lo indique.");
+    } catch (e) {
+      if (context.mounted) Navigator.of(context).pop();
+      _mostrarMensaje("❌ Error al enviar OTP: ${e.toString()}");
+    }
+  }
+
+  void _mostrarMensaje(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensaje)),
+    );
+  }
+
 
   List<Widget> _buildPages() {
     final List<Widget> pages = [];
@@ -174,10 +277,7 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
           const Text("PPL", style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 30),
           _buildDropdown("Situación actual", _situacionOptions, situacionActual, (val) {
-            setState(() {
-              situacionActual = val;
-
-            });
+            setState(() => situacionActual = val);
           }),
         ],
       )),
@@ -222,8 +322,65 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
       ],
     )));
 
+    // 5. Verificación de número (OTP) — FINAL
+    pages.add(_buildPageWrapper(Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("VALIDACIÓN DE CELULAR", style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        if (!_otpEnviado)
+          ElevatedButton(
+            onPressed: _enviarCodigoOTP,
+            child: const Text("Enviar OTP"),
+          ),
+        if (_otpEnviado)
+          Column(
+            children: [
+              const SizedBox(height: 10),
+              PinCodeTextField(
+                appContext: context,
+                length: 6,
+                controller: otpController,
+                keyboardType: TextInputType.number,
+                onChanged: (_) {},
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final credential = PhoneAuthProvider.credential(
+                    verificationId: _verificationId!,
+                    smsCode: otpController.text.trim(),
+                  );
+
+                  try {
+                    final userCredential = await FirebaseAuth.instance.signInWithCredential(credential);
+                    final user = userCredential.user!;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("✅ Código verificado con éxito.")),
+                    );
+
+                    setState(() {
+                      _usuarioVerificado = user;
+                    });
+
+                    _guardar(user); // ← Aquí se guarda
+                  } catch (e) {
+                    print("❌ Error al verificar OTP: $e");
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("❌ Código incorrecto")),
+                    );
+                  }
+                },
+                child: const Text("Validar código"),
+              ),
+            ],
+          ),
+      ],
+    )));
+
     return pages;
   }
+
 
 
   Widget _seleccionarCentroReclusion() {
@@ -375,8 +532,6 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
     }
   }
 
-
-
   Widget _buildPageWrapper(Widget child) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
@@ -405,22 +560,6 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
     centroReclusionController.dispose(); // nuevo
     super.dispose();
   }
-
-  Future<String?> crearUsuarioPorCelular(String celular) async {
-    try {
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable('crearUsuarioPorCelular');
-      final result = await callable.call(<String, dynamic>{
-        'celular': celular,
-      });
-
-      final data = result.data;
-      return data['uid'];
-    } catch (e) {
-      print("Error al crear usuario por celular: $e");
-      return null;
-    }
-  }
-
 
   Widget _buildTextField(String label, TextEditingController controller, {TextInputType tipo = TextInputType.text}) {
     return Padding(
@@ -584,7 +723,6 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
     }
   }
 
-
   void _prevPage() {
     if (_currentPage > 0) {
       setState(() => _currentPage--);
@@ -601,7 +739,7 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
 
 
 
-  void _guardar() async {
+  Future<void> _guardar(User user) async {
     final pin = pinController.text.trim();
 
     if (pin.length != 4) {
@@ -620,15 +758,19 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
     }
 
     final celular = celularRaw.startsWith('+') ? celularRaw : '+57$celularRaw';
+    final userId = user.uid;
 
     try {
-      // ✅ Llamar a la Cloud Function solo después de validar
-      final callable = FirebaseFunctions.instance.httpsCallable('crearUsuarioPorCelular');
-      final result = await callable.call({'celular': celular});
-      final userId = result.data['uid'];
+      // 🔒 Asegurarse de que no se sobrescriba un registro ya existente
+      final docExistente = await FirebaseFirestore.instance.collection("Ppl").doc(userId).get();
+      if (docExistente.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("⚠ Ya existe un registro para este usuario.")),
+        );
+        return;
+      }
 
-      print("✅ Usuario creado con UID: $userId");
-
+      // ✅ Guardar en Firestore
       await FirebaseFirestore.instance.collection("Ppl").doc(userId).set({
         "id": userId,
         "nombre_acudiente": nombreAcudienteController.text.trim(),
@@ -670,29 +812,24 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
         "referidoPor": "",
       });
 
+      // 🧹 Cierra sesión del PPL recién autenticado
+      await FirebaseAuth.instance.signOut();
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Registro exitoso")),
+          const SnackBar(content: Text("✅ Registro exitoso")),
         );
         Navigator.of(context).pushReplacementNamed('home_admin');
       }
-    } on FirebaseFunctionsException catch (e) {
-      if (e.code == 'already-exists') {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("⚠ Este número ya está registrado.")),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Error: ${e.message ?? 'Error desconocido'}")),
-        );
-      }
     } catch (e) {
+      print("🔥 Error al guardar datos: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Error inesperado al registrar.")),
+        SnackBar(content: Text("❌ Error al guardar: ${e.toString()}")),
       );
-      print("Error inesperado: $e");
     }
   }
+
+
 
 
   final List<String> parentescoOptions = [
