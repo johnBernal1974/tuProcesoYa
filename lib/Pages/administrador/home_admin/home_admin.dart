@@ -710,6 +710,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
     final diasDesdeActivacion = DateTime.now().difference(fechaActivacion).inDays;
 
+    // 🔵 Caso 1: Ya pagó
     if (isPaid) {
       return const Tooltip(
         message: "Pago realizado",
@@ -717,6 +718,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       );
     }
 
+    // 🟠 Caso 2: En periodo de prueba
     if (diasDesdeActivacion < _tiempoDePruebaDias!) {
       final diasRestantes = _tiempoDePruebaDias! - diasDesdeActivacion;
       return Tooltip(
@@ -725,16 +727,32 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       );
     }
 
+    // 🔴 Caso 3: Prueba vencida sin pago
+    final bool yaSeEnvio = data['recordatorioWhatsappEnviado'] == true;
+    final DateTime? fechaRecordatorio = _convertirTimestampADateTime(data['fechaRecordatorioWhatsapp']);
+    final String mensajeTooltip = yaSeEnvio && fechaRecordatorio != null
+        ? "Prueba vencida sin pago\nRecordatorio enviado el ${DateFormat("dd/MM/yyyy hh:mm a").format(fechaRecordatorio)}"
+        : "Prueba vencida sin pago";
+
     return Tooltip(
-      message: "Prueba vencida sin pago",
-      child: InkWell(
-        onTap: () {
-          _mostrarDialogoPagoPendiente(doc);
-        },
-        child: const Icon(Icons.lock_outline, color: Colors.red),
+      message: mensajeTooltip,
+      child: Row(
+        children: [
+          InkWell(
+            onTap: () {
+              _mostrarDialogoPagoPendiente(doc);
+            },
+            child: const Icon(Icons.lock_outline, color: Colors.red),
+          ),
+          if (yaSeEnvio) ...[
+            const SizedBox(width: 4),
+            const Icon(Icons.mark_chat_read, size: 18, color: Colors.green),
+          ],
+        ],
       ),
     );
   }
+
 
 
   void _mostrarDialogoPagoPendiente(QueryDocumentSnapshot doc) {
@@ -769,8 +787,15 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
               child: const Text("Cancelar"),
             ),
             ElevatedButton.icon(
-              onPressed: () {
+              onPressed: () async {
                 Navigator.pop(context);
+
+                await doc.reference.update({
+                  'recordatorioWhatsappEnviado': true,
+                  'fechaRecordatorioWhatsapp': DateTime.now().toIso8601String(),
+                });
+
+
                 _abrirEnlace(urlWhatsapp);
               },
               icon: const Icon(Icons.chat),
