@@ -520,8 +520,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       showCheckboxColumn: false,
                       columns: const [
                         DataColumn(label: Text('Estado')),
-                        DataColumn(label: Text('Nombre')),
-                        DataColumn(label: Text('Apellido')),
+                        DataColumn(label: Text('PPL')),
                         DataColumn(label: Text('Identificación')),
                         DataColumn(label: Text('Acudiente')),
                         DataColumn(label: Text('Celular')),
@@ -536,33 +535,25 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         return DataRow(
                           onSelectChanged: (bool? selected) async {
                             if (selected != null && selected) {
-                              // 🔹 Obtener el rol del usuario actual
                               String userRole = await _obtenerRolActual();
 
-                              // 🔹 Si el usuario NO es operador, lo deja avanzar sin mostrar la confirmación
                               if (userRole != "operador") {
                                 Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
                                 return;
                               }
 
-                              // 🔹 Si es operador, sigue con la validación de asignación
                               final String assignedTo = doc.get('assignedTo') ?? "";
 
                               if (assignedTo.isEmpty) {
-                                // 🔹 Si el documento NO está asignado, pedir confirmación
                                 bool confirmar = await _mostrarDialogoConfirmacion();
-                                if (!confirmar) {
-                                  print("🚫 Edición cancelada por el usuario.");
-                                  return; // Si no confirma, no hace nada
-                                }
+                                if (!confirmar) return;
                               }
 
-                              // 🔹 Si ya estaba asignado, o si confirmó, navegar a la pantalla de edición
                               Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
                             }
                           },
-
                           cells: [
+                            // Estado
                             DataCell(
                               Row(
                                 children: [
@@ -574,8 +565,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     child: Icon(Icons.circle, color: _getColor(status)),
                                   ),
                                   const SizedBox(width: 8),
-
-                                  // 🔹 Mostrar rectángulo solo si el estado es "registrado"
                                   if (status == "registrado") ...[
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -596,20 +585,64 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 ],
                               ),
                             ),
-                            DataCell(Text(doc.get('nombre_ppl'))),
-                            DataCell(Text(doc.get('apellido_ppl'))),
+
+                            // Nombre + Apellido
+                            DataCell(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(doc.get('nombre_ppl'), style: const TextStyle(fontWeight: FontWeight.w500)),
+                                  Text(doc.get('apellido_ppl'), style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                ],
+                              ),
+                            ),
+
+                            // Identificación
                             DataCell(Text(doc.get('numero_documento_ppl').toString())),
-                            DataCell(Text("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}")),
+
+                            // Acudiente (Nombre + Apellido)
+                            DataCell(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(doc.get('nombre_acudiente'), style: const TextStyle(fontWeight: FontWeight.w500)),
+                                  Text(doc.get('apellido_acudiente'), style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                ],
+                              ),
+                            ),
+
+                            // Celular
                             DataCell(Text(doc.get('celular').toString())),
+
+                            // Pago
                             DataCell(Icon(
                               doc.get('isPaid') ? Icons.check_circle : Icons.cancel,
                               color: doc.get('isPaid') ? Colors.blue : Colors.grey,
                             )),
-                            DataCell(Text(_formatFecha(_convertirTimestampADateTime(doc.get('fechaRegistro'))))),
+
+                            // Fecha
+                            DataCell(
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    DateFormat("dd 'de' MMMM 'de' yyyy", 'es').format(_convertirTimestampADateTime(doc.get('fechaRegistro'))!),
+                                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                                  ),
+                                  Text(
+                                    DateFormat('hh:mm a', 'es').format(_convertirTimestampADateTime(doc.get('fechaRegistro'))!),
+                                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                         );
-
                       }).toList(),
+
                     ),
                   ),
 
