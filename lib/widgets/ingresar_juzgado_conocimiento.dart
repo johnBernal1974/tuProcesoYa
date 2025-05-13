@@ -16,15 +16,9 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
   final TextEditingController _nombreJuzgadoController = TextEditingController();
 
   String? ciudadSeleccionada;
+  List<String> ciudades = [];
+  bool cargandoCiudades = true;
 
-  final List<String> ciudades = [
-    'Antioquia', 'Arauca', 'Armenia', 'Barranquilla', 'Bello', 'Bogotá', 'Bucaramanga', 'Buenaventura', 'Buga',
-    'Cali', 'Cartagena', 'Cartago', 'Chiquinquirá', 'Cúcuta', 'Duitama', 'Envigado', 'Florencia',
-    'Funza', 'Fusagasugá', 'Garzón', 'Girardota', 'Ibagué', 'Madrid', 'Manizales','Medellín', 'Mocoa',
-    'Montería', 'Neiva', 'Palmira', 'Pasto', 'Pereira', 'Popayán', 'Prueba', 'Quibdó', 'Riohacha',
-    'Rionegro', 'Santa Marta', 'Sincelejo', 'Soacha', 'Sogamoso', 'Tuluá', 'Tunja', 'Valledupar',
-    'Villavicencio', 'Yopal', 'Zipaquirá'
-  ];
 
   Future<void> guardarJuzgado() async {
     final correo = _correoController.text.trim().toLowerCase();
@@ -69,6 +63,27 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
     }
   }
 
+
+  @override
+  void initState() {
+    super.initState();
+    cargarCiudades();
+  }
+
+
+  Future<void> cargarCiudades() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('ciudades_conocimiento').orderBy('nombre').get();
+      setState(() {
+        ciudades = snapshot.docs.map((doc) => doc['nombre'].toString()).toList();
+        cargandoCiudades = false;
+      });
+    } catch (e) {
+      debugPrint("❌ Error al cargar ciudades: $e");
+      setState(() => cargandoCiudades = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -83,7 +98,9 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            DropdownButtonFormField<String>(
+            cargandoCiudades
+                ? const Center(child: CircularProgressIndicator())
+                : DropdownButtonFormField<String>(
               dropdownColor: Colors.amber.shade50,
               value: ciudadSeleccionada,
               items: ciudades.map((ciudad) {
@@ -131,14 +148,36 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
               ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: guardarJuzgado,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Guardar Juzgado'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton(
+                  onPressed: guardarJuzgado,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Guardar Juzgado'),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  children: [
+                    const Text('¿No está la ciudad en las opciones?', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    ElevatedButton.icon(
+                      onPressed: _mostrarDialogoAgregarCiudad,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade600,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: const Icon(Icons.add_location_alt),
+                      label: const Text('Añadir Ciudad'),
+                    ),
+                  ],
+                ),
+              ],
             ),
+
             const SizedBox(height: 32),
             if (ciudadSeleccionada != null)
               Column(
@@ -207,5 +246,57 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
       ),
     );
   }
+
+  void _mostrarDialogoAgregarCiudad() {
+    final TextEditingController ciudadController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.amber.shade50,
+          title: const Text("Agregar nueva ciudad"),
+          content: TextField(
+            controller: ciudadController,
+            decoration: const InputDecoration(
+              labelText: "Nombre de la ciudad",
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final nuevaCiudad = ciudadController.text.trim();
+                if (nuevaCiudad.isEmpty) return;
+
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('ciudades_conocimiento')
+                      .doc(nuevaCiudad)
+                      .set({'nombre': nuevaCiudad});
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Ciudad "$nuevaCiudad" añadida exitosamente')),
+                  );
+                  await cargarCiudades(); // 🔁 Recargar lista
+                } catch (e) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error al añadir ciudad: $e')),
+                  );
+                }
+              },
+              child: const Text("Guardar"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
 }

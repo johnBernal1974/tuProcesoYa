@@ -120,6 +120,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   late Ppl ppl;
   bool isExento = false;
   bool cargando = true;
+  List<String> ciudades = [];
 
 
   /// opciones de documento de identidad
@@ -130,6 +131,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     super.initState();
     _initCalculoCondena();
     _initFormFields();
+    cargarCiudades();
     Future.delayed(Duration.zero, () {
       setState(() {
         isLoading = false; // Cambia el estado después de que se verifiquen los valores
@@ -153,8 +155,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     if (selectedDelito != null && selectedDelito!.trim().isEmpty) {
       selectedDelito = null;
     }
-
-
   }
 
   @override
@@ -172,6 +172,28 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     //_liberarDocumento(); // 🔥 Libera el documento al cerrar la pantalla
     super.dispose();
   }
+
+  void cargarCiudades() async {
+    final lista = await obtenerCiudadesDesdeFirestore();
+    setState(() {
+      ciudades = lista;
+    });
+  }
+
+  Future<List<String>> obtenerCiudadesDesdeFirestore() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('ciudades')
+          .orderBy('nombre') // opcional, orden alfabético
+          .get();
+
+      return snapshot.docs.map((doc) => doc.get('nombre').toString()).toList();
+    } catch (e) {
+      debugPrint('Error al cargar ciudades: $e');
+      return [];
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -1921,7 +1943,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final DocumentSnapshot document = await firestore.collection('Ppl').doc(widget.doc.id).get();
@@ -2050,8 +2071,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ],
     );
   }
-
-
 
   Widget nombrePpl() {
     return textFormField(
@@ -2927,6 +2946,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     return comentario;
   }
+
+
   bool _camposCompletos() {
     bool camposValidos(dynamic valor) => valor != null && valor.toString().trim().isNotEmpty;
 
