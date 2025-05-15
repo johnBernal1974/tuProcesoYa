@@ -121,7 +121,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "$semana - Total: \$${NumberFormat("#,###", "es_CO").format(totalPorSemana[semana])}",
+                "$semana - Total: \$${NumberFormat("#,###", "es_CO").format(totalPorSemana[semana] ?? 0)}",
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black),
               ),
               const SizedBox(height: 8),
@@ -146,7 +146,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "$semana - Total: \$${NumberFormat("#,###", "es_CO").format(totalPorSemana[semana])}",
+                "$semana - Total: \$${NumberFormat("#,###", "es_CO").format(totalPorSemana[semana] ?? 0)}",
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.black),
               ),
               const SizedBox(height: 8),
@@ -167,7 +167,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                   rows: transacciones.map((transaction) {
                     var fecha = (transaction["createdAt"] as Timestamp).toDate();
                     var formattedDate = DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO').format(fecha);
-                    var formattedAmount = "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"])}";
+                    var formattedAmount = "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"] ?? 0)}";
                     var estado = _traducirEstado(transaction["status"]);
                     var paymentMethod = transaction["paymentMethod"] ?? "Desconocido";
                     var userId = transaction["userId"];
@@ -219,7 +219,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
   Widget _buildTransactionCard(QueryDocumentSnapshot transaction) {
     var fecha = (transaction["createdAt"] as Timestamp).toDate();
     var formattedDate = DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO').format(fecha);
-    var formattedAmount = "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"])}";
+    var formattedAmount = "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"] ?? 0)}";
     var estado = _traducirEstado(transaction["status"]);
     var paymentMethod = transaction["paymentMethod"] ?? "Desconocido";
     var userId = transaction["userId"];
