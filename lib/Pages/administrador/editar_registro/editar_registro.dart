@@ -123,15 +123,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   List<String> ciudades = [];
 
 
-  //variables para fecha de captura multiple
-  bool _mostrarCamposAdicionales = false;
-
-  DateTime? _fechaCapturaInicial;
-  DateTime? _fechaSalida;
-  DateTime? _fechaNuevaCaptura;
-
-
-
   /// opciones de documento de identidad
   final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte', 'Tarjeta de Identidad'];
 
@@ -1088,6 +1079,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
+// 🔹 Libera el documento cuando se cierra la pantalla- temporalmente desactivado
+  Future<void> _liberarDocumento() async {
+    try {
+      await widget.doc.reference.update({'lockedBy': ""});
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error al liberar el documento: $e");
+      }
+    }
+  }
+
   Future<String> obtenerRolActual() async {
     try {
       User? user = FirebaseAuth.instance.currentUser;
@@ -1107,6 +1109,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       return "";
     }
   }
+
+  //*********para los no recluidos
 
   Widget infoPplNoRecluido() {
     return Container(
@@ -1694,6 +1698,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+
   Widget seleccionarJuzgadoQueCondeno() {
     if (!_mostrarDropdownJuzgadoCondeno &&
         widget.doc['juzgado_que_condeno'] != null &&
@@ -2107,127 +2112,46 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget fechaCapturaPpl() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Text(
-              'Fecha de captura inicial',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            IconButton(
-              icon: Icon(
-                _mostrarCamposAdicionales ? Icons.expand_less : Icons.expand_more,
-                color: Colors.deepPurple,
-              ),
-              tooltip: 'Mostrar campos adicionales',
-              onPressed: () {
-                setState(() => _mostrarCamposAdicionales = !_mostrarCamposAdicionales);
-              },
-            ),
-          ],
+    return TextFormField(
+      controller: _fechaDeCapturaController,
+      readOnly: true, // Evita que el usuario escriba manualmente
+      decoration: InputDecoration(
+        labelText: 'Fecha de captura (YYYY-MM-DD)',
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
         ),
-        TextFormField(
-          controller: _fechaDeCapturaController,
-          readOnly: true,
-          decoration: InputDecoration(
-            labelText: 'Fecha de captura (YYYY-MM-DD)',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-            suffixIcon: IconButton(
-              icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
-              onPressed: () => _seleccionarFecha(context, (fecha) {
-                _fechaCapturaInicial = fecha;
-                _fechaDeCapturaController.text = _formatearFecha(fecha);
-                setState(() {}); // actualizar UI si hay cambios
-              }),
-            ),
-          ),
-          validator: (value) =>
-          (value == null || value.isEmpty) ? 'Por favor ingrese la fecha de captura' : null,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
         ),
-        const SizedBox(height: 12),
-        if (_mostrarCamposAdicionales) ...[
-          _selectorFechaAdicional("Fecha de salida", _fechaSalida, (fecha) {
-            setState(() => _fechaSalida = fecha);
-          }),
-          const SizedBox(height: 8),
-          _selectorFechaAdicional("Fecha de nueva captura", _fechaNuevaCaptura, (fecha) {
-            setState(() => _fechaNuevaCaptura = fecha);
-          }),
-        ],
-        const SizedBox(height: 12),
-        if (_fechaCapturaInicial != null && _fechaSalida != null && _fechaNuevaCaptura != null)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.deepPurple.shade50,
-              border: Border.all(color: Colors.deepPurple.shade200),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Días intramurales cumplidos: ${_calcularDiasIntramurales()} días',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Equivalente aproximado: ${(_calcularDiasIntramurales() / 30).toStringAsFixed(1)} meses',
-                  style: const TextStyle(fontSize: 13, color: Colors.black87),
-                ),
-              ],
-            ),
-          ),
-      ],
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 2),
+        ),
+        // 👇 Agrega estas 2 líneas para quitar el borde rojo de error
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Colors.grey, width: 2),
+        ),
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
+          onPressed: () => _seleccionarFechaCaptura(context),
+        ),
+      ),
+
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese la fecha de captura';
+        }
+        return null;
+      },
     );
   }
-
-  int _calcularDiasIntramurales() {
-    final dias1 = _fechaSalida!.difference(_fechaCapturaInicial!).inDays;
-    final dias2 = DateTime.now().difference(_fechaNuevaCaptura!).inDays;
-    return dias1 + dias2;
-  }
-
-
-
-  Widget _selectorFechaAdicional(String label, DateTime? fecha, void Function(DateTime) onSelect) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            fecha != null ? "$label: ${_formatearFecha(fecha)}" : "$label: No seleccionada",
-          ),
-        ),
-        TextButton(
-          child: const Text("Seleccionar"),
-          onPressed: () => _seleccionarFecha(context, onSelect),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _seleccionarFecha(BuildContext context, void Function(DateTime) onSelect) async {
-    DateTime? fecha = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime.now(),
-    );
-    if (fecha != null) {
-      onSelect(fecha);
-    }
-  }
-
-  String _formatearFecha(DateTime fecha) {
-    return "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";
-  }
-
-
-
-
 
   // Método auxiliar para formatear números con dos dígitos
   String _formatDosDigitos(int n) => n.toString().padLeft(2, '0');
