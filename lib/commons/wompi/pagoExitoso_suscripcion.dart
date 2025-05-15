@@ -8,12 +8,14 @@ class PagoExitosoSuscripcionPage extends StatelessWidget {
   final double montoPagado;
   final String transaccionId;
   final DateTime fecha;
+  final Future<void> Function()? onContinuar; // ✅ Agregado
 
   const PagoExitosoSuscripcionPage({
     super.key,
     required this.montoPagado,
     required this.transaccionId,
     required this.fecha,
+    this.onContinuar, // ✅ Agregado
   });
 
   @override
@@ -58,8 +60,27 @@ class PagoExitosoSuscripcionPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 30),
                 ElevatedButton(
-                  onPressed: (){
-                    Navigator.pushNamedAndRemoveUntil(context, 'home', (r) => false);
+                  onPressed: () async {
+                    if (onContinuar != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.hourglass_bottom, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text("Procesando..."),
+                            ],
+                          ),
+                          duration: Duration(seconds: 2),
+                          backgroundColor: Colors.black87,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      await onContinuar!();
+                    } else {
+                      Navigator.pushNamedAndRemoveUntil(context, 'home', (r) => false);
+                    }
                   },
                   style: ElevatedButton.styleFrom(backgroundColor: primary),
                   child: const Text("Continuar", style: TextStyle(color: blanco)),

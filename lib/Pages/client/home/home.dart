@@ -1,5 +1,6 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
@@ -56,6 +57,7 @@ class _HomePageState extends State<HomePage> {
     _cargarValorSuscripcion();
     _calculoCondenaController = CalculoCondenaController(PplProvider()); // 🔥 Instanciar el controlador
     _loadUid();
+    _checkSubscriptionStatus();
   }
 
   Future<void> _cargarValorSuscripcion() async {
@@ -194,7 +196,7 @@ class _HomePageState extends State<HomePage> {
                         style: const TextStyle(fontSize: 12),
                       ),
                       const SizedBox(height: 10),
-                      if (_isTrial && !_isPaid) _buildTrialCard(),
+                      if (_isTrial && !_isPaid) _buildTrialCard(context),
                       _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
                       const SizedBox(height: 20),
                     ],
@@ -224,86 +226,225 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildTrialCard() {
-    return SizedBox(
-      child: Stack(
-        clipBehavior: Clip.none, // 🔥 Permite que la imagen sobresalga de la tarjeta
-        children: [
-          Card(
-            surfaceTintColor: blanco,
-            elevation: 6,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+  Widget _buildTrialCard(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: blanco,
+            title: const Text("Periodo de prueba"),
+            content: const Text(
+              "Actualmente estás disfrutando del periodo de prueba gratuito. "
+                  "Si deseas acceder de inmediato a todos los beneficios, puedes realizar el pago de la suscripción desde ahora.",
+              style: TextStyle(fontSize: 14),
+              textAlign: TextAlign.justify,
             ),
-            color: Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 10),
-                  const Text(
-                    "¡ Felicidades !",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: primary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const Text(
-                    "Disfruta de tu regalo de bienvenida.",
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Aún tienes $_diasRestantesPrueba días para explorar todas las funciones de nuestra aplicación.",
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: gris,
-                      height: 1.1,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancelar"),
               ),
-            ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: primary),
+                onPressed: () async {
+                  Navigator.pop(context); // Cierra el diálogo
+
+                  final user = FirebaseAuth.instance.currentUser;
+
+                  if (user == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
+                  try {
+                    final snapshot = await FirebaseFirestore.instance
+                        .collection("configuraciones")
+                        .limit(1)
+                        .get();
+
+                    if (snapshot.docs.isEmpty || snapshot.docs.first.data()["valor_subscripcion"] == null) {
+                      throw Exception("No se encontró el valor de la suscripción.");
+                    }
+
+                    final int valorSuscripcion = snapshot.docs.first["valor_subscripcion"];
+
+                    if(context.mounted){
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckoutPage(
+                            tipoPago: 'suscripcion',
+                            valor: valorSuscripcion,
+                            onTransaccionAprobada: () async {
+                              await FirebaseFirestore.instance
+                                  .collection("Ppl")
+                                  .doc(user.uid)
+                                  .update({
+                                "isPaid": true,
+                                "fechaSuscripcion": FieldValue.serverTimestamp(),
+                              });
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("¡Suscripción activada con éxito!"),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("No se pudo obtener el valor de la suscripción."),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                },
+                child: const Text("Pagar suscripción", style: TextStyle(color: blanco)),
+              ),
+            ],
           ),
-          Positioned(
-            top: -25,
-            right: -250,
-            left: 20,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.15),
-                    blurRadius: 6,
-                    offset: const Offset(2, 4),
-                  ),
-                ],
+        );
+      },
+      child: SizedBox(
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Card(
+              surfaceTintColor: blanco,
+              elevation: 6,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              padding: const EdgeInsets.all(6),
-              child: Image.asset(
-                "assets/images/regalo.png",
-                height: 50,
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 10),
+                    const Text(
+                      "¡ Felicidades !",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                        color: primary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const Text(
+                      "Disfruta de tu regalo de bienvenida.",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Aún tienes $_diasRestantesPrueba días para explorar todas las funciones de nuestra aplicación.",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: gris,
+                        height: 1.1,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+            Positioned(
+              top: -25,
+              right: -250,
+              left: 20,
+              child: Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(2, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(6),
+                child: Image.asset(
+                  "assets/images/regalo.png",
+                  height: 50,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  Future<void> _checkSubscriptionStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
+    final userDoc = await FirebaseFirestore.instance.collection("Ppl").doc(user.uid).get();
+    final userData = userDoc.data();
+    if (userData == null) return;
+
+    bool isPaid = userData["isPaid"] ?? false;
+    final Timestamp? fechaSuscripcion = userData["fechaSuscripcion"];
+
+    // 🔄 Obtener duración desde "configuraciones"
+    final configSnapshot = await FirebaseFirestore.instance
+        .collection("configuraciones")
+        .limit(1)
+        .get();
+
+    if (configSnapshot.docs.isEmpty) return;
+
+    final configData = configSnapshot.docs.first.data();
+    final int duracionDias = configData["tiempo_suscripcion"] ?? 180;
+
+    if (isPaid && fechaSuscripcion != null) {
+      final ahora = DateTime.now();
+      final fechaPago = fechaSuscripcion.toDate();
+      final vencimiento = fechaPago.add(Duration(days: duracionDias));
+      final diasTranscurridos = ahora.difference(fechaPago).inDays;
+      final diasRestantes = duracionDias - diasTranscurridos;
+
+      print("🟢 Fecha de suscripción: $fechaPago");
+      print("📅 Días transcurridos: $diasTranscurridos");
+      print("⏳ Días restantes: $diasRestantes");
+      print("🔚 Fecha de vencimiento: $vencimiento");
+
+      if (ahora.isAfter(vencimiento)) {
+        print("❌ La suscripción ha vencido. Desactivando isPaid.");
+        await FirebaseFirestore.instance
+            .collection("Ppl")
+            .doc(user.uid)
+            .update({"isPaid": false});
+        isPaid = false;
+      } else {
+        print("✅ La suscripción sigue activa.");
+      }
+    }
+
+    setState(() {
+      _isPaid = isPaid;
+    });
+  }
 
 
   /// Contenido si el usuario **ha pagado**
@@ -445,14 +586,27 @@ class _HomePageState extends State<HomePage> {
                   tipoPago: 'suscripcion',
                   valor: _subscriptionValue ?? 0,
                   onTransaccionAprobada: () async {
-                    // Lógica adicional después del pago exitoso
+                    final user = FirebaseAuth.instance.currentUser;
+
+                    if (user != null) {
+                      await FirebaseFirestore.instance
+                          .collection("Ppl")
+                          .doc(user.uid)
+                          .update({
+                        "isPaid": true,
+                        "fechaSuscripcion": FieldValue.serverTimestamp(),
+                      });
+                    }
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text("¡Pago realizado con éxito!"),
+                        content: Text("¡Suscripción activada con éxito!"),
                         duration: Duration(seconds: 2),
+                        backgroundColor: Colors.green,
                       ),
                     );
-                    // Puedes refrescar estado o navegar si es necesario
+
+                    // Refrescar estado si deseas que desaparezca el contenido de "no suscrito"
                     setState(() {});
                   },
                 ),

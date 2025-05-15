@@ -9,6 +9,7 @@ class PagoHelper {
     required int centavos,
     required String referencia,
     required Widget Function(String url) buildCheckoutWidget,
+    VoidCallback? onTransaccionAprobada, // 👈 nuevo parámetro opcional
   }) async {
     // Mostrar loading
     showDialog(
@@ -40,7 +41,7 @@ class PagoHelper {
     if (url != null && context.mounted) {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => buildCheckoutWidget(url)),
+        MaterialPageRoute(builder: (_) => buildCheckoutWidget(url)), // 👈 asegúrate que el builder lo reciba también
       );
     } else if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -51,4 +52,5 @@ class PagoHelper {
       );
     }
   }
+
 }

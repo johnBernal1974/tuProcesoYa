@@ -93,9 +93,27 @@ class _CheckoutPageState extends State<CheckoutPage> {
       context: context,
       centavos: centavos,
       referencia: referencia,
-      buildCheckoutWidget: (url) => WompiWebView(url: url, referencia: referencia),
+      buildCheckoutWidget: (url) => WompiWebView(
+        url: url,
+        referencia: referencia,
+        onTransaccionAprobada: () async {
+          print("✅ Suscripción pagada con referencia: $referencia");
+          await FirebaseFirestore.instance
+              .collection("Ppl")
+              .doc(user.uid)
+              .update({
+            "isPaid": true,
+            "fechaSuscripcion": FieldValue.serverTimestamp(),
+          });
+
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, 'home', (r) => false);
+          }
+        },
+      ),
     );
   }
+
 
   void iniciarPagoRecarga() async {
     User? user = _auth.currentUser;

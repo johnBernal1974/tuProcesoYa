@@ -529,9 +529,8 @@ class _SideBarState extends State<SideBar> {
             ),
             TextButton(
               onPressed: () async {
-                Navigator.of(dialogContext).pop(); // ✅ Usa el context del diálogo
+                Navigator.of(dialogContext).pop(); // ✅ Cierra el diálogo
 
-                // 🔽 Luego usa el context externo, que sigue montado
                 final configSnapshot = await FirebaseFirestore.instance
                     .collection('configuraciones')
                     .limit(1)
@@ -540,7 +539,8 @@ class _SideBarState extends State<SideBar> {
                 final int valorSuscripcion =
                 (configSnapshot.docs.first.data()['valor_subscripcion'] ?? 0).toInt();
 
-                if (!context.mounted) return;
+                final user = FirebaseAuth.instance.currentUser;
+                if (user == null || !context.mounted) return;
 
                 Navigator.push(
                   context,
@@ -549,11 +549,24 @@ class _SideBarState extends State<SideBar> {
                       tipoPago: 'suscripcion',
                       valor: valorSuscripcion,
                       onTransaccionAprobada: () async {
+                        await FirebaseFirestore.instance
+                            .collection("Ppl")
+                            .doc(user.uid)
+                            .update({
+                          "isPaid": true,
+                          "fechaSuscripcion": FieldValue.serverTimestamp(),
+                        });
+
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text("¡Pago realizado con éxito!"),
+                            content: Text("¡Suscripción activada con éxito!"),
+                            backgroundColor: Colors.green,
                           ),
                         );
+
+                        // ✅ Actualiza el estado del menú para mostrar contenido desbloqueado
+                        _isPaid.value = true;
+                        if (mounted) setState(() {});
                       },
                     ),
                   ),

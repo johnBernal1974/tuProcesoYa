@@ -108,9 +108,13 @@ class _WompiWebViewState extends State<WompiWebView> {
                   montoPagado: amount,
                   transaccionId: transaccionId,
                   fecha: fecha,
+                  onContinuar: () async {
+                    widget.onTransaccionAprobada?.call();
+                  },
                 ),
               ));
               break;
+
             case 'tutela':
               Navigator.pushReplacement(context, MaterialPageRoute(
                 builder: (_) => PagoExitosoTutelaPage(
