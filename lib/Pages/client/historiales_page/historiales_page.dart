@@ -47,6 +47,8 @@ class HistorialSolicitudesPage extends StatelessWidget {
                     _buildCard(context, Icons.home, 'Prisión\ndomiciliaria', 'historial_solicitudes_prision_domiciliaria', blanco),
                     _buildCard(context, Icons.lock_open, 'Libertad\ncondicional', 'historial_solicitudes_libertad_condicional', blanco),
                     _buildCard(context, Icons.assignment_turned_in, 'Extinción de\nla pena', 'historial_solicitudes_extincion_pena', blanco),
+                    _buildCard(context, Icons.swap_horiz, 'Traslado de\nproceso', 'historial_solicitudes_traslado_proceso', blanco),
+
                   ],
                 ),
                 const SizedBox(height: 32),

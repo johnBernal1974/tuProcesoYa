@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitosoCondicional.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitosoDomiciliaria.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitosoPermiso72h.dart';
+import 'package:tuprocesoya/commons/wompi/pagoExitosoTrasladoProceso.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitoso_suscripcion.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitoso_tutela.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_extiocion_pena.dart';
@@ -9,6 +10,7 @@ import 'package:tuprocesoya/commons/wompi/reintento_pago_72h.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_condicional.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_peticion.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_subscripcion.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_traslado_proceso.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_tutela.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -169,6 +171,20 @@ class _WompiWebViewState extends State<WompiWebView> {
                 ),
               ));
               break;
+
+            case 'traslado':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => PagoExitosoTrasladoProcesoPage(
+                  montoPagado: amount,
+                  transaccionId: transaccionId,
+                  fecha: fecha,
+                  onContinuar: () async {
+                    widget.onTransaccionAprobada?.call();
+                  },
+                ),
+              ));
+              break;
+
             default:
               widget.onTransaccionAprobada?.call();
           }
@@ -243,6 +259,16 @@ class _WompiWebViewState extends State<WompiWebView> {
                 ),
               ));
               break;
+            case 'traslado':
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (_) => ReintentoPagoTrasladoProcesoPage(
+                  referencia: referencia,
+                  valor: widget.valorDerecho,
+                  onTransaccionAprobada: widget.onTransaccionAprobada,
+                ),
+              ));
+              break;
+
             default:
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
