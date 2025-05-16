@@ -6,20 +6,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
-import 'package:mime/mime.dart';
 import 'package:tuprocesoya/Pages/administrador/atender_traslado_proceso_admin/atender_traslado_proceso_admin_controler.dart';
+import 'package:tuprocesoya/Pages/administrador/historial_solicitud_traslado_proceso_admin/historial_solicitud_traslado_proceso_admin.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
-import '../../../plantillas/plantilla_extincion_pena.dart';
+import '../../../plantillas/plantilla_traslado_proceso.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
-import '../historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
 
 class AtenderTrasladoProcesoPage extends StatefulWidget {
   final String status;
@@ -27,6 +26,11 @@ class AtenderTrasladoProcesoPage extends StatefulWidget {
   final String numeroSeguimiento;
   final String fecha;
   final String idUser;
+  final String fechaTraslado;
+  final String centroOrigen;
+  final String ciudadOrigen;
+  final String centroDestino;
+  final String ciudadDestino;
 
   const AtenderTrasladoProcesoPage({
     super.key,
@@ -35,6 +39,11 @@ class AtenderTrasladoProcesoPage extends StatefulWidget {
     required this.numeroSeguimiento,
     required this.fecha,
     required this.idUser,
+    required this.fechaTraslado,
+    required this.centroOrigen,
+    required this.ciudadOrigen,
+    required this.centroDestino,
+    required this.ciudadDestino,
   });
 
   @override
@@ -53,27 +62,17 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
-  List<Map<String, String>> archivosAdjuntos = [];
-  final TextEditingController _sinopsisController = TextEditingController();
-  final TextEditingController _consideracionesController = TextEditingController();
-  final TextEditingController _pretencionesController = TextEditingController();
-  final TextEditingController _fundamentosDerechoController = TextEditingController();
   final AtenderTrasladoProcesoAdminController _controller = AtenderTrasladoProcesoAdminController();
   String sinopsis = "";
   String consideraciones = "";
   String fundamentosDeDerecho = "";
   String pretenciones = "";
   bool _mostrarVistaPrevia = false;
-  bool _mostrarBotonVistaPrevia = false;
   Map<String, String> correosCentro = {};
   late DocumentReference userDoc;
   String? correoSeleccionado= ""; // Guarda el correo seleccionado
   String? nombreCorreoSeleccionado;
   String idDocumento="";
-  bool _isSinopsisLoaded = false; // Bandera para evitar sobrescribir
-  bool _isFundamentosLoaded = false; // Bandera para evitar sobrescribir
-  bool _isConsideracionesLoaded = false; // Bandera para evitar sobrescribir
-  bool _isPretencionesLoaded = false; // Bandera para evitar sobrescribir
   String adminFullName="";
   String entidad= "";
   String diligencio = '';
@@ -82,19 +81,19 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
   DateTime? fechaEnvio;
   DateTime? fechaDiligenciamiento;
   DateTime? fechaRevision;
-  List<String> archivos = [];
   String rol = AdminProvider().rol ?? "";
-  late ExtincionPenaTemplate extincionPena;
+  late TrasladoProcesoTemplate trasladoProceso;
   String asignadoA_P2 = '';
   String asignadoNombreP2 = '';
   DateTime? fechaAsignadoP2;
-  String? textoGeneradoIA; // A nivel de clase (State)
-  bool mostrarCardIA = false;
-  late final String? urlArchivoCedulaResponsable;
-  late final List<String> urlsArchivosHijos;
   Map<String, dynamic>? solicitudData;
-  String? _opcionReparacionSeleccionada;
   late CalculoCondenaController _calculoCondenaController;
+  String? centroOrigenNombre;
+  String? ciudadCentroOrigen;
+  String? centroDestinoNombre;
+  String? ciudadCentroDestino;
+  DateTime? _fechaTraslado;
+
 
 
 
@@ -107,18 +106,6 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     fetchUserData();
     fetchDocumentoTrasladoProceso();
     calcularTiempo(widget.idUser);
-    _sinopsisController.addListener(_actualizarAltura);
-    _consideracionesController.addListener(_actualizarAltura);
-    _fundamentosDerechoController.addListener(_actualizarAltura);
-    _pretencionesController.addListener(_actualizarAltura);
-
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      cargarSinopsis(widget.idDocumento);
-      cargarConsideraciones(widget.idDocumento);
-      cargarFundamentosDeDerecho(widget.idDocumento);
-      cargarPretenciones(widget.idDocumento);
-    });
     adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
     if (adminFullName.isEmpty) {
       if (kDebugMode) {
@@ -200,9 +187,12 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
       children: [
         _buildFechaHoy(),
         const SizedBox(height: 10),
-        if(rol == "masterFull" || rol == "master" || rol == "coordinador 1")
+
+        if (rol == "masterFull" || rol == "master" || rol == "coordinador 1")
           infoAccionesAdmin(),
+
         const SizedBox(height: 15),
+
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
@@ -210,52 +200,14 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
           ),
           padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              MediaQuery.of(context).size.width < 600
-                  ? Column( // En móviles, cambia a columna
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Extinción de la pena",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 20, // Reduce tamaño en móviles
-                    ),
-                  ),
-                  const SizedBox(height: 5), // Espaciado entre el texto y el círculo en móvil
-                  Row(
-                    children: [
-                      Text(
-                        widget.status,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16, // Reduce tamaño en móviles
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      CircleAvatar(
-                        radius: 6,
-                        backgroundColor: _obtenerColorStatus(widget.status),
-                      ),
-                    ],
-                  ),
-                ],
-              )
-                  : Row( // En pantallas grandes, mantiene la fila
-                children: [
-                  Text(
-                    "Traslado de proceso - ${widget.status}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 14), // Espacio entre el texto y el círculo
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: _obtenerColorStatus(widget.status),
-                  ),
-                ],
+              Text(
+                "Traslado de proceso - ${widget.status}",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
               ),
               const SizedBox(height: 10),
               _buildSolicitadoPor(),
@@ -264,182 +216,54 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
               const SizedBox(height: 20),
             ],
           ),
-
         ),
+
         const SizedBox(height: 30),
-        const Divider(color: gris),
-        if (((widget.status == "Diligenciado" ||
-            widget.status == "Revisado" ||
-            widget.status == "Enviado") &&
-            rol != "pasante 1") || (widget.status == "Solicitado" && rol == "pasante 1")
-            || (rol == "master" || rol == "masterFull" || rol == "coordinador 1"
-                || rol == "coordinador 2"))
 
-          Column(
-            children: [
-              Text(
-                "Espacio de diligenciamiento",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: MediaQuery.of(context).size.width < 600 ? 20 : 28, // Reduce el tamaño en móviles
-                ),
-              ),
-              const SizedBox(height: 30),
-              ingresarSinopsis(),
-              const SizedBox(height: 30),
-              ingresarConsideraciones(),
-              const SizedBox(height: 30),
-              ingresarFundamentosDeDerecho(),
-              const SizedBox(height: 30),
-              ingresarPretenciones(),
-              const SizedBox(height: 30),
-
-            ],
-          ),
-
-        if (((widget.status == "Diligenciado" ||
-            widget.status == "Revisado" ||
-            widget.status == "Enviado") &&
-            rol != "pasante 1") || (widget.status == "Solicitado" && rol == "pasante 1")
-            || (rol == "master" || rol == "masterFull" || rol == "coordinador 1"
-                || rol == "coordinador 2"))
-
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-              backgroundColor: Colors.white, // Fondo blanco
-              foregroundColor: Colors.black, // Letra en negro
+        // ✅ Detalles del traslado
+        Card(
+          color: Colors.white,
+          margin: const EdgeInsets.symmetric(vertical: 10),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: _buildDetallesTraslado(
+              centroOrigen: centroOrigenNombre ?? '',
+              ciudadOrigen: ciudadCentroOrigen ?? '',
+              centroDestino: centroDestinoNombre ?? '',
+              ciudadDestino: ciudadCentroDestino ?? '',
+              fechaTraslado: _fechaTraslado ?? DateTime.now(),
             ),
-            onPressed: () {
-              setState(() {
-                _guardarDatosEnVariables();
-              });
-            },
-            child: const Text("Guardar información"),
           ),
-        const SizedBox(height: 10),
-        // ✅ Solo muestra la vista previa si _mostrarVistaPrevia es true
-        if (_mostrarBotonVistaPrevia)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  side: BorderSide(width: 1, color: Theme.of(context).primaryColor), // Borde con color primario
-                  backgroundColor: Colors.white, // Fondo blanco
-                  foregroundColor: Colors.black, // Letra en negro
-                ),
-                onPressed: () {
-                  setState(() {
-                    // Actualizar las variables con los valores de los controladores
-                    sinopsis = _sinopsisController.text.trim();
-                    consideraciones = _consideracionesController.text.trim();
-                    fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
-                    pretenciones = _pretencionesController.text.trim();
-                    _mostrarVistaPrevia = !_mostrarVistaPrevia; // Alterna visibilidad
-                  });
-                },
-                child: const Text("Vista previa"),
-              ),
+        ),
 
-              // 🔹 Agregar espaciado SOLO cuando _mostrarVistaPrevia es true
-              if (_mostrarVistaPrevia) const SizedBox(height: 50),
-            ],
+        const Divider(color: gris),
+        const SizedBox(height: 20),
+
+        // ✅ Botón de vista previa
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
           ),
+          onPressed: () {
+            setState(() {
+              _mostrarVistaPrevia = !_mostrarVistaPrevia;
+            });
+          },
+          child: const Text("Vista previa"),
+        ),
+
+        const SizedBox(height: 20),
 
         if (_mostrarVistaPrevia)
-          vistaPreviaExtincionPena(
+          vistaPreviaTrasladoProceso(
             userData: userData,
-            sinopsis: _sinopsisController.text,
-            consideraciones: _consideracionesController.text,
-            fundamentosDeDerecho: _fundamentosDerechoController.text,
-            pretenciones: _pretencionesController.text,
-          )
+          ),
+
+        const SizedBox(height: 100),
       ],
     );
-  }
-
-  Widget infoReparacionVictima({required String reparacion}) {
-    final descripciones = {
-      "reparado": {
-        "texto": "Se ha reparado a la víctima.",
-        "icono": Icons.volunteer_activism,
-        "color": Colors.green,
-      },
-      "garantia": {
-        "texto": "Se ha asegurado el pago de la indemnización mediante garantía personal, real, bancaria o acuerdo de pago.",
-        "icono": Icons.verified_user,
-        "color": Colors.blue,
-      },
-      "insolvencia": {
-        "texto": "No se ha reparado a la víctima ni asegurado el pago de la indemnización debido a estado de insolvencia.",
-        "icono": Icons.warning_amber_rounded,
-        "color": Colors.orange,
-      },
-    };
-
-    final info = descripciones[reparacion];
-
-    if (info == null) {
-      return const ListTile(
-        leading: Icon(Icons.help_outline, color: Colors.grey),
-        title: Text("Información no disponible.", style: TextStyle(fontSize: 14)),
-      );
-    }
-
-    return ListTile(
-      leading: Icon(info["icono"] as IconData, color: info["color"] as Color),
-      title: Text(
-        info["texto"] as String,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-      ),
-      contentPadding: EdgeInsets.zero,
-    );
-  }
-
-
-  void _actualizarAltura() {
-    int lineas = '\n'.allMatches(_sinopsisController.text).length + 1;
-    setState(() {
-// Limita el crecimiento a 5 líneas
-    });
-  }
-
-  void _guardarDatosEnVariables() {
-    if ( _sinopsisController.text.isEmpty || _fundamentosDerechoController.text.isEmpty || _consideracionesController.text.isEmpty
-        || _pretencionesController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("⚠️ Todos los campos deben estar llenos."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      _mostrarBotonVistaPrevia = false;
-      _mostrarVistaPrevia = false;
-      return; // Detiene la ejecución si hay campos vacíos
-    }
-
-    setState(() {
-      sinopsis = _sinopsisController.text;
-      consideraciones = _consideracionesController.text;
-      fundamentosDeDerecho = _fundamentosDerechoController.text;
-      pretenciones = _pretencionesController.text;
-    });
-    _mostrarBotonVistaPrevia = true;
-  }
-
-  @override
-  void dispose() {
-    _sinopsisController.removeListener(_actualizarAltura);
-    _consideracionesController.removeListener(_actualizarAltura);
-    _fundamentosDerechoController.removeListener(_actualizarAltura);
-    _pretencionesController.removeListener(_actualizarAltura);
-    _sinopsisController.dispose();
-    _consideracionesController.dispose();
-    _fundamentosDerechoController.dispose();
-    _pretencionesController.dispose();
-    super.dispose();
   }
 
   String obtenerTituloCorreo(String? nombreCorreo) {
@@ -579,6 +403,50 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     );
   }
 
+  Widget _buildDetallesTraslado({
+    required String centroOrigen,
+    required String ciudadOrigen,
+    required String centroDestino,
+    required String ciudadDestino,
+    required DateTime fechaTraslado,
+  }) {
+    double fontSize = MediaQuery.of(context).size.width < 600 ? 10 : 12;
+
+    return Card(
+      color: Colors.white,
+      surfaceTintColor: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetalleItem("Centro de origen", centroOrigen, fontSize),
+            _buildDetalleItem("Ciudad de origen", ciudadOrigen, fontSize),
+            const SizedBox(height: 5),
+            const Divider(color: gris),
+            const SizedBox(height: 5),
+            _buildDetalleItem("Centro de destino", centroDestino, fontSize),
+            _buildDetalleItem("Ciudad de destino", ciudadDestino, fontSize),
+            const SizedBox(height: 5),
+            const Divider(color: gris),
+            const SizedBox(height: 5),
+            _buildDetalleItem("Fecha de traslado", _formatearFechaExtendida(fechaTraslado), fontSize),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatearFechaExtendida(DateTime fecha) {
+    final meses = [
+      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
+    ];
+    return "${fecha.day} de ${meses[fecha.month - 1]} de ${fecha.year}";
+  }
+
   Widget infoAccionesAdmin() {
     if (asignadoA_P2.isEmpty && diligencio.isEmpty && reviso.isEmpty && envio.isEmpty) {
       return const SizedBox();
@@ -641,15 +509,6 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
         ],
       );
     }
-  }
-
-  void verificarVistaPrevia() {
-    setState(() {
-      _mostrarBotonVistaPrevia =
-          _sinopsisController.text.trim().isNotEmpty && _consideracionesController.text.trim().isNotEmpty &&
-              _fundamentosDerechoController.text.trim().isNotEmpty &&
-              _pretencionesController.text.trim().isNotEmpty;
-    });
   }
 
   /// 📅 Muestra la fecha de hoy en formato adecuado
@@ -978,7 +837,7 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
 
     final doc = await FirebaseFirestore.instance
-        .collection('traslado_proceso_solicitados')
+        .collection('trasladoProceso_solicitados')
         .doc(widget.idDocumento)
         .get();
 
@@ -988,44 +847,9 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
       // 🔥 Primero calcular correctamente los tiempos
       await calcularTiempo(widget.idUser);
       await _calculoCondenaController.calcularTiempo(widget.idUser);
-      final diasRedimidos = _calculoCondenaController.totalDiasRedimidos?.toInt() ?? 0;
-
-      // 🔥 Precargar campos
-      _sinopsisController.text = generarTextoSinopsisDesdeDatos(
-        fetchedData,
-        fetchedData.situacion ?? 'En Reclusión',
-        diasRedimidos.toDouble(),
-      );
-
-      if (!_isFundamentosLoaded) {
-        _fundamentosDerechoController.text =
-            generarTextoFundamentosDesdeDatos(fetchedData, latestData);
-        _isFundamentosLoaded = true;
-      }
-
-      if (!_isPretencionesLoaded) {
-        _pretencionesController.text =
-            generarTextoPretencionesDesdeDatos(fetchedData.situacion ?? 'En Reclusión');
-        _isPretencionesLoaded = true;
-      }
-
-      if (!_isConsideracionesLoaded) {
-        final totalDias = (mesesEjecutado * 30) + diasEjecutadoExactos + diasRedimidos;
-        final mesesEjecutadosFinal = totalDias ~/ 30;
-        final diasEjecutadosFinal = totalDias % 30;
-
-        _consideracionesController.text = generarTextoConsideracionesParaExtincionPena(
-          situacion: fetchedData.situacion ?? 'En Reclusión',
-          mesesEjecutados: mesesEjecutadosFinal,
-          diasEjecutados: diasEjecutadosFinal,
-        );
-
-        _isConsideracionesLoaded = true;
-      }
-
       setState(() {
         userData = fetchedData;
-        extincionPena = ExtincionPenaTemplate(
+          trasladoProceso = TrasladoProcesoTemplate(
           dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
           entidad: fetchedData.centroReclusion ?? "",
           referencia: "Solicitudes varias - Traslado de proceso",
@@ -1033,18 +857,15 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
           apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
           identificacionPpl: fetchedData.numeroDocumentoPpl ?? "",
           centroPenitenciario: fetchedData.centroReclusion ?? "",
-          sinopsis: _sinopsisController.text.trim(),
-          consideraciones: _consideracionesController.text.trim(),
-          fundamentosDeDerecho: _fundamentosDerechoController.text.trim(),
-          pretenciones: _pretencionesController.text.trim(),
           emailUsuario: fetchedData.email?.trim() ?? "",
           nui: fetchedData.nui ?? "",
           td: fetchedData.td ?? "",
           patio: fetchedData.patio ?? "",
+          fechaTraslado: "11 de septiembre de 2025",
+          centroOrigen: "Carcelita de mascoticas",
+          centroDestino: userData?.centroReclusion ?? "",
+          ciudadDestino: " CiudadX",
           radicado: fetchedData.radicado ?? "",
-          delito: fetchedData.delito ?? "",
-          condena: "${fetchedData.tiempoCondena ?? 0}",
-          purgado: "$mesesEjecutado",
           jdc: fetchedData.juzgadoQueCondeno ?? "",
           numeroSeguimiento: widget.numeroSeguimiento,
           situacion: fetchedData.situacion,
@@ -1059,7 +880,6 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     }
   }
 
-
   String formatearFechaCaptura(String fechaString) {
     try {
       final fecha = DateTime.parse(fechaString); // convierte el string en DateTime
@@ -1070,102 +890,10 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     }
   }
 
-  String generarTextoSinopsisDesdeDatos(
-      Ppl userData,
-      String situacion,
-      double totalDiasRedimidos,
-      ) {
-    final jdc = userData.juzgadoQueCondeno ?? '';
-    final condena = userData.tiempoCondena?.toString() ?? '';
-    final captura = userData.fechaCaptura?.toString() ?? '';
-    final delito = userData.delito ?? '';
-    final fechaFormateada = formatearFechaCaptura(captura);
-
-    return "Mi condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
-        "La captura fue el día $fechaFormateada.";
-
-  }
-
-  String generarTextoConsideracionesParaExtincionPena({
-    required String situacion,
-    required int mesesEjecutados,
-    required int diasEjecutados,
-  }) {
-    final textoComportamiento = (situacion == "En libertad condicional")
-        ? "Durante el tiempo que he permanecido en libertad condicional, he observado un comportamiento ejemplar, cumpliendo con las condiciones impuestas por la autoridad judicial y demostrando mi compromiso con la reintegración social."
-        : "Durante mi tiempo de reclusión, he mantenido una conducta intachable, cumpliendo con las normas del establecimiento, participando activamente en programas de resocialización y demostrando responsabilidad y disciplina.";
-
-    final textoCumplimiento =
-        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. Con ello, he satisfecho en su totalidad la pena privativa de la libertad impuesta.";
-
-    return """
-Honorable Juez, me permito solicitar la extinción de la pena privativa de la libertad que me fue impuesta, en virtud del cumplimiento total de la misma, conforme a lo establecido en el artículo 147 de la Ley 65 de 1993.
-
-$textoComportamiento
-
-$textoCumplimiento
-
-Con esta solicitud busco formalizar el cierre de una etapa jurídica que he asumido con responsabilidad, y continuar mi vida con plena integración a la sociedad, dentro del marco de la legalidad y el respeto por los valores ciudadanos.
-""";
-  }
-
-  String generarTextoPretencionesDesdeDatos(String situacion) {
-    if (situacion == "En libertad condicional") {
-      return """
-PRIMERO: Que se reconozca que actualmente me encuentro en libertad condicional y que, habiendo cumplido la totalidad de la pena impuesta, se declare la extinción de la misma conforme a lo dispuesto en la Ley 65 de 1993.
-
-SEGUNDO: Solicitar a la autoridad competente que emita la resolución correspondiente en la que se formalice la extinción de la pena privativa de la libertad que me fue impuesta.
-""";
-    }
-
-    // Default: En Reclusión
-    return """
-PRIMERO: Solicitar al establecimiento penitenciario y carcelario que certifique el cumplimiento total de la pena, incluyendo el tiempo efectivo y los redimidos conforme a la ley.
-
-SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certificación y el cumplimiento íntegro de la pena, declare formalmente la extinción de la misma conforme al artículo 147 de la Ley 65 de 1993.
-""";
-  }
-
-
-  String generarTextoFundamentosDesdeDatos(
-      Ppl userData,
-      Map<String, dynamic> latestData,
-      ) {
-    final situacion = userData.situacion ?? 'En Reclusión';
-
-    if (situacion == "En libertad condicional") {
-      return """
-1. El artículo 147 de la Ley 65 de 1993 establece que la pena privativa de la libertad se extingue cuando ha sido cumplida en su totalidad, incluyendo el tiempo ejecutado efectivamente, los redimidos y los otorgados mediante beneficios administrativos o judiciales.
-
-2. Actualmente me encuentro en libertad condicional, lo cual indica que he cumplido una parte sustancial de la pena con conducta favorable y bajo supervisión, contribuyendo activamente a mi proceso de resocialización.
-
-3. El artículo 29 de la Constitución Política garantiza el debido proceso, y el cumplimiento total de la pena constituye una condición suficiente para solicitar su extinción.
-
-4. La Corte Constitucional ha reiterado en múltiples pronunciamientos que la finalidad de la pena no es solo sancionadora sino también resocializadora, y una vez esta se ha cumplido en su integridad, se debe reconocer el derecho a extinguirla legalmente.
-
-5. En virtud del principio de legalidad y del respeto por los derechos fundamentales, solicito se declare la extinción de la pena privativa de la libertad que me fue impuesta, toda vez que he satisfecho íntegramente su duración conforme a la ley.
-""";
-    }
-
-    // 🔹 Situación por defecto: En Reclusión
-    return """
-1. Conforme al artículo 147 del Código Penitenciario y Carcelario (Ley 65 de 1993), la pena privativa de la libertad se extingue cuando el condenado ha cumplido la totalidad de la misma, incluyendo los tiempos redimidos por trabajo, estudio u otras actividades reconocidas por la ley.
-
-2. Actualmente me encuentro privado de la libertad en centro de reclusión, donde he cumplido efectivamente la pena impuesta, teniendo en cuenta los tiempos de reclusión y las redenciones legalmente reconocidas.
-
-3. La Corte Constitucional ha sostenido que una vez se ha cumplido con la totalidad de la pena, el Estado tiene la obligación de reconocer la extinción de la misma, como expresión del respeto a los derechos fundamentales y al principio de legalidad.
-
-4. El artículo 29 de la Constitución Política de Colombia, que consagra el debido proceso, y el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, respaldan que la pena no debe prolongarse más allá del límite legalmente establecido.
-
-5. En razón de lo anterior, y habiéndose cumplido todos los requisitos temporales y sustanciales, solicito formalmente la extinción de la pena impuesta, en los términos del ordenamiento jurídico colombiano.
-""";
-  }
-
-
   void fetchDocumentoTrasladoProceso() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('traslado_proceso_solicitados')
+          .collection('trasladoProceso_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -1185,6 +913,11 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
             asignadoA_P2 = data['asignadoA_P2'] ?? '';
             asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
             fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+            centroOrigenNombre = data['centro_origen_nombre'] ?? '';
+            ciudadCentroOrigen = data['ciudad_centro_origen'] ?? '';
+            centroDestinoNombre = data['centro_destino_nombre'] ?? '';
+            ciudadCentroDestino = data['ciudad_centro_destino'] ?? '';
+            _fechaTraslado = (data['fecha_traslado'] as Timestamp?)?.toDate();
           });
         }
       } else {
@@ -1334,273 +1067,12 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     );
   }
 
-  // 🔹 Cloud Function para generar texto automático para prisión domiciliaria
-  // Future<void> generarTextoIAParaDomiciliaria() async {
-  //   try {
-  //     final resultado = await IABackendService.generarTextoPrisionDomiciliaria(); // ✅ Nombre correcto del método
-  //
-  //     setState(() {
-  //       _consideracionesController.text = resultado['consideraciones'] ?? '';
-  //       _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-  //       _peticionConcretaController.text = resultado['peticion'] ?? '';
-  //     });
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("❌ Error: $e")),
-  //     );
-  //   }
-  // }
-
-  // corregido full
-  Future<void> cargarSinopsis(String docId) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('traslado_proceso_solicitados')
-          .doc(docId)
-          .get();
-
-      if (doc.exists && !_isSinopsisLoaded) {
-        final data = doc.data() as Map<String, dynamic>?;
-
-        final texto = data?['sinopsis'];
-        if (texto != null && texto is String) {
-          setState(() {
-            _sinopsisController.text = texto;
-            _isSinopsisLoaded = true;
-          });
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando sinopsis: $e");
-      }
-    }
-  }
-
-  Future<void> cargarConsideraciones(String docId) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('traslado_proceso_solicitados')
-          .doc(docId)
-          .get();
-
-      if (doc.exists && !_isConsideracionesLoaded) {
-        final data = doc.data() as Map<String, dynamic>?;
-
-        final texto = data?['consideraciones'];
-        if (texto != null && texto is String) {
-          setState(() {
-            _consideracionesController.text = texto;
-            _isConsideracionesLoaded = true;
-          });
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando consideraciones: $e");
-      }
-    }
-  }
-
-  //corregido full
-  Future<void> cargarFundamentosDeDerecho(String docId) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('traslado_proceso_solicitados')
-          .doc(docId)
-          .get();
-
-      if (doc.exists && !_isFundamentosLoaded) {
-        final data = doc.data() as Map<String, dynamic>?;
-
-        final texto = data?['fundamentos_de_derecho'];
-        if (texto != null && texto is String) {
-          setState(() {
-            _fundamentosDerechoController.text = texto;
-            _isFundamentosLoaded = true;
-          });
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando fundamentos de derecho: $e");
-      }
-    }
-  }
-  //corregido full
-  Future<void> cargarPretenciones(String docId) async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('traslado_proceso_solicitados')
-          .doc(docId)
-          .get();
-
-      if (doc.exists && !_isPretencionesLoaded) {
-        final data = doc.data() as Map<String, dynamic>?;
-
-        final texto = data?['pretenciones'];
-        if (texto != null && texto is String) {
-          setState(() {
-            _pretencionesController.text = texto;
-            _isPretencionesLoaded = true;
-          });
-
-          verificarVistaPrevia();
-        }
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error cargando pretenciones: $e");
-      }
-    }
-  }
-
-  //corregido full - autollenado por IA o se puede escribir igualmente
-  Widget ingresarSinopsis() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "SINOPSIS",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: _sinopsisController,
-          minLines: 1,
-          maxLines: null,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey.shade100,
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade600),
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          style: const TextStyle(fontSize: 14),
-          onChanged: (_) => verificarVistaPrevia(),
-        )
-      ],
-    );
-  }
-
-  Widget ingresarFundamentosDeDerecho() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "FUNDAMENTOS DE DERECHO",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: _fundamentosDerechoController,
-          minLines:1,
-          maxLines: null,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey.shade100, // Fondo gris claro
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          style: const TextStyle(fontSize: 14),
-          onChanged: (_) => verificarVistaPrevia(),
-        )
-      ],
-    );
-  }
-  // corregido full - autollenado por IA o se puede escribir igualmente
-  Widget ingresarPretenciones() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "PRETENCIONES",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: _pretencionesController,
-          minLines:1,
-          maxLines: null,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey.shade100, // Fondo gris claro
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          style: const TextStyle(fontSize: 14),
-          onChanged: (_) => verificarVistaPrevia(),
-        )
-      ],
-    );
-  }
-
-  Widget ingresarConsideraciones() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "CONSIDERACIONES",
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: _consideracionesController,
-          minLines:1,
-          maxLines: null,
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: Colors.grey.shade100, // Fondo gris claro
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade400), // Borde gris cuando no está enfocado
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey.shade600), // Borde gris oscuro cuando se enfoca
-            ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          ),
-          style: const TextStyle(fontSize: 14),
-          onChanged: (_) => verificarVistaPrevia(),
-        )
-      ],
-    );
-  }
-
-
-  Widget vistaPreviaExtincionPena({
+  Widget vistaPreviaTrasladoProceso({
     required Ppl? userData,
-    required String sinopsis,
-    required String consideraciones,
-    required String fundamentosDeDerecho,
-    required String pretenciones,
-
   }) {
-    //usamos la misma plantilla que domiciliaria ya que es igual**
-    final plantilla = ExtincionPenaTemplate(
+    final fechaDT = DateTime.parse(widget.fechaTraslado);
+    final fechaFormateada = formatearFechaTraslado(fechaDT);
+    final plantilla = TrasladoProcesoTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad,
       referencia: "Solicitudes varias - Traslado de proceso",
@@ -1608,23 +1080,19 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       apellidoPpl: userData?.apellidoPpl ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
       centroPenitenciario: userData?.centroReclusion ?? "",
-      sinopsis: convertirSaltosDeLinea(_sinopsisController.text),
-      consideraciones: convertirSaltosDeLinea(_consideracionesController.text),
-      fundamentosDeDerecho: convertirSaltosDeLinea(_fundamentosDerechoController.text),
-      pretenciones: convertirSaltosDeLinea(_pretencionesController.text),
       emailUsuario: userData?.email ?? "",
       nui: userData?.nui ?? "",
       td: userData?.td ?? "",
       patio: userData?.patio ?? "",
+      fechaTraslado: fechaFormateada,
+      centroOrigen: widget.centroOrigen,
+      centroDestino: userData?.centroReclusion ?? "",
+      ciudadDestino: widget.ciudadDestino,
       radicado: userData?.radicado ?? "",
-      delito: userData?.delito ?? "",
-      condena: "${userData?.tiempoCondena ?? ''}",
-      purgado: "$mesesEjecutado",
       jdc: userData?.juzgadoQueCondeno ?? "",
       numeroSeguimiento: widget.numeroSeguimiento,
       situacion: userData?.situacion ?? 'En Reclusión',
     );
-
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1645,12 +1113,11 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
         const SizedBox(height: 50),
         Wrap(
           children: [
-            if (widget.status == "Solicitado") ...[
+            if (widget.status == "Solicitado")
               guardarVistaPrevia(widget.idDocumento),
-            ],
             if ((widget.status == "Diligenciado" || widget.status == "Revisado") && rol != "pasante 1") ...[
               guardarRevisado(widget.idDocumento),
-              const SizedBox(width: 20), // Espaciado entre botones
+              const SizedBox(width: 20),
               botonEnviarCorreo(),
             ],
           ],
@@ -1660,6 +1127,12 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     );
   }
 
+  String formatearFechaTraslado(DateTime fecha) {
+    // Configurar formato con nombre de mes en español
+    final DateFormat formatter = DateFormat("d 'de' MMMM 'de' y", 'es_ES');
+    return formatter.format(fecha);
+  }
+
 
   String convertirSaltosDeLinea(String texto) {
     return texto.replaceAll('\n', '<br>');
@@ -1667,16 +1140,18 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
 
   Future<void> enviarCorreoResend() async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
+    final fechaDT = DateTime.parse(widget.fechaTraslado);
+    final fechaFormateada = formatearFechaTraslado(fechaDT);
 
     final doc = await FirebaseFirestore.instance
-        .collection('traslado_proceso_solicitados')
+        .collection('trasladoProceso_solicitados')
         .doc(widget.idDocumento)
         .get();
 
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-    extincionPena = ExtincionPenaTemplate(
+    trasladoProceso = TrasladoProcesoTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad ?? "",
       referencia: "Solicitudes varias - Traslado de proceso",
@@ -1684,29 +1159,24 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
       centroPenitenciario: userData?.centroReclusion ?? "",
-      sinopsis: sinopsis,
-      consideraciones: consideraciones,
-      fundamentosDeDerecho: fundamentosDeDerecho,
-      pretenciones: pretenciones,
       emailUsuario: userData?.email.trim() ?? '',
       nui: userData?.nui ?? '',
       td: userData?.td ?? '',
       patio: userData?.patio ?? '',
+      fechaTraslado: fechaFormateada,
+      centroOrigen: widget.centroOrigen,
+      centroDestino: userData?.centroReclusion ?? "",
+      ciudadDestino: widget.ciudadDestino,
       radicado: userData?.radicado ?? '',
-      delito: userData?.delito ?? '',
-      condena: "${userData?.tiempoCondena ?? 0}",
-      purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
       situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
     );
 
 
-    String mensajeHtml = extincionPena.generarTextoHtml();
+    String mensajeHtml = trasladoProceso.generarTextoHtml();
 
     List<Map<String, String>> archivosBase64 = [];
-
-
 
     final asuntoCorreo = "Solicitud de traslado de proceso - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -1725,7 +1195,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "traslado",
+      "tipo": "trasladoProceso",
     });
 
     final response = await http.post(
@@ -1736,7 +1206,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
 
     if (response.statusCode == 200) {
       await FirebaseFirestore.instance
-          .collection('traslado_proceso_solicitados')
+          .collection('trasladoProceso_solicitados')
           .doc(widget.idDocumento)
           .update({
         "status": "Enviado",
@@ -1796,14 +1266,6 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
         );
 
         if (confirmacion ?? false) {
-          // 🔄 Sincronizar los datos actualizados antes de enviar
-          setState(() {
-            sinopsis = _sinopsisController.text.trim();
-            consideraciones = _consideracionesController.text.trim();
-            fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
-            pretenciones = _pretencionesController.text.trim();
-          });
-
           if (context.mounted) {
             showDialog(
               context: context,
@@ -1825,14 +1287,14 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
 
           await enviarCorreoResend();
 
-          final html = extincionPena.generarTextoHtml();
-          await subirHtmlCorreoADocumentoExtincionPena(
+          final html = trasladoProceso.generarTextoHtml();
+          await subirHtmlCorreoADocumentoTrasladoProceso(
             idDocumento: widget.idDocumento,
             htmlContent: html,
           );
 
           const urlApp = "https://www.tuprocesoya.com";
-          final numeroSeguimiento = extincionPena.numeroSeguimiento;
+          final numeroSeguimiento = trasladoProceso.numeroSeguimiento;
 
           if (context.mounted) {
             Navigator.of(context).pop(); // Cerrar loading
@@ -1879,7 +1341,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
   }
 
 
-  Future<void> subirHtmlCorreoADocumentoExtincionPena({
+  Future<void> subirHtmlCorreoADocumentoTrasladoProceso({
     required String idDocumento,
     required String htmlContent,
   }) async {
@@ -1903,7 +1365,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
 
       // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("traslado_proceso_solicitados") // 🟣 Cambiar colección
+          .collection("trasladoProceso_solicitados") // 🟣 Cambiar colección
           .doc(idDocumento)
           .update({
         "correoHtmlUrl": downloadUrl,
@@ -1912,7 +1374,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
 
       print("✅ HTML de extincion subido y guardado con URL: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo de domiciliaria: $e");
+      print("❌ Error al subir HTML del correo de traslado: $e");
     }
   }
 
@@ -1956,16 +1418,12 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
 
         try {
           await FirebaseFirestore.instance
-              .collection('traslado_proceso_solicitados')
+              .collection('trasladoProceso_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Diligenciado",
             "diligencio": adminFullName,
             "fecha_diligenciamiento": FieldValue.serverTimestamp(),
-            "sinopsis": _sinopsisController.text,
-            "consideraciones": _consideracionesController.text,
-            "fundamentos_de_derecho": _fundamentosDerechoController.text,
-            "pretenciones": _pretencionesController.text,
           });
 
           if (context.mounted) {
@@ -1973,20 +1431,19 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
               const SnackBar(content: Text("Solicitud marcada como diligenciada")),
             );
 
-            // ✅ Transición deslizante hacia la página de historial
             Navigator.of(context).pushReplacement(
               PageRouteBuilder(
                 transitionDuration: const Duration(milliseconds: 300),
                 transitionsBuilder: (context, animation, secondaryAnimation, child) {
                   final offsetAnimation = Tween<Offset>(
-                    begin: const Offset(1.0, 0.0), // Desde la derecha
+                    begin: const Offset(1.0, 0.0),
                     end: Offset.zero,
                   ).animate(animation);
 
                   return SlideTransition(position: offsetAnimation, child: child);
                 },
                 pageBuilder: (context, animation, secondaryAnimation) {
-                  return const HistorialSolicitudesExtincionPenaAdminPage();
+                  return const HistorialSolicitudesTrasladoProcesoAdminPage();
                 },
               ),
             );
@@ -2006,7 +1463,6 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     );
   }
 
-
   Widget guardarRevisado(String idDocumento) {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
@@ -2025,16 +1481,12 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
 
         try {
           await FirebaseFirestore.instance
-              .collection('traslado_proceso_solicitados')
+              .collection('trasladoProceso_solicitados')
               .doc(idDocumento)
               .update({
             "status": "Revisado",
             "reviso": adminFullName,
             "fecha_revision": FieldValue.serverTimestamp(),
-            "sinopsis": _sinopsisController.text,
-            "consideraciones": _consideracionesController.text,
-            "fundamentos_de_derecho": _fundamentosDerechoController.text,
-            "pretenciones": _pretencionesController.text,
           });
 
           if (context.mounted) {
@@ -2053,7 +1505,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
                   return SlideTransition(position: offsetAnimation, child: child);
                 },
                 pageBuilder: (context, animation, secondaryAnimation) {
-                  return const HistorialSolicitudesExtincionPenaAdminPage();
+                  return const HistorialSolicitudesTrasladoProcesoAdminPage();
                 },
               ),
             );
@@ -2072,6 +1524,5 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       child: const Text("Marcar como Revisado"),
     );
   }
-
 
 }

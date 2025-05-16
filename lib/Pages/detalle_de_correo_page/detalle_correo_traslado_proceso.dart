@@ -30,7 +30,7 @@ class DetalleCorreoTrasladoProcesoPage extends StatelessWidget {
       ),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
-            .collection('traslado_proceso_solicitados')
+            .collection('trasladoProceso_solicitados')
             .doc(idDocumento)
             .collection('log_correos')
             .doc(correoId)

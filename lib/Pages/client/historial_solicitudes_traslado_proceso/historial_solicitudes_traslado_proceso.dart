@@ -40,7 +40,7 @@ class _HistorialSolicitudesTrasladoProcesoPageState extends State<HistorialSolic
       return const Stream.empty();
     }
     return FirebaseFirestore.instance
-        .collection('traslado_proceso_solicitados')
+        .collection('trasladoProceso_solicitados')
         .where('idUser', isEqualTo: _userId)
         .orderBy('fecha', descending: true)
         .snapshots();
@@ -183,7 +183,7 @@ class _HistorialSolicitudesTrasladoProcesoPageState extends State<HistorialSolic
                 const SizedBox(height: 12),
                 FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
-                      .collection("traslado_proceso_solicitados")
+                      .collection("trasladoProceso_solicitados")
                       .doc(idDocumento)
                       .collection("log_correos")
                       .orderBy("timestamp", descending: true)

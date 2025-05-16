@@ -40,6 +40,7 @@ import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_envia
 import 'Pages/administrador/solicitudes_enviadas_por_correo/libertad_condicional_enviada_por_correo/libertad_condicional_enviada_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/permiso_72horas_enviadas_por_correo/permiso_72horas_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/prision_domiciliaria_enviada_por_correo/prision_domiciliaria_enviada_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/traslado_proceso_enviados_por_correo/traslado_proceso_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/tutelas_enviadas_por_correo/tutelas_enviadas_por_correo.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import 'Pages/administrador/tutelas/derechos_tutelables_page.dart';
@@ -428,6 +429,21 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
+          else if (settings.name == 'solicitudes_traslado_proceso_enviadas_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesTrasladoProcesoPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'] ?? "Beneficios penitenciarios",
+                subcategoria: args['subcategoria'] ?? "Extinción de la pena",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
 
           else if (settings.name == 'atender_tutela_page') {
             final args = settings.arguments as Map<String, dynamic>;
@@ -537,6 +553,11 @@ class MyApp extends StatelessWidget {
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
                 fecha: args['fecha'],
                 idUser: args['idUser'],
+                fechaTraslado: args['fechaTraslado'],
+                centroOrigen: args['centroOrigen'],
+                ciudadOrigen: args['ciudadOrigen'],
+                centroDestino: args['centroDestino'],
+                ciudadDestino: args['ciudadDestino'],
               ),
             );
           }

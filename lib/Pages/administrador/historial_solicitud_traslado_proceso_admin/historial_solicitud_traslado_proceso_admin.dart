@@ -60,7 +60,7 @@ class _HistorialSolicitudesTrasladoProcesoAdminPageState extends State<Historial
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: firestore
-                      .collection('traslado_proceso_solicitados')
+                      .collection('trasladoProceso_solicitados')
                       .orderBy('fecha', descending: true)
                       .snapshots(),
                   builder: (context, snapshot) {
@@ -144,7 +144,7 @@ class _HistorialSolicitudesTrasladoProcesoAdminPageState extends State<Historial
 
   Widget _buildEstadoCards(String role) {
     return StreamBuilder<QuerySnapshot>(
-      stream: firestore.collection('traslado_proceso_solicitados').snapshots(),
+      stream: firestore.collection('trasladoProceso_solicitados').snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const CircularProgressIndicator();
@@ -327,7 +327,7 @@ class _HistorialSolicitudesTrasladoProcesoAdminPageState extends State<Historial
         if (userRole == "pasante 1" && (asignadoA == null || asignadoA.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('traslado_proceso_solicitados')
+                .collection('trasladoProceso_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA': user.uid,
@@ -352,7 +352,7 @@ class _HistorialSolicitudesTrasladoProcesoAdminPageState extends State<Historial
         if (userRole == "pasante 2" && (asignadoA_P2 == null || asignadoA_P2.isEmpty)) {
           try {
             await FirebaseFirestore.instance
-                .collection('traslado_proceso_solicitados')
+                .collection('trasladoProceso_solicitados')
                 .doc(idDocumento)
                 .update({
               'asignadoA_P2': user.uid,
@@ -556,27 +556,15 @@ class _HistorialSolicitudesTrasladoProcesoAdminPageState extends State<Historial
               ? latestData['fecha'].toDate().toString()
               : "Fecha no disponible",
           'idUser': latestData['idUser'] ?? "Desconocido",
-          'archivos': latestData.containsKey('archivos')
-              ? List<String>.from(latestData['archivos'])
-              : [],
 
-          'urlArchivoCedulaResponsable': latestData['archivo_cedula_responsable'] ?? "",
-          'urlsArchivosHijos': List<String>.from(latestData['documentos_hijos'] ?? []),
-
-          // Datos del responsable
-          'direccion': latestData['direccion'] ?? "",
-          'departamento': latestData['departamento'] ?? "",
-          'municipio': latestData['municipio'] ?? "",
-          'nombreResponsable': latestData['nombre_responsable'] ?? "",
-          'cedulaResponsable': latestData['cedula_responsable'] ?? "",
-          'celularResponsable': latestData['celular_responsable'] ?? "",
-          'parentesco': latestData['parentesco'] ?? "",
-          'reparacion': latestData['reparacion'] ?? "",
-          // Estado de la respuesta
-          'sinRespuesta': sinRespuesta,
-          // Si quieres incluir las preguntas y respuestas de IA (por si se usa luego)
-          'preguntas': preguntas,
-          'respuestas': respuestas,
+          // 👇 Campos específicos del traslado
+          'fechaTraslado': latestData['fecha_traslado'] != null
+              ? latestData['fecha_traslado'].toDate().toString()
+              : "Sin fecha de traslado",
+          'centroOrigen': latestData['centro_origen_nombre'] ?? "Centro de origen desconocido",
+          'ciudadOrigen': latestData['ciudad_centro_origen'] ?? "Ciudad de origen desconocida",
+          'centroDestino': latestData['centro_destino_nombre'] ?? "Centro de destino desconocido",
+          'ciudadDestino': latestData['ciudad_centro_destino'] ?? "Ciudad de destino desconocida",
         },
       );
     }
@@ -783,10 +771,6 @@ class _HistorialSolicitudesTrasladoProcesoAdminPageState extends State<Historial
     }
   }
 
-  String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
-    if (fecha == null) return "";
-    return DateFormat(formato, 'es').format(fecha);
-  }
 
   Color getColorEstado(String estado) {
     switch (estado) {
@@ -806,7 +790,7 @@ class _HistorialSolicitudesTrasladoProcesoAdminPageState extends State<Historial
   String obtenerRutaSegunStatus(String status) {
     switch (status) {
       case "Enviado":
-        return 'solicitudes_extincion_pena_enviadas_por_correo';
+        return 'solicitudes_traslado_proceso_enviadas_por_correo';
       default:
         return 'atender_traslado_proceso_page';
     }

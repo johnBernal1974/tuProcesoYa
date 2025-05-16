@@ -32,8 +32,8 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
 
   bool _errorCentroOrigen = false;
   bool _errorCentroDestino = false;
-  bool _errorCiudadOrigen = false;
-  bool _errorCiudadDestino = false;
+  bool _errorFechaTraslado = false;
+
 
 
   static const List<String> ciudadesConCarceles = [
@@ -87,9 +87,11 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
     'Zipaquirá',
   ];
 
-
   String? ciudadCentroOrigen;
   String? ciudadCentroDestino;
+  final TextEditingController _fechaTrasladoController = TextEditingController();
+  DateTime? _fechaTraslado;
+
 
 
 
@@ -231,7 +233,29 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
                 valorSeleccionado: ciudadCentroDestino,
                 onChanged: (val) => setState(() => ciudadCentroDestino = val),
               ),
+              const SizedBox(height: 20),
+              const Divider(color: gris),
+              const SizedBox(height: 20),
+              const Text('Fecha en que fue trasladado', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: negro)),
+              const SizedBox(height: 10),
+              TextFormField(
+                controller: _fechaTrasladoController,
+                readOnly: true,
+                decoration: InputDecoration(
+                  labelText: 'Fecha de traslado (YYYY-MM-DD)',
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                  enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
+                    onPressed: () => _seleccionarFechaTraslado(context),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+                ),
+              ),
               const SizedBox(height: 50),
+
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primary,
@@ -338,10 +362,10 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      String docId = firestore.collection('traslado_proceso_solicitados').doc().id;
+      String docId = firestore.collection('trasladoProceso_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
-      await firestore.collection('traslado_proceso_solicitados').doc(docId).set({
+      await firestore.collection('trasladoProceso_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
         'numero_seguimiento': numeroSeguimiento,
@@ -355,6 +379,7 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
         'centro_destino_regional': centroDestinoRegional,
         'ciudad_centro_origen': ciudadCentroOrigen ?? '',
         'ciudad_centro_destino': ciudadCentroDestino ?? '',
+        'fecha_traslado': _fechaTraslado != null ? Timestamp.fromDate(_fechaTraslado!) : null,
       });
 
 
@@ -388,11 +413,12 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
 
   bool _validarCentrosSeleccionados() {
     setState(() {
-      _errorCentroOrigen = centroOrigenNombre == null || centroOrigenNombre!.isEmpty;
-      _errorCentroDestino = centroDestinoNombre == null || centroDestinoNombre!.isEmpty;
+      _errorCentroOrigen = centroOrigenNombre == null || centroOrigenNombre!.trim().isEmpty;
+      _errorCentroDestino = centroDestinoNombre == null || centroDestinoNombre!.trim().isEmpty;
+      _errorFechaTraslado = _fechaTraslado == null;
     });
 
-    // Validación del centro de origen
+    // 1. Centro de reclusión ORIGEN
     if (_errorCentroOrigen) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Debes seleccionar el centro de reclusión de ORIGEN.")),
@@ -400,7 +426,15 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
       return false;
     }
 
-    // Validación del centro de destino
+    // 2. Ciudad ORIGEN
+    if (ciudadCentroOrigen == null || ciudadCentroOrigen!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Debes seleccionar la CIUDAD del centro de reclusión de ORIGEN.")),
+      );
+      return false;
+    }
+
+    // 3. Centro de reclusión DESTINO
     if (_errorCentroDestino) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Debes seleccionar el centro de reclusión de DESTINO.")),
@@ -408,27 +442,35 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
       return false;
     }
 
-    // Validación de que origen y destino no sean iguales
+    // 4. Ciudad DESTINO
+    if (ciudadCentroDestino == null || ciudadCentroDestino!.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Debes seleccionar la CIUDAD del centro de reclusión de DESTINO.")),
+      );
+      return false;
+    }
+
+    // 5. Verificar que centro de origen y destino no sean iguales
     if (centroOrigenNombre == centroDestinoNombre) {
       setState(() => _errorCentroDestino = true);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("El centro de origen y el de destino no pueden ser el mismo.")),
+        const SnackBar(content: Text("El centro de ORIGEN y el de DESTINO no pueden ser el mismo.")),
       );
       return false;
     }
 
-    // Validación de ciudad de origen
-    if (ciudadCentroOrigen == null || ciudadCentroOrigen!.isEmpty) {
+    // 6. Verificar que ciudad de origen y destino no sean iguales
+    if (ciudadCentroOrigen == ciudadCentroDestino) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Debes seleccionar la ciudad del centro de origen.")),
+        const SnackBar(content: Text("La CIUDAD de ORIGEN y la de DESTINO no pueden ser la misma.")),
       );
       return false;
     }
 
-    // Validación de ciudad de destino
-    if (ciudadCentroDestino == null || ciudadCentroDestino!.isEmpty) {
+    // 7. Fecha de traslado
+    if (_errorFechaTraslado) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Debes seleccionar la ciudad del centro de destino.")),
+        const SnackBar(content: Text("Debes seleccionar la FECHA del traslado.")),
       );
       return false;
     }
@@ -472,6 +514,29 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
       ),
     );
   }
+
+
+  Future<void> _seleccionarFechaTraslado(BuildContext context) async {
+    final DateTime? fechaSeleccionada = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: 'Selecciona la fecha del traslado',
+      cancelText: 'Cancelar',
+      confirmText: 'Aceptar',
+      locale: const Locale('es', 'ES'),
+    );
+
+    if (fechaSeleccionada != null) {
+      setState(() {
+        _fechaTraslado = fechaSeleccionada;
+        _fechaTrasladoController.text =
+        "${_fechaTraslado!.year.toString().padLeft(4, '0')}-${_fechaTraslado!.month.toString().padLeft(2, '0')}-${_fechaTraslado!.day.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
 
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;
