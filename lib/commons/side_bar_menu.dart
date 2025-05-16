@@ -262,6 +262,14 @@ class _SideBarState extends State<SideBar> {
                     Icons.double_arrow_outlined,
                     'historial_solicitudes_extincion_pena_admin'),
               ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes de Traslado de proceso",
+                    Icons.double_arrow_outlined,
+                    'historial_solicitudes_traslado_proceso_admin'),
+              ),
             ],
           ),
           _buildDrawerTile(context, " Historial Transacciones", Icons.monitor_heart_rounded,
@@ -347,6 +355,14 @@ class _SideBarState extends State<SideBar> {
                     context, "Solicitudes de Extinción de pena",
                     Icons.double_arrow_outlined,
                     'historial_solicitudes_extincion_pena_admin'),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes de Traslado de proceso",
+                    Icons.double_arrow_outlined,
+                    'historial_solicitudes_traslado_proceso_admin'),
               ),
             ],
           ),

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:tuprocesoya/Pages/administrador/historial_solicitud_traslado_proceso_admin/historial_solicitud_traslado_proceso_admin.dart';
 import 'package:tuprocesoya/Pages/client/derecho_de_peticion_solicitud/derecho_de_peticion_solicitud.dart';
 import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
@@ -16,6 +17,7 @@ import 'Pages/administrador/atender_extincion_pena/atender_extincion_pena.dart';
 import 'Pages/administrador/atender_libertad_condicional/atender_libertad_condicional.dart';
 import 'Pages/administrador/atender_permiso_72horas/atender_permiso_72horas.dart';
 import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
+import 'Pages/administrador/atender_traslado_proceso_admin/atender_traslado_proceso_admin.dart';
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
@@ -170,6 +172,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_libertad_condicional_admin': (context) => const HistorialSolicitudesCondicionalAdminPage(),
         'historial_solicitudes_permiso_72horas_admin': (context) => const HistorialSolicitudesPermiso72HorasAdminPage(),
         'historial_solicitudes_extincion_pena_admin': (context) => const HistorialSolicitudesExtincionPenaAdminPage(),
+        'historial_solicitudes_traslado_proceso_admin': (context) => const HistorialSolicitudesTrasladoProcesoAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -517,6 +520,18 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => AtenderExtincionPenaPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+              ),
+            );
+          }
+          else if (settings.name == 'atender_traslado_proceso_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderTrasladoProcesoPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",

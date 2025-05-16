@@ -829,9 +829,6 @@ class _RegistroAsistidoPageState extends State<RegistroAsistidoPage> {
     }
   }
 
-
-
-
   final List<String> parentescoOptions = [
     // 👪 Padres
     'Madre',
