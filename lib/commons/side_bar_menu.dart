@@ -206,6 +206,7 @@ class _SideBarState extends State<SideBar> {
           _buildDrawerTile(context, "Configuraciones", Icons.settings,
               'configuraciones'),
           ExpansionTile(
+            initiallyExpanded:true,
             leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
             title: const Text("Historial de solicitudes",
                 style: TextStyle(color: Colors.black, fontSize: 13)),
@@ -300,6 +301,7 @@ class _SideBarState extends State<SideBar> {
               context, "Página principal", Icons.home_filled, 'home_admin'),
 
           ExpansionTile(
+            initiallyExpanded:true,
             leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
             title: const Text("Historial de solicitudes",
                 style: TextStyle(color: Colors.black, fontSize: 13)),
@@ -421,13 +423,14 @@ class _SideBarState extends State<SideBar> {
             context, "Página principal", Icons.home_filled, 'home'),
         _buildDrawerTile(context, "Tus datos", Icons.person_pin, 'mis_datos'),
         _buildDrawerTile(context, "Solicitar derecho de petición", Icons.account_balance_outlined, 'derecho_peticion'),
-        _buildDrawerTile(context, "Solicitar acción de tutela", Icons.account_balance_sharp, 'tutela'),
-        _buildDrawerTile(context, "Solicitar traslado de proceso", Icons.account_balance_sharp, 'solicitud_traslado_proceso_page'),
+        _buildDrawerTile(context, "Solicitar acción de tutela", Icons.gavel, 'tutela'),
+        _buildDrawerTile(context, "Solicitar traslado de proceso", Icons.swap_horiz, 'solicitud_traslado_proceso_page'),
         _buildDrawerTile(context, "Tus pagos", Icons.attach_money, 'mis_transacciones'),
         _buildDrawerTile(context, "Historial de solicitudes", Icons.add_chart, 'historiales_page'),
         _buildDrawerTile(context, "Tus redenciones", Icons.double_arrow_rounded, 'mis_redenciones'),
         // 🔥 Submenú "Información general"
         ExpansionTile(
+          initiallyExpanded:true,
           leading: const Icon(
               Icons.info_outline, color: Colors.black, size: 20),
           title: const Text("Información general",

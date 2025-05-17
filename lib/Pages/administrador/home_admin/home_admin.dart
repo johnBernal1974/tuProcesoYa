@@ -29,7 +29,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   String searchAdminQuery = ""; // Almacena el texto ingresado en el filtro de admin
   TextEditingController _adminSearchController = TextEditingController(); // Controlador para la búsqueda por admin
   Map<String, String> adminNamesMap = {}; // 🔥 Mapa de ID de admin -> Nombre de admin
-  bool isLoadingAdmins = true; // 🔥 Control de carga
+  bool isLoadingAdmins = true; //
+  bool mostrarSoloIncompletos = false;
+
 
 
   Color _getColor(String estado) {
@@ -113,10 +115,20 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       return status == 'registrado' && (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
                     }).length;
 
-                    final int countActivado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'activado').length;
+                    final int countActivado = docs.where((doc) {
+                      final status = doc.get('status').toString().toLowerCase();
+                      final data = doc.data() as Map<String, dynamic>;
+                      final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
+                      return status == 'activado' && requiereActualizacion != true;
+                    }).length;
+
                     final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
                     final int countPendiente = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'pendiente').length;
-
+                    final int countActivadoIncompleto = docs.where((doc) {
+                      final status = doc.get('status').toString().toLowerCase();
+                      final data = doc.data() as Map<String, dynamic>;
+                      return status == 'activado' && (data['requiere_actualizacion_datos'] == true);
+                    }).length;
 
                     final int countTotal = docs.where((doc) {
                       final assignedTo = doc.get('assignedTo') ?? "";
@@ -135,10 +147,23 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       filteredDocs = filteredDocs.where((doc) {
                         final status = doc.get('status').toString().toLowerCase();
                         final assignedTo = doc.get('assignedTo') ?? "";
+                        final data = doc.data() as Map<String, dynamic>;
+                        final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
 
                         if (esOperador && filterStatus == "registrado") {
-                          return status == filterStatus!.toLowerCase() && (assignedTo.isEmpty || assignedTo == currentUserUid);
+                          return status == filterStatus!.toLowerCase() &&
+                              (assignedTo.isEmpty || assignedTo == currentUserUid);
                         }
+
+                        // 👉 Aplica filtro adicional para "activado incompleto"
+                        if (filterStatus == "activado") {
+                          if (mostrarSoloIncompletos) {
+                            return status == "activado" && requiereActualizacion == true;
+                          } else {
+                            return status == "activado" && requiereActualizacion != true;
+                          }
+                        }
+
                         return status == filterStatus!.toLowerCase();
                       }).toList();
                     }
@@ -186,8 +211,18 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               setState(() {
                                 filterStatus = "activado";
                                 filterIsPaid = null;
+                                mostrarSoloIncompletos = false; // 👈 Desactiva los incompletos
                               });
-                            }, isSelected: filterStatus == "activado"),
+                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == false),
+
+
+                            _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.lightGreen, () {
+                              setState(() {
+                                filterStatus = "activado";
+                                mostrarSoloIncompletos = true; // 👈 Define esta variable en tu State
+                              });
+                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == true),
+
 
                             _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
                               setState(() {
@@ -341,7 +376,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
-
   // Barra de busqueda por rol
   Widget _buildSearchField() {
     return FutureBuilder<DocumentSnapshot>(
@@ -752,8 +786,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
-
-
 
   void _mostrarDialogoPagoPendiente(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

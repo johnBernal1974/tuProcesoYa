@@ -133,6 +133,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
 
 
+
+
   /// opciones de documento de identidad
   final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte', 'Tarjeta de Identidad'];
 
@@ -449,6 +451,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
+
 
   /// 🔹 Widgets adicionales (Historial y acciones)
   Widget _buildExtraWidget() {
@@ -1127,8 +1131,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  //*********para los no recluidos
-
   Widget infoPplNoRecluido() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1715,7 +1717,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   Widget seleccionarJuzgadoQueCondeno() {
     if (!_mostrarDropdownJuzgadoCondeno &&
         widget.doc['juzgado_que_condeno'] != null &&
@@ -2090,8 +2091,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ],
     );
   }
-
-
 
   Widget nombrePpl() {
     return textFormField(
@@ -2799,64 +2798,46 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             if (!confirmar) return;
 
             List<String> camposFaltantes = [];
-
-            // 🔍 Leer situación actual
             String situacion = (widget.doc['situacion'] ?? '').toString();
 
             if (situacion == 'En Reclusión') {
               String? centro = selectedCentro ?? widget.doc['centro_reclusion'];
-              if (centro == null || centro.toString().trim().isEmpty) camposFaltantes.add("Centro de Reclusión");
-
+              if (centro == null || centro.trim().isEmpty) camposFaltantes.add("Centro de Reclusión");
               if (_tdController.text.trim().isEmpty) camposFaltantes.add("TD");
               if (_nuiController.text.trim().isEmpty) camposFaltantes.add("NUI");
               if (_patioController.text.trim().isEmpty) camposFaltantes.add("Patio");
             }
 
-            String? regional = selectedRegional ?? widget.doc['regional'];
-            if (regional == null || regional.toString().trim().isEmpty) camposFaltantes.add("Regional");
-
-            String? ciudad = selectedCiudad ?? widget.doc['ciudad'];
-            if (ciudad == null || ciudad.toString().trim().isEmpty) camposFaltantes.add("Ciudad");
-
-            String? delito = selectedDelito ?? widget.doc['delito'];
-            if (delito == null || delito.toString().trim().isEmpty) camposFaltantes.add("Delito");
-
-            String? juzgadoEjecucion = selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'];
-            if (juzgadoEjecucion == null || juzgadoEjecucion.toString().trim().isEmpty) camposFaltantes.add("Juzgado de Ejecución de Penas");
-
-            String? juzgadoCondeno = selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'];
-            if (juzgadoCondeno == null || juzgadoCondeno.toString().trim().isEmpty) camposFaltantes.add("Juzgado que Condenó");
-
+            if ((selectedRegional ?? widget.doc['regional'])?.toString().trim().isEmpty ?? true)
+              camposFaltantes.add("Regional");
+            if ((selectedCiudad ?? widget.doc['ciudad'])?.toString().trim().isEmpty ?? true)
+              camposFaltantes.add("Ciudad");
+            if ((selectedDelito ?? widget.doc['delito'])?.toString().trim().isEmpty ?? true)
+              camposFaltantes.add("Delito");
+            if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'])?.toString().trim().isEmpty ?? true)
+              camposFaltantes.add("Juzgado de Ejecución de Penas");
+            if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'])?.toString().trim().isEmpty ?? true)
+              camposFaltantes.add("Juzgado que Condenó");
             if (_radicadoController.text.trim().isEmpty) camposFaltantes.add("Radicado");
-
-            String? nombre = _nombreController.text.trim();
-            if (nombre.isEmpty) camposFaltantes.add("Nombre");
-
-            String? apellido = _apellidoController.text.trim();
-            if (apellido.isEmpty) camposFaltantes.add("Apellido");
-
-            String? numeroDocumento = _numeroDocumentoController.text.trim();
-            if (numeroDocumento.isEmpty) camposFaltantes.add("Número de Documento");
-
-            if ((int.tryParse(_mesesCondenaController.text) ?? 0) <= 0) {
+            if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
+            if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
+            if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
+            if ((int.tryParse(_mesesCondenaController.text) ?? 0) <= 0)
               camposFaltantes.add("Meses de condena (debe ser mayor a 0)");
-            }
 
-            // Mostrar comentario si hay campos faltantes
+            bool tieneEvento = await tieneEventoEspecial(widget.doc.reference);
             String comentario = "";
             String nuevoStatus = "activado";
 
-            bool tieneEvento = await tieneEventoEspecial(widget.doc.reference);
-
             if (camposFaltantes.isNotEmpty) {
               if (tieneEvento) {
-                if(context.mounted){
+                if (context.mounted) {
                   comentario = await _mostrarDialogoActivacionConDatosIncompletos(context, camposFaltantes.join(", "));
                 }
                 if (comentario.trim().isEmpty) return;
                 nuevoStatus = "activado";
               } else {
-                if(context.mounted){
+                if (context.mounted) {
                   comentario = await _mostrarDialogoComentarioPendiente(context, camposFaltantes.join(", "));
                 }
                 if (comentario.trim().isEmpty) return;
@@ -2877,8 +2858,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     (centro) => centro['id'] == centroFinal,
                 orElse: () => <String, Object>{},
               );
-
-              if (centroEncontrado.isNotEmpty && centroEncontrado.containsKey('correos')) {
+              if (centroEncontrado.containsKey('correos')) {
                 var correosMap = centroEncontrado['correos'] as Map<String, dynamic>;
                 correosCentro = {
                   'correo_direccion': correosMap['correo_direccion']?.toString() ?? '',
@@ -2908,9 +2888,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'meses_condena': int.tryParse(_mesesCondenaController.text) ?? 0,
                 'dias_condena': int.tryParse(_diasCondenaController.text) ?? 0,
                 'fecha_captura': _fechaDeCapturaController.text,
-                'td': _tdController.text.isNotEmpty ? _tdController.text : '',
-                'nui': _nuiController.text.isNotEmpty ? _nuiController.text : '',
-                'patio': _patioController.text.isNotEmpty ? _patioController.text : '',
+                'td': _tdController.text,
+                'nui': _nuiController.text,
+                'patio': _patioController.text,
                 'nombre_acudiente': _nombreAcudienteController.text,
                 'apellido_acudiente': _apellidosAcudienteController.text,
                 'parentesco_representante': _parentescoAcudienteController.text,
@@ -2928,7 +2908,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 datosActualizados['requiere_actualizacion_datos'] = true;
               }
 
-
               await widget.doc.reference.update(datosActualizados);
               await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
 
@@ -2940,11 +2919,49 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 });
               }
 
+              if (situacion != 'En Reclusión') {
+                await widget.doc.reference.update({
+                  'centro_reclusion': "",
+                  'td': "",
+                  'nui': "",
+                  'patio': "",
+                });
+              }
+
               await widget.doc.reference.collection('historial_acciones').add({
                 'admin': adminFullName,
                 'accion': nuevoStatus == 'activado' ? 'activado' : 'guardado pendiente',
                 'fecha': DateTime.now().toString(),
               });
+
+              // ✅ Evaluar si campos están completos y se puede limpiar todo
+              final bool estaCompleto = _camposCompletos(situacion);
+              final bool requiereActualizacion = datosActualizados['requiere_actualizacion_datos'] == true;
+
+              if (nuevoStatus == 'activado' && !requiereActualizacion && estaCompleto) {
+                final comentariosSnapshot = await widget.doc.reference.collection('comentarios').get();
+                for (final doc in comentariosSnapshot.docs) {
+                  await doc.reference.delete();
+                }
+
+                final historialSnapshot = await widget.doc.reference.collection('historial_acciones').get();
+                for (final doc in historialSnapshot.docs) {
+                  await doc.reference.delete();
+                }
+
+                final eventosRef = widget.doc.reference.collection('eventos');
+                try {
+                  await eventosRef.doc('requiere_actualizacion_datos').delete();
+                  await eventosRef.doc('comentarios').delete();
+                } catch (e) {
+                  print("❌ Error al eliminar nodos de eventos: $e");
+                }
+
+                await widget.doc.reference.update({
+                  'requiere_actualizacion_datos': false,
+                  'activado_por_evento': FieldValue.delete(),
+                });
+              }
 
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -2954,6 +2971,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     duration: const Duration(seconds: 2),
                   ),
                 );
+
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
@@ -2978,6 +2996,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
+
 
   Future<bool> tieneEventoEspecial(DocumentReference docRef) async {
     try {
@@ -3087,22 +3107,35 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return comentario;
   }
 
-
-
-  bool _camposCompletos() {
+  bool _camposCompletos(String situacion) {
     bool camposValidos(dynamic valor) => valor != null && valor.toString().trim().isNotEmpty;
 
-    return camposValidos(_nombreController.text) &&
-        camposValidos(_apellidoController.text) &&
-        camposValidos(_numeroDocumentoController.text) &&
-        camposValidos(_fechaDeCapturaController.text) &&
-        camposValidos(_radicadoController.text) &&
-        camposValidos(selectedCentro ?? getCampoSeguro('centro_reclusion')) &&
-        camposValidos(selectedRegional ?? getCampoSeguro('regional')) &&
-        camposValidos(selectedCiudad ?? getCampoSeguro('ciudad')) &&
-        camposValidos(selectedDelito ?? getCampoSeguro('delito')) &&
-        camposValidos(selectedJuzgadoEjecucionPenas ?? getCampoSeguro('juzgado_ejecucion_penas')) &&
-        camposValidos(selectedJuzgadoNombre ?? getCampoSeguro('juzgado_que_condeno'));
+    final bool esEnReclusion = situacion == 'En Reclusión';
+
+    return
+      // Datos del PPL
+      camposValidos(_nombreController.text) &&
+          camposValidos(_apellidoController.text) &&
+          camposValidos(_numeroDocumentoController.text) &&
+          camposValidos(_fechaDeCapturaController.text) &&
+          camposValidos(_radicadoController.text) &&
+          camposValidos(selectedRegional ?? getCampoSeguro('regional')) &&
+          camposValidos(selectedCiudad ?? getCampoSeguro('ciudad')) &&
+          camposValidos(selectedDelito ?? getCampoSeguro('delito')) &&
+          camposValidos(selectedJuzgadoEjecucionPenas ?? getCampoSeguro('juzgado_ejecucion_penas')) &&
+          camposValidos(selectedJuzgadoNombre ?? getCampoSeguro('juzgado_que_condeno')) &&
+          camposValidos(_mesesCondenaController.text) &&
+          camposValidos(_diasCondenaController.text) &&
+          camposValidos(_nombreAcudienteController.text) &&
+          camposValidos(_apellidosAcudienteController.text) &&
+          camposValidos(parentescoAcudiente ?? getCampoSeguro('parentesco')) &&
+          camposValidos(_celularAcudienteController.text) &&
+          (!esEnReclusion || (
+              camposValidos(selectedCentro ?? getCampoSeguro('centro_reclusion')) &&
+                  camposValidos(_tdController.text) &&
+                  camposValidos(_nuiController.text) &&
+                  camposValidos(_patioController.text)
+          ));
   }
 
 
