@@ -132,6 +132,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   List<String> ciudades = [];
 
 
+
   /// opciones de documento de identidad
   final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte', 'Tarjeta de Identidad'];
 
@@ -242,7 +243,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   /// 🔹 Contenido principal (Información del PPL y Acudiente)
   Widget _buildMainContent() {
     final status = widget.doc["status"]?.toString().toLowerCase() ?? '';
@@ -274,7 +274,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
           Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
           const SizedBox(height: 20),
-          if (status == 'pendiente') ...[
+          if (status == 'pendiente' ||
+              (status == 'activado' &&
+                  (widget.doc.data() != null &&
+                      (widget.doc.data() as Map<String, dynamic>).containsKey('requiere_actualizacion_datos') &&
+                      widget.doc['requiere_actualizacion_datos'] == true))) ...[
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: ElevatedButton.icon(
@@ -289,7 +293,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               ),
             ),
           ],
-
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.doc.id),
             builder: (context, snapshot) {
@@ -446,7 +449,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
 
   /// 🔹 Widgets adicionales (Historial y acciones)
   Widget _buildExtraWidget() {
@@ -2846,10 +2848,20 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
             bool tieneEvento = await tieneEventoEspecial(widget.doc.reference);
 
-            if (camposFaltantes.isNotEmpty && !tieneEvento) {
-              comentario = await _mostrarDialogoComentarioPendiente(context, camposFaltantes.join(", "));
-              if (comentario.trim().isEmpty) return;
-              nuevoStatus = "pendiente";
+            if (camposFaltantes.isNotEmpty) {
+              if (tieneEvento) {
+                if(context.mounted){
+                  comentario = await _mostrarDialogoActivacionConDatosIncompletos(context, camposFaltantes.join(", "));
+                }
+                if (comentario.trim().isEmpty) return;
+                nuevoStatus = "activado";
+              } else {
+                if(context.mounted){
+                  comentario = await _mostrarDialogoComentarioPendiente(context, camposFaltantes.join(", "));
+                }
+                if (comentario.trim().isEmpty) return;
+                nuevoStatus = "pendiente";
+              }
             }
 
             Map<String, String> correosCentro = {
@@ -2910,6 +2922,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               if (nuevoStatus == 'activado') {
                 datosActualizados['fechaActivacion'] = DateTime.now();
               }
+
+              if (tieneEvento) {
+                datosActualizados['activado_por_evento'] = true;
+                datosActualizados['requiere_actualizacion_datos'] = true;
+              }
+
 
               await widget.doc.reference.update(datosActualizados);
               await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
@@ -2972,8 +2990,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-
-
+  /// para guardar los usuarios y quedar en estado pendiente
   Future<String> _mostrarDialogoComentarioPendiente(BuildContext context, String faltantes) async {
     final TextEditingController _comentarioController = TextEditingController();
     String comentario = "";
@@ -3018,6 +3035,59 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return comentario;
   }
 
+  /// para guardar los usuarios y quedar en estado activado pero con campos incompletos
+
+  Future<String> _mostrarDialogoActivacionConDatosIncompletos(BuildContext context, String camposFaltantes) async {
+    final TextEditingController _comentarioController = TextEditingController( );
+
+    String comentario = "";
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text(
+          "Activación con datos incompletos",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Este usuario será activado, con los siguientes campos incompletos:\n\n$camposFaltantes",
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _comentarioController,
+              decoration: const InputDecoration(
+                labelText: "Agrega un comentario para hacer seguimiento",
+                border: OutlineInputBorder(),
+              ),
+              minLines: 2,
+              maxLines: 4,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              comentario = _comentarioController.text.trim();
+              Navigator.pop(context);
+            },
+            child: const Text("Confirmar y activar"),
+          ),
+        ],
+      ),
+    );
+
+    return comentario;
+  }
+
+
 
   bool _camposCompletos() {
     bool camposValidos(dynamic valor) => valor != null && valor.toString().trim().isNotEmpty;
@@ -3040,7 +3110,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return widget.doc.data().toString().contains(key) ? widget.doc[key] : null;
   }
 
-  void _mostrarComentarios(BuildContext context, String docId) async {
+  void _mostrarComentarios(BuildContext context, String status) async {
     final comentariosSnapshot = await FirebaseFirestore.instance
         .collection('Ppl')
         .doc(widget.doc.id)
@@ -3050,13 +3120,27 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
     final comentarios = comentariosSnapshot.docs;
 
+    // 🏷️ Título dinámico
+    String titulo = "Comentarios del caso";
+    if (status == 'pendiente') {
+      titulo = "NO ACTIVADO EN ESTADO PENDIENTE";
+    } else if ((widget.doc['requiere_actualizacion_datos'] ?? false) == true) {
+      titulo = "ACTIVADO CON DATOS INCOMPLETOS";
+    }
+
     if (context.mounted) {
       showDialog(
         context: context,
         builder: (context) {
           return AlertDialog(
             backgroundColor: blanco,
-            title: const Text("Comentarios del caso"),
+            title: Text(
+              titulo,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             content: SizedBox(
               width: 400,
               child: comentarios.isEmpty
@@ -3093,6 +3177,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       );
     }
   }
+
 
   /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
   Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {
