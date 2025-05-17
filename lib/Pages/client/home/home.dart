@@ -752,6 +752,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+
+
   // para idPaid true
   Widget _buildBeneficioFila(
       String titulo,
@@ -767,7 +769,8 @@ class _HomePageState extends State<HomePage> {
     final bool negado = beneficiosNegados.contains(idBeneficio.toLowerCase().trim()) || beneficiosNegados.contains(titulo.toLowerCase().trim());
 
     double porcentaje = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
-    int tiempo = _calculoCondenaController.tiempoCondena ?? 0;
+    int tiempo = (_calculoCondenaController.getCondenaEnMeses()).round();
+
     bool cumple = porcentaje >= porcentajeRequerido;
     int diasFaltantes = ((porcentajeRequerido - porcentaje) / 100 * tiempo * 30).ceil();
 
@@ -1154,40 +1157,56 @@ class _HomePageState extends State<HomePage> {
     final pplData = await _pplProvider.getById(id);
     if (pplData != null) {
       final fechaCaptura = pplData.fechaCaptura;
-      tiempoCondena = pplData.tiempoCondena;
+      final mesesCondena = pplData.mesesCondena ?? 0;
+      final diasCondena = pplData.diasCondena ?? 0;
       final fechaActual = DateTime.now();
 
-      // 🔹 Restamos los días redimidos a la condena
-      final tiempoCondenaReducida = tiempoCondena! * 30 - diasRedimidos.toInt();
-      final fechaFinCondena = fechaCaptura?.add(Duration(days: tiempoCondenaReducida));
+      final totalDiasCondena = (mesesCondena * 30) + diasCondena;
+      final diasCondenaReducida = totalDiasCondena - diasRedimidos.toInt();
 
-      final diferenciaRestante = fechaFinCondena?.difference(fechaActual);
-      final diferenciaEjecutado = fechaActual.difference(fechaCaptura!);
+      if (fechaCaptura == null || diasCondenaReducida <= 0) {
+        setState(() {
+          mesesEjecutado = mesesCondena;
+          diasEjecutadoExactos = diasCondena;
+          mesesRestante = 0;
+          diasRestanteExactos = 0;
+          porcentajeEjecutado = 100.0;
+        });
+        return;
+      }
+
+      final fechaFinCondena = fechaCaptura.add(Duration(days: diasCondenaReducida));
+      final diferenciaRestante = fechaFinCondena.difference(fechaActual);
+      final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
 
       setState(() {
-        mesesRestante = (diferenciaRestante!.inDays ~/ 30);
+        mesesRestante = diferenciaRestante.inDays ~/ 30;
         diasRestanteExactos = diferenciaRestante.inDays % 30;
 
         mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
         diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
-        porcentajeEjecutado = ((diferenciaEjecutado.inDays + diasRedimidos) / (tiempoCondena! * 30)) * 100;
+
+        porcentajeEjecutado = ((diferenciaEjecutado.inDays + diasRedimidos) / totalDiasCondena) * 100;
       });
 
-      print("Porcentaje de condena ejecutado: $porcentajeEjecutado%");
+      print("✅ Porcentaje ejecutado: $porcentajeEjecutado%");
     } else {
-      print("No hay datos");
+      print("❌ No hay datos");
     }
   }
+
 
   Widget _buildCondenaInfo() {
     // 🔥 Validamos que no haya valores nulos antes de usarlos
     int mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
     int diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
-    double totalDiasRedimidos = _calculoCondenaController.totalDiasRedimidos ?? 0;
+    double totalDiasRedimidos = _calculoCondenaController.totalDiasRedimidos;
     int mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
     int diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
     double porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
-    int tiempoCondena = _calculoCondenaController.tiempoCondena ?? 0; // 🔹 Condena total
+
+    int mesesCondena = _calculoCondenaController.mesesCondena ?? 0;
+    int diasCondena = _calculoCondenaController.diasCondena ?? 0;
 
     int totalDiasCumplidos = diasEjecutadoExactos + totalDiasRedimidos.toInt();
     int mesesAdicionales = totalDiasCumplidos ~/ 30;
@@ -1212,7 +1231,7 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
               Text(
-                "$tiempoCondena meses",
+                "$mesesCondena meses, $diasCondena días",
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
               ),
             ],
@@ -1222,17 +1241,14 @@ class _HomePageState extends State<HomePage> {
         _buildDatoFila("Condena transcurrida", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
         _buildDatoFila("Tiempo redimido", "$totalDiasRedimidos días"),
 
-
-        // 🔥 Animación para "Condena total cumplida"
         _buildAnimatedDato("Condena\nTotal Cumplida", mesesCumplidos, diasRestantes, Colors.green.shade100),
-
-        // 🔥 Animación para "Condena restante"
         _buildAnimatedDato("Condena\nRestante", mesesRestante, diasRestanteExactos, Colors.purple.shade100),
         const SizedBox(height: 10),
         _buildDatoFila("Porcentaje ejecutado", "${porcentajeEjecutado.toStringAsFixed(1)}%"),
       ],
     );
   }
+
 
   /// **Widget para animar los valores de la condena y su elevación**
   Widget _buildAnimatedDato(String title, int meses, int dias, Color bgColor) {

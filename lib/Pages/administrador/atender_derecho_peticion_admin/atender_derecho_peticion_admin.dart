@@ -836,7 +836,11 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           Row(
             children: [
               const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text('${userData!.tiempoCondena} meses', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              Text(
+                '${userData!.mesesCondena} meses'
+                    '${userData!.diasCondena > 0 ? ' y ${userData!.diasCondena} días' : ''}',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
             ],
           ),
           if(userData!.situacion == "En Reclusión")
@@ -1119,47 +1123,52 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     final pplData = await _pplProvider.getById(id);
     if (pplData != null) {
       final fechaCaptura = pplData.fechaCaptura;
-      tiempoCondena = pplData.tiempoCondena;
-      final fechaActual = DateTime.now();
-      final fechaFinCondena = fechaCaptura?.add(Duration(days: tiempoCondena * 30));
+      final int mesesCondena = pplData.mesesCondena;
+      final int diasCondena = pplData.diasCondena;
+      final int totalDiasCondena = (mesesCondena * 30) + diasCondena;
 
-      final diferenciaRestante = fechaFinCondena?.difference(fechaActual);
-      final diferenciaEjecutado = fechaActual.difference(fechaCaptura!);
+      if (fechaCaptura == null) return;
+
+      final fechaActual = DateTime.now();
+      final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
+
+      final diferenciaRestante = fechaFinCondena.difference(fechaActual);
+      final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
 
       setState(() {
-        mesesRestante = (diferenciaRestante!.inDays ~/ 30);
+        mesesRestante = diferenciaRestante.inDays ~/ 30;
         diasRestanteExactos = diferenciaRestante.inDays % 30;
 
         mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
         diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
       });
 
-      // Validaciones para beneficios
-      porcentajeEjecutado = (diferenciaEjecutado.inDays / (tiempoCondena * 30)) * 100;
-      print("Porcentaje de condena ejecutado: $porcentajeEjecutado%");
+      // Calcular porcentaje ejecutado
+      porcentajeEjecutado = (diferenciaEjecutado.inDays / totalDiasCondena) * 100;
+      print("Porcentaje de condena ejecutado: ${porcentajeEjecutado.toStringAsFixed(2)}%");
 
       if (porcentajeEjecutado >= 33.33) {
-        print("Se aplica el beneficio de permiso administrativo de 72 horas");
+        print("✅ Aplica: Permiso administrativo de 72 horas");
       } else {
-        print("No se aplica el beneficio de permiso administrativo de 72 horas");
+        print("❌ No aplica: Permiso administrativo de 72 horas");
       }
 
       if (porcentajeEjecutado >= 50) {
-        print("Se aplica el beneficio de prisión domiciliaria");
+        print("✅ Aplica: Prisión domiciliaria");
       } else {
-        print("No se aplica el beneficio de prisión domiciliaria");
+        print("❌ No aplica: Prisión domiciliaria");
       }
 
       if (porcentajeEjecutado >= 60) {
-        print("Se aplica el beneficio de libertad condicional");
+        print("✅ Aplica: Libertad condicional");
       } else {
-        print("No se aplica el beneficio de libertad condicional");
+        print("❌ No aplica: Libertad condicional");
       }
 
       if (porcentajeEjecutado >= 100) {
-        print("Se aplica el beneficio de extinción de la pena");
+        print("✅ Aplica: Extinción de la pena");
       } else {
-        print("No se aplica el beneficio de extinción de la pena");
+        print("❌ No aplica: Extinción de la pena");
       }
 
       print("Tiempo restante: $mesesRestante meses y $diasRestanteExactos días");
@@ -1170,6 +1179,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
+
 
   Widget _datosEjecucionCondena(double totalDiasRedimidos) {
     // 🔹 Asegurar que los cálculos usen `totalDiasRedimidos`

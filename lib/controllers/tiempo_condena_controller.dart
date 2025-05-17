@@ -4,21 +4,26 @@ import 'package:flutter/cupertino.dart';
 import '../providers/ppl_provider.dart';
 
 class CalculoCondenaController with ChangeNotifier {
-  int? tiempoCondena;
+  int? _mesesCondena;
+  int? _diasCondena;
+
   int? mesesRestante;
   int? diasRestanteExactos;
   int? mesesEjecutado;
   int? diasEjecutadoExactos;
   double? porcentajeEjecutado;
 
-  double _totalDiasRedimidos = 0.0; // 🔥 Variable privada para almacenar días redimidos
-
-  double get totalDiasRedimidos => _totalDiasRedimidos; // 🔥 Getter para acceder a los días redimidos
+  double _totalDiasRedimidos = 0.0;
 
   final PplProvider _pplProvider;
 
   CalculoCondenaController(this._pplProvider);
 
+  int? get mesesCondena => _mesesCondena;
+  int? get diasCondena => _diasCondena;
+  double get totalDiasRedimidos => _totalDiasRedimidos;
+
+  /// ✅ Método principal para calcular tiempos
   Future<void> calcularTiempo(String id) async {
     try {
       final pplData = await _pplProvider.getById(id);
@@ -28,29 +33,31 @@ class CalculoCondenaController with ChangeNotifier {
       }
 
       final fechaCaptura = pplData.fechaCaptura;
-      tiempoCondena = pplData.tiempoCondena;
-      if (fechaCaptura == null || tiempoCondena == null) {
-        debugPrint("❌ Datos insuficientes: fechaCaptura o tiempoCondena es null");
+      _mesesCondena = pplData.mesesCondena;
+      _diasCondena = pplData.diasCondena;
+
+      if (fechaCaptura == null || _mesesCondena == null || _diasCondena == null) {
+        debugPrint("❌ Datos insuficientes para cálculo");
         return;
       }
 
       await calcularTotalRedenciones(id);
       debugPrint("📌 Días redimidos: $_totalDiasRedimidos");
 
-      int condenaTotalDias = (tiempoCondena! * 30) - _totalDiasRedimidos.toInt();
+      final totalDiasCondena = (_mesesCondena! * 30) + _diasCondena!;
+      final condenaTotalDias = totalDiasCondena - _totalDiasRedimidos.toInt();
 
-      // 🔥 Condena ya cumplida o inválida
       if (condenaTotalDias <= 0) {
         porcentajeEjecutado = 100.0;
-        mesesEjecutado = tiempoCondena; // se cumplió todo
-        diasEjecutadoExactos = 0;
+        mesesEjecutado = _mesesCondena;
+        diasEjecutadoExactos = _diasCondena;
         mesesRestante = 0;
         diasRestanteExactos = 0;
         notifyListeners();
         return;
       }
 
-      DateTime fechaActual = DateTime.now();
+      final fechaActual = DateTime.now();
       final fechaFinCondena = fechaCaptura.add(Duration(days: condenaTotalDias));
       final diferenciaRestante = fechaFinCondena.difference(fechaActual);
       final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
@@ -60,7 +67,8 @@ class CalculoCondenaController with ChangeNotifier {
       mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
       diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
 
-      porcentajeEjecutado = (diferenciaEjecutado.inDays / condenaTotalDias) * 100;
+      porcentajeEjecutado = (diferenciaEjecutado.inDays / totalDiasCondena) * 100;
+
       notifyListeners();
 
       debugPrint("✅ Cálculo actualizado: % ejecutado: $porcentajeEjecutado%");
@@ -69,8 +77,7 @@ class CalculoCondenaController with ChangeNotifier {
     }
   }
 
-
-  /// 🔥 Método para obtener la suma total de días redimidos
+  /// ✅ Método para obtener la suma total de días redimidos
   Future<void> calcularTotalRedenciones(String pplId) async {
     try {
       QuerySnapshot redencionesSnapshot = await FirebaseFirestore.instance
@@ -79,17 +86,24 @@ class CalculoCondenaController with ChangeNotifier {
           .collection('redenciones')
           .get();
 
-      _totalDiasRedimidos = 0.0; // Reiniciar antes de sumar
+      _totalDiasRedimidos = 0.0;
 
       for (var doc in redencionesSnapshot.docs) {
         _totalDiasRedimidos += (doc['dias_redimidos'] as num).toDouble();
       }
 
       debugPrint("📌 Total de días redimidos para PPL $pplId: $_totalDiasRedimidos días");
-      notifyListeners(); // 🔥 Notificar cambios
+      notifyListeners();
     } catch (e) {
       debugPrint("❌ Error obteniendo los días redimidos: $e");
       _totalDiasRedimidos = 0.0;
     }
+  }
+
+  /// ✅ Devuelve la condena total en meses (con decimales)
+  double getCondenaEnMeses() {
+    final meses = _mesesCondena ?? 0;
+    final dias = _diasCondena ?? 0;
+    return meses + (dias / 30);
   }
 }

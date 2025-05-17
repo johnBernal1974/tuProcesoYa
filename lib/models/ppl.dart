@@ -1,11 +1,7 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// Método para decodificar JSON a Ppl
 Ppl pplFromJson(String str) => Ppl.fromJson(json.decode(str));
-
-// Método para codificar Ppl a JSON
 String pplToJson(Ppl data) => json.encode(data.toJson());
 
 class Ppl {
@@ -29,7 +25,8 @@ class Ppl {
   final String categoriaDelDelito;
   final String delito;
   final String radicado;
-  final int tiempoCondena;
+  final int mesesCondena;
+  final int diasCondena;
   final String td;
   final String nui;
   final String patio;
@@ -47,7 +44,6 @@ class Ppl {
   final List<String> beneficiosAdquiridos;
   final List<String> beneficiosNegados;
 
-  // Constructor
   Ppl({
     required this.id,
     required this.nombreAcudiente,
@@ -69,7 +65,8 @@ class Ppl {
     required this.categoriaDelDelito,
     required this.delito,
     required this.radicado,
-    required this.tiempoCondena,
+    required this.mesesCondena,
+    required this.diasCondena,
     required this.td,
     required this.nui,
     required this.patio,
@@ -88,7 +85,6 @@ class Ppl {
     required this.beneficiosNegados,
   });
 
-  // Factory para crear una instancia de Ppl desde JSON
   factory Ppl.fromJson(Map<String, dynamic> json) => Ppl(
     id: json["id"] ?? '',
     nombreAcudiente: json["nombre_acudiente"] ?? '',
@@ -110,40 +106,40 @@ class Ppl {
     categoriaDelDelito: json["categoria_delito"] ?? '',
     delito: json["delito"] ?? '',
     radicado: json["radicado"] ?? '',
-    tiempoCondena: json["tiempo_condena"] ?? 0,
+    mesesCondena: json["meses_condena"] ?? 0,
+    diasCondena: json["dias_condena"] ?? 0,
     td: json["td"] ?? '',
     nui: json["nui"] ?? '',
     patio: json["patio"] ?? '',
     fechaCaptura: json["fecha_captura"] != null
         ? (json["fecha_captura"] is String
-        ? DateTime.tryParse(json["fecha_captura"]) // Si es String, intentar parsear
+        ? DateTime.tryParse(json["fecha_captura"])
         : (json["fecha_captura"] is Timestamp
-        ? json["fecha_captura"].toDate() // Si es Timestamp, convertir a DateTime
-        : null)) // Si no es ni String ni Timestamp, devolver null
+        ? json["fecha_captura"].toDate()
+        : null))
         : null,
-
     status: json["status"] ?? '',
     isNotificatedActivated: json["isNotificatedActivated"] ?? false,
     isPaid: json["isPaid"] ?? false,
     assignedTo: json["assignedTo"] ?? "",
     fechaRegistro: json["fechaRegistro"] != null
         ? (json["fechaRegistro"] is String
-        ? DateTime.tryParse(json["fechaRegistro"]) // Si es String, intentar parsear
+        ? DateTime.tryParse(json["fechaRegistro"])
         : (json["fechaRegistro"] is Timestamp
-        ? json["fechaRegistro"].toDate() // Si es Timestamp, convertir a DateTime
-        : null)) // Si no es ni String ni Timestamp, devolver null
+        ? json["fechaRegistro"].toDate()
+        : null))
         : null,
     departamento: json["departamento"] ?? '',
     municipio: json["municipio"] ?? '',
     direccion: json["direccion"] ?? '',
     situacion: json["situacion"] ?? '',
     exento: json["exento"] ?? false,
-    beneficiosAdquiridos: List<String>.from(json["beneficiosAdquiridos"] ?? []),
-    beneficiosNegados: List<String>.from(json["beneficiosNegados"] ?? []),
-
+    beneficiosAdquiridos:
+    List<String>.from(json["beneficiosAdquiridos"] ?? []),
+    beneficiosNegados:
+    List<String>.from(json["beneficiosNegados"] ?? []),
   );
 
-  // Factory para crear Ppl directamente desde Firestore
   factory Ppl.fromDocumentSnapshot(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
 
@@ -168,7 +164,8 @@ class Ppl {
       categoriaDelDelito: data["categoria_delito"] ?? '',
       delito: data["delito"] ?? '',
       radicado: data["radicado"] ?? '',
-      tiempoCondena: data["tiempo_condena"] ?? 0,
+      mesesCondena: data["meses_condena"] ?? 0,
+      diasCondena: data["dias_condena"] ?? 0,
       td: data["td"] ?? '',
       nui: data["nui"] ?? '',
       patio: data["patio"] ?? '',
@@ -195,13 +192,12 @@ class Ppl {
       direccion: data["direccion"] ?? '',
       situacion: data["situacion"] ?? '',
       exento: data["exento"] ?? false,
-      beneficiosAdquiridos: List<String>.from(data["beneficiosAdquiridos"] ?? []),
+      beneficiosAdquiridos:
+      List<String>.from(data["beneficiosAdquiridos"] ?? []),
       beneficiosNegados: List<String>.from(data["beneficiosNegados"] ?? []),
     );
   }
 
-
-  // Método para convertir una instancia de Ppl a JSON
   Map<String, dynamic> toJson() => {
     "id": id,
     "nombre_acudiente": nombreAcudiente,
@@ -223,7 +219,8 @@ class Ppl {
     "categoria_delito": categoriaDelDelito,
     "delito": delito,
     "radicado": radicado,
-    "tiempo_condena": tiempoCondena,
+    "meses_condena": mesesCondena,
+    "dias_condena": diasCondena,
     "td": td,
     "nui": nui,
     "patio": patio,
@@ -241,4 +238,7 @@ class Ppl {
     "beneficiosAdquiridos": beneficiosAdquiridos,
     "beneficiosNegados": beneficiosNegados,
   };
+
+  // Método auxiliar (opcional)
+  double get condenaTotalEnMeses => mesesCondena + (diasCondena / 30.0);
 }

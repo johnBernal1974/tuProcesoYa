@@ -40,7 +40,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _apellidoController = TextEditingController();
   final _numeroDocumentoController = TextEditingController();
   final _radicadoController = TextEditingController();
-  final _tiempoCondenaController = TextEditingController();
   final _fechaDeCapturaController = TextEditingController();
   final _tdController = TextEditingController();
   final _nuiController = TextEditingController();
@@ -55,6 +54,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _parentescoAcudienteController = TextEditingController();
   final _celularAcudienteController = TextEditingController();
   final _emailAcudienteController = TextEditingController();
+
+  /// nuevos controladores para la condena
+  final _mesesCondenaController = TextEditingController();
+  final _diasCondenaController = TextEditingController();
+
+  double getCondenaEnMeses() {
+    final meses = int.tryParse(_mesesCondenaController.text) ?? 0;
+    final dias = int.tryParse(_diasCondenaController.text) ?? 0;
+    return meses + (dias / 30);
+  }
+
 
 
   ///Mapas de opciones traidas de firestore
@@ -102,7 +112,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   int mesesRestante = 0;
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
-  int tiempoCondena =0;
   late String _tipoDocumento;
 
   //fecha para redenciones
@@ -155,6 +164,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     if (selectedDelito != null && selectedDelito!.trim().isEmpty) {
       selectedDelito = null;
     }
+    final mesesCondena = widget.doc['meses_condena'];
+    final diasCondena = widget.doc['dias_condena'];
+
+    if (mesesCondena != null && diasCondena != null &&
+        mesesCondena is num && diasCondena is num) {
+      cargarCondenaDesdeDocumento(mesesCondena.toInt(), diasCondena.toInt());
+    }
+
   }
 
   @override
@@ -163,7 +180,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _apellidoController.dispose();
     _numeroDocumentoController.dispose();
     _radicadoController.dispose();
-    _tiempoCondenaController.dispose();
     _fechaDeCapturaController.dispose();
     _tdController.dispose();
     _nuiController.dispose();
@@ -273,7 +289,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               ),
             ),
           ],
-
 
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.doc.id),
@@ -2013,10 +2028,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _numeroDocumentoController.text = widget.doc.get('numero_documento_ppl').toString();
     _tipoDocumento = widget.doc.get('tipo_documento_ppl') ?? "";
     _radicadoController.text = widget.doc.get('radicado') ?? "";
-    _tiempoCondenaController.text = widget.doc.get('tiempo_condena')?.toString() ?? "";
-
-    // 🔍 Verifica si tiempo_condena se obtiene correctamente
-    debugPrint("📌 Tiempo de condena obtenido: ${_tiempoCondenaController.text}");
 
     _fechaDeCapturaController.text = widget.doc.get('fecha_captura') ?? "";
     _tdController.text = widget.doc.get('td') ?? "";
@@ -2031,6 +2042,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget _datosEjecucionCondena(double totalDiasRedimidos, bool isExento) {
+    final meses = _calculoCondenaController.mesesEjecutado ?? 0;
+    final dias = _calculoCondenaController.diasEjecutadoExactos ?? 0;
+    final mesesRestantes = _calculoCondenaController.mesesRestante ?? 0;
+    final diasRestantes = _calculoCondenaController.diasRestanteExactos ?? 0;
+    final porcentaje = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
+
     return Column(
       children: [
         if (isExento)
@@ -2059,18 +2076,20 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
         const SizedBox(height: 20),
         DatosEjecucionCondena(
-          mesesEjecutado: mesesEjecutado,
-          diasEjecutadoExactos: diasEjecutadoExactos,
-          mesesRestante: mesesRestante,
-          diasRestanteExactos: diasRestanteExactos,
+          mesesEjecutado: meses,
+          diasEjecutadoExactos: dias,
+          mesesRestante: mesesRestantes,
+          diasRestanteExactos: diasRestantes,
           totalDiasRedimidos: totalDiasRedimidos,
-          porcentajeEjecutado: porcentajeEjecutado,
+          porcentajeEjecutado: porcentaje,
           primary: Colors.grey,
           negroLetras: Colors.black,
         ),
       ],
     );
   }
+
+
 
   Widget nombrePpl() {
     return textFormField(
@@ -2198,43 +2217,81 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget condenaPpl() {
-    return TextFormField(
-      controller: _tiempoCondenaController,
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: 'Tiempo de condena',
-        floatingLabelStyle: TextStyle(
-          color: Colors.grey.shade700,
-          fontWeight: FontWeight.bold,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.red.shade900, width: 2),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: BorderSide(color: Colors.red.shade900, width: 2),
-        ),
-      ),
-      validator: (value) {
-        final parsed = int.tryParse(value ?? '');
-        if (parsed == null || parsed <= 0) {
-          return 'Por favor, ingrese un valor válido mayor a 0';
-        }
-        return null;
-      },
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text("Tiempo de condena", style: TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              flex: 2,
+              child: TextFormField(
+                controller: _mesesCondenaController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Meses de condena',
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey, width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  final parsed = int.tryParse(value ?? '');
+                  if (parsed == null || parsed < 0) return 'Ingrese meses válidos';
+                  return null;
+                },
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 1,
+              child: TextFormField(
+                controller: _diasCondenaController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Días',
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Colors.grey, width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  final parsed = int.tryParse(value ?? '');
+                  if (parsed == null || parsed < 0 || parsed >= 30) {
+                    return '0 a 29';
+                  }
+                  return null;
+                },
+              ),
+            ),
+          ],
+        )
+      ],
     );
+  }
+
+  void cargarCondenaDesdeDocumento(int meses, int dias) {
+    _mesesCondenaController.text = meses.toString();
+    _diasCondenaController.text = dias.toString();
   }
 
   Widget tdPpl(){
@@ -2741,8 +2798,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
             List<String> camposFaltantes = [];
 
-            String? centro = selectedCentro ?? widget.doc['centro_reclusion'];
-            if (centro == null || centro.toString().trim().isEmpty) camposFaltantes.add("Centro de Reclusión");
+            // 🔍 Leer situación actual
+            String situacion = (widget.doc['situacion'] ?? '').toString();
+
+            if (situacion == 'En Reclusión') {
+              String? centro = selectedCentro ?? widget.doc['centro_reclusion'];
+              if (centro == null || centro.toString().trim().isEmpty) camposFaltantes.add("Centro de Reclusión");
+
+              if (_tdController.text.trim().isEmpty) camposFaltantes.add("TD");
+              if (_nuiController.text.trim().isEmpty) camposFaltantes.add("NUI");
+              if (_patioController.text.trim().isEmpty) camposFaltantes.add("Patio");
+            }
 
             String? regional = selectedRegional ?? widget.doc['regional'];
             if (regional == null || regional.toString().trim().isEmpty) camposFaltantes.add("Regional");
@@ -2770,23 +2836,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             String? numeroDocumento = _numeroDocumentoController.text.trim();
             if (numeroDocumento.isEmpty) camposFaltantes.add("Número de Documento");
 
-            int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
-
-            if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas']) == null) {
-              camposFaltantes.add("Juzgado de Ejecución de Penas");
+            if ((int.tryParse(_mesesCondenaController.text) ?? 0) <= 0) {
+              camposFaltantes.add("Meses de condena (debe ser mayor a 0)");
             }
-
-            if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno']) == null) {
-              camposFaltantes.add("Juzgado que Condenó");
-            }
-
-            if (tiempoCondena == 0) camposFaltantes.add("Tiempo de condena");
 
             // Mostrar comentario si hay campos faltantes
             String comentario = "";
             String nuevoStatus = "activado";
 
-            if (camposFaltantes.isNotEmpty) {
+            bool tieneEvento = await tieneEventoEspecial(widget.doc.reference);
+
+            if (camposFaltantes.isNotEmpty && !tieneEvento) {
               comentario = await _mostrarDialogoComentarioPendiente(context, camposFaltantes.join(", "));
               if (comentario.trim().isEmpty) return;
               nuevoStatus = "pendiente";
@@ -2833,7 +2893,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'delito': selectedDelito ?? widget.doc['delito'],
                 'categoria_delito': categoriaDelito ?? widget.doc['categoria_delito'],
                 'radicado': _radicadoController.text,
-                'tiempo_condena': tiempoCondena,
+                'meses_condena': int.tryParse(_mesesCondenaController.text) ?? 0,
+                'dias_condena': int.tryParse(_diasCondenaController.text) ?? 0,
                 'fecha_captura': _fechaDeCapturaController.text,
                 'td': _tdController.text.isNotEmpty ? _tdController.text : '',
                 'nui': _nuiController.text.isNotEmpty ? _nuiController.text : '',
@@ -2846,14 +2907,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'status': nuevoStatus,
               };
 
-              // 👇 Agregar campo solo si se activó
               if (nuevoStatus == 'activado') {
                 datosActualizados['fechaActivacion'] = DateTime.now();
               }
 
               await widget.doc.reference.update(datosActualizados);
-
-
               await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
 
               if (comentario.isNotEmpty) {
@@ -2903,6 +2961,19 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  Future<bool> tieneEventoEspecial(DocumentReference docRef) async {
+    try {
+      final snapshot1 = await docRef.collection('eventos').doc('proceso_en_tribunal').get();
+      final snapshot2 = await docRef.collection('eventos').doc('sin_juzgado_ejecucion').get();
+
+      return snapshot1.exists || snapshot2.exists;
+    } catch (e) {
+      return false;
+    }
+  }
+
+
+
   Future<String> _mostrarDialogoComentarioPendiente(BuildContext context, String faltantes) async {
     final TextEditingController _comentarioController = TextEditingController();
     String comentario = "";
@@ -2951,8 +3022,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   bool _camposCompletos() {
     bool camposValidos(dynamic valor) => valor != null && valor.toString().trim().isNotEmpty;
 
-    int tiempoCondena = int.tryParse(_tiempoCondenaController.text) ?? 0;
-
     return camposValidos(_nombreController.text) &&
         camposValidos(_apellidoController.text) &&
         camposValidos(_numeroDocumentoController.text) &&
@@ -2963,8 +3032,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         camposValidos(selectedCiudad ?? getCampoSeguro('ciudad')) &&
         camposValidos(selectedDelito ?? getCampoSeguro('delito')) &&
         camposValidos(selectedJuzgadoEjecucionPenas ?? getCampoSeguro('juzgado_ejecucion_penas')) &&
-        camposValidos(selectedJuzgadoNombre ?? getCampoSeguro('juzgado_que_condeno')) &&
-        tiempoCondena > 0;
+        camposValidos(selectedJuzgadoNombre ?? getCampoSeguro('juzgado_que_condeno'));
   }
 
 
@@ -3160,8 +3228,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  Future<void> validarYEnviarMensaje() async
-  {
+  Future<void> validarYEnviarMensaje() async{
     String celular = widget.doc['celular'] ?? '';
     String docId = widget.doc['id'] ?? '';
 

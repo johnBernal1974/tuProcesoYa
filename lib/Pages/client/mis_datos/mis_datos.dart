@@ -184,7 +184,10 @@ class _MisDatosPageState extends State<MisDatosPage> {
                     children: [
                       const Divider(color: Colors.grey),
                       const Text('Tiempo Condena:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text('${_ppl!.tiempoCondena} meses', style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
+                      Text(
+                        '${_ppl!.mesesCondena} meses, ${_ppl!.diasCondena} días',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
                     ],
                   ),
                   if(_ppl!.situacion == "En Reclusión")

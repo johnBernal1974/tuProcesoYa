@@ -1059,7 +1059,10 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
           Row(
             children: [
               const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text('${userData!.tiempoCondena} meses', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              Text(
+                '${userData!.mesesCondena ?? 0} meses, ${userData!.diasCondena ?? 0} días',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
             ],
           ),
           if(userData!.situacion == "En Reclusión")
@@ -1358,7 +1361,9 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
           patio: fetchedData.patio ?? "",
           radicado: fetchedData.radicado ?? "",
           delito: fetchedData.delito ?? "",
-          condena: "${fetchedData.tiempoCondena ?? 0}",
+          condena: userData?.diasCondena != null && userData!.diasCondena! > 0
+              ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
+              : "${userData?.mesesCondena ?? 0} meses",
           purgado: "$mesesEjecutadosFinal meses y $diasEjecutadosFinal días",
           jdc: fetchedData.juzgadoQueCondeno ?? "",
           numeroSeguimiento: widget.numeroSeguimiento,
@@ -1389,24 +1394,21 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
   String generarTextoSinopsisParaPermiso72h(Ppl userData, double totalDiasRedimidos) {
     final jdc = userData.juzgadoQueCondeno ?? '';
-    final condena = userData.tiempoCondena?.toString() ?? '';
+    final meses = userData.mesesCondena ?? 0;
+    final dias = userData.diasCondena ?? 0;
+    final condena = (dias > 0) ? '$meses meses y $dias días' : '$meses meses';
+
     final captura = userData.fechaCaptura?.toString() ?? '';
     final delito = userData.delito ?? '';
     final fechaFormateada = formatearFechaCaptura(captura);
 
-    // 🔥 Sumar bien
     final totalDiasEjecutados = (mesesEjecutado * 30) + diasEjecutadoExactos + totalDiasRedimidos.toInt();
-
     final totalMesesCumplidos = totalDiasEjecutados ~/ 30;
     final diasRestantes = totalDiasEjecutados % 30;
 
-    return
-      "La condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena meses de prisión por el delito de $delito. "
-          "La captura se efectuó el día $fechaFormateada.";
+    return "La condena fue proferida mediante sentencia por el $jdc, imponiendo una pena de $condena de prisión por el delito de $delito. "
+        "La captura se efectuó el día $fechaFormateada.";
   }
-
-
-
 
   String generarTextoPretencionesParaPermiso72Horas() {
     return """
@@ -1576,54 +1578,60 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
     final pplData = await _pplProvider.getById(id);
     if (pplData != null) {
       final fechaCaptura = pplData.fechaCaptura;
-      tiempoCondena = pplData.tiempoCondena;
+      final meses = pplData.mesesCondena ?? 0;
+      final dias = pplData.diasCondena ?? 0;
+
+      final totalDiasCondena = (meses * 30) + dias;
       final fechaActual = DateTime.now();
-      final fechaFinCondena = fechaCaptura?.add(Duration(days: tiempoCondena * 30));
 
-      final diferenciaRestante = fechaFinCondena?.difference(fechaActual);
-      final diferenciaEjecutado = fechaActual.difference(fechaCaptura!);
-
-      setState(() {
-        mesesRestante = (diferenciaRestante!.inDays ~/ 30);
-        diasRestanteExactos = diferenciaRestante.inDays % 30;
-
-        mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
-        diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
-      });
-
-      // Validaciones para beneficios
-      porcentajeEjecutado = (diferenciaEjecutado.inDays / (tiempoCondena * 30)) * 100;
-      print("Porcentaje de condena ejecutado: $porcentajeEjecutado%");
-
-      if (porcentajeEjecutado >= 33.33) {
-        print("Se aplica el beneficio de permiso administrativo de 72 horas");
-      } else {
-        print("No se aplica el beneficio de permiso administrativo de 72 horas");
+      if (fechaCaptura == null || totalDiasCondena == 0) {
+        print("❌ Fecha de captura o condena no válida.");
+        return;
       }
 
-      if (porcentajeEjecutado >= 50) {
-        print("Se aplica el beneficio de prisión domiciliaria");
+      final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
+      final diferenciaRestante = fechaFinCondena.difference(fechaActual);
+      final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
+
+      mesesRestante = (diferenciaRestante.inDays ~/ 30);
+      diasRestanteExactos = diferenciaRestante.inDays % 30;
+
+      mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
+      diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
+
+      porcentajeEjecutado = (diferenciaEjecutado.inDays / totalDiasCondena) * 100;
+
+      print("Porcentaje de condena ejecutado: ${porcentajeEjecutado!.toStringAsFixed(2)}%");
+
+      if (porcentajeEjecutado! >= 33.33) {
+        print("✅ Aplica permiso administrativo de 72 horas");
       } else {
-        print("No se aplica el beneficio de prisión domiciliaria");
+        print("❌ No aplica permiso administrativo de 72 horas");
       }
 
-      if (porcentajeEjecutado >= 60) {
-        print("Se aplica el beneficio de libertad condicional");
+      if (porcentajeEjecutado! >= 50) {
+        print("✅ Aplica prisión domiciliaria");
       } else {
-        print("No se aplica el beneficio de libertad condicional");
+        print("❌ No aplica prisión domiciliaria");
       }
 
-      if (porcentajeEjecutado >= 100) {
-        print("Se aplica el beneficio de extinción de la pena");
+      if (porcentajeEjecutado! >= 60) {
+        print("✅ Aplica libertad condicional");
       } else {
-        print("No se aplica el beneficio de extinción de la pena");
+        print("❌ No aplica libertad condicional");
+      }
+
+      if (porcentajeEjecutado! >= 100) {
+        print("✅ Aplica extinción de la pena");
+      } else {
+        print("❌ No aplica extinción de la pena");
       }
 
       print("Tiempo restante: $mesesRestante meses y $diasRestanteExactos días");
       print("Tiempo ejecutado: $mesesEjecutado meses y $diasEjecutadoExactos días");
     } else {
       if (kDebugMode) {
-        print("No hay datos");
+        print("❌ No hay datos");
       }
     }
   }
@@ -2044,7 +2052,9 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       patio: userData?.patio ?? "",
       radicado: userData?.radicado ?? "",
       delito: userData?.delito ?? "",
-      condena: "${userData?.tiempoCondena ?? ''}",
+      condena: userData?.diasCondena != null && userData!.diasCondena! > 0
+          ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
+          : "${userData?.mesesCondena ?? 0} meses",
       purgado: "$mesesEjecutado",
       jdc: userData?.juzgadoQueCondeno ?? "",
       numeroSeguimiento: widget.numeroSeguimiento,
@@ -2130,7 +2140,9 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       patio: userData?.patio ?? '',
       radicado: userData?.radicado ?? '',
       delito: userData?.delito ?? '',
-      condena: "${userData?.tiempoCondena ?? 0}",
+      condena: userData?.diasCondena != null && userData!.diasCondena! > 0
+          ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
+          : "${userData?.mesesCondena ?? 0} meses",
       purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
