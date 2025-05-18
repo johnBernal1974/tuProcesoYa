@@ -87,7 +87,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       content: SingleChildScrollView(
         child: Center(
           child: SizedBox(
-            width: MediaQuery.of(context).size.width >= 1000 ? 1500 : double.infinity,
+            width: MediaQuery.of(context).size.width >= 1000 ? double.infinity : double.infinity,
             child: FutureBuilder<DocumentSnapshot>(
               future: _firebaseFirestore.collection('admin').doc(FirebaseAuth.instance.currentUser?.uid ?? "").get(),
               builder: (context, snapshot) {
@@ -573,142 +573,206 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                   // 🔹 Tabla de registros de la semana
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      showCheckboxColumn: false,
-                      columns: const [
-                        DataColumn(label: Text('Estado')),
-                        DataColumn(label: Text('PPL')),
-                        DataColumn(label: Text('Identificación')),
-                        DataColumn(label: Text('Acudiente')),
-                        DataColumn(label: Text('Celular')),
-                        DataColumn(label: Text('WhatsApp')),
-                        DataColumn(label: Text('Pago')),
-                        DataColumn(label: Text('Prueba')),
-                        DataColumn(label: Text('Registro')),
-                      ],
-                      rows: registros.map((doc) {
-                        final String assignedTo = doc.get('assignedTo') ?? "";
-                        final bool isAssigned = assignedTo.isNotEmpty;
-                        final String status = doc.get('status').toString().toLowerCase();
-
-                        return DataRow(
-                          onSelectChanged: (bool? selected) async {
-                            if (selected != null && selected) {
-                              String userRole = await _obtenerRolActual();
-
-                              if (userRole != "operador") {
+                    child: IntrinsicWidth(
+                      child: DataTable(
+                        showCheckboxColumn: false,
+                        columnSpacing: 40,
+                        columns: const [
+                          DataColumn(label: Text('Estado')),
+                          DataColumn(label: Text('Situación')),
+                          DataColumn(label: Text('PPL')),
+                          DataColumn(label: Text('Identificación')),
+                          DataColumn(label: Text('Acudiente')),
+                          DataColumn(label: Text('Celular')),
+                          DataColumn(label: Text('WhatsApp')),
+                          DataColumn(label: Text('Pago')),
+                          DataColumn(label: Text('Prueba')),
+                          DataColumn(label: Text('Registro')),
+                        ],
+                        rows: registros.asMap().entries.map((entry) {
+                          int index = entry.key;
+                          var doc = entry.value;
+                      
+                          final String assignedTo = doc.get('assignedTo') ?? "";
+                          final bool isAssigned = assignedTo.isNotEmpty;
+                          final String status = doc.get('status').toString().toLowerCase();
+                      
+                          return DataRow(
+                            color: MaterialStateProperty.resolveWith<Color?>(
+                                  (Set<MaterialState> states) {
+                                return index % 2 == 0
+                                    ? Colors.white
+                                    : primary.withOpacity(0.05); // Fondo intercalado
+                              },
+                            ),
+                            onSelectChanged: (bool? selected) async {
+                              if (selected != null && selected) {
+                                String userRole = await _obtenerRolActual();
+                      
+                                if (userRole != "operador") {
+                                  Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
+                                  return;
+                                }
+                      
+                                final String assignedTo = doc.get('assignedTo') ?? "";
+                      
+                                if (assignedTo.isEmpty) {
+                                  bool confirmar = await _mostrarDialogoConfirmacion();
+                                  if (!confirmar) return;
+                                }
+                      
                                 Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
-                                return;
                               }
-
-                              final String assignedTo = doc.get('assignedTo') ?? "";
-
-                              if (assignedTo.isEmpty) {
-                                bool confirmar = await _mostrarDialogoConfirmacion();
-                                if (!confirmar) return;
-                              }
-
-                              Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
-                            }
-                          },
-                          cells: [
-                            // Estado
-                            DataCell(
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    child: Icon(Icons.circle, color: _getColor(status)),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  if (status == "registrado") ...[
+                            },
+                            cells: [
+                              // Estado
+                              DataCell(
+                                Row(
+                                  children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(
-                                        color: isAssigned ? primary : Colors.red,
-                                        borderRadius: BorderRadius.circular(4),
+                                        borderRadius: BorderRadius.circular(5),
                                       ),
-                                      child: Text(
-                                        isAssigned ? "Asignado" : "No asignado",
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
+                                      child: Icon(Icons.circle, color: _getColor(status)),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    if (status == "registrado") ...[
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: isAssigned ? primary : Colors.red,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          isAssigned ? "Asignado" : "No asignado",
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                      
+                              // Situación
+                              DataCell(
+                                Builder(
+                                  builder: (_) {
+                                    final String situacion = doc.data().toString().contains('situacion')
+                                        ? doc.get('situacion') ?? ''
+                                        : '';
+                      
+                                    if (situacion == 'En Reclusión') {
+                                      return const Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.lock, color: Colors.grey),
+                                            SizedBox(height: 4),
+                                            Text('En Reclusión', style: TextStyle(fontSize: 12)),
+                                          ],
+                                        ),
+                                      );
+                                    } else if (situacion == 'En Prisión domiciliaria') {
+                                      return const Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.home, color: Colors.orange),
+                                            SizedBox(height: 4),
+                                            Text('Domiciliaria', style: TextStyle(fontSize: 12)),
+                                          ],
+                                        ),
+                                      );
+                                    } else if (situacion == 'En libertad condicional') {
+                                      return const Center(
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.directions_walk, color: Colors.green),
+                                            SizedBox(height: 4),
+                                            Text('Condicional', style: TextStyle(fontSize: 12)),
+                                          ],
+                                        ),
+                                      );
+                                    } else {
+                                      return const Center(child: Text(''));
+                                    }
+                                  },
+                                ),
+                              ),
+                      
+                              // Nombre + Apellido
+                              DataCell(
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(doc.get('nombre_ppl'), style: const TextStyle(fontWeight: FontWeight.w500)),
+                                    Text(doc.get('apellido_ppl'), style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                  ],
+                                ),
+                              ),
+                      
+                              // Identificación
+                              DataCell(Text(doc.get('numero_documento_ppl').toString())),
+                      
+                              // Acudiente
+                              DataCell(
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(doc.get('nombre_acudiente'), style: const TextStyle(fontWeight: FontWeight.w500)),
+                                    Text(doc.get('apellido_acudiente'), style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                  ],
+                                ),
+                              ),
+                      
+                              // Celular
+                              DataCell(Text(doc.get('celular').toString())),
+                      
+                              // WhatsApp
+                              DataCell(Text(
+                                doc.data().toString().contains('celularWhatsapp')
+                                    ? (doc.get('celularWhatsapp') ?? '')
+                                    : '',
+                              )),
+                      
+                              // Pago
+                              DataCell(Icon(
+                                doc.get('isPaid') ? Icons.check_circle : Icons.cancel,
+                                color: doc.get('isPaid') ? Colors.blue : Colors.grey,
+                              )),
+                      
+                              // Prueba
+                              DataCell(iconoPruebaYPago(doc)),
+                      
+                              // Fecha
+                              DataCell(
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      DateFormat("dd 'de' MMMM 'de' yyyy", 'es').format(_convertirTimestampADateTime(doc.get('fechaRegistro'))!),
+                                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                                    ),
+                                    Text(
+                                      DateFormat('hh:mm a', 'es').format(_convertirTimestampADateTime(doc.get('fechaRegistro'))!),
+                                      style: const TextStyle(fontSize: 12, color: Colors.black54),
                                     ),
                                   ],
-                                ],
+                                ),
                               ),
-                            ),
-
-                            // Nombre + Apellido
-                            DataCell(
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(doc.get('nombre_ppl'), style: const TextStyle(fontWeight: FontWeight.w500)),
-                                  Text(doc.get('apellido_ppl'), style: const TextStyle(fontSize: 12, color: Colors.black87)),
-                                ],
-                              ),
-                            ),
-
-                            // Identificación
-                            DataCell(Text(doc.get('numero_documento_ppl').toString())),
-
-                            // Acudiente (Nombre + Apellido)
-                            DataCell(
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(doc.get('nombre_acudiente'), style: const TextStyle(fontWeight: FontWeight.w500)),
-                                  Text(doc.get('apellido_acudiente'), style: const TextStyle(fontSize: 12, color: Colors.black87)),
-                                ],
-                              ),
-                            ),
-
-                            // Celular
-                            DataCell(Text(doc.get('celular').toString())),
-
-                            DataCell(Text(
-                              doc.data().toString().contains('celularWhatsapp')
-                                  ? (doc.get('celularWhatsapp') ?? '')
-                                  : '',
-                            )),
-
-                            // Pago
-                            DataCell(Icon(
-                              doc.get('isPaid') ? Icons.check_circle : Icons.cancel,
-                              color: doc.get('isPaid') ? Colors.blue : Colors.grey,
-                            )),
-
-                            DataCell(iconoPruebaYPago(doc)),
-                            // Fecha
-                            DataCell(
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    DateFormat("dd 'de' MMMM 'de' yyyy", 'es').format(_convertirTimestampADateTime(doc.get('fechaRegistro'))!),
-                                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                                  ),
-                                  Text(
-                                    DateFormat('hh:mm a', 'es').format(_convertirTimestampADateTime(doc.get('fechaRegistro'))!),
-                                    style: const TextStyle(fontSize: 12, color: Colors.black54),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        );
-                      }).toList(),
-
+                            ],
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
 

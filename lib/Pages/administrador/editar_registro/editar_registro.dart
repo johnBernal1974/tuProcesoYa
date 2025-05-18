@@ -2855,8 +2855,21 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             String comentario = "";
             String nuevoStatus = "activado";
 
+            bool tieneProcesoEnTribunal = false;
+
+            try {
+              final eventoDoc = await widget.doc.reference
+                  .collection('eventos')
+                  .doc('proceso_en_tribunal')
+                  .get();
+
+              tieneProcesoEnTribunal = eventoDoc.exists;
+            } catch (e) {
+              tieneProcesoEnTribunal = false;
+            }
+
             if (camposFaltantes.isNotEmpty) {
-              if (tieneEvento) {
+              if (tieneEvento || tieneProcesoEnTribunal) {
                 if (context.mounted) {
                   comentario = await _mostrarDialogoActivacionConDatosIncompletos(context, camposFaltantes.join(", "));
                 }
@@ -2869,8 +2882,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 if (comentario.trim().isEmpty) return;
                 nuevoStatus = "pendiente";
               }
+            } else if (tieneProcesoEnTribunal) {
+              // 🔥 No hay campos faltantes, pero hay proceso_en_tribunal → forzar comentario
+              if (context.mounted) {
+                comentario = await _mostrarDialogoActivacionConDatosIncompletos(context, "Proceso en tribunal");
+              }
+              if (comentario.trim().isEmpty) return;
+              nuevoStatus = "activado";
             }
-
             Map<String, String> correosCentro = {
               'correo_direccion': '',
               'correo_juridica': '',
@@ -2970,12 +2989,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 for (final doc in comentariosSnapshot.docs) {
                   await doc.reference.delete();
                 }
-
-                final historialSnapshot = await widget.doc.reference.collection('historial_acciones').get();
-                for (final doc in historialSnapshot.docs) {
-                  await doc.reference.delete();
-                }
-
                 final eventosRef = widget.doc.reference.collection('eventos');
                 try {
                   await eventosRef.doc('requiere_actualizacion_datos').delete();
