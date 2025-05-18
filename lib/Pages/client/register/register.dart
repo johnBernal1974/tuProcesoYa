@@ -49,6 +49,7 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController nombreAcudienteController = TextEditingController();
   final TextEditingController apellidoAcudienteController = TextEditingController();
   final TextEditingController celularController = TextEditingController();
+  final TextEditingController whatsappController  = TextEditingController();
   final TextEditingController nombrePplController = TextEditingController();
   final TextEditingController apellidoPplController = TextEditingController();
   final TextEditingController numeroDocumentoPplController = TextEditingController();
@@ -148,6 +149,7 @@ class _RegistroPageState extends State<RegistroPage> {
   bool _verificandoOTP = false;
   bool _recaptchaValidado = false;
   String? codigoReferido;
+  bool _mismoNumero = false;
 
   @override
   void initState() {
@@ -577,12 +579,9 @@ class _RegistroPageState extends State<RegistroPage> {
     }
   }
 
-
-
   Widget _buildCelularAcudienteForm() {
     return Form(
       key: _formKeyCelularAcudiente,
-      //autovalidateMode: AutovalidateMode.onUserInteraction,
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(10.0),
@@ -590,30 +589,97 @@ class _RegistroPageState extends State<RegistroPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 30),
-              const Text(" Celular del Acudiente", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const Text("Celular del Acudiente", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
-              // 🔹 Advertencia del celular
               const Row(
                 children: [
                   Icon(Icons.warning_amber, color: Colors.amber, size: 30),
                   SizedBox(width: 10),
                   Expanded(
-                    child: Text("Por favor ingresa un número de celular activo y que tenga cuenta de WhatsApp, ya que por "
-                        "este medio también podemos enviarte información relevante.", style: TextStyle(fontSize: 12)),
+                    child: Text(
+                      "Por favor ingresa un número de celular activo y que tenga cuenta de WhatsApp, ya que por "
+                          "este medio también podemos enviarte información relevante.",
+                      style: TextStyle(fontSize: 12),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 30),
-              // 🔹 Celular
+              const Text("Si usas un número para llamadas y otro para WhatsApp ingrésalos ambos", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+
+              // 🔹 Celular llamadas
               TextFormField(
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 controller: celularController,
                 keyboardType: TextInputType.phone,
-                decoration: _buildInputDecoration('Celular').copyWith(
-                  counterText: "", // 🔥 Oculta el contador de caracteres
-                ),
+                decoration: _buildInputDecoration('Celular llamadas').copyWith(counterText: ""),
                 maxLength: 10,
                 validator: _validarCelular,
+                onChanged: (value) {
+                  if (_mismoNumero) {
+                    setState(() {
+                      whatsappController.text = value;
+                    });
+                  }
+                },
+              ),
+
+              const SizedBox(height: 10),
+
+              // 🔹 Checkbox "mismo número"
+              CheckboxListTile(
+                value: _mismoNumero,
+                contentPadding: EdgeInsets.zero,
+                controlAffinity: ListTileControlAffinity.leading, // ✅ Checkbox a la izquierda
+                title: const Text("Es el mismo número para WhatsApp"),
+                onChanged: (value) {
+                  setState(() {
+                    _mismoNumero = value ?? false;
+                    if (_mismoNumero) {
+                      whatsappController.text = celularController.text;
+                    } else {
+                      whatsappController.clear();
+                    }
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+              const Text("Es muy importante el número de WhatsApp ya que es el único medio de comunicación por donde te estaremos enviando toda la información relevante de tu proceso.", style: TextStyle(
+                fontSize: 13, fontWeight: FontWeight.bold, height: 1.1
+              ),),
+              const SizedBox(height: 20),
+              // 🔹 Celular WhatsApp
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Image.asset(
+                      'assets/images/icono_whatsapp.png',
+                      width: 24,
+                      height: 24,
+                    ),
+                  ),
+                  Expanded(
+                    child: TextFormField(
+                      autovalidateMode: AutovalidateMode.onUserInteraction,
+                      controller: whatsappController,
+                      enabled: !_mismoNumero,
+                      keyboardType: TextInputType.phone,
+                      decoration: _buildInputDecoration('Celular de WhatsApp').copyWith(counterText: ""),
+                      maxLength: 10,
+                      validator: _validarCelular,
+                    ),
+                  ),
+                  const Tooltip(
+                    message: "Este número se usará para enviarte información por WhatsApp.",
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 8.0),
+                      child: Icon(Icons.info_outline, size: 20),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 15),
             ],
@@ -622,6 +688,7 @@ class _RegistroPageState extends State<RegistroPage> {
       ),
     );
   }
+
 
   Widget _buildParentescoAcudienteForm() {
     return Form(
@@ -1564,6 +1631,9 @@ class _RegistroPageState extends State<RegistroPage> {
         "apellido_acudiente": apellidoAcudienteController.text.trim(),
         "parentesco_representante": parentesco ?? "",
         "celular": celularController.text.trim(),
+        "celularWhatsapp": _mismoNumero
+            ? celularController.text.trim()
+            : whatsappController.text.trim(),
         "email": "", // vacío si no se usa
         "nombre_ppl": nombre,
         "apellido_ppl": apellido,
