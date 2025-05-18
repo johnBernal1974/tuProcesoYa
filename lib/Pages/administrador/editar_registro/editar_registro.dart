@@ -2997,8 +2997,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
-
   Future<bool> tieneEventoEspecial(DocumentReference docRef) async {
     try {
       final snapshot1 = await docRef.collection('eventos').doc('proceso_en_tribunal').get();
@@ -3210,7 +3208,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       );
     }
   }
-
 
   /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
   Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {
