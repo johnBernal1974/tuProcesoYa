@@ -53,6 +53,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _apellidosAcudienteController = TextEditingController();
   final _parentescoAcudienteController = TextEditingController();
   final _celularAcudienteController = TextEditingController();
+  final _celularWhatsappController = TextEditingController();
   final _emailAcudienteController = TextEditingController();
 
   /// nuevos controladores para la condena
@@ -358,6 +359,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           parentescoAcudiente(),
           const SizedBox(height: 15),
           celularAcudiente(),
+          const SizedBox(height: 15),
+          celularWhatsappAcudiente(),
           const SizedBox(height: 15),
 
           if (widget.doc['email'] != null && widget.doc['email'].toString().trim().isNotEmpty) ...[
@@ -2026,23 +2029,30 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   void _initFormFields() {
-    _nombreController.text = widget.doc.get('nombre_ppl') ?? "";
-    _apellidoController.text = widget.doc.get('apellido_ppl') ?? "";
-    _numeroDocumentoController.text = widget.doc.get('numero_documento_ppl').toString();
-    _tipoDocumento = widget.doc.get('tipo_documento_ppl') ?? "";
-    _radicadoController.text = widget.doc.get('radicado') ?? "";
+    final data = widget.doc.data() as Map<String, dynamic>;
 
-    _fechaDeCapturaController.text = widget.doc.get('fecha_captura') ?? "";
-    _tdController.text = widget.doc.get('td') ?? "";
-    _nuiController.text = widget.doc.get('nui') ?? "";
-    _patioController.text = widget.doc.get('patio') ?? "";
-    _nombreAcudienteController.text = widget.doc.get('nombre_acudiente') ?? "";
-    _apellidosAcudienteController.text = widget.doc.get('apellido_acudiente') ?? "";
-    _parentescoAcudienteController.text = widget.doc.get('parentesco_representante') ?? "";
-    _celularAcudienteController.text = widget.doc.get('celular') ?? "";
-    _emailAcudienteController.text = widget.doc.get('email') ?? "";
-    _direccionController.text = widget.doc['direccion'] ?? '';
+    _nombreController.text = data['nombre_ppl'] ?? "";
+    _apellidoController.text = data['apellido_ppl'] ?? "";
+    _numeroDocumentoController.text = data['numero_documento_ppl']?.toString() ?? "";
+    _tipoDocumento = data['tipo_documento_ppl'] ?? "";
+    _radicadoController.text = data['radicado'] ?? "";
+
+    _fechaDeCapturaController.text = data['fecha_captura'] ?? "";
+    _tdController.text = data['td'] ?? "";
+    _nuiController.text = data['nui'] ?? "";
+    _patioController.text = data['patio'] ?? "";
+    _nombreAcudienteController.text = data['nombre_acudiente'] ?? "";
+    _apellidosAcudienteController.text = data['apellido_acudiente'] ?? "";
+    _parentescoAcudienteController.text = data['parentesco_representante'] ?? "";
+    _celularAcudienteController.text = data['celular'] ?? "";
+
+    // 🔒 Este campo puede no existir en registros antiguos
+    _celularWhatsappController.text = data.containsKey('celularWhatsapp') ? data['celularWhatsapp'] ?? "" : "";
+
+    _emailAcudienteController.text = data['email'] ?? "";
+    _direccionController.text = data['direccion'] ?? "";
   }
+
 
   Widget _datosEjecucionCondena(double totalDiasRedimidos, bool isExento) {
     final meses = _calculoCondenaController.mesesEjecutado ?? 0;
@@ -2385,6 +2395,20 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
+
+  Widget celularWhatsappAcudiente() {
+    return textFormField(
+      controller: _celularWhatsappController,
+      labelText: 'WhatsApp',
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor ingrese el celular de WhatsApp';
+        }
+        return null;
+      },
+    );
+  }
+
 
   Widget emailAcudiente(){
     return textFormField(
@@ -2825,6 +2849,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             if ((int.tryParse(_mesesCondenaController.text) ?? 0) <= 0)
               camposFaltantes.add("Meses de condena (debe ser mayor a 0)");
 
+            if (_celularWhatsappController.text.trim().isEmpty) camposFaltantes.add("Número de WhatsApp");
+
             bool tieneEvento = await tieneEventoEspecial(widget.doc.reference);
             String comentario = "";
             String nuevoStatus = "activado";
@@ -2895,6 +2921,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'apellido_acudiente': _apellidosAcudienteController.text,
                 'parentesco_representante': _parentescoAcudienteController.text,
                 'celular': _celularAcudienteController.text,
+                'celularWhatsapp': _celularWhatsappController.text,
                 'email': _emailAcudienteController.text,
                 'status': nuevoStatus,
               };

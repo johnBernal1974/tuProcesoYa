@@ -10,6 +10,7 @@ class Ppl {
   final String apellidoAcudiente;
   final String parentescoRepresentante;
   final String celular;
+  final String celularWhatsapp;
   final String email;
   final String nombrePpl;
   final String apellidoPpl;
@@ -50,6 +51,7 @@ class Ppl {
     required this.apellidoAcudiente,
     required this.parentescoRepresentante,
     required this.celular,
+    required this.celularWhatsapp,
     required this.email,
     required this.nombrePpl,
     required this.apellidoPpl,
@@ -91,6 +93,7 @@ class Ppl {
     apellidoAcudiente: json["apellido_acudiente"] ?? '',
     parentescoRepresentante: json["parentesco_representante"] ?? '',
     celular: json["celular"] ?? '',
+    celularWhatsapp: json["celularWhatsapp"] ?? '',
     email: json["email"] ?? '',
     nombrePpl: json["nombre_ppl"] ?? '',
     apellidoPpl: json["apellido_ppl"] ?? '',
@@ -149,6 +152,7 @@ class Ppl {
       apellidoAcudiente: data["apellido_acudiente"] ?? '',
       parentescoRepresentante: data["parentesco_representante"] ?? '',
       celular: data["celular"] ?? '',
+      celularWhatsapp: data["celularWhatsapp"] ?? '',
       email: data["email"] ?? '',
       nombrePpl: data["nombre_ppl"] ?? '',
       apellidoPpl: data["apellido_ppl"] ?? '',
@@ -204,6 +208,7 @@ class Ppl {
     "apellido_acudiente": apellidoAcudiente,
     "parentesco_representante": parentescoRepresentante,
     "celular": celular,
+    "celularWhatsapp": celularWhatsapp,
     "email": email,
     "nombre_ppl": nombrePpl,
     "apellido_ppl": apellidoPpl,

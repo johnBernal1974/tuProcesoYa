@@ -267,14 +267,25 @@ class _MisDatosPageState extends State<MisDatosPage> {
                       Text(_ppl!.celular, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
                     ],
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Divider(color: Colors.grey),
-                      const Text('Email:', style: TextStyle(fontSize: 13, color: negro)),
-                      Text(_ppl!.email, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
-                    ],
-                  ),
+
+                  if (_ppl?.celularWhatsapp != null && _ppl!.celularWhatsapp.trim().isNotEmpty)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Divider(color: Colors.grey),
+                        const Text('WhatsApp:', style: TextStyle(fontSize: 13, color: negro)),
+                        Text(_ppl!.celularWhatsapp, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
+
+                  // Column(
+                  //   crossAxisAlignment: CrossAxisAlignment.start,
+                  //   children: [
+                  //     const Divider(color: Colors.grey),
+                  //     const Text('Email:', style: TextStyle(fontSize: 13, color: negro)),
+                  //     Text(_ppl!.email, style: const TextStyle(fontSize: 13, fontWeight:FontWeight.w600)),
+                  //   ],
+                  // ),
                   const SizedBox(height: 25)
                 ],
               ),

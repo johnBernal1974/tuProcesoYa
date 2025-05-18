@@ -581,6 +581,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         DataColumn(label: Text('Identificación')),
                         DataColumn(label: Text('Acudiente')),
                         DataColumn(label: Text('Celular')),
+                        DataColumn(label: Text('WhatsApp')),
                         DataColumn(label: Text('Pago')),
                         DataColumn(label: Text('Prueba')),
                         DataColumn(label: Text('Registro')),
@@ -673,6 +674,12 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                             // Celular
                             DataCell(Text(doc.get('celular').toString())),
+
+                            DataCell(Text(
+                              doc.data().toString().contains('celularWhatsapp')
+                                  ? (doc.get('celularWhatsapp') ?? '')
+                                  : '',
+                            )),
 
                             // Pago
                             DataCell(Icon(
