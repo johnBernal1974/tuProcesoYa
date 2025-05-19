@@ -31,6 +31,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   Map<String, String> adminNamesMap = {}; // 🔥 Mapa de ID de admin -> Nombre de admin
   bool isLoadingAdmins = true; //
   bool mostrarSoloIncompletos = false;
+  bool mostrarRedencionesVencidas = false;
+
 
 
 
@@ -142,37 +144,108 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       return true;
                     }).length;
 
-                    List<QueryDocumentSnapshot> filteredDocs = docs;
+                    final int countRedencionesVencidas = docs.where((doc) {
+                      final status = doc.get('status').toString().toLowerCase();
+                      final data = doc.data() as Map<String, dynamic>;
 
-                    if (filterStatus != null) {
-                      filteredDocs = filteredDocs.where((doc) {
-                        final status = doc.get('status').toString().toLowerCase();
-                        final assignedTo = doc.get('assignedTo') ?? "";
-                        final data = doc.data() as Map<String, dynamic>;
-                        final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
+                      if (status != 'activado') return false;
 
-                        if (esOperador && filterStatus == "registrado") {
-                          return status == filterStatus!.toLowerCase() &&
-                              (assignedTo.isEmpty || assignedTo == currentUserUid);
-                        }
+                      final ts = data['ultima_actualizacion_redenciones'];
+                      if (ts == null || ts is! Timestamp) return false;
 
-                        // 👉 Aplica filtro adicional para "activado incompleto"
-                        if (filterStatus == "activado") {
-                          if (mostrarSoloIncompletos) {
-                            return status == "activado" && requiereActualizacion == true;
-                          } else {
-                            return status == "activado" && requiereActualizacion != true;
-                          }
-                        }
+                      final diferencia = DateTime.now().difference(ts.toDate()).inDays;
+                      return diferencia >= 30;
+                    }).length;
 
-                        return status == filterStatus!.toLowerCase();
+
+                    List<QueryDocumentSnapshot> filteredDocs;
+
+                    if (searchQuery.trim().isNotEmpty) {
+                      // 🔍 Búsqueda se hace sobre TODOS los documentos
+                      final query = searchQuery.toLowerCase();
+                      filteredDocs = docs.where((doc) {
+                        final nombre = doc.get('nombre_ppl').toString().toLowerCase();
+                        final apellido = doc.get('apellido_ppl').toString().toLowerCase();
+                        final identificacion = doc.get('numero_documento_ppl').toString().toLowerCase();
+                        final acudiente = ("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}").toLowerCase();
+                        final celularAcudiente = doc.get('celular').toString().toLowerCase();
+                        return nombre.contains(query) ||
+                            apellido.contains(query) ||
+                            identificacion.contains(query) ||
+                            acudiente.contains(query) ||
+                            celularAcudiente.contains(query);
                       }).toList();
-                    }
+                    } else {
+                      // ✅ Si NO se está buscando, aplica filtros normales
+                      filteredDocs = docs;
 
-                    if (filterIsPaid != null) {
-                      filteredDocs = filteredDocs.where((doc) => doc.get('isPaid') == filterIsPaid).toList();
-                    }
+                      if (filterStatus != null) {
+                        filteredDocs = filteredDocs.where((doc) {
+                          final status = doc.get('status').toString().toLowerCase();
+                          final assignedTo = doc.get('assignedTo') ?? "";
+                          final data = doc.data() as Map<String, dynamic>;
+                          final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
 
+                          if (esOperador && filterStatus == "registrado") {
+                            return status == filterStatus!.toLowerCase() &&
+                                (assignedTo.isEmpty || assignedTo == currentUserUid);
+                          }
+
+                          if (filterStatus == "activado") {
+                            if (mostrarSoloIncompletos) {
+                              return status == "activado" && requiereActualizacion == true;
+                            } else {
+                              return status == "activado" && requiereActualizacion != true;
+                            }
+                          }
+
+                          return status == filterStatus!.toLowerCase();
+                        }).toList();
+                      }
+
+// 2. Filtro por pago (si aplica)
+                      if (filterIsPaid != null) {
+                        filteredDocs = filteredDocs.where((doc) => doc.get('isPaid') == filterIsPaid).toList();
+                      }
+
+// 3. Filtro por búsqueda general
+                      if (searchQuery.trim().isNotEmpty) {
+                        final query = searchQuery.toLowerCase();
+                        filteredDocs = filteredDocs.where((doc) {
+                          final nombre = doc.get('nombre_ppl').toString().toLowerCase();
+                          final apellido = doc.get('apellido_ppl').toString().toLowerCase();
+                          final identificacion = doc.get('numero_documento_ppl').toString().toLowerCase();
+                          final acudiente = ("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}").toLowerCase();
+                          final celularAcudiente = doc.get('celular').toString().toLowerCase();
+                          return nombre.contains(query) || apellido.contains(query) || identificacion.contains(query) || acudiente.contains(query) || celularAcudiente.contains(query);
+                        }).toList();
+                      }
+
+// 4. Filtro por búsqueda de administrador (si aplica)
+                      if (searchAdminQuery.trim().isNotEmpty && !isLoadingAdmins) {
+                        filteredDocs = filteredDocs.where((doc) {
+                          final assignedAdminId = doc.get('assignedTo')?.toString() ?? "";
+                          final assignedAdminName = adminNamesMap[assignedAdminId]?.toLowerCase() ?? "";
+                          return assignedAdminName.contains(searchAdminQuery);
+                        }).toList();
+                      }
+
+// 5. 🔥 Filtro por redenciones vencidas
+                      if (mostrarRedencionesVencidas) {
+                        filteredDocs = filteredDocs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final ts = data['ultima_actualizacion_redenciones'];
+                          if (ts == null || ts is! Timestamp) return false;
+
+                          final diferencia = DateTime.now().difference(ts.toDate()).inDays;
+                          return diferencia >= 30;
+                        }).toList();
+                      }
+
+                      if (filterIsPaid != null) {
+                        filteredDocs = filteredDocs.where((doc) => doc.get('isPaid') == filterIsPaid).toList();
+                      }
+                    }
                     if (searchQuery.trim().isNotEmpty) {
                       final query = searchQuery.toLowerCase();
                       filteredDocs = filteredDocs.where((doc) {
@@ -205,6 +278,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               setState(() {
                                 filterStatus = "registrado";
                                 filterIsPaid = null;
+                                mostrarRedencionesVencidas = false;
+                                mostrarSoloIncompletos = false;
                               });
                             }, isSelected: filterStatus == "registrado"),
 
@@ -212,40 +287,47 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               setState(() {
                                 filterStatus = "activado";
                                 filterIsPaid = null;
-                                mostrarSoloIncompletos = false; // 👈 Desactiva los incompletos
+                                mostrarSoloIncompletos = false;
+                                mostrarRedencionesVencidas = false;
                               });
-                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == false),
-
+                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == false && !mostrarRedencionesVencidas),
 
                             _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.lightGreen, () {
                               setState(() {
                                 filterStatus = "activado";
-                                mostrarSoloIncompletos = true; // 👈 Define esta variable en tu State
+                                mostrarSoloIncompletos = true;
+                                mostrarRedencionesVencidas = false;
                               });
                             }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == true),
-
-
-                            _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
-                              setState(() {
-                                filterStatus = "bloqueado";
-                                filterIsPaid = null;
-                              });
-                            }, isSelected: filterStatus == "bloqueado"),
 
                             _buildStatCard("Pendientes", countPendiente, Colors.orange, () {
                               setState(() {
                                 filterStatus = "pendiente";
                                 filterIsPaid = null;
+                                mostrarRedencionesVencidas = false;
+                                mostrarSoloIncompletos = false;
                               });
                             }, isSelected: filterStatus == "pendiente"),
 
-
-                            _buildStatCard("Total Usuarios", countTotal, Colors.black87, () {
+                            _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
                               setState(() {
+                                filterStatus = "bloqueado";
+                                filterIsPaid = null;
+                                mostrarRedencionesVencidas = false;
+                                mostrarSoloIncompletos = false;
+                              });
+                            }, isSelected: filterStatus == "bloqueado"),
+
+                            _buildStatCard("Redenciones vencidas", countRedencionesVencidas, Colors.deepPurple, () {
+                              setState(() {
+                                mostrarRedencionesVencidas = true;
                                 filterStatus = null;
                                 filterIsPaid = null;
+                                mostrarSoloIncompletos = false;
                               });
-                            }, isSelected: filterStatus == null && filterIsPaid == null),
+                            }, isSelected: mostrarRedencionesVencidas),
+                            _buildStatCard("Total Usuarios", countTotal, Colors.black87, null,
+                                isSelected: false), // 👉 Deshabilitado, sin acción
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -333,7 +415,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   }
 
   // Widget para construir tarjetas de estadísticas con efecto de selección
-  Widget _buildStatCard(String title, int count, Color color, VoidCallback onTap, {bool isSelected = false}) {
+  Widget _buildStatCard(String title, int count, Color color, VoidCallback? onTap, {bool isSelected = false}) {
     return InkWell(
       onTap: onTap,
       child: Container(
