@@ -34,6 +34,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
 
 
+
   Color _getColor(String estado) {
     switch (estado.toLowerCase()) {
       case 'registrado':
@@ -580,6 +581,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         columns: const [
                           DataColumn(label: Text('Estado')),
                           DataColumn(label: Text('Situación')),
+                          DataColumn(label: Text('Última\nRedención', style: TextStyle(fontSize: 12))),
                           DataColumn(label: Text('PPL')),
                           DataColumn(label: Text('Identificación')),
                           DataColumn(label: Text('Acudiente')),
@@ -592,35 +594,35 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         rows: registros.asMap().entries.map((entry) {
                           int index = entry.key;
                           var doc = entry.value;
-                      
-                          final String assignedTo = doc.get('assignedTo') ?? "";
+
+                          final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+                          final String assignedTo = data['assignedTo'] ?? "";
                           final bool isAssigned = assignedTo.isNotEmpty;
-                          final String status = doc.get('status').toString().toLowerCase();
-                      
+                          final String status = (data['status'] ?? '').toString().toLowerCase();
+                          final String situacion = data['situacion'] ?? '';
+                          final bool aplicaRedencion = situacion == 'En Reclusión';
+
                           return DataRow(
                             color: MaterialStateProperty.resolveWith<Color?>(
                                   (Set<MaterialState> states) {
-                                return index % 2 == 0
-                                    ? Colors.white
-                                    : primary.withOpacity(0.05); // Fondo intercalado
+                                return index % 2 == 0 ? Colors.white : primary.withOpacity(0.05);
                               },
                             ),
                             onSelectChanged: (bool? selected) async {
                               if (selected != null && selected) {
                                 String userRole = await _obtenerRolActual();
-                      
+
                                 if (userRole != "operador") {
                                   Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
                                   return;
                                 }
-                      
-                                final String assignedTo = doc.get('assignedTo') ?? "";
-                      
+
+                                final String assignedTo = data['assignedTo'] ?? "";
                                 if (assignedTo.isEmpty) {
                                   bool confirmar = await _mostrarDialogoConfirmacion();
                                   if (!confirmar) return;
                                 }
-                      
+
                                 Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
                               }
                             },
@@ -631,9 +633,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                   children: [
                                     Container(
                                       padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                      ),
+                                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
                                       child: Icon(Icons.circle, color: _getColor(status)),
                                     ),
                                     const SizedBox(width: 8),
@@ -646,26 +646,18 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         ),
                                         child: Text(
                                           isAssigned ? "Asignado" : "No asignado",
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 12,
-                                          ),
+                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
                                         ),
                                       ),
                                     ],
                                   ],
                                 ),
                               ),
-                      
+
                               // Situación
                               DataCell(
                                 Builder(
                                   builder: (_) {
-                                    final String situacion = doc.data().toString().contains('situacion')
-                                        ? doc.get('situacion') ?? ''
-                                        : '';
-                      
                                     if (situacion == 'En Reclusión') {
                                       return const Center(
                                         child: Column(
@@ -705,73 +697,94 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                   },
                                 ),
                               ),
-                      
+
+                              // 👉 Columna de redenciones
+                              DataCell(
+                                aplicaRedencion
+                                    ? Column(
+                                  children: [
+                                    iconoRevision(
+                                      data.containsKey('ultima_actualizacion_redenciones')
+                                          ? data['ultima_actualizacion_redenciones'] as Timestamp?
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      data.containsKey('ultima_actualizacion_redenciones') &&
+                                          data['ultima_actualizacion_redenciones'] != null
+                                          ? DateFormat("d 'de' MMMM 'de' y", 'es_CO').format(
+                                        (data['ultima_actualizacion_redenciones'] as Timestamp).toDate(),
+                                      )
+                                          : 'Sin revisión',
+                                      style: const TextStyle(fontSize: 10),
+                                    ),
+                                  ],
+                                )
+                                    : const Text(
+                                  'No aplica',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ),
+
                               // Nombre + Apellido
-                              DataCell(
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(doc.get('nombre_ppl'), style: const TextStyle(fontWeight: FontWeight.w500)),
-                                    Text(doc.get('apellido_ppl'), style: const TextStyle(fontSize: 12, color: Colors.black87)),
-                                  ],
-                                ),
-                              ),
-                      
+                              DataCell(Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(data['nombre_ppl'], style: const TextStyle(fontWeight: FontWeight.w500)),
+                                  Text(data['apellido_ppl'], style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                ],
+                              )),
+
                               // Identificación
-                              DataCell(Text(doc.get('numero_documento_ppl').toString())),
-                      
+                              DataCell(Text(data['numero_documento_ppl'].toString())),
+
                               // Acudiente
+                              DataCell(Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(data['nombre_acudiente'], style: const TextStyle(fontWeight: FontWeight.w500)),
+                                  Text(data['apellido_acudiente'], style: const TextStyle(fontSize: 12, color: Colors.black87)),
+                                ],
+                              )),
+
+                              // Celular
+                              DataCell(Text(data['celular'].toString())),
+
+                              // WhatsApp
+                              DataCell(Text(data.containsKey('celularWhatsapp') ? (data['celularWhatsapp'] ?? '') : '')),
+
+                              // Pago
                               DataCell(
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(doc.get('nombre_acudiente'), style: const TextStyle(fontWeight: FontWeight.w500)),
-                                    Text(doc.get('apellido_acudiente'), style: const TextStyle(fontSize: 12, color: Colors.black87)),
-                                  ],
+                                Icon(
+                                  data['isPaid'] ? Icons.check_circle : Icons.cancel,
+                                  color: data['isPaid'] ? Colors.blue : Colors.grey,
                                 ),
                               ),
-                      
-                              // Celular
-                              DataCell(Text(doc.get('celular').toString())),
-                      
-                              // WhatsApp
-                              DataCell(Text(
-                                doc.data().toString().contains('celularWhatsapp')
-                                    ? (doc.get('celularWhatsapp') ?? '')
-                                    : '',
-                              )),
-                      
-                              // Pago
-                              DataCell(Icon(
-                                doc.get('isPaid') ? Icons.check_circle : Icons.cancel,
-                                color: doc.get('isPaid') ? Colors.blue : Colors.grey,
-                              )),
-                      
+
                               // Prueba
                               DataCell(iconoPruebaYPago(doc)),
-                      
+
                               // Fecha
-                              DataCell(
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      DateFormat("dd 'de' MMMM 'de' yyyy", 'es').format(_convertirTimestampADateTime(doc.get('fechaRegistro'))!),
-                                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-                                    ),
-                                    Text(
-                                      DateFormat('hh:mm a', 'es').format(_convertirTimestampADateTime(doc.get('fechaRegistro'))!),
-                                      style: const TextStyle(fontSize: 12, color: Colors.black54),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              DataCell(Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    DateFormat("dd 'de' MMMM 'de' yyyy", 'es').format(_convertirTimestampADateTime(data['fechaRegistro'])!),
+                                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                                  ),
+                                  Text(
+                                    DateFormat('hh:mm a', 'es').format(_convertirTimestampADateTime(data['fechaRegistro'])!),
+                                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                  ),
+                                ],
+                              )),
                             ],
                           );
                         }).toList(),
+
                       ),
                     ),
                   ),
@@ -857,6 +870,24 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
+
+  Widget iconoRevision(Timestamp? timestamp) {
+    if (timestamp == null) {
+      return const SizedBox(); // No mostrar nada si no hay fecha
+    }
+
+    final fecha = timestamp.toDate();
+    final diferencia = DateTime.now().difference(fecha).inDays;
+
+    if (diferencia >= 30) {
+      return const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20);
+    }
+
+    // Si ha pasado menos de 60 días, mostrar el ícono verde
+    return const Icon(Icons.check_circle, color: Colors.black87, size: 20);
+  }
+
+
 
   void _mostrarDialogoPagoPendiente(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

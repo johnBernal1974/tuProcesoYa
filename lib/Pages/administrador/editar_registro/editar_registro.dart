@@ -131,7 +131,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   bool isExento = false;
   bool cargando = true;
   List<String> ciudades = [];
-
+  Timestamp? _ultimaActualizacionRedenciones;
 
 
 
@@ -145,6 +145,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _initCalculoCondena();
     _initFormFields();
     cargarCiudades();
+    _ultimaActualizacionRedenciones = widget.doc['ultima_actualizacion_redenciones'];
     Future.delayed(Duration.zero, () {
       setState(() {
         isLoading = false; // Cambia el estado después de que se verifiquen los valores
@@ -556,6 +557,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         'admin_nombre': adminNombre ?? "Desconocido",
         'admin_apellido': adminApellido ?? "Desconocido",
       });
+      final ahora = Timestamp.now();
+
+      await FirebaseFirestore.instance
+          .collection('Ppl')
+          .doc(pplId)
+          .update({
+        'ultima_actualizacion_redenciones': ahora,
+      });
+      setState(() {
+        _ultimaActualizacionRedenciones = ahora;
+      });
 
       if(context.mounted){
         ScaffoldMessenger.of(context).showSnackBar(
@@ -683,12 +695,112 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 ),
               ),
-            )
+            ),
+
+            const SizedBox(height: 10),
+
+            SizedBox(
+              width: 250,
+              child: OutlinedButton.icon(
+                onPressed: widget.doc["status"] == "bloqueado"
+                    ? null
+                    : () async {
+                  final confirmado = await showDialog<bool>(
+                    context: context,
+                    builder: (context) {
+                      return AlertDialog(
+                        backgroundColor: Colors.white,
+                        title: const Text("Confirmar acción"),
+                        content: const Text(
+                          "Vas a guardar la fecha de la última revisión de redenciones sin agregar nueva información. ¿Deseas continuar?",
+                          style: TextStyle(color: Colors.black87),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(false),
+                            child: const Text("Cancelar"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).pop(true),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.deepPurple,
+                            ),
+                            child: const Text("Confirmar", style: TextStyle(color: Colors.white)),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+
+                  if (confirmado == true) {
+                    await FirebaseFirestore.instance
+                        .collection('Ppl')
+                        .doc(widget.doc.id)
+                        .update({
+                      'ultima_actualizacion_redenciones': FieldValue.serverTimestamp(),
+                    });
+
+                    setState(() {
+                      _ultimaActualizacionRedenciones = Timestamp.now();
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Fecha de revisión actualizada")),
+                    );
+                  }
+                },
+
+                icon: const Icon(Icons.check_circle_outline, color: Colors.deepPurple),
+                label: const Text(
+                  "Marcar como revisado",
+                  style: TextStyle(color: Colors.deepPurple),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.deepPurple),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            if (_ultimaActualizacionRedenciones != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Row(
+                  children: [
+                    iconoRevision(_ultimaActualizacionRedenciones!.toDate()),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Última revisión: ${DateFormat("d 'de' MMMM 'de' y", 'es_CO').format(_ultimaActualizacionRedenciones!.toDate())}',
+                      style: const TextStyle(color: Colors.black87),
+                    ),
+                  ],
+                ),
+              )
+            else
+              const Padding(
+                padding: EdgeInsets.only(top: 8.0),
+                child: Text(
+                  'No hay registro de revisión',
+                  style: TextStyle(color: Colors.black45),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
+
+  Widget iconoRevision(DateTime ultimaActualizacion) {
+    final diferencia = DateTime.now().difference(ultimaActualizacion).inDays;
+
+    if (diferencia >= 30) {
+      return const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20);
+    } else {
+      return const Icon(Icons.check_circle, color: Colors.green, size: 20);
+    }
+  }
+
 
   /// 🔥 Mostrar la pantalla superpuesta con el historial de redenciones
   void _mostrarHistorialRedenciones(BuildContext context) {
