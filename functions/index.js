@@ -11,12 +11,15 @@ const { getFirestore } = require("firebase-admin/firestore");
 const OPENAI_API_KEY = defineSecret("OPENAI_API_KEY");
 const OpenAI = require("openai");
 const puppeteer = require("puppeteer");
-
+const imaps = require("imap-simple");
+const { simpleParser } = require("mailparser");
+const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
 const WOMPI_INTEGRITY_SECRET = defineSecret("WOMPI_INTEGRITY_SECRET");
 
 admin.initializeApp();
+
 const db = admin.firestore();
 
 // Firebase config secrets
@@ -27,9 +30,20 @@ const FIREBASE_STORAGE_BUCKET = defineSecret("FB_STORAGE_BUCKET");
 const FIREBASE_APP_ID = defineSecret("FB_APP_ID");
 const FIREBASE_MESSAGING_SENDER_ID = defineSecret("FB_MESSAGING_SENDER_ID");
 
+
+// secrets de zoho
+const ZOHO_USER = defineSecret("ZOHO_USER");
+const ZOHO_PASSWORD = defineSecret("ZOHO_PASSWORD");
+const ZOHO_HOST = defineSecret("ZOHO_HOST");
+const ZOHO_CLIENT_ID = defineSecret("ZOHO_CLIENT_ID");
+const ZOHO_CLIENT_SECRET = defineSecret("ZOHO_CLIENT_SECRET");
+const ZOHO_REFRESH_TOKEN = defineSecret("ZOHO_REFRESH_TOKEN");
+
+
 let cachedConfig = null;
 let lastFetchTime = 0;
 const CACHE_DURATION_MS = 5 * 60 * 1000;
+
 
 const app = express();
 app.use(express.json());
@@ -541,6 +555,130 @@ exports.eliminarUsuarioAuthHttp = functions.https.onRequest(async (req, res) => 
     return res.status(500).json({ error: "Error al eliminar usuario" });
   }
 });
+
+exports.leerCorreosZoho = onSchedule(
+  {
+    schedule: "every 10 minutes",
+    secrets: [
+      ZOHO_USER,
+      ZOHO_PASSWORD,
+      ZOHO_HOST,
+      ZOHO_CLIENT_ID,
+      ZOHO_CLIENT_SECRET,
+      ZOHO_REFRESH_TOKEN,
+    ],
+    region: "us-central1",
+  },
+  async (event) => {
+    const config = {
+      imap: {
+        user: ZOHO_USER.value(),
+        password: ZOHO_PASSWORD.value(),
+        host: ZOHO_HOST.value(),
+        port: 993,
+        tls: true,
+        authTimeout: 3000,
+      },
+    };
+
+    try {
+      const connection = await imaps.connect(config);
+      await connection.openBox("INBOX");
+
+      const searchCriteria = ["UNSEEN"];
+      const fetchOptions = {
+        bodies: ["HEADER", "TEXT"],
+        markSeen: true,
+      };
+
+      const results = await connection.search(searchCriteria, fetchOptions);
+
+      for (const item of results) {
+        const all = item.parts.find((part) => part.which === "TEXT");
+        const parsed = await simpleParser(all.body);
+
+        const remitente = parsed.from?.text || "";
+        const asunto = parsed.subject || "";
+        const cuerpo = parsed.text || "";
+
+        // Guardar en Firestore
+        await db.collection("respuestas_correos").add({
+          remitente,
+          asunto,
+          cuerpo,
+          recibidoEn: new Date().toISOString(),
+        });
+      }
+
+      connection.end();
+      console.log("Correos procesados exitosamente.");
+    } catch (error) {
+      console.error("Error leyendo correos Zoho:", error);
+    }
+  }
+);
+
+exports.testLeerCorreosZoho = onRequest(
+  {
+    secrets: [
+      ZOHO_USER, ZOHO_PASSWORD, ZOHO_HOST,
+      ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REFRESH_TOKEN
+    ]
+  },
+  async (req, res) => {
+    try {
+      const imapConfig = {
+        imap: {
+          user: process.env.ZOHO_USER,
+          password: process.env.ZOHO_PASSWORD,
+          host: process.env.ZOHO_HOST,
+          port: 993,
+          tls: true,
+          authTimeout: 3000,
+        },
+      };
+
+      const connection = await imaps.connect(imapConfig);
+      await connection.openBox("INBOX");
+
+      const searchCriteria = ["UNSEEN"];
+      const fetchOptions = {
+        bodies: ["HEADER", "TEXT"],
+        markSeen: true,
+      };
+
+      const messages = await connection.search(searchCriteria, fetchOptions);
+
+      const resultados = [];
+
+      for (const item of messages) {
+        const all = item.parts.find((part) => part.which === "TEXT");
+        const id = item.attributes.uid;
+        const mail = await simpleParser(all.body);
+
+        resultados.push({
+          id,
+          from: mail.from?.text,
+          subject: mail.subject,
+          text: mail.text,
+          date: mail.date,
+        });
+      }
+
+      await connection.end();
+
+      res.status(200).json({
+        success: true,
+        correos: resultados,
+      });
+    } catch (error) {
+      console.error("Error leyendo correos:", error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  }
+);
+
+
 
 
 
