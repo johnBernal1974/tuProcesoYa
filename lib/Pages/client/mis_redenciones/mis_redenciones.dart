@@ -43,6 +43,7 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
         double sumatoria = 0.0;
 
         setState(() {
+          Intl.defaultLocale = 'es'; // ✅ Configura español
           _redenciones = redencionesSnapshot.docs.map((doc) {
             String fechaStr = doc['fecha_redencion'] ?? "";
             DateTime fecha;
@@ -50,7 +51,7 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
             try {
               fecha = DateFormat('d/M/yyyy').parse(fechaStr);
             } catch (e) {
-              debugPrint("\u274c Error al parsear fecha: $fechaStr - $e");
+              debugPrint("❌ Error al parsear fecha: $fechaStr - $e");
               fecha = DateTime(2000, 1, 1);
             }
 
@@ -120,11 +121,11 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
                   rows: [
                     ..._redenciones.map(
                           (redencion) => DataRow(cells: [
-                        DataCell(Text(
-                          DateFormat('d MMM yyyy').format(redencion['fecha']),
-                          style: const TextStyle(fontSize: 13),
-                        )),
-                        DataCell(
+                            DataCell(Text(
+                              DateFormat('d \'de\' MMMM \'de\' yyyy', 'es').format(redencion['fecha']),
+                              style: const TextStyle(fontSize: 13),
+                            )),
+                            DataCell(
                           Align(
                             alignment: Alignment.centerRight,
                             child: Text(

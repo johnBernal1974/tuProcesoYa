@@ -894,8 +894,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                               ...snapshot.data!.map(
                                     (redencion) => DataRow(cells: [
                                   DataCell(Text(
-                                    DateFormat("d 'de' MMMM 'de' y").format(redencion['fecha']),
-                                    style: const TextStyle(fontSize: 13),
+                                  DateFormat('d \'de\' MMMM \'de\' yyyy', 'es').format(redencion['fecha']),
+
+                                  style: const TextStyle(fontSize: 13),
                                   )),
                                   DataCell(
                                     Align(
@@ -1001,6 +1002,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           .orderBy('fecha_redencion', descending: true)
           .get();
 
+      // ✅ Establecer el locale en español
+      Intl.defaultLocale = 'es';
+
       List<Map<String, dynamic>> redenciones = redencionesSnapshot.docs.map((doc) {
         String fechaStr = doc['fecha_redencion'] ?? "";
         DateTime fecha;
@@ -1026,7 +1030,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         }
 
         return {
-          'id': doc.id, // 🔥 Aquí incluyes el ID para futuras acciones
+          'id': doc.id,
           'dias_redimidos': (doc['dias_redimidos'] ?? 0).toDouble(),
           'fecha': fecha,
           'admin_nombre': doc['admin_nombre'] ?? "Desconocido",
@@ -1035,13 +1039,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         };
       }).toList();
 
+      // 🔁 Aseguramos orden descendente por si el campo 'fecha_redencion' era inconsistente
       redenciones.sort((a, b) => b['fecha'].compareTo(a['fecha']));
+
       return redenciones;
     } catch (e) {
       debugPrint("❌ Error al obtener redenciones: $e");
       return [];
     }
   }
+
 
 
   Future<double> calcularTotalRedenciones(String pplId) async {
