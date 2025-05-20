@@ -145,7 +145,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _initCalculoCondena();
     _initFormFields();
     cargarCiudades();
-    _ultimaActualizacionRedenciones = widget.doc['ultima_actualizacion_redenciones'];
+    final data = widget.doc.data() as Map<String, dynamic>;
+    _ultimaActualizacionRedenciones = data['ultima_actualizacion_redenciones']; // Puede ser null
+
     Future.delayed(Duration.zero, () {
       setState(() {
         isLoading = false; // Cambia el estado después de que se verifiquen los valores
@@ -696,8 +698,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
               ),
             ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
+            const Divider(height: 1, color: gris),
+            const SizedBox(height: 20),
+            const Text("Botón para Guardar el usuario sin redenciones o para actualizarlas luego del tiempo programado", style: TextStyle(
+              fontSize: 13, fontWeight: FontWeight.bold
+            )),
+            const SizedBox(height: 20),
 
             SizedBox(
               width: 250,
@@ -791,7 +798,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Widget iconoRevision(DateTime ultimaActualizacion) {
+  Widget iconoRevision(DateTime? ultimaActualizacion) {
+    if (ultimaActualizacion == null) {
+      return const Tooltip(
+        message: 'Aún no se ha hecho la primera revisión de las redenciones',
+        child: Icon(Icons.help_outline, color: Colors.orange, size: 20),
+      );
+    }
+
     final diferencia = DateTime.now().difference(ultimaActualizacion).inDays;
 
     if (diferencia >= 30) {
@@ -800,6 +814,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       return const Icon(Icons.check_circle, color: Colors.green, size: 20);
     }
   }
+
 
 
   /// 🔥 Mostrar la pantalla superpuesta con el historial de redenciones
@@ -3064,6 +3079,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               if (tieneEvento) {
                 datosActualizados['activado_por_evento'] = true;
                 datosActualizados['requiere_actualizacion_datos'] = true;
+              }
+
+              final docSnapshot = await widget.doc.reference.get();
+              final data = docSnapshot.data() as Map<String, dynamic>?;
+
+              if (data != null && !data.containsKey('ultima_actualizacion_redenciones')) {
+                await widget.doc.reference.update({
+                  'ultima_actualizacion_redenciones': Timestamp.now(),
+                });
               }
 
               await widget.doc.reference.update(datosActualizados);

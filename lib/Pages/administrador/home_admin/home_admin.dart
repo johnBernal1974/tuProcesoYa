@@ -318,7 +318,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               });
                             }, isSelected: filterStatus == "bloqueado"),
 
-                            _buildStatCard("Redenciones vencidas", countRedencionesVencidas, Colors.deepPurple, () {
+                            _buildStatCard("Redenciones vencidas", countRedencionesVencidas, Colors.blue, () {
                               setState(() {
                                 mostrarRedencionesVencidas = true;
                                 filterStatus = null;
@@ -786,8 +786,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     ? Column(
                                   children: [
                                     iconoRevision(
-                                      data.containsKey('ultima_actualizacion_redenciones')
-                                          ? data['ultima_actualizacion_redenciones'] as Timestamp?
+                                      data['ultima_actualizacion_redenciones'] is Timestamp
+                                          ? (data['ultima_actualizacion_redenciones'] as Timestamp).toDate()
                                           : null,
                                     ),
                                     const SizedBox(width: 8),
@@ -953,23 +953,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     );
   }
 
-  Widget iconoRevision(Timestamp? timestamp) {
-    if (timestamp == null) {
-      return const SizedBox(); // No mostrar nada si no hay fecha
+  Widget iconoRevision(DateTime? ultimaActualizacion) {
+    if (ultimaActualizacion == null) {
+      return const Tooltip(
+        message: 'Aún no se ha hecho la primera revisión de las redenciones',
+        child: Icon(Icons.help_outline, color: Colors.orange, size: 20),
+      );
     }
 
-    final fecha = timestamp.toDate();
-    final diferencia = DateTime.now().difference(fecha).inDays;
+    final diferencia = DateTime.now().difference(ultimaActualizacion).inDays;
 
     if (diferencia >= 30) {
       return const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20);
+    } else {
+      return const Icon(Icons.check_circle, color: Colors.green, size: 20);
     }
-
-    // Si ha pasado menos de 60 días, mostrar el ícono verde
-    return const Icon(Icons.check_circle, color: Colors.black87, size: 20);
   }
-
-
 
   void _mostrarDialogoPagoPendiente(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
