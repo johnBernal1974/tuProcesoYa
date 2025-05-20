@@ -663,7 +663,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         columns: const [
                           DataColumn(label: Text('Estado')),
                           DataColumn(label: Text('Situación')),
-                          DataColumn(label: Text('Última\nRedención', style: TextStyle(fontSize: 12))),
+                          DataColumn(label: Text('Actualización\nRedención', style: TextStyle(fontSize: 12))),
                           DataColumn(label: Text('PPL')),
                           DataColumn(label: Text('Identificación')),
                           DataColumn(label: Text('Acudiente')),

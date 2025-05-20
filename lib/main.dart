@@ -64,6 +64,7 @@ import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_pris
 import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
+import 'Pages/client/otras_solicitudes/solicitud_redenciones.dart';
 import 'Pages/client/otras_solicitudes/solicitud_traslado_proceso.dart';
 import 'Pages/client/preguntas_frecuentes_page/preguntas_frecuentes_page.dart';
 import 'Pages/client/register/register.dart';
@@ -209,6 +210,7 @@ class MyApp extends StatelessWidget {
         'solicitud_condicional_page': (context) => const SolicitudLibertadCondicionalPage(),
         'solicitud_extincion_pena_page': (context) => const SolicitudExtincionPenaPage(),
         'solicitud_traslado_proceso_page': (context) => const SolicitudTrasladoProcesoPage(),
+        'solicitud_redenciones_page': (context) => const SolicitudRedencionPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
         'info_previa_72h_page': (context) => const RequisitosPermiso72hPage(),

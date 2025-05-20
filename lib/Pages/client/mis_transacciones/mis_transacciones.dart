@@ -76,6 +76,7 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
     if (reference.startsWith("condicional")) return "Libertad Condicional";
     if (reference.startsWith("extincion")) return "Extinción de pena";
     if (reference.startsWith("traslado")) return "Traslado proceso";
+    if (reference.startsWith("redenciones")) return "Redenciones";
     return "Otro";
   }
 

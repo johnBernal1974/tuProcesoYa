@@ -124,155 +124,157 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
         backgroundColor: primary,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 600),
-          child: ListView(
-            children: [
-              const SizedBox(height: 10),
-              RichText(
-                textAlign: TextAlign.justify,
-                text: TextSpan(
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontSize: 16,
-                    color: Colors.black,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '🧾 Solicitud de traslado de proceso de ejecución de la pena\n\n',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: ListView(
+              children: [
+                const SizedBox(height: 10),
+                RichText(
+                  textAlign: TextAlign.justify,
+                  text: TextSpan(
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '🧾 Solicitud de traslado de proceso de ejecución de la pena\n\n',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
                       ),
-                    ),
-                    const TextSpan(
-                      text:
-                      'En algunos casos, las personas privadas de la libertad son trasladadas a centros penitenciarios ubicados en ciudades distintas a donde se dictó su condena. '
-                          'Esto puede generar dificultades para acceder a beneficios como la ',
-                    ),
-                    const TextSpan(
-                      text: 'libertad condicional, los permisos de 72 horas o las redenciones',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const TextSpan(
-                      text:
-                      ', ya que el juez que lleva su proceso sigue estando en otro lugar.\n\n',
-                    ),
-                    const TextSpan(
-                      text: 'Con esta solicitud, puedes pedir que el ',
-                    ),
-                    const TextSpan(
-                      text: 'proceso de ejecución de la pena sea trasladado ',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const TextSpan(
-                      text:
-                      'al juzgado de ejecución de penas del lugar donde actualmente estás recluido, facilitando así el ',
-                    ),
-                    const TextSpan(
-                      text:
-                      'acceso a la justicia, el seguimiento de tu condena y la presentación de nuevas solicitudes.\n\n',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const TextSpan(
-                      text:
-                      'Este trámite no cambia tu condena, pero permite que el juez que vigila su cumplimiento esté más cerca de ti.',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 25),
-              const Divider(color: gris),
-              const SizedBox(height: 25),
-              const Text('Suministra la siguiente información', style: TextStyle(fontSize: 18, color: negro, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 25),
-              const Text('Centro penitenciario donde se encontraba', style: TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.w700)),
-              const Text('Ingresa el nombre de la ciudad y te aparecerá la opción para seleccionar el centro de reclusión',
-                  style: TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
-              const SizedBox(height: 20),
-              // Centro ORIGEN
-              CentroReclusionSelector(
-                centros: centrosReclusionTodos,
-                centroSeleccionadoNombre: centroOrigenNombre,
-                error: _errorCentroOrigen,
-                onSelected: (centro) {
-                  setState(() {
-                    centroOrigenNombre = centro['nombre'];
-                    centroOrigenRegional = centro['regional'];
-                    _errorCentroOrigen = false; // limpia error si selecciona bien
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildDropdownCiudad(
-                label: 'Ciudad del centro de reclusión de origen',
-                valorSeleccionado: ciudadCentroOrigen,
-                onChanged: (val) => setState(() => ciudadCentroOrigen = val),
-              ),
-              const SizedBox(height: 30),
-              const Text('Centro penitenciario a donde fue trasladado', style: TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.w700)),
-              const Text('Ingresa el nombre de la ciudad y te aparecerá la opción para seleccionar el centro de reclusión',
-                  style: TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
-              const SizedBox(height: 20),
-              // Centro DESTINO
-              CentroReclusionSelector(
-                centros: centrosReclusionTodos,
-                centroSeleccionadoNombre: centroDestinoNombre,
-                error: _errorCentroDestino,
-                onSelected: (centro) {
-                  setState(() {
-                    centroDestinoNombre = centro['nombre'];
-                    centroDestinoRegional = centro['regional'];
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-              _buildDropdownCiudad(
-                label: 'Ciudad del centro re reclusión de destino',
-                valorSeleccionado: ciudadCentroDestino,
-                onChanged: (val) => setState(() => ciudadCentroDestino = val),
-              ),
-              const SizedBox(height: 20),
-              const Divider(color: gris),
-              const SizedBox(height: 20),
-              const Text('Fecha en que fue trasladado', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: negro)),
-              const SizedBox(height: 10),
-              TextFormField(
-                controller: _fechaTrasladoController,
-                readOnly: true,
-                decoration: InputDecoration(
-                  labelText: 'Fecha de traslado (YYYY-MM-DD)',
-                  floatingLabelBehavior: FloatingLabelBehavior.always,
-                  border: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                  enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                  focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
-                    onPressed: () => _seleccionarFechaTraslado(context),
+                      const TextSpan(
+                        text:
+                        'En algunos casos, las personas privadas de la libertad son trasladadas a centros penitenciarios ubicados en ciudades distintas a donde se dictó su condena. '
+                            'Esto puede generar dificultades para acceder a beneficios como la ',
+                      ),
+                      const TextSpan(
+                        text: 'libertad condicional, los permisos de 72 horas o las redenciones',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const TextSpan(
+                        text:
+                        ', ya que el juez que lleva su proceso sigue estando en otro lugar.\n\n',
+                      ),
+                      const TextSpan(
+                        text: 'Con esta solicitud, puedes pedir que el ',
+                      ),
+                      const TextSpan(
+                        text: 'proceso de ejecución de la pena sea trasladado ',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const TextSpan(
+                        text:
+                        'al juzgado de ejecución de penas del lugar donde actualmente estás recluido, facilitando así el ',
+                      ),
+                      const TextSpan(
+                        text:
+                        'acceso a la justicia, el seguimiento de tu condena y la presentación de nuevas solicitudes.\n\n',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const TextSpan(
+                        text:
+                        'Este trámite no cambia tu condena, pero permite que el juez que vigila su cumplimiento esté más cerca de ti.',
+                      ),
+                    ],
                   ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
                 ),
-              ),
-              const SizedBox(height: 50),
-
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
+                const SizedBox(height: 25),
+                const Divider(color: gris),
+                const SizedBox(height: 25),
+                const Text('Suministra la siguiente información', style: TextStyle(fontSize: 18, color: negro, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 25),
+                const Text('Centro penitenciario donde se encontraba', style: TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.w700)),
+                const Text('Ingresa el nombre de la ciudad y te aparecerá la opción para seleccionar el centro de reclusión',
+                    style: TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 20),
+                // Centro ORIGEN
+                CentroReclusionSelector(
+                  centros: centrosReclusionTodos,
+                  centroSeleccionadoNombre: centroOrigenNombre,
+                  error: _errorCentroOrigen,
+                  onSelected: (centro) {
+                    setState(() {
+                      centroOrigenNombre = centro['nombre'];
+                      centroOrigenRegional = centro['regional'];
+                      _errorCentroOrigen = false; // limpia error si selecciona bien
+                    });
+                  },
                 ),
-                onPressed: () async {
-                  if (!_validarCentrosSeleccionados()) return;
+                const SizedBox(height: 20),
+                _buildDropdownCiudad(
+                  label: 'Ciudad del centro de reclusión de origen',
+                  valorSeleccionado: ciudadCentroOrigen,
+                  onChanged: (val) => setState(() => ciudadCentroOrigen = val),
+                ),
+                const SizedBox(height: 30),
+                const Text('Centro penitenciario a donde fue trasladado', style: TextStyle(fontSize: 14, color: negro, fontWeight: FontWeight.w700)),
+                const Text('Ingresa el nombre de la ciudad y te aparecerá la opción para seleccionar el centro de reclusión',
+                    style: TextStyle(fontSize: 14, color: Colors.black87, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 20),
+                // Centro DESTINO
+                CentroReclusionSelector(
+                  centros: centrosReclusionTodos,
+                  centroSeleccionadoNombre: centroDestinoNombre,
+                  error: _errorCentroDestino,
+                  onSelected: (centro) {
+                    setState(() {
+                      centroDestinoNombre = centro['nombre'];
+                      centroDestinoRegional = centro['regional'];
+                    });
+                  },
+                ),
+                const SizedBox(height: 20),
+                _buildDropdownCiudad(
+                  label: 'Ciudad del centro re reclusión de destino',
+                  valorSeleccionado: ciudadCentroDestino,
+                  onChanged: (val) => setState(() => ciudadCentroDestino = val),
+                ),
+                const SizedBox(height: 20),
+                const Divider(color: gris),
+                const SizedBox(height: 20),
+                const Text('Fecha en que fue trasladado', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: negro)),
+                const SizedBox(height: 10),
+                TextFormField(
+                  controller: _fechaTrasladoController,
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    labelText: 'Fecha de traslado (YYYY-MM-DD)',
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    border: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                    enabledBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                    focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                    suffixIcon: IconButton(
+                      icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
+                      onPressed: () => _seleccionarFechaTraslado(context),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+                  ),
+                ),
+                const SizedBox(height: 50),
 
-                  final confirmado = await mostrarConfirmacionEnvio(context);
-                  if (confirmado) {
-                    await verificarSaldoYEnviarSolicitud();
-                  }
-                },
-                child: const Text('Solicitar Traslado de proceso', style: TextStyle(fontSize: 18, color: blanco)),
-              ),
-              const SizedBox(height: 50),
-            ],
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                  ),
+                  onPressed: () async {
+                    if (!_validarCentrosSeleccionados()) return;
+
+                    final confirmado = await mostrarConfirmacionEnvio(context);
+                    if (confirmado) {
+                      await verificarSaldoYEnviarSolicitud();
+                    }
+                  },
+                  child: const Text('Solicitar Traslado de proceso', style: TextStyle(fontSize: 18, color: blanco)),
+                ),
+                const SizedBox(height: 50),
+              ],
+            ),
           ),
         ),
       ),

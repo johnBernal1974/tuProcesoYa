@@ -149,7 +149,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'permiso': 'Permiso de 72 horas',
       'condicional': 'Libertad condicional',
       'extincion': 'Extinción de la pena',
-      'traslado': 'Traslado de proceso'
+      'traslado': 'Traslado de proceso',
+      'redenciones': 'Redenciones'
     };
 
     if (tiposPagos.containsKey(widget.tipoPago)) {
