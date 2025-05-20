@@ -937,7 +937,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                             ],
                                           ),
                                         );
-
                                         if (confirm == true) {
                                           await FirebaseFirestore.instance
                                               .collection('Ppl')

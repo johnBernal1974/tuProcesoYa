@@ -93,6 +93,11 @@ import 'Pages/recuperar_cuenta/recuperar_cuenta.dart';
 import 'commons/wompi/checkout_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
+import 'dart:html' as html;
+import 'dart:async'; // ✅ Para usar Timer
+
+
+
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -121,8 +126,168 @@ void main() async {
 
   runApp(const MyApp());
 
-  // Luego corre la aplicación
+  _checkForAppUpdate();
+
+
 }
+
+void _checkForAppUpdate() {
+  final scripts = html.document.querySelectorAll('script');
+
+  // Encuentra el script que contiene "main.dart.js"
+  html.ScriptElement? currentScript;
+  for (final script in scripts) {
+    if (script is html.ScriptElement && script.src.contains('main.dart.js')) {
+      currentScript = script;
+      break;
+    }
+  }
+
+  if (currentScript == null) return;
+
+  html.HttpRequest.request(currentScript.src, method: 'HEAD').then((response) {
+    final oldETag = response.getResponseHeader('ETag');
+    currentScript!.setAttribute('data-etag', oldETag ?? '');
+
+    Timer.periodic(const Duration(seconds: 30), (_) async {
+      final newResponse = await html.HttpRequest.request(
+        '${currentScript!.src}?cachebuster=${DateTime.now().millisecondsSinceEpoch}',
+        method: 'HEAD',
+      );
+
+      final newETag = newResponse.getResponseHeader('ETag');
+      final previousETag = currentScript!.getAttribute('data-etag');
+
+      if (newETag != null && previousETag != null && newETag != previousETag) {
+        _mostrarDialogoActualizacion();
+      }
+    });
+  });
+}
+
+void _mostrarDialogoActualizacion() {
+  final context = navKey.currentContext;
+  if (context == null) return;
+
+  final overlay = Overlay.of(context);
+  if (overlay == null) return;
+
+  final screenWidth = MediaQuery.of(context).size.width;
+  final isMobile = screenWidth < 600;
+
+  // 🔄 Bandera para saber si ya está actualizando
+  final ValueNotifier<bool> actualizando = ValueNotifier(false);
+
+  late OverlayEntry entry;
+
+  entry = OverlayEntry(
+    builder: (context) => Stack(
+      children: [
+        // 🔒 Bloqueo completo
+        const ModalBarrier(
+          dismissible: false,
+          color: Colors.black54,
+        ),
+
+        // 🧱 Banner superior
+        Positioned(
+          top: 20,
+          left: 16,
+          right: 16,
+          child: Material(
+            color: Colors.transparent,
+            child: ValueListenableBuilder<bool>(
+              valueListenable: actualizando,
+              builder: (context, isLoading, _) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Logo
+                      Image.asset(
+                        'assets/images/logo_tu_proceso_ya_transparente.png',
+                        height: isMobile ? 50 : 70,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        '¡Nueva versión disponible!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.deepPurple,
+                          fontSize: isMobile ? 16 : 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Para continuar usando Tu Proceso Ya, actualiza ahora para aplicar las mejoras.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: isMobile ? 13 : 15,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      isLoading
+                          ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(
+                            color: Colors.deepPurple,
+                            strokeWidth: 2,
+                          ),
+                          SizedBox(width: 12),
+                          Text(
+                            'Actualizando...',
+                            style: TextStyle(
+                              color: Colors.deepPurple,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      )
+                          : ElevatedButton.icon(
+                        onPressed: () {
+                          actualizando.value = true;
+                          // Esperar un momento antes de recargar para mostrar el spinner
+                          Future.delayed(const Duration(seconds: 1), () {
+                            entry.remove();
+                            html.window.location.reload();
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          textStyle: TextStyle(fontSize: isMobile ? 14 : 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Actualizar ahora'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  overlay.insert(entry);
+}
+
 
 Future<Map<String, dynamic>> obtenerFirebaseConfig() async {
   final response = await http.get(

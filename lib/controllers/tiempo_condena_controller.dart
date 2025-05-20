@@ -67,7 +67,9 @@ class CalculoCondenaController with ChangeNotifier {
       mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
       diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
 
-      porcentajeEjecutado = (diferenciaEjecutado.inDays / totalDiasCondena) * 100;
+      final totalEjecutadoReal = diferenciaEjecutado.inDays + _totalDiasRedimidos.toInt();
+      porcentajeEjecutado = (totalEjecutadoReal / totalDiasCondena) * 100;
+
 
       notifyListeners();
 

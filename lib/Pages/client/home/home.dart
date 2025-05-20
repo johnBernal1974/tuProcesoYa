@@ -1238,7 +1238,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
 
-        _buildDatoFila("Condena transcurrida", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
+        _buildDatoFila("Tiempo en reclusión", "$mesesEjecutado meses, $diasEjecutadoExactos días"),
         _buildDatoFila("Tiempo redimido", "$totalDiasRedimidos días"),
 
         _buildAnimatedDato("Condena\nTotal Cumplida", mesesCumplidos, diasRestantes, Colors.green.shade100),
