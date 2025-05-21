@@ -94,10 +94,7 @@ import 'commons/wompi/checkout_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
 import 'dart:html' as html;
-import 'dart:async'; // ✅ Para usar Timer
-
-
-
+import 'dart:async';
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -125,45 +122,53 @@ void main() async {
   WebViewPlatform.instance = WebWebViewPlatform();
 
   runApp(const MyApp());
-
-  _checkForAppUpdate();
-
+  html.window.addEventListener('load', (event) {
+    _checkForAppUpdate();
+  });
 
 }
 
 void _checkForAppUpdate() {
-  final scripts = html.document.querySelectorAll('script');
+  html.ScriptElement? scriptElement;
 
-  // Encuentra el script que contiene "main.dart.js"
-  html.ScriptElement? currentScript;
-  for (final script in scripts) {
-    if (script is html.ScriptElement && script.src.contains('main.dart.js')) {
-      currentScript = script;
+  for (final e in html.document.querySelectorAll('script')) {
+    if (e is html.ScriptElement && e.src.contains('main.dart.js')) {
+      scriptElement = e;
       break;
     }
   }
 
-  if (currentScript == null) return;
+  if (scriptElement == null) {
+    print("❌ No se encontró el script main.dart.js");
+    return;
+  }
 
-  html.HttpRequest.request(currentScript.src, method: 'HEAD').then((response) {
-    final oldETag = response.getResponseHeader('ETag');
-    currentScript!.setAttribute('data-etag', oldETag ?? '');
+  final originalSrc = scriptElement.src;
+  String? previousETag;
 
-    Timer.periodic(const Duration(seconds: 30), (_) async {
-      final newResponse = await html.HttpRequest.request(
-        '${currentScript!.src}?cachebuster=${DateTime.now().millisecondsSinceEpoch}',
+  // ⏱ Verifica cada 30 segundos
+  Timer.periodic(const Duration(seconds: 30), (timer) async {
+    try {
+      final response = await html.HttpRequest.request(
+        '$originalSrc?cachebuster=${DateTime.now().millisecondsSinceEpoch}',
         method: 'HEAD',
       );
 
-      final newETag = newResponse.getResponseHeader('ETag');
-      final previousETag = currentScript!.getAttribute('data-etag');
+      final newETag = response.getResponseHeader('ETag');
+      print("🔍 ETag nuevo: $newETag | Anterior: $previousETag");
 
       if (newETag != null && previousETag != null && newETag != previousETag) {
+        print("🟢 Nueva versión detectada");
         _mostrarDialogoActualizacion();
       }
-    });
+
+      previousETag ??= newETag;
+    } catch (e) {
+      print("❌ Error al realizar la verificar versión: $e");
+    }
   });
 }
+
 
 void _mostrarDialogoActualizacion() {
   final context = navKey.currentContext;

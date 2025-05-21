@@ -88,7 +88,9 @@ class LibertadCondicionalTemplate {
         Condenado: <b>$nombrePpl $apellidoPpl</b>.<br>
         Radicado del proceso: <b>$radicado</b>.<br>
         Delito: <b>$delito</b>.<br>
-        Asunto: <b>Solicitud de libertad condicional - $numeroSeguimiento</b><br>
+        Asunto: <br>
+        <b>Solicitud Redencion de Penas</b>
+        <b>Solicitud de libertad condicional con la 38G - $numeroSeguimiento</b><br>
         <span style="font-size: 12px; color: #666666;">"De acuerdo al artículo 471 del Código de Procedimiento Penal"</span><br><br>
 
         “Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.”<br><br>
@@ -133,13 +135,16 @@ class LibertadCondicionalTemplate {
 
     buffer.writeln("""    
         Agradezco enormemente la atención prestada a la presente.<br><br><br>
-        Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
+        Por favor compulsar copias de notificaciones a la siguiente dirección electrónica:<br>
         $emailAlternativo<br>
         $emailUsuario<br><br><br>        
 
         Atentamente,<br><br><br>
         <b>$nombrePpl $apellidoPpl</b><br>
         CC. $identificacionPpl<br>
+        TD. $td<br>
+        NUI. $nui<br>
+        PATIO. $patio<br>
         <div style="margin-top: 50px;">
           <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="150" height="50"><br>
         </div>

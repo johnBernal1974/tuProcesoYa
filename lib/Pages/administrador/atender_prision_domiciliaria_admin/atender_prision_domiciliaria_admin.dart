@@ -1458,7 +1458,13 @@ $textoCumplimientoPena
 
 De ser concedido el beneficio, residiré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable, y quien ha asumido el compromiso de garantizar que cumpla con todas las condiciones que se me impongan.$textoHijos
 
-Con esta solicitud, busco fortalecer los lazos familiares, consolidar mi proceso de resocialización y reincorporarme positivamente a la sociedad, continuando con mi proceso de transformación personal en un ambiente de apoyo y contención familiar.
+Su señoria, me dirijo a usted con profundo respeto y humildad, reconociendo el grave error que cometí y aceptando con entereza las consecuencias de mis actos. Pido perdón a Dios, a la sociedad colombiana, a la justicia y, sobre todo, a mi familia, quienes también han sufrido con el peso de mis decisiones.
+
+Hoy me encuentro en un camino de reflexión y transformación personal. Cada día, desde mi lugar de reclusión, trabajo con honestidad por cambiar, crecer y reparar en lo posible el daño causado. Mi mayor anhelo es continuar este proceso desde el entorno familiar, rodeado del amor y el apoyo de mis seres queridos, quienes representan una fuente vital de contención emocional y motivación.
+
+Solicito respetuosamente que sea estudiada la posibilidad de acceder al beneficio de prisión domiciliaria. Este paso no solo fortalecería mis vínculos familiares, sino que también sería un escenario más propicio para consolidar mi proceso de resocialización, permitiéndome avanzar con mayor responsabilidad hacia una reintegración efectiva a la sociedad.
+
+Comprendo la importancia de las decisiones que se toman en estos procesos y agradezco profundamente la oportunidad de ser escuchado. Mi compromiso es seguir construyendo un futuro diferente, con respeto por la ley, por la vida y por la dignidad humana. Asimismo, manifiesto mi total disposición para acogerme a las condiciones que el despacho considere necesarias, incluyendo la realización de actividades de utilidad pública u obras sociales, como expresión concreta de mi voluntad de contribuir positivamente a la comunidad y reafirmar mi proceso de resocialización.
 """;
   }
 
@@ -1467,8 +1473,12 @@ Con esta solicitud, busco fortalecer los lazos familiares, consolidar mi proceso
 
   String generarTextoPretencionesDesdeDatos(Ppl userData) {
     return """
-PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite del sustituto de prisión domiciliaria.\n
-SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido en el artículo 38G del Código de Procedimiento Penal.
+PRIMERO: Que se tenga en cuenta la redención de pena que ya ha sido obtenida por el suscrito mediante actividades desarrolladas dentro del establecimiento penitenciario, y que se autorice, por parte del despacho, la verificación, validación y cómputo de las redenciones que aún se encuentren pendientes de aprobación, a fin de que sean sumadas al tiempo de reclusión efectiva para efectos del cálculo total del cumplimiento de la pena.
+
+SEGUNDO: Que se conceda el beneficio de prisión domiciliaria, al cumplir con los requisitos del artículo 38G del Código Penal, demostrando arraigo familiar y social, así como cumplimiento parcial de la pena.
+
+TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta solicitud, bajo la supervisión de la persona responsable, quien ha aceptado formalmente asumir esta función.
+
 """;
   }
 
@@ -1476,21 +1486,24 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
       Ppl userData,
       Map<String, dynamic> latestData,
       String parentesco,
-      int mesesEjecutados, // 🔥 Añadimos esto
-      int diasEjecutados, // 🔥 Añadimos esto también
+      int mesesEjecutados,
+      int diasEjecutados,
       ) {
     return """
-1. Conforme a lo dispuesto en el artículo 38G del Código Penal, modificado por el artículo 4 de la Ley 1709 de 2014, el cumplimiento de la pena privativa de la libertad en lugar de residencia puede ser autorizado cuando se hayan cumplido los siguientes requisitos: haber purgado la mitad (½) de la pena impuesta, demostrar arraigo familiar y social, garantizar el cumplimiento de las obligaciones legales mediante caución, no pertenecer al núcleo familiar de la víctima y no haber sido condenado por delitos exceptuados.
+1. Conforme a los artículos 141, 143 y 146 de la Ley 65 de 1993 (Código Penitenciario y Carcelario), modificada por la Ley 1709 de 2014, las personas privadas de la libertad tienen derecho a redimir parte de su pena a través de actividades como el estudio, el trabajo y la participación en labores culturales o deportivas, previa autorización del centro penitenciario. Estos días redimidos deben ser sumados al tiempo efectivo de reclusión para efectos del cómputo del cumplimiento total de la pena y la evaluación de beneficios como la prisión domiciliaria.
 
-2. Respecto al arraigo familiar y social exigido en los numerales 3° y 4° del artículo 38B del Código Penal, manifiesto que mantengo vínculos familiares y sociales sólidos, demostrando pertenencia e integración a un núcleo familiar en condiciones estables, conforme a la interpretación de la Corte Suprema de Justicia en las Sentencias de Casación Penal, Radicados 46647 de 2016 y 46930 de 2017.
+2. Conforme a lo dispuesto en el artículo 38G del Código Penal, modificado por el artículo 4 de la Ley 1709 de 2014, el cumplimiento de la pena privativa de la libertad en lugar de residencia puede ser autorizado cuando se hayan cumplido los siguientes requisitos: haber purgado la mitad (½) de la pena impuesta, demostrar arraigo familiar y social, garantizar el cumplimiento de las obligaciones legales mediante caución, no pertenecer al núcleo familiar de la víctima y no haber sido condenado por delitos exceptuados.
 
-3. No pertenezco al grupo familiar de la víctima, conforme a lo establecido en el numeral 5° del artículo 38G del Código Penal.
+3. Respecto al arraigo familiar y social exigido en los numerales 3° y 4° del artículo 38B del Código Penal, manifiesto que mantengo vínculos familiares y sociales sólidos, demostrando pertenencia e integración a un núcleo familiar en condiciones estables, conforme a la interpretación de la Corte Suprema de Justicia en las Sentencias de Casación Penal, Radicados 46647 de 2016 y 46930 de 2017.
 
-4. La sentencia dictada en mi contra no corresponde a ninguno de los delitos exceptuados para la concesión de este beneficio, de acuerdo con lo dispuesto en el mismo artículo 38G.
+4. No pertenezco al grupo familiar de la víctima, conforme a lo establecido en el numeral 5° del artículo 38G del Código Penal.
 
-5. Esta fundamentación encuentra soporte adicional en el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, que establece el respeto de la dignidad humana y la finalidad de rehabilitación social de toda pena privativa de la libertad.
+5. La sentencia dictada en mi contra no corresponde a ninguno de los delitos exceptuados para la concesión de este beneficio, de acuerdo con lo dispuesto en el mismo artículo 38G.
+
+6. Esta fundamentación encuentra soporte adicional en el artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, que establece el respeto de la dignidad humana y la finalidad de rehabilitación social de toda pena privativa de la libertad.
 """;
   }
+
 
   String generarTextoAnexos(
       {
@@ -2110,13 +2123,18 @@ SEGUNDO: Otorgar el sustituto de prisión domiciliaria conforme a lo establecido
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(8),
+        SizedBox(
+          height: 600, // O ajusta según necesidad
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[200],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Html(data: plantilla.generarTextoHtml()),
+            ),
           ),
-          child: Html(data: plantilla.generarTextoHtml()),
         ),
         const SizedBox(height: 50),
         Wrap(

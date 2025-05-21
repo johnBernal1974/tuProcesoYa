@@ -86,7 +86,9 @@ class PrisionDomiciliariaTemplate {
         Condenado: <b>$nombrePpl $apellidoPpl</b>.<br>
         Radicado del proceso: <b>$radicado</b>.<br>
         Delito: <b>$delito</b>.<br>
-        Asunto: <b>Solicitud de prisión domiciliaria - $numeroSeguimiento</b>.<br><br>
+        Asunto:<br>
+        <b>Solicitud Redencion de Penas</b><br>
+        <b>Solicitud de prisión domiciliaria - $numeroSeguimiento</b>.<br><br>
 
         “Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.”<br><br>
         E.S.D<br><br>
@@ -138,7 +140,7 @@ class PrisionDomiciliariaTemplate {
 
     buffer.writeln("""    
         Agradezco enormemente la atención prestada a la presente.<br><br><br>
-        Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
+        Por favor compulsar copias de notificaciones a la siguiente dirección electrónica:<br>
         $emailAlternativo<br>
         $emailUsuario<br><br><br>
 
@@ -147,6 +149,9 @@ class PrisionDomiciliariaTemplate {
         Atentamente,<br><br><br>
         <b>$nombrePpl $apellidoPpl</b><br>
         CC. $identificacionPpl<br>
+        TD. $td<br>
+        NUI. $nui<br>
+        PATIO. $patio<br>
         <div style="margin-top: 50px;">
           <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="150" height="50"><br>
         </div>
