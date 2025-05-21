@@ -132,7 +132,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   bool cargando = true;
   List<String> ciudades = [];
   Timestamp? _ultimaActualizacionRedenciones;
-
+  late TextEditingController _centroController;
+  bool centroValidado = false;
 
 
 
@@ -144,42 +145,57 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     super.initState();
     _initCalculoCondena();
     _initFormFields();
+    _centroController = TextEditingController();
     cargarCiudades();
-    final data = widget.doc.data() as Map<String, dynamic>;
-    _ultimaActualizacionRedenciones = data['ultima_actualizacion_redenciones']; // Puede ser null
+
+    final data = widget.doc.data() as Map<String, dynamic>?;
+
+    if (data != null) {
+      // ✅ Verificación de centro_validado
+      centroValidado = data.containsKey('centro_validado') &&
+          data['centro_validado'] == true;
+
+      // ✅ Asignaciones condicionales
+      _ultimaActualizacionRedenciones = data['ultima_actualizacion_redenciones']; // Puede ser null
+      _direccionController.text = data['direccion'] ?? '';
+
+      departamentoSeleccionado = data['departamento'];
+      municipioSeleccionado = data['municipio'];
+      categoriaDelito = data['categoria_delito'];
+      selectedDelito = data['delito'];
+
+      if (categoriaDelito != null && categoriaDelito!.trim().isEmpty) {
+        categoriaDelito = null;
+      }
+      if (selectedDelito != null && selectedDelito!.trim().isEmpty) {
+        selectedDelito = null;
+      }
+
+      final mesesCondena = data['meses_condena'];
+      final diasCondena = data['dias_condena'];
+
+      if (mesesCondena != null &&
+          diasCondena != null &&
+          mesesCondena is num &&
+          diasCondena is num) {
+        cargarCondenaDesdeDocumento(mesesCondena.toInt(), diasCondena.toInt());
+      }
+    }
 
     Future.delayed(Duration.zero, () {
       setState(() {
-        isLoading = false; // Cambia el estado después de que se verifiquen los valores
+        isLoading = false; // Cambia el estado después de verificar los valores
       });
     });
+
     ppl = Ppl.fromJson(widget.doc.data() as Map<String, dynamic>);
     _obtenerDatos();
     _cargarDatos();
     _asignarDocumento(); // Bloquea el documento al abrirlo
     _adminProvider.loadAdminData(); // 🔥 Cargar info del admin
     calcularTotalRedenciones(widget.doc.id); // 🔥 Llama la función aquí
-    _direccionController.text = widget.doc['direccion'] ?? '';
-
-    departamentoSeleccionado = widget.doc['departamento'];
-    municipioSeleccionado = widget.doc['municipio'];
-    categoriaDelito = widget.doc['categoria_delito'];
-    selectedDelito = widget.doc['delito'];
-    if (categoriaDelito != null && categoriaDelito!.trim().isEmpty) {
-      categoriaDelito = null;
-    }
-    if (selectedDelito != null && selectedDelito!.trim().isEmpty) {
-      selectedDelito = null;
-    }
-    final mesesCondena = widget.doc['meses_condena'];
-    final diasCondena = widget.doc['dias_condena'];
-
-    if (mesesCondena != null && diasCondena != null &&
-        mesesCondena is num && diasCondena is num) {
-      cargarCondenaDesdeDocumento(mesesCondena.toInt(), diasCondena.toInt());
-    }
-
   }
+
 
   @override
   void dispose() {
@@ -1405,115 +1421,76 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget seleccionarCentroReclusion() {
-    // Si ya existe información guardada en el documento y no estamos en modo edición,
-    // se muestra el contenedor con la info.
-    if (!_mostrarDropdowns &&
-        widget.doc['centro_reclusion'] != null &&
-        widget.doc['centro_reclusion'].toString().trim().isNotEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(4),
-          color: Colors.white,
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+              widget.doc["situacion"] == "En libertad condicional")
+              ? Colors.black
+              : primary,
+          width: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+              widget.doc["situacion"] == "En libertad condicional")
+              ? 3
+              : 1.5,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _mostrarDropdowns = true;
-                  // Opcional: puedes limpiar selectedCentro si deseas forzar una nueva selección.
-                  selectedCentro = null;
-                });
-                _fetchTodosCentrosReclusion();
-              },
-              child: const Row(
-                children: [
-                  Text("Regional", style: TextStyle(fontSize: 11)),
-                  Icon(Icons.edit, size: 15),
-                ],
-              ),
-            ),
-            Text(
-              widget.doc['regional'],
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-            ),
-            const SizedBox(height: 10),
-            const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
-            Text(
-              widget.doc['centro_reclusion'],
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-            ),
-
-          ],
-        ),
-      );
-    } else {
-      // Si la lista de centros está vacía, disparamos la carga.
-      if (centrosReclusionTodos.isEmpty) {
-        Future.microtask(() => _fetchTodosCentrosReclusion());
-      }
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
-                widget.doc["situacion"] == "En libertad condicional")
-                ? Colors.black
-                : primary,
-            width: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
-                widget.doc["situacion"] == "En libertad condicional")
-                ? 3
-                : 1.5,
-          ),
-          borderRadius: BorderRadius.circular(4),
-          color: Colors.white,
-        ),
-
-
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Text(
-                  "Buscar centro de reclusión",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        borderRadius: BorderRadius.circular(4),
+        color: Colors.white,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _mostrarDropdowns = true;
+                    selectedCentro = null;
+                  });
+                  _fetchTodosCentrosReclusion();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: centroValidado ? Colors.green : primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
                 ),
-                if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
-                    widget.doc["situacion"] == "En libertad condicional") ...[
-                  const SizedBox(width: 10), // Espacio entre textos
-                  Text(
-                    "El PPL se encuentra ${widget.doc["situacion"]}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                      color: Colors.red,
-                    ),
-                  ),
-                ],
-              ],
-            ),
+                child: Text(centroValidado ? "Validado" : "Validar centro"),
+              ),
 
-            const SizedBox(height: 8),
-            Autocomplete<Map<String, String>>(
+            ],
+          ),
+
+          const SizedBox(height: 6),
+          Text(widget.doc['regional'] ?? '',
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+          const SizedBox(height: 6),
+          Text(widget.doc['centro_reclusion'] ?? '',
+              style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+
+          const SizedBox(height: 12),
+
+          if (_mostrarDropdowns) ...[
+            const SizedBox(height: 18),
+            Autocomplete<Map<String, dynamic>>(
               optionsBuilder: (TextEditingValue textEditingValue) {
                 if (textEditingValue.text.isEmpty) {
-                  return const Iterable<Map<String, String>>.empty();
+                  return const Iterable<Map<String, dynamic>>.empty();
                 }
-                return centrosReclusionTodos
-                    .map((option) => option.map((key, value) => MapEntry(key, value.toString()))) // Convierte todo a String
-                    .where((Map<String, String> option) =>
-                    option['nombre']!.toLowerCase().contains(textEditingValue.text.toLowerCase()));
-
+                return centrosReclusionTodos.where((option) =>
+                    option['nombre']
+                        .toString()
+                        .toLowerCase()
+                        .contains(textEditingValue.text.toLowerCase()));
               },
-              displayStringForOption: (Map<String, String> option) =>
-              option['nombre']!,
-              fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
+              displayStringForOption: (option) => option['nombre'],
+              fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
+                _centroController = controller; // lo usamos para cargar centro guardado
                 return TextField(
-                  controller: textEditingController,
+                  controller: controller,
                   focusNode: focusNode,
                   decoration: InputDecoration(
                     hintText: "Busca ingresando la ciudad",
@@ -1522,46 +1499,46 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Colors.grey, width: 1),
                     ),
-                    focusedBorder: OutlineInputBorder(
+                    enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Colors.grey, width: 1),
                     ),
-                    enabledBorder: OutlineInputBorder(
+                    focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Colors.grey, width: 1),
                     ),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   ),
                 );
+
+              },
+              onSelected: (Map<String, dynamic> option) {
+                setState(() {
+                  selectedCentro = option['id']?.toString();
+                  selectedRegional = option['regional']?.toString();
+                });
               },
               optionsViewBuilder: (context, onSelected, options) {
-                if (options.isEmpty) {
-                  return Material(
-                    elevation: 4.0,
-                    child: Container(
-                      padding: const EdgeInsets.all(8.0),
-                      child: const Text("No se encontraron centros"),
-                    ),
-                  );
-                }
                 return Align(
                   alignment: Alignment.topLeft,
                   child: Material(
-                    elevation: 4.0,
+                    color: Colors.amber.shade50,
+                    elevation: 4,
+                    borderRadius: BorderRadius.circular(8),
                     child: Container(
-                      color: blancoCards,
-                      padding: const EdgeInsets.all(10),
+                      constraints: const BoxConstraints(
+                        maxHeight: 250, // Máxima altura si hay muchas opciones
+                        minWidth: 100, // Se adapta al contenido, pero con un mínimo
+                      ),
                       child: ListView.builder(
                         padding: EdgeInsets.zero,
                         shrinkWrap: true,
                         itemCount: options.length,
                         itemBuilder: (context, index) {
-                          final Map<String, String> option = options.elementAt(index);
+                          final option = options.elementAt(index);
                           return ListTile(
-                            title: Text(option['nombre']!),
-                            onTap: () {
-                              onSelected(option);
-                            },
+                            title: Text(option['nombre']),
+                            onTap: () => onSelected(option),
                           );
                         },
                       ),
@@ -1569,26 +1546,33 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 );
               },
-              onSelected: (Map<String, String> selection) {
-                setState(() {
-                  selectedCentro = selection['id'];
-                  // Actualizamos _centroReclusion para que muestre el nombre del centro seleccionado.
-                  // Guardamos también el ID de la regional asociada
-                  selectedRegional = selection['regional'];
-                });
-                if (kDebugMode) {
-                  print("Valor a actualizar en ***** 'regional': ${selectedRegional ?? widget.doc['regional']}");
+            ),
+
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: () {
+                final nombreCentro = widget.doc['centro_reclusion']?.toString() ?? '';
+                if (nombreCentro.isNotEmpty) {
+                  setState(() {
+                    _centroController.text = nombreCentro;
+                  });
                 }
               },
-
+              icon: const Icon(Icons.download),
+              label: const Text("Cargar centro guardado"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[200],
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              ),
             ),
             const SizedBox(height: 10),
             if (selectedCentro != null)
               Text(
                 "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
-                      (centro) => centro['id'] == selectedCentro,
-                  orElse: () => <String, String>{},
-                )['nombre']!}",
+                      (centro) => centro['id'].toString() == selectedCentro,
+                  orElse: () => {'nombre': 'No encontrado'},
+                )['nombre']}",
                 style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
               ),
             const SizedBox(height: 10),
@@ -1598,7 +1582,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 onTap: () {
                   setState(() {
                     _mostrarDropdowns = false;
-                    // Restaura el valor original del documento, si es que existe.
                     selectedCentro = null;
                   });
                 },
@@ -1612,10 +1595,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               ),
             ),
           ],
-        ),
-      );
-    }
+        ],
+      ),
+    );
   }
+
 
   Widget seleccionarJuzgadoEjecucionPenas() {
     if (!_mostrarDropdownJuzgadoEjecucion &&
@@ -3098,6 +3082,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
               await widget.doc.reference.update(datosActualizados);
               await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
+              await FirebaseFirestore.instance
+                  .collection('Ppl')
+                  .doc(widget.doc.id)
+                  .update({
+                'centro_validado': true,
+              });
 
               if (comentario.isNotEmpty) {
                 await widget.doc.reference.collection('comentarios').add({
