@@ -18,6 +18,7 @@ import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
 import '../../../../widgets/email_status_widget.dart';
+import '../../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 
 
 class SolicitudesPrisionDomiciliariaEnviadasPorCorreoPage extends StatefulWidget {
@@ -210,6 +211,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                         onTapCorreo: _mostrarDetalleCorreo,
                                       )
                                     ),
+
                                   ],
                                 ),
                               ),
@@ -342,25 +344,6 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
     );
   }
 
-  Future<void> pickFiles() async {
-    try {
-      // Permitir selección múltiple de archivos
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: false, // Permitir selección múltiple
-      );
-
-      if (result != null) {
-        setState(() {
-          // Agregar los archivos seleccionados a la lista existente
-          _selectedFiles.addAll(result.files);
-        });
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error al seleccionar archivos: $e");
-      }
-    }
-  }
 
 
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)

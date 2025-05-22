@@ -22,6 +22,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
 
 class AtenderPrisionDomiciliariaPage extends StatefulWidget {
@@ -1003,7 +1004,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
           //   correoConBoton('Director', correosCentro['correo_direccion']),
           //   correoConBoton('Jurídica', correosCentro['correo_juridica']),
           //   correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-          // ],
+          //  ],
 
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
@@ -2159,7 +2160,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend() async {
+  Future<void> enviarCorreoResend({String? asuntoPersonalizado, String? prefacioHtml}) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -2211,7 +2212,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
     );
 
 
-    String mensajeHtml = prisionDomiciliaria.generarTextoHtml();
+    String mensajeHtml = "${prefacioHtml ?? ''}${prisionDomiciliaria.generarTextoHtml()}";
 
     List<Map<String, String>> archivosBase64 = [];
 
@@ -2248,7 +2249,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
       await procesarArchivo(archivoHijo);
     }
 
-    final asuntoCorreo = "Solicitud de Prisión Domiciliaria - ${widget.numeroSeguimiento}";
+    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de Prisión Domiciliaria - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
@@ -2401,8 +2402,90 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
                 await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
               }
             }
-            if(context.mounted){
-              Navigator.pushReplacementNamed(context, 'historial_solicitudes_prision_domiciliaria_admin');
+            if (context.mounted) {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Envío de copia al centro penitenciario"),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: SeleccionarCorreoCentroReclusion(
+                      idUser: widget.idUser,
+                        onEnviarCorreo: (correoDestino) async {
+                          BuildContext? dialogContext;
+
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (ctx) {
+                              dialogContext = ctx;
+                              return const AlertDialog(
+                                backgroundColor: blanco,
+                                title: Text("Enviando..."),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text("Por favor espera mientras se envía el correo."),
+                                    SizedBox(height: 20),
+                                    CircularProgressIndicator(),
+                                  ],
+                                ),
+                              );
+                            },
+                          );
+
+                          bool envioExitoso = false;
+
+                          try {
+                            print("📤 Enviando correo a $correoDestino...");
+                            correoSeleccionado = correoDestino;
+                            await enviarCorreoResend(
+                              asuntoPersonalizado: "Copia enviada al centro de reclusión - ${widget.numeroSeguimiento}",
+                              prefacioHtml: """
+    <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
+    <hr>
+  """,
+                            );
+                            print("✅ Correo enviado correctamente");
+                            envioExitoso = true;
+                          } catch (e) {
+                            print("❌ Error al enviar: $e");
+                            if (context.mounted) {
+                              Navigator.of(dialogContext!).pop(); // Cierra "Enviando..."
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                              );
+                            }
+                          }
+
+                          if (envioExitoso && context.mounted) {
+                            Navigator.of(dialogContext!).pop(); // Cierra el alert "Enviando..."
+
+                            // 🔔 Mostrar éxito
+                            await showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                backgroundColor: blanco,
+                                title: const Text("✅ Envío exitoso"),
+                                content: const Text("El correo fue enviado correctamente al centro de reclusión."),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text("Aceptar"),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            // 🔄 Navegar al historial
+                            Navigator.pushReplacementNamed(context, 'historial_solicitudes_prision_domiciliaria_admin');
+                          }
+                        }
+
+                    ),
+                  ),
+                ),
+              );
             }
           }
         }

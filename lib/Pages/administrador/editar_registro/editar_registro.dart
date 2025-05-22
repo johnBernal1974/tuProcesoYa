@@ -3062,17 +3062,22 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'status': nuevoStatus,
               };
 
+              // Validar si ya existe una fechaActivacion y no actualizarla si ya está definida
+              final docSnapshot = await widget.doc.reference.get();
+              final data = docSnapshot.data() as Map<String, dynamic>?;
+
+              // Validar si ya existe una fechaActivacion y no actualizarla si ya está definida
+              final existingFechaActivacion = data?['fechaActivacion'];
               if (nuevoStatus == 'activado') {
-                datosActualizados['fechaActivacion'] = DateTime.now();
+                if (existingFechaActivacion == null || (existingFechaActivacion is String && existingFechaActivacion.trim().isEmpty)) {
+                  datosActualizados['fechaActivacion'] = DateTime.now();
+                }
               }
 
               if (tieneEvento) {
                 datosActualizados['activado_por_evento'] = true;
                 datosActualizados['requiere_actualizacion_datos'] = true;
               }
-
-              final docSnapshot = await widget.doc.reference.get();
-              final data = docSnapshot.data() as Map<String, dynamic>?;
 
               if (data != null && !data.containsKey('ultima_actualizacion_redenciones')) {
                 await widget.doc.reference.update({
@@ -3105,12 +3110,27 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   'patio': "",
                 });
               }
+              String accionHistorial = nuevoStatus == 'activado' ? 'activado' : 'guardado pendiente';
+
+              // 🔍 Revisar si ya hay una acción 'activado' en el historial
+              if (nuevoStatus == 'activado') {
+                final historialSnapshot = await widget.doc.reference
+                    .collection('historial_acciones')
+                    .where('accion', isEqualTo: 'activado')
+                    .limit(1)
+                    .get();
+
+                if (historialSnapshot.docs.isNotEmpty) {
+                  accionHistorial = 'actualización';
+                }
+              }
 
               await widget.doc.reference.collection('historial_acciones').add({
                 'admin': adminFullName,
-                'accion': nuevoStatus == 'activado' ? 'activado' : 'guardado pendiente',
+                'accion': accionHistorial,
                 'fecha': DateTime.now().toString(),
               });
+
 
               // ✅ Evaluar si campos están completos y se puede limpiar todo
               final bool estaCompleto = _camposCompletos(situacion);
