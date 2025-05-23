@@ -23,6 +23,11 @@ class CalculoCondenaController with ChangeNotifier {
   int? get diasCondena => _diasCondena;
   double get totalDiasRedimidos => _totalDiasRedimidos;
 
+  int? mesesComputados;
+  int? diasComputados;
+
+
+
   /// ✅ Método principal para calcular tiempos
   Future<void> calcularTiempo(String id) async {
     try {
@@ -32,7 +37,7 @@ class CalculoCondenaController with ChangeNotifier {
         return;
       }
 
-      final fechaCaptura = pplData.fechaCaptura;
+      final DateTime? fechaCaptura = pplData.fechaCaptura;
       _mesesCondena = pplData.mesesCondena;
       _diasCondena = pplData.diasCondena;
 
@@ -41,39 +46,41 @@ class CalculoCondenaController with ChangeNotifier {
         return;
       }
 
+      // 🔹 Obtener redenciones
       await calcularTotalRedenciones(id);
       debugPrint("📌 Días redimidos: $_totalDiasRedimidos");
 
+      // 🔹 Total de días de condena
       final totalDiasCondena = (_mesesCondena! * 30) + _diasCondena!;
-      final condenaTotalDias = totalDiasCondena - _totalDiasRedimidos.toInt();
 
-      if (condenaTotalDias <= 0) {
-        porcentajeEjecutado = 100.0;
-        mesesEjecutado = _mesesCondena;
-        diasEjecutadoExactos = _diasCondena;
-        mesesRestante = 0;
-        diasRestanteExactos = 0;
-        notifyListeners();
-        return;
-      }
+      // 🔹 Días efectivos de reclusión
+      final diasEjecutados = await calcularDiasEjecutadosDesdeEstadias(id, fechaCaptura);
 
-      final fechaActual = DateTime.now();
-      final fechaFinCondena = fechaCaptura.add(Duration(days: condenaTotalDias));
-      final diferenciaRestante = fechaFinCondena.difference(fechaActual);
-      final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
+      // 🔹 Total computado = reclusión + redención
+      final totalComputado = diasEjecutados + _totalDiasRedimidos.toInt();
 
-      mesesRestante = diferenciaRestante.inDays ~/ 30;
-      diasRestanteExactos = diferenciaRestante.inDays % 30;
-      mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
-      diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
+      // 🔹 Ejecutado real (solo reclusión)
+      mesesEjecutado = diasEjecutados ~/ 30;
+      diasEjecutadoExactos = diasEjecutados % 30;
 
-      final totalEjecutadoReal = diferenciaEjecutado.inDays + _totalDiasRedimidos.toInt();
-      porcentajeEjecutado = (totalEjecutadoReal / totalDiasCondena) * 100;
+      // 🔹 Total computado en meses y días
+      mesesComputados = totalComputado ~/ 30;
+      diasComputados = totalComputado % 30;
 
+      // 🔹 Tiempo restante
+      final diasRestantes = totalDiasCondena - totalComputado;
+      mesesRestante = diasRestantes ~/ 30;
+      diasRestanteExactos = diasRestantes % 30;
+
+      // 🔹 Porcentaje cumplido
+      porcentajeEjecutado = (totalComputado / totalDiasCondena) * 100;
 
       notifyListeners();
-
-      debugPrint("✅ Cálculo actualizado: % ejecutado: $porcentajeEjecutado%");
+      debugPrint("✅ Tiempo calculado con éxito");
+      debugPrint("🔹 Reclusión efectiva: $mesesEjecutado meses y $diasEjecutadoExactos días");
+      debugPrint("🔹 Redenciones: ${_totalDiasRedimidos.toInt()} días");
+      debugPrint("🔹 Total computado: $mesesComputados meses y $diasComputados días");
+      debugPrint("🔹 Porcentaje: ${porcentajeEjecutado?.toStringAsFixed(2)}%");
     } catch (e) {
       debugPrint("❌ Error en calcularTiempo: $e");
     }
@@ -107,5 +114,42 @@ class CalculoCondenaController with ChangeNotifier {
     final meses = _mesesCondena ?? 0;
     final dias = _diasCondena ?? 0;
     return meses + (dias / 30);
+  }
+
+  /// ✅ Calcula la cantidad total de días en reclusión efectiva (excluye condicional/domiciliaria)
+  Future<int> calcularDiasEjecutadosDesdeEstadias(String pplId, DateTime? fechaCaptura) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('Ppl')
+          .doc(pplId)
+          .collection('estadias')
+          .where('tipo', isEqualTo: 'Reclusión')
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        if (fechaCaptura == null) return 0;
+        final dias = DateTime.now().difference(fechaCaptura).inDays;
+        debugPrint("📌 Usando fecha de captura, días ejecutados: $dias");
+        return dias;
+      }
+
+      int totalDias = 0;
+      final hoy = DateTime.now();
+
+      for (var doc in snapshot.docs) {
+        final entrada = (doc['fecha_ingreso'] as Timestamp).toDate();
+        final salida = doc.data().containsKey('fecha_salida') && doc['fecha_salida'] != null
+            ? (doc['fecha_salida'] as Timestamp).toDate()
+            : hoy;
+
+        totalDias += salida.difference(entrada).inDays;
+      }
+
+      debugPrint("📌 Total días de reclusión efectiva (estadías): $totalDias");
+      return totalDias;
+    } catch (e) {
+      debugPrint("❌ Error al calcular días ejecutados desde estadías: $e");
+      return 0;
+    }
   }
 }

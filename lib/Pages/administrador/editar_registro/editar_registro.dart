@@ -18,9 +18,11 @@ import '../../../src/colors/colors.dart';
 import '../../../widgets/card_comuncar_con_el_usuario.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/exento.dart';
+import '../../../widgets/formulario_estadias_reclusion.dart';
 import '../../../widgets/ingresar_juzgado_conocimiento.dart';
 import '../../../widgets/ingresar_juzgado_ep.dart';
 import '../../../widgets/mensajes_whatsApp_opciones.dart';
+import '../../../widgets/tabla_vista_estadias_reclusion.dart';
 import '../home_admin/home_admin.dart';
 
 class EditarRegistroPage extends StatefulWidget {
@@ -40,7 +42,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   final _apellidoController = TextEditingController();
   final _numeroDocumentoController = TextEditingController();
   final _radicadoController = TextEditingController();
-  final _fechaDeCapturaController = TextEditingController();
   final _tdController = TextEditingController();
   final _nuiController = TextEditingController();
   final _patioController = TextEditingController();
@@ -203,7 +204,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _apellidoController.dispose();
     _numeroDocumentoController.dispose();
     _radicadoController.dispose();
-    _fechaDeCapturaController.dispose();
     _tdController.dispose();
     _nuiController.dispose();
     _patioController.dispose();
@@ -338,6 +338,41 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           const SizedBox(height: 15),
           seleccionarJuzgadoQueCondeno(),
           const SizedBox(height: 15),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWideScreen = constraints.maxWidth > 900; // puedes ajustar este valor
+
+              if (isWideScreen) {
+                // 📺 Pantallas anchas: lado a lado
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      flex: 6,
+                      child: FormularioEstadiaAdmin(pplId: ppl.id),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 4,
+                      child: TablaEstadiasAdmin(pplId: ppl.id),
+                    ),
+                  ],
+                );
+              } else {
+                // 📱 Pantallas angostas: uno debajo del otro
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FormularioEstadiaAdmin(pplId: ppl.id),
+                    const SizedBox(height: 16),
+                    TablaEstadiasAdmin(pplId: ppl.id),
+                  ],
+                );
+              }
+            },
+          )
+          ,
+          const SizedBox(height: 15),
           DelitosAutocompleteWidget(
             categoriaSeleccionada: categoriaDelito,
             delitoSeleccionado: selectedDelito,
@@ -349,8 +384,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             },
           ),
           const SizedBox(height: 15),
-          fechaCapturaPpl(),
-          const SizedBox(height: 15),
+          // fechaCapturaPpl(),
+          // const SizedBox(height: 15),
           radicadoPpl(),
           const SizedBox(height: 15),
           condenaPpl(),
@@ -2153,8 +2188,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _numeroDocumentoController.text = data['numero_documento_ppl']?.toString() ?? "";
     _tipoDocumento = data['tipo_documento_ppl'] ?? "";
     _radicadoController.text = data['radicado'] ?? "";
-
-    _fechaDeCapturaController.text = data['fecha_captura'] ?? "";
     _tdController.text = data['td'] ?? "";
     _nuiController.text = data['nui'] ?? "";
     _patioController.text = data['patio'] ?? "";
@@ -2258,47 +2291,47 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Widget fechaCapturaPpl() {
-    return TextFormField(
-      controller: _fechaDeCapturaController,
-      readOnly: true, // Evita que el usuario escriba manualmente
-      decoration: InputDecoration(
-        labelText: 'Fecha de captura (YYYY-MM-DD)',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 1),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 1),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 2),
-        ),
-        // 👇 Agrega estas 2 líneas para quitar el borde rojo de error
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 1),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Colors.grey, width: 2),
-        ),
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
-          onPressed: () => _seleccionarFechaCaptura(context),
-        ),
-      ),
-
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Por favor ingrese la fecha de captura';
-        }
-        return null;
-      },
-    );
-  }
+  // Widget fechaCapturaPpl() {
+  //   return TextFormField(
+  //     controller: _fechaDeCapturaController,
+  //     readOnly: true, // Evita que el usuario escriba manualmente
+  //     decoration: InputDecoration(
+  //       labelText: 'Fecha de captura (YYYY-MM-DD)',
+  //       border: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(10),
+  //         borderSide: const BorderSide(color: Colors.grey, width: 1),
+  //       ),
+  //       enabledBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(10),
+  //         borderSide: const BorderSide(color: Colors.grey, width: 1),
+  //       ),
+  //       focusedBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(10),
+  //         borderSide: const BorderSide(color: Colors.grey, width: 2),
+  //       ),
+  //       // 👇 Agrega estas 2 líneas para quitar el borde rojo de error
+  //       errorBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(10),
+  //         borderSide: const BorderSide(color: Colors.grey, width: 1),
+  //       ),
+  //       focusedErrorBorder: OutlineInputBorder(
+  //         borderRadius: BorderRadius.circular(10),
+  //         borderSide: const BorderSide(color: Colors.grey, width: 2),
+  //       ),
+  //       suffixIcon: IconButton(
+  //         icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
+  //         onPressed: () => _seleccionarFechaCaptura(context),
+  //       ),
+  //     ),
+  //
+  //     validator: (value) {
+  //       if (value == null || value.isEmpty) {
+  //         return 'Por favor ingrese la fecha de captura';
+  //       }
+  //       return null;
+  //     },
+  //   );
+  // }
 
   // Método auxiliar para formatear números con dos dígitos
   String _formatDosDigitos(int n) => n.toString().padLeft(2, '0');
@@ -2322,13 +2355,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         );
       },
     );
-
-    if (pickedDate != null) {
-      setState(() {
-        _fechaDeCapturaController.text = "${pickedDate.year}-${_formatDosDigitos(pickedDate.month)}-${_formatDosDigitos(pickedDate.day)}";
-      });
-      debugPrint("📅 Fecha de captura seleccionada: ${_fechaDeCapturaController.text}");
-    }
   }
 
   Widget radicadoPpl(){
@@ -2938,6 +2964,25 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
             if (!confirmar) return;
 
+            final docSnapshot = await widget.doc.reference.get();
+            final data = docSnapshot.data() as Map<String, dynamic>?;
+
+            final rawFechaCaptura = data?['fecha_captura'];
+            final tieneFechaCaptura = rawFechaCaptura != null &&
+                rawFechaCaptura.toString().trim().isNotEmpty;
+
+            if (!tieneFechaCaptura) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("⚠️ Este PPL no tiene fecha de captura registrada. Asegúrate de crear una estadía."),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+              return;
+            }
+
             List<String> camposFaltantes = [];
             String situacion = (widget.doc['situacion'] ?? '').toString();
 
@@ -3049,7 +3094,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'radicado': _radicadoController.text,
                 'meses_condena': int.tryParse(_mesesCondenaController.text) ?? 0,
                 'dias_condena': int.tryParse(_diasCondenaController.text) ?? 0,
-                'fecha_captura': _fechaDeCapturaController.text,
+                //'fecha_captura': _fechaDeCapturaController.text,
                 'td': _tdController.text,
                 'nui': _nuiController.text,
                 'patio': _patioController.text,
@@ -3307,7 +3352,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       camposValidos(_nombreController.text) &&
           camposValidos(_apellidoController.text) &&
           camposValidos(_numeroDocumentoController.text) &&
-          camposValidos(_fechaDeCapturaController.text) &&
           camposValidos(_radicadoController.text) &&
           camposValidos(selectedRegional ?? getCampoSeguro('regional')) &&
           camposValidos(selectedCiudad ?? getCampoSeguro('ciudad')) &&
