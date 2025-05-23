@@ -89,7 +89,7 @@ class LibertadCondicionalTemplate {
         Radicado del proceso: <b>$radicado</b>.<br>
         Delito: <b>$delito</b>.<br>
         Asunto: <br>
-        <b>Solicitud Redencion de Penas</b>
+        <b>Solicitud Redencion de Penas</b><br>
         <b>Solicitud de libertad condicional con la 38G - $numeroSeguimiento</b><br>
         <span style="font-size: 12px; color: #666666;">"De acuerdo al artículo 471 del Código de Procedimiento Penal"</span><br><br>
 

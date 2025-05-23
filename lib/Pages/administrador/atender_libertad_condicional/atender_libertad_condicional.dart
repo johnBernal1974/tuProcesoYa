@@ -20,6 +20,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'atender_libertad_condicional_admin_controller.dart';
 
@@ -995,19 +996,6 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
             ],
           ),
           const SizedBox(height: 15),
-          // if (estaEnReclusion) ...[
-          //   const Divider(color: primary),
-          //   const SizedBox(height: 10),
-          //   const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //   Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-          //   const SizedBox(height: 10),
-          //   const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //   correoConBoton('Principal', correosCentro['correo_principal']),
-          //   correoConBoton('Director', correosCentro['correo_direccion']),
-          //   correoConBoton('Jurídica', correosCentro['correo_juridica']),
-          //   correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-          // ],
-
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
           Column(
@@ -1764,27 +1752,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
     );
   }
 
-  // 🔹 Cloud Function para generar texto automático para prisión domiciliaria
-  // Future<void> generarTextoIAParaDomiciliaria() async {
-  //   try {
-  //     final resultado = await IABackendService.generarTextoPrisionDomiciliaria(); // ✅ Nombre correcto del método
-  //
-  //     setState(() {
-  //       _consideracionesController.text = resultado['consideraciones'] ?? '';
-  //       _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-  //       _peticionConcretaController.text = resultado['peticion'] ?? '';
-  //     });
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("❌ Error: $e")),
-  //     );
-  //   }
-  // }
-
   // corregido full
   Future<void> cargarSinopsis(String docId) async {
     try {
@@ -2175,7 +2142,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend() async {
+  Future<void> enviarCorreoResend({String? asuntoPersonalizado, String? prefacioHtml}) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -2226,8 +2193,8 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
     );
 
-
-    String mensajeHtml = libertadCondicional.generarTextoHtml();
+    //String mensajeHtml = libertadCondicional.generarTextoHtml();
+    String mensajeHtml = "${prefacioHtml ?? ''}${libertadCondicional.generarTextoHtml()}";
 
     List<Map<String, String>> archivosBase64 = [];
 
@@ -2264,7 +2231,8 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
       await procesarArchivo(archivoHijo);
     }
 
-    final asuntoCorreo = "Solicitud de Libertad Condicional - ${widget.numeroSeguimiento}";
+    //final asuntoCorreo = "Solicitud de Libertad Condicional - ${widget.numeroSeguimiento}";
+    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de Libertad Condicional - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
@@ -2352,7 +2320,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
         );
 
         if (confirmacion ?? false) {
-          // 🔄 Sincronizar los datos actualizados antes de enviar
           setState(() {
             sinopsis = _sinopsisController.text.trim();
             consideraciones = _consideracionesController.text.trim();
@@ -2381,7 +2348,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
           }
 
           await enviarCorreoResend();
-
           final html = libertadCondicional.generarTextoHtml();
           await subirHtmlCorreoADocumentoCondicional(
             idDocumento: widget.idDocumento,
@@ -2392,7 +2358,7 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
           final numeroSeguimiento = libertadCondicional.numeroSeguimiento;
 
           if (context.mounted) {
-            Navigator.of(context).pop(); // Cerrar loading
+            Navigator.of(context).pop(); // cerrar loading
 
             final enviar = await showDialog<bool>(
               context: context,
@@ -2418,23 +2384,100 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
               final mensaje = Uri.encodeComponent(
                   "Hola *${userData!.nombreAcudiente}*,\n\n"
                       "Hemos enviado tu solicitud de libertad condicional número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n"
-                      "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes libertad condicional. Allí podrás ver el correo enviado:\n$urlApp\n\n"
-                      "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
+                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud.\n\n"
+                      "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes libertad condicional. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                      "Gracias por confiar en nosotros.\n\n*El equipo de Tu Proceso Ya.*"
               );
               final link = "https://wa.me/$celular?text=$mensaje";
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
-            if(context.mounted){
-              Navigator.pushReplacementNamed(context, 'historial_solicitudes_libertad_condicional_admin');
-            }
 
+            if(context.mounted){
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Envío de copia al centro penitenciario"),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: SeleccionarCorreoCentroReclusion(
+                      idUser: widget.idUser,
+                      onEnviarCorreo: (correoDestino) async {
+                        BuildContext? dialogContext;
+
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) {
+                            dialogContext = ctx;
+                            return const AlertDialog(
+                              backgroundColor: blanco,
+                              title: Text("Enviando..."),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text("Por favor espera mientras se envía el correo."),
+                                  SizedBox(height: 20),
+                                  CircularProgressIndicator(),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+
+                        bool envioExitoso = false;
+
+                        try {
+                          correoSeleccionado = correoDestino; // 👉 ¡Aquí está el cambio clave!
+                          await enviarCorreoResend(
+                            asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
+                            prefacioHtml: """
+                          <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
+                          <hr>
+                        """,
+                          );
+                          envioExitoso = true;
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(dialogContext!).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+
+                        if (envioExitoso && context.mounted) {
+                          Navigator.of(dialogContext!).pop();
+
+                          await showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              backgroundColor: blanco,
+                              title: const Text("✅ Envío exitoso"),
+                              content: const Text("El correo fue enviado correctamente al centro de reclusión."),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text("Aceptar"),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          Navigator.pushReplacementNamed(context, 'historial_solicitudes_libertad_condicional_admin');
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              );
+            }
           }
         }
       },
       child: const Text("Enviar por correo"),
     );
   }
+
 
 
   Future<void> subirHtmlCorreoADocumentoCondicional({

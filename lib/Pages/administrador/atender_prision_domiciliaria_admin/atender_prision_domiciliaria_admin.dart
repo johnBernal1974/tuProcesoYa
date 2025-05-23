@@ -12,8 +12,6 @@ import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb2.dart';
-import '../../../commons/ia_backend_service/IASuggestionCard.dart';
-import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
@@ -993,19 +991,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             ],
           ),
           const SizedBox(height: 15),
-          // if (estaEnReclusion) ...[
-          //   const Divider(color: primary),
-          //   const SizedBox(height: 10),
-          //   const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //   Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-          //   const SizedBox(height: 10),
-          //   const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //   correoConBoton('Principal', correosCentro['correo_principal']),
-          //   correoConBoton('Director', correosCentro['correo_direccion']),
-          //   correoConBoton('Jurídica', correosCentro['correo_juridica']),
-          //   correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-          //  ],
-
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
           Column(
@@ -1737,27 +1722,6 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
     );
   }
 
-  // 🔹 Cloud Function para generar texto automático para prisión domiciliaria
-  // Future<void> generarTextoIAParaDomiciliaria() async {
-  //   try {
-  //     final resultado = await IABackendService.generarTextoPrisionDomiciliaria(); // ✅ Nombre correcto del método
-  //
-  //     setState(() {
-  //       _consideracionesController.text = resultado['consideraciones'] ?? '';
-  //       _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-  //       _peticionConcretaController.text = resultado['peticion'] ?? '';
-  //     });
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("❌ Error: $e")),
-  //     );
-  //   }
-  // }
-
   // corregido full
   Future<void> cargarSinopsis(String docId) async {
     try {
@@ -1904,15 +1868,6 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
           "SINOPSIS",
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
         ),
-        const SizedBox(height: 5),
-        // IASuggestionCard(
-        //   categoria: "Beneficios penitenciarios",
-        //   subcategoria: "Prisión domiciliaria",
-        //   consideracionesController: _consideracionesController,
-        //   fundamentosController: _fundamentosDerechoController,
-        //   peticionController: _peticionConcretaController,
-        //   respuestasUsuario: [], // No hay respuestas, pero igual se necesita enviar
-        // ),
         const SizedBox(height: 5),
         TextField(
           controller: _sinopsisController,
@@ -2124,18 +2079,13 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
-        SizedBox(
-          height: 600, // O ajusta según necesidad
-          child: SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Html(data: plantilla.generarTextoHtml()),
-            ),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
           ),
+          child: Html(data: plantilla.generarTextoHtml()),
         ),
         const SizedBox(height: 50),
         Wrap(
@@ -2154,7 +2104,6 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
       ],
     );
   }
-
 
   String convertirSaltosDeLinea(String texto) {
     return texto.replaceAll('\n', '<br>');
