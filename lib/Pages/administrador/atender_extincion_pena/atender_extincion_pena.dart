@@ -18,6 +18,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
 import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'atender_extincion_pena_controller.dart';
@@ -397,10 +398,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
       contentPadding: EdgeInsets.zero,
     );
   }
-
-
-
-
 
   void _actualizarAltura() {
     int lineas = '\n'.allMatches(_sinopsisController.text).length + 1;
@@ -1351,26 +1348,6 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     );
   }
 
-  // 🔹 Cloud Function para generar texto automático para prisión domiciliaria
-  // Future<void> generarTextoIAParaDomiciliaria() async {
-  //   try {
-  //     final resultado = await IABackendService.generarTextoPrisionDomiciliaria(); // ✅ Nombre correcto del método
-  //
-  //     setState(() {
-  //       _consideracionesController.text = resultado['consideraciones'] ?? '';
-  //       _fundamentosDerechoController.text = resultado['fundamentos'] ?? '';
-  //       _peticionConcretaController.text = resultado['peticion'] ?? '';
-  //     });
-  //
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text("✅ Texto IA insertado en todos los campos")),
-  //     );
-  //   } catch (e) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("❌ Error: $e")),
-  //     );
-  //   }
-  // }
 
   // corregido full
   Future<void> cargarSinopsis(String docId) async {
@@ -1684,7 +1661,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend() async {
+  Future<void> enviarCorreoResend({String? asuntoPersonalizado, String? prefacioHtml}) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -1723,14 +1700,10 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
     );
 
-
-    String mensajeHtml = extincionPena.generarTextoHtml();
-
+    String mensajeHtml = "${prefacioHtml ?? ''}${extincionPena.generarTextoHtml()}";
     List<Map<String, String>> archivosBase64 = [];
 
-
-
-    final asuntoCorreo = "Solicitud de Extinción de la pena - ${widget.numeroSeguimiento}";
+    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud extinción de la pena - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
@@ -1747,7 +1720,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "extincion",
+      "tipo": "extincion_pena",
     });
 
     final response = await http.post(
@@ -1818,7 +1791,6 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
         );
 
         if (confirmacion ?? false) {
-          // 🔄 Sincronizar los datos actualizados antes de enviar
           setState(() {
             sinopsis = _sinopsisController.text.trim();
             consideraciones = _consideracionesController.text.trim();
@@ -1846,7 +1818,6 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
           }
 
           await enviarCorreoResend();
-
           final html = extincionPena.generarTextoHtml();
           await subirHtmlCorreoADocumentoExtincionPena(
             idDocumento: widget.idDocumento,
@@ -1857,7 +1828,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
           final numeroSeguimiento = extincionPena.numeroSeguimiento;
 
           if (context.mounted) {
-            Navigator.of(context).pop(); // Cerrar loading
+            Navigator.of(context).pop(); // cerrar loading
 
             final enviar = await showDialog<bool>(
               context: context,
@@ -1883,15 +1854,84 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
               final mensaje = Uri.encodeComponent(
                   "Hola *${userData!.nombreAcudiente}*,\n\n"
                       "Hemos enviado tu solicitud de extinción de la pena número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n"
-                      "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes extinción de la pena. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder.\n\n"
+                      "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes extinción de la pena.\n$urlApp\n\n"
                       "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
               );
               final link = "https://wa.me/$celular?text=$mensaje";
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
             if(context.mounted){
-              Navigator.pushReplacementNamed(context, 'historial_solicitudes_extincion_pena_admin');
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Envío de copia al centro penitenciario"),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: SeleccionarCorreoCentroReclusion(
+                      idUser: widget.idUser,
+                      onEnviarCorreo: (correoDestino) async {
+                        BuildContext? dialogContext;
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) {
+                            dialogContext = ctx;
+                            return const AlertDialog(
+                              backgroundColor: blanco,
+                              title: Text("Enviando..."),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text("Por favor espera mientras se envía el correo."),
+                                  SizedBox(height: 20),
+                                  CircularProgressIndicator(),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+
+                        try {
+                          correoSeleccionado = correoDestino;
+                          await enviarCorreoResend(
+                            asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
+                            prefacioHtml: """
+                          <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
+                          <hr>
+                        """,
+                          );
+                          if (context.mounted) {
+                            Navigator.of(dialogContext!).pop();
+                            await showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                backgroundColor: blanco,
+                                title: const Text("✅ Envío exitoso"),
+                                content: const Text("El correo fue enviado correctamente al centro de reclusión."),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text("Aceptar"),
+                                  ),
+                                ],
+                              ),
+                            );
+                            Navigator.pushReplacementNamed(context, 'historial_solicitudes_extincion_pena_admin');
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(dialogContext!).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              );
             }
           }
         }
@@ -1899,7 +1939,6 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       child: const Text("Enviar por correo"),
     );
   }
-
 
   Future<void> subirHtmlCorreoADocumentoExtincionPena({
     required String idDocumento,

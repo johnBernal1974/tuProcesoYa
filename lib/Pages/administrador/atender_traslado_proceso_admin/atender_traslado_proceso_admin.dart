@@ -19,6 +19,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 
 class AtenderTrasladoProcesoPage extends StatefulWidget {
   final String status;
@@ -1147,7 +1148,7 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend() async {
+  Future<void> enviarCorreoResend({String? asuntoPersonalizado, String? prefacioHtml}) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
     final fechaDT = DateTime.parse(widget.fechaTraslado);
     final fechaFormateada = formatearFechaTraslado(fechaDT);
@@ -1182,12 +1183,11 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
       situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
     );
 
-
-    String mensajeHtml = trasladoProceso.generarTextoHtml();
+    String mensajeHtml = "${prefacioHtml ?? ''}${trasladoProceso.generarTextoHtml()}";
 
     List<Map<String, String>> archivosBase64 = [];
 
-    final asuntoCorreo = "Solicitud de traslado de proceso - ${widget.numeroSeguimiento}";
+    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de traslado de proceso - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
@@ -1332,15 +1332,86 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
               final mensaje = Uri.encodeComponent(
                   "Hola *${userData!.nombreAcudiente}*,\n\n"
                       "Hemos enviado tu solicitud de traslado de proceso número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n"
-                      "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes traslado de proceso. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder.\n\n"
+                      "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes traslado de proceso. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                       "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
               );
               final link = "https://wa.me/$celular?text=$mensaje";
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
             if(context.mounted){
-              Navigator.pushReplacementNamed(context, 'historial_solicitudes_traslado_proceso_admin');
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Envío de copia al centro penitenciario"),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: SeleccionarCorreoCentroReclusion(
+                      idUser: widget.idUser,
+                      onEnviarCorreo: (correoDestino) async {
+                        BuildContext? dialogContext;
+
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) {
+                            dialogContext = ctx;
+                            return const AlertDialog(
+                              backgroundColor: blanco,
+                              title: Text("Enviando..."),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text("Por favor espera mientras se envía el correo."),
+                                  SizedBox(height: 20),
+                                  CircularProgressIndicator(),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+
+                        try {
+                          correoSeleccionado = correoDestino;
+                          await enviarCorreoResend(
+                            asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
+                            prefacioHtml: """
+                          <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
+                          <hr>
+                        """,
+                          );
+
+                          if (context.mounted) {
+                            Navigator.of(dialogContext!).pop();
+                            await showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                backgroundColor: blanco,
+                                title: const Text("✅ Envío exitoso"),
+                                content: const Text("El correo fue enviado correctamente al centro de reclusión."),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text("Aceptar"),
+                                  ),
+                                ],
+                              ),
+                            );
+                            Navigator.pushReplacementNamed(context, 'historial_solicitudes_traslado_proceso_admin');
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(dialogContext!).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              );
             }
           }
         }
@@ -1348,6 +1419,7 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
       child: const Text("Enviar por correo"),
     );
   }
+
 
 
   Future<void> subirHtmlCorreoADocumentoTrasladoProceso({

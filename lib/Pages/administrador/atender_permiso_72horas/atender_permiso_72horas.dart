@@ -20,6 +20,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import 'atender_permiso_72horas_admin_controler.dart';
 
 class AtenderPermiso72HorasPage extends StatefulWidget {
@@ -2103,7 +2104,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend() async {
+  Future<void> enviarCorreoResend({String? asuntoPersonalizado, String? prefacioHtml}) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -2155,9 +2156,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
     );
 
-
-    String mensajeHtml = permiso72horas.generarTextoHtml();
-
+    String mensajeHtml = "${prefacioHtml ?? ''}${permiso72horas.generarTextoHtml()}";
     List<Map<String, String>> archivosBase64 = [];
 
     // Función auxiliar para procesar cualquier archivo por URL
@@ -2193,7 +2192,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       await procesarArchivo(archivoHijo);
     }
 
-    final asuntoCorreo = "Solicitud de Permiso de 72 horas - ${widget.numeroSeguimiento}";
+    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de Permiso de 72 horas - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
@@ -2281,7 +2280,6 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
         );
 
         if (confirmacion ?? false) {
-          // 🔄 Sincronizar los datos actualizados antes de enviar
           setState(() {
             sinopsis = _sinopsisController.text.trim();
             consideraciones = _consideracionesController.text.trim();
@@ -2310,7 +2308,6 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
           }
 
           await enviarCorreoResend();
-
           final html = permiso72horas.generarTextoHtml();
           await subirHtmlCorreoADocumentoPermiso72Horas(
             idDocumento: widget.idDocumento,
@@ -2347,21 +2344,95 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
               final mensaje = Uri.encodeComponent(
                   "Hola *${userData!.nombreAcudiente}*,\n\n"
                       "Hemos enviado tu solicitud de Permiso de 72 horas número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n"
-                      "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes permiso de 72 horas. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder.\n\n"
+                      "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes permiso de 72 horas. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                       "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
               );
               final link = "https://wa.me/$celular?text=$mensaje";
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
+            if(context.mounted){
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text("Envío de copia al centro penitenciario"),
+                  content: SizedBox(
+                    width: MediaQuery.of(context).size.width * 0.8,
+                    child: SeleccionarCorreoCentroReclusion(
+                      idUser: widget.idUser,
+                      onEnviarCorreo: (correoDestino) async {
+                        BuildContext? dialogContext;
 
-            Navigator.pushReplacementNamed(context, 'historial_solicitudes_permiso_72horas_admin');
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) {
+                            dialogContext = ctx;
+                            return const AlertDialog(
+                              backgroundColor: blanco,
+                              title: Text("Enviando..."),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text("Por favor espera mientras se envía el correo."),
+                                  SizedBox(height: 20),
+                                  CircularProgressIndicator(),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+
+                        try {
+                          correoSeleccionado = correoDestino;
+                          await enviarCorreoResend(
+                            asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
+                            prefacioHtml: """
+                          <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
+                          <hr>
+                        """,
+                          );
+
+                          if (context.mounted) {
+                            Navigator.of(dialogContext!).pop();
+                            await showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                backgroundColor: blanco,
+                                title: const Text("✅ Envío exitoso"),
+                                content: const Text("El correo fue enviado correctamente al centro de reclusión."),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text("Aceptar"),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            Navigator.pushReplacementNamed(context, 'historial_solicitudes_permiso_72horas_admin');
+                          }
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(dialogContext!).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                            );
+                          }
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              );
+            }
           }
         }
       },
       child: const Text("Enviar por correo"),
     );
   }
+
 
 
   Future<void> subirHtmlCorreoADocumentoPermiso72Horas({
