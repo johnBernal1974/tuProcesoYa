@@ -36,6 +36,17 @@ class MensajesWhatsapp {
             "🔗 Puedes ingresar a la plataforma aquí:\nhttps://www.tuprocesoya.com\n\n"
             "*El equipo de Tu Proceso Ya*";
 
+      case 'sin_fecha_captura':
+        return "Hola *$nombre*,\n\n"
+            "Actualmente tu proceso *no cuenta con una fecha de captura registrada o confirmada*. Esto puede ocurrir cuando el proceso de documentación inicial aún no ha sido completado por la autoridad correspondiente, o cuando la información aún no ha sido actualizada formalmente en el sistema judicial.\n\n"
+            "La fecha de captura es un dato fundamental para calcular el tiempo de condena cumplido, aplicar redenciones y evaluar tu acceso a *beneficios penitenciarios* como prisión domiciliaria, libertad condicional o permisos especiales.\n\n"
+            "Desde *Tu Proceso Ya* realizamos seguimiento constante al estado de tu proceso. Si identificamos que la falta de esta información está generando retrasos o afectaciones, te ayudaremos a presentar un *derecho de petición* o una *acción de tutela* para exigir su inclusión oficial.\n\n"
+            "Tan pronto se registre o actualice la fecha de captura, te informaremos para que puedas conocer con claridad el avance de tu condena y las opciones disponibles.\n\n"
+            "*Te estaremos contactando para que juntos podamos resolver esta duda y así dejar tu cuenta totalmente actualizada y tu usuario activado.*\n\n"
+            "🔗 Puedes ingresar a la plataforma aquí:\nhttps://www.tuprocesoya.com\n\n"
+            "*El equipo de Tu Proceso Ya*";
+
+
 
       default:
         return "Hola *$nombre*,\n\n"

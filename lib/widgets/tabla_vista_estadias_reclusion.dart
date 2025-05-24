@@ -104,12 +104,42 @@ class TablaEstadiasAdmin extends StatelessWidget {
                                   ),
                                 );
                                 if (confirmar == true) {
+                                  final tipoEstadia = data['tipo'];
+                                  final fechaIngresoEstadia = (data['fecha_ingreso'] as Timestamp).toDate();
+
+                                  // Eliminamos la estadía
                                   await FirebaseFirestore.instance
                                       .collection('Ppl')
                                       .doc(pplId)
                                       .collection('estadias')
                                       .doc(id)
                                       .delete();
+
+                                  // Si era una estadía de Reclusión, verificamos si era la más antigua
+                                  if (tipoEstadia == 'Reclusión') {
+                                    final snapshot = await FirebaseFirestore.instance
+                                        .collection('Ppl')
+                                        .doc(pplId)
+                                        .collection('estadias')
+                                        .where('tipo', isEqualTo: 'Reclusión')
+                                        .orderBy('fecha_ingreso')
+                                        .limit(1)
+                                        .get();
+
+                                    final primeraEstadia = snapshot.docs.isNotEmpty
+                                        ? (snapshot.docs.first['fecha_ingreso'] as Timestamp).toDate()
+                                        : null;
+
+                                    // Si no hay más reclusiones o la primera ya no es la misma
+                                    if (primeraEstadia == null || primeraEstadia.isAfter(fechaIngresoEstadia)) {
+                                      await FirebaseFirestore.instance
+                                          .collection('Ppl')
+                                          .doc(pplId)
+                                          .update({'fecha_captura': null});
+
+                                      debugPrint("📛 Nodo 'fecha_captura' eliminado tras borrar la primera estadía de Reclusión");
+                                    }
+                                  }
                                 }
                               },
                             ),

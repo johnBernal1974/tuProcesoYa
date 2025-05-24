@@ -21,11 +21,13 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
     'exclusion_art_68': false,
     'proceso_en_tribunal': false,
     'sin_juzgado_ejecucion': false,
+    'sin_fecha_captura': false,
   };
 
   Map<String, bool> opcionesGuardarEliminar = {
     'proceso_en_tribunal': false,
     'sin_juzgado_ejecucion': false,
+    'sin_fecha_captura': false,
   };
 
   String? opcionSeleccionada;
@@ -66,8 +68,8 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
 
     setState(() {
       opcionesGuardarEliminar = {
-        for (var key in opciones.keys)
-          if (key != 'exclusion_art_68') key: eventosGuardados.contains(key),
+        for (var key in opcionesGuardarEliminar.keys)
+          key: eventosGuardados.contains(key),
       };
     });
   }
@@ -202,6 +204,8 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
         return 'Proceso en tribunal';
       case 'sin_juzgado_ejecucion':
         return 'Juzgado EP sin asignar';
+      case 'sin_fecha_captura':
+        return 'Sin fecha de captura';
       case 'sin_condena':
         return 'Sin condena registrada';
       case 'sin_juzgado_que_condeno':
@@ -271,15 +275,7 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
       await launchUrl(webUrl, mode: LaunchMode.externalApplication);
     }
 
-    await FirebaseFirestore.instance
-        .collection('Ppl')
-        .doc(docId)
-        .collection('eventos')
-        .doc(tipoMensaje)
-        .set({
-      'tipo': tipoMensaje,
-      'enviadoPor': FirebaseAuth.instance.currentUser?.uid ?? "admin",
-      'fecha': FieldValue.serverTimestamp(),
-    });
+    // 🔥 Eliminado: ya no se guarda nada aquí
   }
+
 }

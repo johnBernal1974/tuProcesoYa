@@ -456,6 +456,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                         "Este registro tiene un proceso en tribunal. Se puede guardar, sin JEP ni condena. Revise cuidadosamente antes de continuar.",
                       ));
                     }
+                    if (eventos.contains('sin_fecha_captura')) {
+                      mensajes.add(_mensajeAdvertencia(
+                        "Este registro no tiene fecha de captura. Se puede guardar sin fecha de captura. Revise cuidadosamente antes de continuar.",
+                      ));
+                    }
 
                     return Column(children: mensajes);
                   },
@@ -866,8 +871,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-
-
   /// 🔥 Mostrar la pantalla superpuesta con el historial de redenciones
   void _mostrarHistorialRedenciones(BuildContext context) {
     showDialog(
@@ -1041,7 +1044,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   /// 🔥 Método para obtener redenciones desde Firebase
   Future<List<Map<String, dynamic>>> _obtenerRedenciones() async {
     try {
@@ -1098,8 +1100,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       return [];
     }
   }
-
-
 
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDias = 0.0;
@@ -2971,11 +2971,18 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             final tieneFechaCaptura = rawFechaCaptura != null &&
                 rawFechaCaptura.toString().trim().isNotEmpty;
 
-            if (!tieneFechaCaptura) {
+            final eventoSinFechaCaptura = await widget.doc.reference
+                .collection('eventos')
+                .doc('sin_fecha_captura')
+                .get();
+
+            final tieneEventoSinFechaCaptura = eventoSinFechaCaptura.exists;
+
+            if (!tieneFechaCaptura && !tieneEventoSinFechaCaptura) {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text("⚠️ Este PPL no tiene fecha de captura registrada. Asegúrate de crear una estadía."),
+                    content: Text("⚠️ Este PPL no tiene fecha de captura registrada. Asegúrate de crear una estadía o marca el evento correspondiente."),
                     backgroundColor: Colors.red,
                   ),
                 );
@@ -3052,6 +3059,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               if (comentario.trim().isEmpty) return;
               nuevoStatus = "activado";
             }
+            else if (tieneEventoSinFechaCaptura) {
+              if (context.mounted) {
+                comentario = await _mostrarDialogoActivacionConDatosIncompletos(context, "Sin fecha de captura (evento activado)");
+              }
+              if (comentario.trim().isEmpty) return;
+              nuevoStatus = "activado";
+            }
+
             Map<String, String> correosCentro = {
               'correo_direccion': '',
               'correo_juridica': '',
@@ -3238,8 +3253,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     try {
       final snapshot1 = await docRef.collection('eventos').doc('proceso_en_tribunal').get();
       final snapshot2 = await docRef.collection('eventos').doc('sin_juzgado_ejecucion').get();
+      final snapshot3 = await docRef.collection('eventos').doc('sin_fecha_captura').get();
 
-      return snapshot1.exists || snapshot2.exists;
+      return snapshot1.exists || snapshot2.exists || snapshot3.exists;
     } catch (e) {
       return false;
     }
