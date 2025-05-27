@@ -20,6 +20,8 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
     "valor_domiciliaria": TextEditingController(),
     "valor_condicional": TextEditingController(),
     "valor_extincion": TextEditingController(),
+    "valor_redenciones": TextEditingController(),
+    "valor_traslado_proceso": TextEditingController(),
   };
 
   bool _loading = true;
@@ -119,6 +121,8 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
                 _buildConfigField("Valor Prisión domiciliaria", "valor_domiciliaria"),
                 _buildConfigField("Valor Libertad condicional", "valor_condicional"),
                 _buildConfigField("Valor Extinción de la pena", "valor_extincion"),
+                _buildConfigField("Valor Redenciones", "valor_redenciones"),
+                _buildConfigField("Valor Traslado proceso", "valor_traslado_proceso"),
               ],
             ),
           ),

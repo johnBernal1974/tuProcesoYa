@@ -34,9 +34,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   bool mostrarRedencionesVencidas = false;
 
 
-
-
-
   Color _getColor(String estado) {
     switch (estado.toLowerCase()) {
       case 'registrado':
@@ -659,7 +656,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                     child: IntrinsicWidth(
                       child: DataTable(
                         showCheckboxColumn: false,
-                        columnSpacing: 40,
+                        columnSpacing: 25,
                         columns: const [
                           DataColumn(label: Text('Estado')),
                           DataColumn(label: Text('Situación')),
@@ -667,10 +664,10 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           DataColumn(label: Text('PPL')),
                           DataColumn(label: Text('Identificación')),
                           DataColumn(label: Text('Acudiente')),
-                          DataColumn(label: Text('Celular')),
+                          //DataColumn(label: Text('Celular')),
                           DataColumn(label: Text('WhatsApp')),
-                          DataColumn(label: Text('Pago')),
-                          DataColumn(label: Text('Prueba')),
+                          DataColumn(label: Text('Pago', style: TextStyle(fontSize: 11))),
+                          DataColumn(label: Text('Prueba', style: TextStyle(fontSize: 11))),
                           DataColumn(label: Text('Registro')),
                         ],
                         rows: registros.asMap().entries.map((entry) {
@@ -726,9 +723,10 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                           color: isAssigned ? primary : Colors.red,
                                           borderRadius: BorderRadius.circular(4),
                                         ),
-                                        child: Text(
-                                          isAssigned ? "Asignado" : "No asignado",
-                                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                                        child: Icon(
+                                          isAssigned ? Icons.check_circle : Icons.cancel,
+                                          color: Colors.white,
+                                          size: 16,
                                         ),
                                       ),
                                     ],
@@ -745,9 +743,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.lock, color: Colors.grey),
+                                            Icon(Icons.lock, color: Colors.grey, size: 15),
                                             SizedBox(height: 4),
-                                            Text('En Reclusión', style: TextStyle(fontSize: 12)),
+                                            Text('En Reclusión', style: TextStyle(fontSize: 10)),
                                           ],
                                         ),
                                       );
@@ -756,9 +754,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.home, color: Colors.orange),
+                                            Icon(Icons.home, color: Colors.orange, size: 15),
                                             SizedBox(height: 4),
-                                            Text('Domiciliaria', style: TextStyle(fontSize: 12)),
+                                            Text('Domiciliaria', style: TextStyle(fontSize: 10)),
                                           ],
                                         ),
                                       );
@@ -767,9 +765,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         child: Column(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Icon(Icons.directions_walk, color: Colors.green),
+                                            Icon(Icons.directions_walk, color: Colors.green, size: 15),
                                             SizedBox(height: 4),
-                                            Text('Condicional', style: TextStyle(fontSize: 12)),
+                                            Text('Condicional', style: TextStyle(fontSize: 10)),
                                           ],
                                         ),
                                       );
@@ -794,11 +792,14 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     Text(
                                       data.containsKey('ultima_actualizacion_redenciones') &&
                                           data['ultima_actualizacion_redenciones'] != null
-                                          ? DateFormat("d 'de' MMMM 'de' y", 'es_CO').format(
+                                          ? '${DateFormat("d 'de' MMMM", 'es_CO').format(
                                         (data['ultima_actualizacion_redenciones'] as Timestamp).toDate(),
-                                      )
+                                      )}\nde ${DateFormat("y", 'es_CO').format(
+                                            (data['ultima_actualizacion_redenciones'] as Timestamp).toDate(),
+                                          )}'
                                           : 'Sin revisión',
                                       style: const TextStyle(fontSize: 10),
+                                      textAlign: TextAlign.center,
                                     ),
                                   ],
                                 )
@@ -813,34 +814,36 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(data['nombre_ppl'], style: const TextStyle(fontWeight: FontWeight.w500)),
+                                  Text(data['nombre_ppl'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
                                   Text(data['apellido_ppl'], style: const TextStyle(fontSize: 12, color: Colors.black87)),
                                 ],
                               )),
 
                               // Identificación
-                              DataCell(Text(data['numero_documento_ppl'].toString())),
+                              DataCell(Text(data['numero_documento_ppl'].toString(), style: const TextStyle(fontSize: 12 ))),
 
                               // Acudiente
                               DataCell(Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Text(data['nombre_acudiente'], style: const TextStyle(fontWeight: FontWeight.w500)),
+                                  Text(data['nombre_acudiente'], style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13)),
                                   Text(data['apellido_acudiente'], style: const TextStyle(fontSize: 12, color: Colors.black87)),
                                 ],
                               )),
-
-                              // Celular
-                              DataCell(Text(data['celular'].toString())),
+                              //
+                              // // Celular
+                              // DataCell(Text(data['celular'].toString())),
 
                               // WhatsApp
-                              DataCell(Text(data.containsKey('celularWhatsapp') ? (data['celularWhatsapp'] ?? '') : '')),
+                              DataCell(Text(data.containsKey('celularWhatsapp') ? (data['celularWhatsapp'] ?? '') : '', style: const TextStyle(
+                                fontSize: 12
+                              ))),
 
                               // Pago
                               DataCell(
                                 Icon(
-                                  data['isPaid'] ? Icons.check_circle : Icons.cancel,
+                                  data['isPaid'] ? Icons.check_circle : Icons.cancel, size: 15,
                                   color: data['isPaid'] ? Colors.blue : Colors.grey,
                                 ),
                               ),
@@ -855,11 +858,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 children: [
                                   Text(
                                     DateFormat("dd 'de' MMMM 'de' yyyy", 'es').format(_convertirTimestampADateTime(data['fechaRegistro'])!),
-                                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                                    style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
                                   ),
                                   Text(
                                     DateFormat('hh:mm a', 'es').format(_convertirTimestampADateTime(data['fechaRegistro'])!),
-                                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                    style: const TextStyle(fontSize: 10, color: Colors.black54),
                                   ),
                                 ],
                               )),
@@ -889,14 +892,14 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     if (!data.containsKey('fechaActivacion')) {
       return const Tooltip(
         message: "Usuario aún no ha sido activado",
-        child: Icon(Icons.help_outline, color: Colors.grey),
+        child: Icon(Icons.help_outline, color: Colors.grey, size: 15),
       );
     }
 
     if (_tiempoDePruebaDias == null) {
       return const Tooltip(
         message: "Cargando configuración de prueba...",
-        child: Icon(Icons.hourglass_top, color: Colors.grey),
+        child: Icon(Icons.hourglass_top, color: Colors.grey, size: 15),
       );
     }
 
@@ -904,7 +907,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     if (fechaActivacion == null) {
       return const Tooltip(
         message: "Fecha de activación no válida",
-        child: Icon(Icons.error_outline, color: Colors.red),
+        child: Icon(Icons.error_outline, color: Colors.red, size: 15),
       );
     }
 
@@ -914,7 +917,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     if (isPaid) {
       return const Tooltip(
         message: "Pago realizado",
-        child: Icon(Icons.verified_user, color: Colors.green),
+        child: Icon(Icons.verified_user, color: Colors.green, size: 15),
       );
     }
 
@@ -923,7 +926,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       final diasRestantes = _tiempoDePruebaDias! - diasDesdeActivacion;
       return Tooltip(
         message: "En periodo de prueba ($diasRestantes días restantes)",
-        child: const Icon(Icons.lock_clock, color: Colors.orange),
+        child: const Icon(Icons.lock_clock, color: Colors.orange, size: 15),
       );
     }
 
@@ -942,11 +945,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
             onTap: () {
               _mostrarDialogoPagoPendiente(doc);
             },
-            child: const Icon(Icons.lock_outline, color: Colors.red),
+            child: const Icon(Icons.lock_outline, color: Colors.red,size: 15),
           ),
           if (yaSeEnvio) ...[
             const SizedBox(width: 4),
-            const Icon(Icons.mark_chat_read, size: 18, color: Colors.green),
+            const Icon(Icons.mark_chat_read, size: 15, color: Colors.green),
           ],
         ],
       ),
@@ -957,16 +960,16 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     if (ultimaActualizacion == null) {
       return const Tooltip(
         message: 'Aún no se ha hecho la primera revisión de las redenciones',
-        child: Icon(Icons.help_outline, color: Colors.orange, size: 20),
+        child: Icon(Icons.help_outline, color: Colors.orange, size: 15),
       );
     }
 
     final diferencia = DateTime.now().difference(ultimaActualizacion).inDays;
 
     if (diferencia >= 30) {
-      return const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20);
+      return const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 15);
     } else {
-      return const Icon(Icons.check_circle, color: Colors.green, size: 20);
+      return const Icon(Icons.check_circle, color: Colors.green, size: 15);
     }
   }
 

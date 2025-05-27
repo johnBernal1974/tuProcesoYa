@@ -17,11 +17,22 @@ class SideBar extends StatefulWidget {
 class _SideBarState extends State<SideBar> {
   final MyAuthProvider _authProvider = MyAuthProvider();
   int _pendingSuggestions = 0;
+  int _cantidadRedencionesSolicitadas = 0;
   bool? _isAdmin;
   bool _isLoading = true;
   final ValueNotifier<bool> _isPaid = ValueNotifier<bool>(false);
   bool _isTrial = false;
   String? rol;
+  int solicitudesRedencion = 0;
+  int solicitudesDomiciliaria = 0;
+  int solicitudesPermiso72h = 0;
+  int solicitudesCondicional = 0;
+  int solicitudesExtincion = 0;
+  int solicitudesTraslado = 0;
+  int solicitudesTutelas = 0;
+  int solicitudesPeticion = 0;
+
+
 
   @override
   void initState() {
@@ -29,6 +40,14 @@ class _SideBarState extends State<SideBar> {
     _fetchPendingSuggestions();
     _checkIfAdmin();
     _loadData();
+    _fetchRedencionesSolicitados();
+    _fetchDomiciliariasSolicitados();
+    _fetchCondicionaleSolicitados();
+    _fetchPermiso72Solicitados();
+    _fetchTrasladoProcesoslicitados();
+    _fetchPeticionlicitados();
+    _fetchTutelalicitados();
+    _fetchExtincionlicitados();
   }
 
   Future<void> _loadData() async {
@@ -176,6 +195,104 @@ class _SideBarState extends State<SideBar> {
     }
   }
 
+  Future<void> _fetchRedencionesSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('redenciones_solicitados')
+        .where('status', isEqualTo: 'Solicitado') // 👈 Asegúrate de usar comillas
+        .get();
+
+    if (mounted) {
+      setState(() {
+        solicitudesRedencion = querySnapshot.docs.length;
+      });
+    }
+  }
+
+  Future<void> _fetchDomiciliariasSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('domiciliaria_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesDomiciliaria = querySnapshot.docs.length;
+      });
+    }
+  }
+  Future<void> _fetchCondicionaleSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('condicional_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesCondicional = querySnapshot.docs.length;
+      });
+    }
+  }
+
+  Future<void> _fetchPermiso72Solicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('permiso_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesPermiso72h = querySnapshot.docs.length;
+      });
+    }
+  }
+
+  Future<void> _fetchTrasladoProcesoslicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('trasladoProceso_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesTraslado = querySnapshot.docs.length;
+      });
+    }
+  }
+
+  Future<void> _fetchPeticionlicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('derechos_peticion_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesPeticion = querySnapshot.docs.length;
+      });
+    }
+  }
+
+  Future<void> _fetchTutelalicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('tutelas_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesTutelas = querySnapshot.docs.length;
+      });
+    }
+  }
+  Future<void> _fetchExtincionlicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('extincion_pena_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesExtincion = querySnapshot.docs.length;
+      });
+    }
+  }
+
+
+
+
   Widget _buildDrawerHeader(bool? isAdmin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
@@ -206,81 +323,106 @@ class _SideBarState extends State<SideBar> {
           _buildDrawerTile(context, "Configuraciones", Icons.settings,
               'configuraciones'),
           ExpansionTile(
-            initiallyExpanded:true,
+            initiallyExpanded: true,
             leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
-            title: const Text("Historial de solicitudes",
-                style: TextStyle(color: Colors.black, fontSize: 13)),
+            title: const Text(
+              "Historial de solicitudes",
+              style: TextStyle(color: Colors.black, fontSize: 13),
+            ),
             iconColor: Colors.black,
-            // 🔥 Color del icono cuando se expande
             collapsedIconColor: Colors.black,
-            // 🔥 Color cuando está colapsado
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de derechos petición",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_derecho_peticion_admin'),
+                  context,
+                  "Solicitudes de derechos petición",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_derecho_peticion_admin',
+                  showBadge: solicitudesPeticion > 0,
+                  contador: solicitudesPeticion,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de tutela",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_tutelas_admin'),
+                  context,
+                  "Solicitudes de tutela",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_tutelas_admin',
+                  showBadge: solicitudesTutelas > 0,
+                  contador: solicitudesTutelas,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes permiso 72 horas",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_permiso_72horas_admin'),
+                  context,
+                  "Solicitudes permiso 72 horas",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_permiso_72horas_admin',
+                  showBadge: solicitudesPermiso72h > 0,
+                  contador: solicitudesPermiso72h,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de prisión domiciliaria",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_prision_domiciliaria_admin'),
+                  context,
+                  "Solicitudes de prisión domiciliaria",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_prision_domiciliaria_admin',
+                  showBadge: solicitudesDomiciliaria > 0,
+                  contador: solicitudesDomiciliaria,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de Libertad condicional",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_libertad_condicional_admin'),
+                  context,
+                  "Solicitudes de Libertad condicional",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_libertad_condicional_admin',
+                  showBadge: solicitudesCondicional > 0,
+                  contador: solicitudesCondicional,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de Extinción de pena",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_extincion_pena_admin'),
+                  context,
+                  "Solicitudes de Extinción de pena",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_extincion_pena_admin',
+                  showBadge: solicitudesExtincion > 0,
+                  contador: solicitudesExtincion,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de Traslado de proceso",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_traslado_proceso_admin'),
+                  context,
+                  "Solicitudes de Traslado de proceso",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_traslado_proceso_admin',
+                  showBadge: solicitudesTraslado > 0,
+                  contador: solicitudesTraslado,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de Redenciones",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_redenciones_admin'),
+                  context,
+                  "Solicitudes de Redenciones",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_redenciones_admin',
+                  showBadge: solicitudesRedencion > 0,
+                  contador: solicitudesRedencion,
+                ),
               ),
             ],
           ),
+
           _buildDrawerTile(context, " Historial Transacciones", Icons.monitor_heart_rounded,
               'admin_transacciones'),
           _buildDrawerTile(context, " Referidores", Icons.double_arrow_outlined,
@@ -309,70 +451,102 @@ class _SideBarState extends State<SideBar> {
               context, "Página principal", Icons.home_filled, 'home_admin'),
 
           ExpansionTile(
-            initiallyExpanded:true,
+            initiallyExpanded: true,
             leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
-            title: const Text("Historial de solicitudes",
-                style: TextStyle(color: Colors.black, fontSize: 13)),
+            title: const Text(
+              "Historial de solicitudes",
+              style: TextStyle(color: Colors.black, fontSize: 13),
+            ),
             iconColor: Colors.black,
-            // 🔥 Color del icono cuando se expande
             collapsedIconColor: Colors.black,
-            // 🔥 Color cuando está colapsado
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de derechos petición",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_derecho_peticion_admin'),
+                  context,
+                  "Solicitudes de derechos petición",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_derecho_peticion_admin',
+                  showBadge: solicitudesPeticion > 0,
+                  contador: solicitudesPeticion,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de tutela",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_tutelas_admin'),
+                  context,
+                  "Solicitudes de tutela",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_tutelas_admin',
+                  showBadge: solicitudesTutelas > 0,
+                  contador: solicitudesTutelas,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes permiso 72 horas",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_permiso_72horas_admin'),
+                  context,
+                  "Solicitudes permiso 72 horas",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_permiso_72horas_admin',
+                  showBadge: solicitudesPermiso72h > 0,
+                  contador: solicitudesPermiso72h,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de prisión domiciliaria",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_prision_domiciliaria_admin'),
+                  context,
+                  "Solicitudes de prisión domiciliaria",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_prision_domiciliaria_admin',
+                  showBadge: solicitudesDomiciliaria > 0,
+                  contador: solicitudesDomiciliaria,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de Libertad condicional",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_libertad_condicional_admin'),
+                  context,
+                  "Solicitudes de Libertad condicional",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_libertad_condicional_admin',
+                  showBadge: solicitudesCondicional > 0,
+                  contador: solicitudesCondicional,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de Extinción de pena",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_extincion_pena_admin'),
+                  context,
+                  "Solicitudes de Extinción de pena",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_extincion_pena_admin',
+                  showBadge: solicitudesExtincion > 0,
+                  contador: solicitudesExtincion,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
-                // 🔥 Espaciado para cada elemento
                 child: _buildDrawerTile(
-                    context, "Solicitudes de Traslado de proceso",
-                    Icons.double_arrow_outlined,
-                    'historial_solicitudes_traslado_proceso_admin'),
+                  context,
+                  "Solicitudes de Traslado de proceso",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_traslado_proceso_admin',
+                  showBadge: solicitudesTraslado > 0,
+                  contador: solicitudesTraslado,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Redenciones",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_redenciones_admin',
+                  showBadge: solicitudesRedencion > 0,
+                  contador: solicitudesRedencion,
+                ),
               ),
             ],
           ),
@@ -399,10 +573,106 @@ class _SideBarState extends State<SideBar> {
               context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
               'buzon_sugerencias_administrador',
               showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(context, "Historial Solicitudes derechos petición",
-              Icons.add_alert_outlined, 'historial_solicitudes_derecho_peticion_admin'),
-          _buildDrawerTile(context, "Historial Solicitudes de tutela",
-              Icons.abc_rounded, 'historial_solicitudes_tutelas_admin'),
+          ExpansionTile(
+            initiallyExpanded: true,
+            leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
+            title: const Text(
+              "Historial de solicitudes",
+              style: TextStyle(color: Colors.black, fontSize: 13),
+            ),
+            iconColor: Colors.black,
+            collapsedIconColor: Colors.black,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de derechos petición",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_derecho_peticion_admin',
+                  showBadge: solicitudesPeticion > 0,
+                  contador: solicitudesPeticion,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de tutela",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_tutelas_admin',
+                  showBadge: solicitudesTutelas > 0,
+                  contador: solicitudesTutelas,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes permiso 72 horas",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_permiso_72horas_admin',
+                  showBadge: solicitudesPermiso72h > 0,
+                  contador: solicitudesPermiso72h,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de prisión domiciliaria",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_prision_domiciliaria_admin',
+                  showBadge: solicitudesDomiciliaria > 0,
+                  contador: solicitudesDomiciliaria,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Libertad condicional",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_libertad_condicional_admin',
+                  showBadge: solicitudesCondicional > 0,
+                  contador: solicitudesCondicional,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Extinción de pena",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_extincion_pena_admin',
+                  showBadge: solicitudesExtincion > 0,
+                  contador: solicitudesExtincion,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Traslado de proceso",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_traslado_proceso_admin',
+                  showBadge: solicitudesTraslado > 0,
+                  contador: solicitudesTraslado,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Redenciones",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_redenciones_admin',
+                  showBadge: solicitudesRedencion > 0,
+                  contador: solicitudesRedencion,
+                ),
+              ),
+            ],
+          ),
         ]);
       } else if (rol == "operador 1" || rol == "operador 2") {
         // Para operadores se muestran opciones básicas.
@@ -478,65 +748,82 @@ class _SideBarState extends State<SideBar> {
   }
 
 
-  Widget _buildDrawerTile(BuildContext context, String title, IconData icon,
-      String route, {bool showBadge = false}) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: _isPaid,
-      builder: (context, isPaid, child) {
-        return ListTile(
-          onTap: () {
-            // ✅ Si el usuario es admin, no aplicar la restricción
-            if (_isAdmin == true) {
-              if (ModalRoute
-                  .of(context)
-                  ?.settings
-                  .name != route) {
-                Navigator.pushNamed(context, route);
-              }
-              return;
-            }
+  Widget _buildDrawerTile(
+      BuildContext context,
+      String title,
+      IconData icon,
+      String route, {
+        bool showBadge = false,
+        int? contador, // 👈 Nuevo parámetro opcional
+      }) {
+    return ListTile(
+      onTap: () {
+        if (_isAdmin == true) {
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
+          return;
+        }
 
-            // 🔥 Solo restringimos a usuarios NO admin
-            if (!isPaid && !_isTrial) {
-              _showPaymentDialog(context);
-              return;
-            }
-            print('isPaid: $isPaid, isTrial: $_isTrial, isAdmin: $_isAdmin');
+        if (!_isPaid.value && !_isTrial) {
+          _showPaymentDialog(context);
+          return;
+        }
 
-            if (ModalRoute
-                .of(context)
-                ?.settings
-                .name != route) {
-              Navigator.pushNamed(context, route);
-            }
-          },
-          leading: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Icon(icon, color: primary, size: 20),
-              if (showBadge)
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
+        if (ModalRoute.of(context)?.settings.name != route) {
+          Navigator.pushNamed(context, route);
+        }
+      },
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(icon, color: primary, size: 20),
+          if (contador != null && contador > 0)
+            Positioned(
+              right: -10,
+              top: -6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                child: Text(
+                  '$contador',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-            ],
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(color: Colors.black, fontSize: 13),
-          ),
-        );
-      },
+              ),
+            )
+          else if (showBadge)
+            Positioned(
+              right: -2,
+              top: -2,
+              child: Container(
+                width: 10,
+                height: 10,
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+
+      title: Text(
+        title,
+        style: const TextStyle(color: Colors.black, fontSize: 13),
+      ),
     );
+
   }
+
 
   void _showPaymentDialog(BuildContext context) {
     showDialog(
