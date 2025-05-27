@@ -7,10 +7,10 @@ import '../src/colors/colors.dart';
 import 'mensajes_whatsApp_opciones.dart';
 
 class WhatsAppCardWidget extends StatefulWidget {
-  final String celular;
+  final String celularWhatsApp;
   final String docId;
 
-  const WhatsAppCardWidget({required this.celular, required this.docId, super.key});
+  const WhatsAppCardWidget({required this.celularWhatsApp, required this.docId, super.key});
 
   @override
   State<WhatsAppCardWidget> createState() => _WhatsAppCardWidgetState();
@@ -121,7 +121,7 @@ class _WhatsAppCardWidgetState extends State<WhatsAppCardWidget> {
                 onPressed: () async {
                   if (opcionSeleccionada != null) {
                     await enviarMensajeWhatsAppEventos(
-                      widget.celular,
+                      widget.celularWhatsApp,
                       widget.docId,
                       opcionSeleccionada!,
                     );

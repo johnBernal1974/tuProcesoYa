@@ -271,6 +271,14 @@ class _SideBarState extends State<SideBar> {
                     Icons.double_arrow_outlined,
                     'historial_solicitudes_traslado_proceso_admin'),
               ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                // 🔥 Espaciado para cada elemento
+                child: _buildDrawerTile(
+                    context, "Solicitudes de Redenciones",
+                    Icons.double_arrow_outlined,
+                    'historial_solicitudes_redenciones_admin'),
+              ),
             ],
           ),
           _buildDrawerTile(context, " Historial Transacciones", Icons.monitor_heart_rounded,

@@ -12,6 +12,7 @@ import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
+import 'Pages/administrador/atender_ solicitud_redenciones/atender_ solicitud_redenciones.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
 import 'Pages/administrador/atender_extincion_pena/atender_extincion_pena.dart';
 import 'Pages/administrador/atender_libertad_condicional/atender_libertad_condicional.dart';
@@ -26,6 +27,7 @@ import 'Pages/administrador/historial_solicitudes_extincion_pena_admin/historial
 import 'Pages/administrador/historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'Pages/administrador/historial_solicitudes_permiso_72horas_admin/historial_solicitudes_permiso_72horas_admin.dart';
 import 'Pages/administrador/historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
+import 'Pages/administrador/historial_solicitudes_redenciones_admin/historial_solicitudes_redenciones_admin.dart';
 import 'Pages/administrador/historial_solicitudes_tutela_admin/historial_solicitudes_tutela_admin.dart';
 import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
@@ -345,6 +347,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_permiso_72horas_admin': (context) => const HistorialSolicitudesPermiso72HorasAdminPage(),
         'historial_solicitudes_extincion_pena_admin': (context) => const HistorialSolicitudesExtincionPenaAdminPage(),
         'historial_solicitudes_traslado_proceso_admin': (context) => const HistorialSolicitudesTrasladoProcesoAdminPage(),
+        'historial_solicitudes_redenciones_admin': (context) => const HistorialSolicitudesRedencionesAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -733,6 +736,26 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
+          else if (settings.name == 'atender_redencion_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderSolicitudRedencionesPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                diasTrabajados: args['diasTrabajados'],
+                diasRedimidos: args['diasRedimidos'],
+                categoriaRedencion: args['categoriaRedencion'],
+                tipoActividad: args['tipoActividad'],
+                trabajo: args['trabajo'],
+                fechaInicio: args['fechaInicio'],
+                fechaFin: args['fechaFin'],
+              ),
+            );
+          }
+
           else if (settings.name == 'detalle_correo') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(

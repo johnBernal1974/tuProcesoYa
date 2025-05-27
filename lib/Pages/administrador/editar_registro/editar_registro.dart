@@ -563,7 +563,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
           const SizedBox(height: 50),
           WhatsAppCardWidget(
-            celular: widget.doc['celular'] ?? '',
+            celularWhatsApp: widget.doc['celularWhatsapp'] ?? '',
             docId: widget.doc.id,
           ),
           const SizedBox(height: 50),
@@ -3532,17 +3532,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Future<void> enviarMensajeWhatsApp(String celular, String docId) async {
-    if (celular.isEmpty) {
+  Future<void> enviarMensajeWhatsApp(String whatsApp, String docId) async {
+    if (whatsApp.isEmpty) {
       if (kDebugMode) {
-        print('El número de celular es inválido');
+        print('El número de whatsApp es inválido');
       }
       return;
     }
 
     // Asegurar que el número tenga el prefijo +57 (Colombia)
-    if (!celular.startsWith("+57")) {
-      celular = "+57$celular";
+    if (!whatsApp.startsWith("+57")) {
+      whatsApp = "+57$whatsApp";
     }
 
     // Obtener el nombre del acudiente desde Firestore
@@ -3583,8 +3583,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             "Cordialmente,\n*El equipo de soporte de Tu Proceso Ya*"
     );
 
-    String whatsappBusinessUri = "whatsapp://send?phone=$celular&text=$mensaje"; // WhatsApp Business
-    String webUrl = "https://wa.me/$celular?text=$mensaje"; // WhatsApp Web
+    String whatsappBusinessUri = "whatsapp://send?phone=$whatsApp&text=$mensaje"; // WhatsApp Business
+    String webUrl = "https://wa.me/$whatsApp?text=$mensaje"; // WhatsApp Web
 
     // Intenta abrir WhatsApp Business o normal
     if (await canLaunchUrl(Uri.parse(whatsappBusinessUri))) {
@@ -3596,10 +3596,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Future<void> validarYEnviarMensaje() async{
-    String celular = widget.doc['celular'] ?? '';
+    String whatsApp = widget.doc['celularWhatsapp'] ?? '';
     String docId = widget.doc['id'] ?? '';
 
-    if (celular.isEmpty || docId.isEmpty) {
+    if (whatsApp.isEmpty || docId.isEmpty) {
       if (kDebugMode) {
         print("Error: Datos insuficientes para enviar el mensaje.");
       }
@@ -3623,7 +3623,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       }
 
       // Enviar mensaje de WhatsApp
-      await enviarMensajeWhatsApp(celular, docId);
+      await enviarMensajeWhatsApp(whatsApp, docId);
 
       // Crear o actualizar isNotificated a true
       await docRef.set({'isNotificatedActivated': true}, SetOptions(merge: true));

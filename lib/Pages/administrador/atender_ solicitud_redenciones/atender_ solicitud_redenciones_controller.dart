@@ -1,14 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
-class AtenderTrasladoProcesoAdminController {
+class AtenderSolicitudRedencionesAdminController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 
   Future<void> actualizarSolicitud(BuildContext context, String docId, Map<String, dynamic> nuevosDatos) async {
     try {
-      await _firestore.collection('trasladoProceso_solicitados').doc(docId).update(nuevosDatos);
+      await _firestore.collection('redenciones_solicitados').doc(docId).update(nuevosDatos);
       print("✅ Solicitud actualizada correctamente");
 
       // Mostrar mensaje de éxito
@@ -24,5 +23,6 @@ class AtenderTrasladoProcesoAdminController {
       );
     }
   }
+
 
 }
