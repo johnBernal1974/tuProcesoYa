@@ -21,6 +21,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/selector_correo_manual.dart';
 
 class AtenderDerechoPeticionPage extends StatefulWidget {
   final String status;
@@ -807,7 +808,18 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
+          SelectorCorreoManualFlexible(
+            entidadSeleccionada: entidad, // ← tu variable ya existente
+            onCorreoValidado: (correo, entidad) {
+              setState(() {
+                correoSeleccionado = correo;
+                nombreCorreoSeleccionado = "Manual";
+                this.entidad = entidad;
+              });
+            },
+          ),
+          const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -894,6 +906,12 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             children: [
               const Text('Celular:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
               Text(userData!.celular, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          Row(
+            children: [
+              const Text('WhatsApp:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
           Row(
@@ -1711,7 +1729,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               );
 
               if (enviar == true) {
-                final celular = "+57${userData!.celular}";
+                final celulartWhatsApp = "+57${userData!.celularWhatsapp}";
                 final mensaje = Uri.encodeComponent(
                     "Hola *${userData!.nombreAcudiente}*,\n\n"
                     "Hemos enviado tu derecho de petición número *$numeroSeguimiento* a la autoridad competente.\n\n"
@@ -1719,7 +1737,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
                         "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes derecho petición. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                         "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
                 );
-                final link = "https://wa.me/$celular?text=$mensaje";
+                final link = "https://wa.me/$celulartWhatsApp?text=$mensaje";
                 await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
               }
             }

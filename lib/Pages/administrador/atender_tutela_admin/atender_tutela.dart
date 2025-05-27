@@ -25,6 +25,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/selector_correo_manual.dart';
 import 'atender_tutela_controler.dart';
 
 class AtenderTutelaPage extends StatefulWidget {
@@ -923,7 +924,16 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
           ),
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
-          const SizedBox(height: 10),
+          SelectorCorreoManualFlexible(
+            entidadSeleccionada: entidad, // ← tu variable ya existente
+            onCorreoValidado: (correo, entidad) {
+              setState(() {
+                correoSeleccionado = correo;
+                nombreCorreoSeleccionado = "Manual";
+                this.entidad = entidad;
+              });
+            },
+          ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1013,10 +1023,16 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
           ),
           Row(
             children: [
-              const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const Text('WhatsApp:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
+          // Row(
+          //   children: [
+          //     const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //     Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          //   ],
+          // ),
           const SizedBox(height: 15),
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.idUser),
@@ -1970,7 +1986,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             );
 
             if (enviar == true) {
-              final celular = "+57${userData!.celular}";
+              final celularWhatsAp = "+57${userData!.celularWhatsapp}";
               final mensaje = Uri.encodeComponent(
                   "Hola *${userData!.nombreAcudiente}*,\n\n"
                       "Hemos enviado tu acción de tutela número *$numeroSeguimiento* a la autoridad correspondiente.\n\n"
@@ -1978,7 +1994,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                       "Puedes consultar el correo enviado en la aplicación desde el menú: Historiales > Tutelas:\n$urlApp\n\n"
                       "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
               );
-              final link = "https://wa.me/$celular?text=$mensaje";
+              final link = "https://wa.me/$celularWhatsAp?text=$mensaje";
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
             if(context.mounted){

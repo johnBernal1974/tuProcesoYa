@@ -1024,7 +1024,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
               });
             },
           ),
-
           const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1115,10 +1114,16 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
           ),
           Row(
             children: [
-              const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const Text('WhatsApp:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
+          // Row(
+          //   children: [
+          //     const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //     Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          //   ],
+          // ),
           const SizedBox(height: 15),
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.idUser),
@@ -2352,7 +2357,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
               );
 
               if (enviar == true) {
-                final celular = "+57${userData!.celular}";
+                final celulartWhatsApp = "+57${userData!.celularWhatsapp}";
                 final mensaje = Uri.encodeComponent(
                     "Hola *${userData!.nombreAcudiente}*,\n\n"
                         "Hemos enviado tu solicitud de prisón domiciliaria número *$numeroSeguimiento* a la autoridad competente.\n\n"
@@ -2360,7 +2365,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
                         "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes prisión domiciliaria. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                         "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
                 );
-                final link = "https://wa.me/$celular?text=$mensaje";
+                final link = "https://wa.me/$celulartWhatsApp?text=$mensaje";
                 await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
               }
             }

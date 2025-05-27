@@ -19,6 +19,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
+import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
 import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'atender_extincion_pena_controller.dart';
@@ -759,7 +760,19 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
           ),
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
+          SelectorCorreoManualFlexible(
+            entidadSeleccionada: entidad, // ← tu variable ya existente
+            onCorreoValidado: (correo, entidad) {
+              setState(() {
+                correoSeleccionado = correo;
+                nombreCorreoSeleccionado = "Manual";
+                this.entidad = entidad;
+              });
+            },
+          ),
+
+          const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -847,12 +860,20 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
               Text(userData!.celular, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
+
           Row(
             children: [
-              const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const Text('WhatsApp:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
+
+          // Row(
+          //   children: [
+          //     const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //     Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          //   ],
+          // ),
           const SizedBox(height: 15),
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.idUser),
@@ -1850,7 +1871,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
             );
 
             if (enviar == true) {
-              final celular = "+57${userData!.celular}";
+              final celulartWhatsApp = "+57${userData!.celularWhatsapp}";
               final mensaje = Uri.encodeComponent(
                   "Hola *${userData!.nombreAcudiente}*,\n\n"
                       "Hemos enviado tu solicitud de extinción de la pena número *$numeroSeguimiento* a la autoridad competente.\n\n"
@@ -1858,7 +1879,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
                       "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes extinción de la pena.\n$urlApp\n\n"
                       "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
               );
-              final link = "https://wa.me/$celular?text=$mensaje";
+              final link = "https://wa.me/$celulartWhatsApp?text=$mensaje";
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
             if(context.mounted){

@@ -6,8 +6,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
-import 'package:tuprocesoya/Pages/administrador/atender_traslado_proceso_admin/atender_traslado_proceso_admin_controler.dart';
-import 'package:tuprocesoya/Pages/administrador/historial_solicitud_traslado_proceso_admin/historial_solicitud_traslado_proceso_admin.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
@@ -21,6 +19,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
+import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_redenciones_admin/historial_solicitudes_redenciones_admin.dart';
 import 'atender_ solicitud_redenciones_controller.dart';
 
@@ -635,7 +634,18 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           ),
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
+          SelectorCorreoManualFlexible(
+            entidadSeleccionada: entidad, // ← tu variable ya existente
+            onCorreoValidado: (correo, entidad) {
+              setState(() {
+                correoSeleccionado = correo;
+                nombreCorreoSeleccionado = "Manual";
+                this.entidad = entidad;
+              });
+            },
+          ),
+          const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

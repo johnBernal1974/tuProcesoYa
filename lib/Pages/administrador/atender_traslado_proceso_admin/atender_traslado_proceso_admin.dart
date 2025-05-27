@@ -20,6 +20,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
+import '../../../widgets/selector_correo_manual.dart';
 
 class AtenderTrasladoProcesoPage extends StatefulWidget {
   final String status;
@@ -618,7 +619,18 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
           ),
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
+          SelectorCorreoManualFlexible(
+            entidadSeleccionada: entidad, // ← tu variable ya existente
+            onCorreoValidado: (correo, entidad) {
+              setState(() {
+                correoSeleccionado = correo;
+                nombreCorreoSeleccionado = "Manual";
+                this.entidad = entidad;
+              });
+            },
+          ),
+          const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -708,10 +720,16 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
           ),
           Row(
             children: [
-              const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              const Text('WhatsApp:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
+          // Row(
+          //   children: [
+          //     const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+          //     Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+          //   ],
+          // ),
           const SizedBox(height: 15),
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.idUser),
@@ -1328,7 +1346,7 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
             );
 
             if (enviar == true) {
-              final celular = "+57${userData!.celular}";
+              final celularWhatsApp = "+57${userData!.celularWhatsapp}";
               final mensaje = Uri.encodeComponent(
                   "Hola *${userData!.nombreAcudiente}*,\n\n"
                       "Hemos enviado tu solicitud de traslado de proceso número *$numeroSeguimiento* a la autoridad competente.\n\n"
@@ -1336,7 +1354,7 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
                       "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes traslado de proceso. Allí podrás ver el correo enviado:\n$urlApp\n\n"
                       "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
               );
-              final link = "https://wa.me/$celular?text=$mensaje";
+              final link = "https://wa.me/$celularWhatsApp?text=$mensaje";
               await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
             if(context.mounted){
