@@ -4,12 +4,12 @@ import 'package:uuid/uuid.dart';
 import '../../src/colors/colors.dart';
 import 'checkout_page.dart';
 
-class ReintentoPagoExtincionPenaPage extends StatelessWidget {
+class ReintentoPagoAcumulacionPenasPage extends StatelessWidget {
   final String referencia;
   final int? valor;
   final VoidCallback? onTransaccionAprobada;
 
-  const ReintentoPagoExtincionPenaPage({
+  const ReintentoPagoAcumulacionPenasPage({
     super.key,
     required this.referencia,
     this.valor,
@@ -58,9 +58,12 @@ class ReintentoPagoExtincionPenaPage extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () async {
+                      print("🔁 Intentando reintentar el pago...");
+
                       final user = FirebaseAuth.instance.currentUser;
 
                       if (user == null) {
+                        print("⚠️ Usuario no autenticado");
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
@@ -71,6 +74,7 @@ class ReintentoPagoExtincionPenaPage extends StatelessWidget {
                       }
 
                       if (valor == null) {
+                        print("⚠️ Valor no definido");
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text("El valor del pago no está disponible."),
@@ -80,12 +84,14 @@ class ReintentoPagoExtincionPenaPage extends StatelessWidget {
                         return;
                       }
 
-                      final nuevaReferencia = 'extincion_${user.uid}_${const Uuid().v4()}';
+                      final nuevaReferencia = 'acumulacion_${user.uid}_${const Uuid().v4()}';
+                      print("📌 Nueva referencia generada: $nuevaReferencia");
+
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
                           builder: (_) => CheckoutPage(
-                            tipoPago: 'extincion',
+                            tipoPago: 'acumulacion',
                             valor: valor!,
                             referencia: nuevaReferencia,
                             onTransaccionAprobada: onTransaccionAprobada,

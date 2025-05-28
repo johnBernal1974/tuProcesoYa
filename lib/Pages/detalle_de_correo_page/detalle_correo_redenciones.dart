@@ -4,12 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:flutter_html/flutter_html.dart';
 
-
-class DetalleCorreoTrasladoProcesoPage extends StatelessWidget {
+class DetalleCorreoRedencionesPage extends StatelessWidget {
   final String idDocumento;
   final String correoId;
 
-  const DetalleCorreoTrasladoProcesoPage({
+  const DetalleCorreoRedencionesPage({
     super.key,
     required this.idDocumento,
     required this.correoId,
@@ -30,7 +29,7 @@ class DetalleCorreoTrasladoProcesoPage extends StatelessWidget {
       ),
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
-            .collection('trasladoProceso_solicitados')
+            .collection('redenciones_solicitados')
             .doc(idDocumento)
             .collection('log_correos')
             .doc(correoId)
@@ -64,7 +63,7 @@ class DetalleCorreoTrasladoProcesoPage extends StatelessWidget {
                   if (to.isNotEmpty) Text("Para: $to", style: const TextStyle(fontSize: 13)),
                   if (cc.isNotEmpty) Text("CC: $cc", style: const TextStyle(fontSize: 12)),
                   const SizedBox(height: 8),
-                  Text("📅 Enviado: $fechaEnvio", style: const TextStyle(fontSize: 12)),
+                  Text("\uD83D\uDCC5 Enviado: $fechaEnvio", style: const TextStyle(fontSize: 12)),
                   const Divider(color: gris),
                   const SizedBox(height: 12),
                   Html(
@@ -77,7 +76,6 @@ class DetalleCorreoTrasladoProcesoPage extends StatelessWidget {
                       ),
                     },
                   ),
-
                 ],
               ),
             ),

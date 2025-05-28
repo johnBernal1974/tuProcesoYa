@@ -704,6 +704,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Solicitar acción de tutela", Icons.gavel, 'tutela'),
         _buildDrawerTile(context, "Solicitar traslado de proceso", Icons.swap_horiz, 'solicitud_traslado_proceso_page'),
         _buildDrawerTile(context, "Solicitar Redenciones", Icons.work_outline , 'solicitud_redenciones_page'),
+        _buildDrawerTile(context, "Solicitar Acumulacion de penas", Icons.calculate_outlined , 'solicitud_acumulacion_page'),
         _buildDrawerTile(context, "Tus pagos", Icons.attach_money, 'mis_transacciones'),
         _buildDrawerTile(context, "Historial de solicitudes", Icons.add_chart, 'historiales_page'),
         _buildDrawerTile(context, "Tus redenciones", Icons.double_arrow_rounded, 'mis_redenciones'),

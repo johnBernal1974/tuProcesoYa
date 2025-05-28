@@ -56,6 +56,7 @@ import 'Pages/client/historial_solicitudes_extincion_pena/historial_solicitudes_
 import 'Pages/client/historial_solicitudes_libertad_condicional/historial_solicitudes_libertad_condicional.dart';
 import 'Pages/client/historial_solicitudes_permiso_72h/historial_solicitudes_permiso_72h.dart';
 import 'Pages/client/historial_solicitudes_prision_domiciliaria/historial_solicitudes_prision_domiciliaria.dart';
+import 'Pages/client/historial_solicitudes_redenciones/historial_solicitudes_redenciones.dart';
 import 'Pages/client/historial_solicitudes_traslado_proceso/historial_solicitudes_traslado_proceso.dart';
 import 'Pages/client/historial_solicitudes_tutela/historial_solicitudes_tutela.dart';
 import 'Pages/client/historiales_page/historiales_page.dart';
@@ -66,6 +67,7 @@ import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_pris
 import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
+import 'Pages/client/otras_solicitudes/solicitud_acumulacion.dart';
 import 'Pages/client/otras_solicitudes/solicitud_redenciones.dart';
 import 'Pages/client/otras_solicitudes/solicitud_traslado_proceso.dart';
 import 'Pages/client/preguntas_frecuentes_page/preguntas_frecuentes_page.dart';
@@ -86,6 +88,7 @@ import 'Pages/detalle_de_correo_page/detalle_correo_condicional.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_domiciliaria.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_extincion_pena.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_permiso_72horas.dart';
+import 'Pages/detalle_de_correo_page/detalle_correo_redenciones.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_traslado_proceso.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_tutela.dart';
 import 'Pages/detalle_de_correo_page/detalle_de_correo_page.dart';
@@ -370,6 +373,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_permiso_72horas': (context) => const HistorialSolicitudesPermiso72HorasPage(),
         'historial_solicitudes_extincion_pena': (context) => const HistorialSolicitudesExtincionPenaPage(),
         'historial_solicitudes_traslado_proceso': (context) => const HistorialSolicitudesTrasladoProcesoPage(),
+        'historial_solicitudes_redenciones': (context) => const HistorialSolicitudesRedencionesPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
@@ -384,6 +388,7 @@ class MyApp extends StatelessWidget {
         'solicitud_extincion_pena_page': (context) => const SolicitudExtincionPenaPage(),
         'solicitud_traslado_proceso_page': (context) => const SolicitudTrasladoProcesoPage(),
         'solicitud_redenciones_page': (context) => const SolicitudRedencionPage(),
+        'solicitud_acumulacion_page': (context) => const SolicitudAcumulacionPenasPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
         'info_previa_72h_page': (context) => const RequisitosPermiso72hPage(),
@@ -413,18 +418,11 @@ class MyApp extends StatelessWidget {
                 celular: args['celular'],
               ),
             );
-          } else if (settings.name == 'solicitud_exitosa_derecho_peticion') {
+          }
+          else if (settings.name == 'solicitud_exitosa_derecho_peticion') {
             final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
             return MaterialPageRoute(
               builder: (context) => SolicitudExitosaDerechoPeticionPage(
-                numeroSeguimiento: numeroSeguimiento,
-              ),
-            );
-          }
-          else if (settings.name == 'solicitud_exitosa_prision_domiciliaria') {
-            final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
-            return MaterialPageRoute(
-              builder: (context) => SolicitudExitosaDomiciliariaPage(
                 numeroSeguimiento: numeroSeguimiento,
               ),
             );
@@ -433,6 +431,14 @@ class MyApp extends StatelessWidget {
             final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
             return MaterialPageRoute(
               builder: (context) => SolicitudExitosaPermiso72HorasPage(
+                numeroSeguimiento: numeroSeguimiento,
+              ),
+            );
+          }
+          else if (settings.name == 'solicitud_exitosa_prision_domiciliaria') {
+            final numeroSeguimiento = settings.arguments as String; // Recibe el argumento
+            return MaterialPageRoute(
+              builder: (context) => SolicitudExitosaDomiciliariaPage(
                 numeroSeguimiento: numeroSeguimiento,
               ),
             );
@@ -453,23 +459,7 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
-          else if (settings.name == 'atender_derecho_peticion_page') {
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (context) => AtenderDerechoPeticionPage(
-                status: args['status'] ?? "Diligenciado",  // 👈 Evita error si es null
-                idDocumento: args['idDocumento'],
-                numeroSeguimiento: args['numeroSeguimiento'],
-                categoria: args['categoria'],
-                subcategoria: args['subcategoria'],
-                fecha: args['fecha'],
-                idUser: args['idUser'],
-                archivos: List<String>.from(args['archivos'] ?? []),
-                preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
-                respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
-              ),
-            );
-          }
+
           else if (settings.name == 'derechos_peticion_enviados_por_correo') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
@@ -503,6 +493,33 @@ class MyApp extends StatelessWidget {
                 preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
                 sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
+          else if (settings.name == 'solicitudes_permiso_72_horas_enviadas_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesPermiso72HorasEnviadasPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'] ?? "Beneficios penitenciarios",
+                subcategoria: args['subcategoria'] ?? "Prisión domiciliaria",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable'],
+                urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
+
+                // 🟢 Usa las claves correctas aquí
+                direccion: args['direccion'] ?? "",
+                municipio: args['municipio'] ?? "",
+                departamento: args['departamento'] ?? "",
+                nombreResponsable: args['nombreResponsable'] ?? "", // <== ✅ aquí cambia
+                cedulaResponsable: args['cedulaResponsable'] ?? "", // <== ✅ aquí cambia
+                celularResponsable: args['celularResponsable'] ?? "",
+                sinRespuesta: args['sinRespuesta'] ?? false,
+                reparacion: args['reparacion'] ?? "",
               ),
             );
           }
@@ -561,33 +578,6 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
-          else if (settings.name == 'solicitudes_permiso_72_horas_enviadas_por_correo') {
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (context) => SolicitudesPermiso72HorasEnviadasPorCorreoPage(
-                status: args['status'] ?? "Diligenciado",
-                idDocumento: args['idDocumento'],
-                numeroSeguimiento: args['numeroSeguimiento'],
-                categoria: args['categoria'] ?? "Beneficios penitenciarios",
-                subcategoria: args['subcategoria'] ?? "Prisión domiciliaria",
-                fecha: args['fecha'],
-                idUser: args['idUser'],
-                archivos: List<String>.from(args['archivos'] ?? []),
-                urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable'],
-                urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
-
-                // 🟢 Usa las claves correctas aquí
-                direccion: args['direccion'] ?? "",
-                municipio: args['municipio'] ?? "",
-                departamento: args['departamento'] ?? "",
-                nombreResponsable: args['nombreResponsable'] ?? "", // <== ✅ aquí cambia
-                cedulaResponsable: args['cedulaResponsable'] ?? "", // <== ✅ aquí cambia
-                celularResponsable: args['celularResponsable'] ?? "",
-                sinRespuesta: args['sinRespuesta'] ?? false,
-                reparacion: args['reparacion'] ?? "",
-              ),
-            );
-          }
 
           else if (settings.name == 'solicitudes_extincion_pena_enviadas_por_correo') {
             final args = settings.arguments as Map<String, dynamic>;
@@ -620,6 +610,23 @@ class MyApp extends StatelessWidget {
             );
           }
 
+          else if (settings.name == 'atender_derecho_peticion_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderDerechoPeticionPage(
+                status: args['status'] ?? "Diligenciado",  // 👈 Evita error si es null
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'],
+                subcategoria: args['subcategoria'],
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
+                respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
+              ),
+            );
+          }
           else if (settings.name == 'atender_tutela_page') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
@@ -634,6 +641,29 @@ class MyApp extends StatelessWidget {
                 archivos: List<String>.from(args['archivos'] ?? []),
                 preguntas: List<String>.from(args['preguntas'] ?? []), // Pasar preguntas
                 respuestas: List<String>.from(args['respuestas'] ?? []), // Pasar respuestas
+              ),
+            );
+          }
+          else if (settings.name == 'atender_solicitud_permiso_72_horas_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderPermiso72HorasPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                direccion: args['direccion'] ?? "",
+                departamento: args['departamento'] ?? "",
+                municipio: args['municipio'] ?? "",
+                nombreResponsable: args['nombreResponsable'] ?? "",
+                cedulaResponsable: args['cedulaResponsable'] ?? "",
+                celularResponsable: args['celularResponsable'] ?? "",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                archivos: List<String>.from(args['archivos'] ?? []),
+                urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable']?.toString(),
+                urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
+                parentesco: args['parentesco'] ?? "",
+                reparacion: args['reparacion'] ?? "",
               ),
             );
           }
@@ -664,30 +694,6 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => AtenderLibertadCondicionalPage(
-                status: args['status'] ?? "Diligenciado",
-                idDocumento: args['idDocumento'],
-                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
-                direccion: args['direccion'] ?? "",
-                departamento: args['departamento'] ?? "",
-                municipio: args['municipio'] ?? "",
-                nombreResponsable: args['nombreResponsable'] ?? "",
-                cedulaResponsable: args['cedulaResponsable'] ?? "",
-                celularResponsable: args['celularResponsable'] ?? "",
-                fecha: args['fecha'],
-                idUser: args['idUser'],
-                archivos: List<String>.from(args['archivos'] ?? []),
-                urlArchivoCedulaResponsable: args['urlArchivoCedulaResponsable']?.toString(),
-                urlsArchivosHijos: List<String>.from(args['urlsArchivosHijos'] ?? []),
-                parentesco: args['parentesco'] ?? "",
-                reparacion: args['reparacion'] ?? "",
-              ),
-            );
-          }
-
-          else if (settings.name == 'atender_solicitud_permiso_72_horas_page') {
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (context) => AtenderPermiso72HorasPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
@@ -774,6 +780,15 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
+          else if (settings.name == 'detalle_correo_permiso_72horas') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoPermiso72HorasPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
           else if (settings.name == 'detalle_correo_prision_domiciliaria') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
@@ -792,15 +807,6 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
-          else if (settings.name == 'detalle_correo_permiso_72horas') {
-            final args = settings.arguments as Map<String, dynamic>;
-            return MaterialPageRoute(
-              builder: (context) => DetalleCorreoPermiso72HorasPage(
-                idDocumento: args['idDocumento'],
-                correoId: args['correoId'],
-              ),
-            );
-          }
           else if (settings.name == 'detalle_correo_extincion_pena') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
@@ -810,7 +816,6 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
-
           else if (settings.name == 'detalle_correo_traslado_proceso') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
@@ -820,6 +825,16 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
+          else if (settings.name == 'detalle_correo_redenciones') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoRedencionesPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
+
           else if (settings.name == '/checkout_wompi') {
             final args = settings.arguments as Map<String, dynamic>;
 

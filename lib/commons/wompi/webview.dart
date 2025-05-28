@@ -5,9 +5,11 @@ import 'package:tuprocesoya/commons/wompi/pagoExitosoPermiso72h.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitosoTrasladoProceso.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitoso_suscripcion.dart';
 import 'package:tuprocesoya/commons/wompi/pagoExitoso_tutela.dart';
+import 'package:tuprocesoya/commons/wompi/pago_exitoso_acumulacion.dart';
 import 'package:tuprocesoya/commons/wompi/pago_exitoso_redenciones.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_extiocion_pena.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_72h.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_acumulacion.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_condicional.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_peticion.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_redenciones.dart';
@@ -208,6 +210,17 @@ class _WompiWebViewState extends State<WompiWebView> {
               ),
             ));
             break;
+
+          case 'acumulacion':
+            Navigator.pushReplacement(context, MaterialPageRoute(
+              builder: (_) => PagoExitosoAcumulacionPenasPage(
+                montoPagado: amount,
+                transaccionId: transaccionId,
+                fecha: fecha,
+                onContinuar: () async => widget.onTransaccionAprobada?.call(),
+              ),
+            ));
+            break;
           default:
             widget.onTransaccionAprobada?.call();
         }
@@ -284,6 +297,15 @@ class _WompiWebViewState extends State<WompiWebView> {
           case 'redenciones':
             Navigator.pushReplacement(context, MaterialPageRoute(
               builder: (_) => ReintentoPagoRedencionPage(
+                referencia: referencia,
+                valor: widget.valorDerecho,
+                onTransaccionAprobada: widget.onTransaccionAprobada,
+              ),
+            ));
+            break;
+          case 'acumulacion':
+            Navigator.pushReplacement(context, MaterialPageRoute(
+              builder: (_) => ReintentoPagoAcumulacionPenasPage(
                 referencia: referencia,
                 valor: widget.valorDerecho,
                 onTransaccionAprobada: widget.onTransaccionAprobada,

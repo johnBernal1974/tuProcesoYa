@@ -6,22 +6,20 @@ import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
 import '../solicitud_exitosa_extincion_pena/solicitud_exitosa_extincion_pena.dart';
 
-class SolicitudExtincionPenaPage extends StatefulWidget {
-  const SolicitudExtincionPenaPage({super.key});
+class SolicitudAcumulacionPenasPage extends StatefulWidget {
+  const SolicitudAcumulacionPenasPage({super.key});
 
   @override
-  State<SolicitudExtincionPenaPage> createState() => _SolicitudExtincionPenaPageState();
+  State<SolicitudAcumulacionPenasPage> createState() => _SolicitudAcumulacionPenasPageState();
 }
 
-class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage> {
-
-
+class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPenasPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: blanco,
       appBar: AppBar(
-        title: const Text('Solicitud Extinción de la Pena', style: TextStyle(color: blanco)),
+        title: const Text('Solicitud Acumulación de Penas', style: TextStyle(color: blanco)),
         backgroundColor: primary,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -33,27 +31,18 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
             child: ListView(
               children: [
                 const Text(
-                  'Un nuevo comienzo te espera',
+                  'Unifica tus condenas para una pena justa',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.deepPurple),
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'La vida nos enseña que siempre existen segundas oportunidades. '
-                      'Hoy culminas una etapa difícil y se abre ante ti un camino de esperanza y transformación. '
-                      'Solicitar la extinción de la pena no es solo un acto jurídico, es un acto de fe en tu capacidad de reconstruir tu vida, de abrazar nuevas metas, y de demostrar que los errores del pasado no definen tu futuro.',
-                  style: TextStyle(fontSize: 16),
-                  textAlign: TextAlign.justify,
-                ),
-
-                const SizedBox(height: 30),
-                const Text(
-                  'Solicitud de Extinción de la Pena',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'La extinción de la pena representa el reconocimiento de que has satisfecho plenamente las obligaciones derivadas de tu condena. '
-                      'Este beneficio no solo pone fin a los efectos jurídicos de la sentencia, sino que también marca el restablecimiento íntegro de tus derechos y la apertura de una nueva etapa de dignidad, libertad y oportunidades.',
+                  'La acumulación de penas es un derecho reconocido por la legislación penal colombiana que permite unificar varias condenas en una sola, facilitando así el acceso a beneficios penitenciarios y garantizando un tratamiento justo en la ejecución de la pena.\n\n'
+                      'Con base en el artículo 351 del Código de Procedimiento Penal (Ley 906 de 2004), una persona condenada mediante varias sentencias ejecutoriadas por hechos distintos puede solicitar que se acumulen dichas penas. '
+                      'Este procedimiento lo resuelve el juez de ejecución de penas, quien deberá tomar como base la pena más grave y adicionar las demás de forma proporcional, sin exceder los topes legales establecidos en el Código Penal.\n\n'
+                      'Según el artículo 31 del Código Penal (Ley 599 de 2000), el tiempo máximo de privación de la libertad en Colombia no podrá exceder los 60 años, incluso en caso de múltiples condenas. '
+                      'Esta limitación garantiza que la sanción sea razonable y proporcional, conforme a los principios constitucionales de dignidad humana y resocialización.\n\n'
+                      'El objetivo de esta solicitud es que el despacho judicial determine la pena única total, con el fin de establecer con claridad el tiempo real de cumplimiento, facilitar la planeación del tratamiento penitenciario y permitir el acceso a beneficios como libertad condicional o redenciones.\n\n'
+                      'Al presionar el siguiente botón, iniciarás el proceso para que tu solicitud de acumulación de penas sea registrada, revisada y tramitada.',
                   style: TextStyle(fontSize: 16),
                   textAlign: TextAlign.justify,
                 ),
@@ -66,10 +55,10 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
                   onPressed: () async {
                     final confirmado = await mostrarConfirmacionEnvio(context);
                     if (confirmado) {
-                      await verificarSaldoYEnviarSolicitud();
+                      await verificarSaldoYEnviarSolicitudAcumulacion();
                     }
                   },
-                  child: const Text('Solicitar Extinción de la Pena', style: TextStyle(fontSize: 18, color: blanco)),
+                  child: const Text('Solicitar Acumulación de Penas', style: TextStyle(fontSize: 18, color: blanco)),
                 ),
               ],
             ),
@@ -83,27 +72,26 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
     return await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: blanco,
-          title: const Text('Confirmar envío'),
-          content: const Text('¿Estás seguro de solicitar la extinción de la pena? Esta acción será enviada para su revisión y trámite.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: primary),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Confirmar', style: TextStyle(color: blanco)),
-            ),
-          ],
-        );
-      },
-    ) ?? false;
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text('Confirmar envío'),
+        content: const Text('¿Estás seguro de solicitar la acumulación de penas? Esta acción será enviada para su revisión y trámite.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: primary),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Confirmar', style: TextStyle(color: blanco)),
+          ),
+        ],
+      ),
+    ) ??
+        false;
   }
 
-  Future<void> verificarSaldoYEnviarSolicitud() async {
+  Future<void> verificarSaldoYEnviarSolicitudAcumulacion() async {
     final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
-    final double valorExtincion = (configSnapshot.docs.first.data()['valor_extincion'] ?? 0).toDouble();
+    final double valor = (configSnapshot.docs.first.data()['valor_acumulacion'] ?? 0).toDouble();
 
     if (!context.mounted) return;
 
@@ -122,10 +110,10 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
                 context,
                 MaterialPageRoute(
                   builder: (_) => CheckoutPage(
-                    tipoPago: 'extincion',
-                    valor: valorExtincion.toInt(),
+                    tipoPago: 'acumulacion',
+                    valor: valor.toInt(),
                     onTransaccionAprobada: () async {
-                      await enviarSolicitudExtincionPena(valorExtincion);
+                      await enviarSolicitudAcumulacion(valor);
                     },
                   ),
                 ),
@@ -138,7 +126,7 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
     );
   }
 
-  Future<void> enviarSolicitudExtincionPena(double valorExtincion) async {
+  Future<void> enviarSolicitudAcumulacion(double valor) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -162,10 +150,10 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
-      String docId = firestore.collection('extincion_pena_solicitados').doc().id;
+      String docId = firestore.collection('acumulacion_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
-      await firestore.collection('extincion_pena_solicitados').doc(docId).set({
+      await firestore.collection('acumulacion_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
         'numero_seguimiento': numeroSeguimiento,
@@ -174,14 +162,14 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
         'asignadoA': "",
       });
 
-      await descontarSaldo(valorExtincion);
+      await descontarSaldo(valor);
 
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => SolicitudExitosaExtincionPenaPage(numeroSeguimiento: numeroSeguimiento),
+            builder: (_) => SolicitudExitosaExtincionPenaPage(numeroSeguimiento: numeroSeguimiento),
           ),
         );
       }

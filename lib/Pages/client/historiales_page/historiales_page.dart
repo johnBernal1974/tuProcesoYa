@@ -24,8 +24,8 @@ class HistorialSolicitudesPage extends StatelessWidget {
         padding: const EdgeInsets.all(6.0),
         child: Center(
           child: Container(
-            constraints: const BoxConstraints(maxWidth: 600), // Limita el ancho máximo
-            padding: const EdgeInsets.all(10.0), // Agrega espacio alrededor del contenido
+            constraints: const BoxConstraints(maxWidth: 600),
+            padding: EdgeInsets.symmetric(horizontal: screenWidth < 600 ? 6.0 : 10.0, vertical: 10.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -33,11 +33,11 @@ class HistorialSolicitudesPage extends StatelessWidget {
                   'Selecciona el historial de solicitudes de servicios que has realizado:',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
                 GridView.count(
                   crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
                   children: [
@@ -48,10 +48,10 @@ class HistorialSolicitudesPage extends StatelessWidget {
                     _buildCard(context, Icons.lock_open, 'Libertad\ncondicional', 'historial_solicitudes_libertad_condicional', blanco),
                     _buildCard(context, Icons.assignment_turned_in, 'Extinción de\nla pena', 'historial_solicitudes_extincion_pena', blanco),
                     _buildCard(context, Icons.swap_horiz, 'Traslado de\nproceso', 'historial_solicitudes_traslado_proceso', blanco),
-
+                    _buildCard(context, Icons.calculate_outlined, 'Solicitud\nredenciones', 'historial_solicitudes_redenciones', blanco),
                   ],
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -64,22 +64,24 @@ class HistorialSolicitudesPage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
 
-    final double iconSize = isMobile ? 26.0 : 32.0;
-    final double fontSize = isMobile ? 13.0 : 16.0;
+    final double iconSize = isMobile ? 24.0 : 32.0;
+    final double fontSize = isMobile ? 12.0 : 16.0;
+    final double padding = isMobile ? 12.0 : 18.0;
+    final double margin = isMobile ? 6.0 : 12.0;
 
     return GestureDetector(
       onTap: () => navegar(context, ruta),
       child: Container(
-        padding: const EdgeInsets.all(18),
-        margin: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(padding),
+        margin: EdgeInsets.all(margin),
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           boxShadow: const [
             BoxShadow(
               color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 4),
+              blurRadius: 4,
+              offset: Offset(0, 2),
             ),
           ],
         ),
@@ -88,7 +90,7 @@ class HistorialSolicitudesPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(icon, size: iconSize, color: primary),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 titulo,
                 textAlign: TextAlign.center,
@@ -100,5 +102,5 @@ class HistorialSolicitudesPage extends StatelessWidget {
       ),
     );
   }
-
 }
+

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../src/colors/colors.dart';
 
-class PagoExitosoExtincionPenaPage extends StatefulWidget {
+class PagoExitosoAcumulacionPenasPage extends StatefulWidget {
   final Future<void> Function() onContinuar;
   final double montoPagado;
   final String transaccionId;
   final DateTime fecha;
 
-  const PagoExitosoExtincionPenaPage({
+  const PagoExitosoAcumulacionPenasPage({
     super.key,
     required this.onContinuar,
     required this.montoPagado,
@@ -17,10 +17,10 @@ class PagoExitosoExtincionPenaPage extends StatefulWidget {
   });
 
   @override
-  State<PagoExitosoExtincionPenaPage> createState() => _PagoExitosoExtincionPenaPageState();
+  State<PagoExitosoAcumulacionPenasPage> createState() => _PagoExitosoAcumulacionPenasPageState();
 }
 
-class _PagoExitosoExtincionPenaPageState extends State<PagoExitosoExtincionPenaPage> {
+class _PagoExitosoAcumulacionPenasPageState extends State<PagoExitosoAcumulacionPenasPage> {
   bool isLoading = false;
 
   Future<void> _handleContinuar() async {
@@ -65,7 +65,7 @@ class _PagoExitosoExtincionPenaPageState extends State<PagoExitosoExtincionPenaP
             children: [
               const Icon(Icons.check_circle_outline, color: Colors.green, size: 80),
               const SizedBox(height: 20),
-              const Text("¡Pago de solicitud de extinción de la pena realizado con éxito!", textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const Text("¡Pago de solicitud de acumulación de penas realizado con éxito!", textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
               Text("Monto: \$${formatter.format(widget.montoPagado)}", style: const TextStyle(fontSize: 16)),
               const SizedBox(height: 8),
