@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:tuprocesoya/Pages/administrador/historial_solicitud_traslado_proceso_admin/historial_solicitud_traslado_proceso_admin.dart';
 import 'package:tuprocesoya/Pages/client/derecho_de_peticion_solicitud/derecho_de_peticion_solicitud.dart';
 import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
+import 'package:tuprocesoya/Pages/client/historial_solicitudes_acumulacion/historial_solicitudes_acumulacion.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
@@ -374,6 +375,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_extincion_pena': (context) => const HistorialSolicitudesExtincionPenaPage(),
         'historial_solicitudes_traslado_proceso': (context) => const HistorialSolicitudesTrasladoProcesoPage(),
         'historial_solicitudes_redenciones': (context) => const HistorialSolicitudesRedencionesPage(),
+        'historial_solicitudes_acumulacion': (context) => const HistorialSolicitudesAcumulacionPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),

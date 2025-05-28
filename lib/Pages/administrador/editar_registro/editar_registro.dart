@@ -3230,7 +3230,48 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 );
               }
 
-              validarYEnviarMensaje();
+              if (nuevoStatus == "activado") {
+                if (context.mounted) {
+                  final docId = widget.doc.id;
+                  final docRef = FirebaseFirestore.instance.collection('Ppl').doc(docId);
+                  final docSnapshot = await docRef.get();
+                  final isNotificated = docSnapshot['isNotificatedActivated'] ?? false;
+
+                  if (isNotificated) {
+                    // Ya fue notificado, no mostramos el diálogo
+                    await validarYEnviarMensaje(); // puedes omitir esta línea si no quieres reintentos
+                  } else {
+                    // Mostrar el AlertDialog solo si aún no ha sido notificado
+                    if(context.mounted){
+                      final confirmarEnvio = await showDialog<bool>(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          backgroundColor: blanco,
+                          title: const Text("Enviar mensaje de activación"),
+                          content: const Text("¿Deseas enviar el mensaje por WhatsApp al acudiente para informarle que el usuario ha sido activado?"),
+                          actions: [
+                            TextButton(
+                              child: const Text("Cancelar"),
+                              onPressed: () => Navigator.of(context).pop(false),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primary,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () => Navigator.of(context).pop(true),
+                              child: const Text("Enviar"),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmarEnvio == true) {
+                        await validarYEnviarMensaje();
+                      }
+                    }
+                  }
+                }
+              }
             } catch (error) {
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(

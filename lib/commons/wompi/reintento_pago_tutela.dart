@@ -1,21 +1,30 @@
 // lib/commons/wompi/reintento_pago_suscripcion.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../src/colors/colors.dart';
+import 'checkout_page.dart';
 
 class ReintentoPagoTutelaPage extends StatelessWidget {
   final String referencia;
+  final int? valorTutela;
+  final VoidCallback? onTransaccionAprobada;
 
-  const ReintentoPagoTutelaPage({super.key, required this.referencia});
+  const ReintentoPagoTutelaPage({
+    super.key,
+    required this.referencia,
+    this.valorTutela,
+    this.onTransaccionAprobada,});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: blancoCards,
       appBar: AppBar(
+        backgroundColor: Colors.red,
         iconTheme: const IconThemeData(color: Colors.white, size: 30),
         title: const Text("Pago Rechazado", style: TextStyle(color: blanco)),
-        backgroundColor: Colors.red,
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
@@ -35,27 +44,61 @@ class ReintentoPagoTutelaPage extends StatelessWidget {
                 const Icon(Icons.error, size: 80, color: Colors.red),
                 const SizedBox(height: 15),
                 const Text(
-                    "Transacción rechazada",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
-                    textAlign: TextAlign.center
+                  "Transacción rechazada",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  "No pudimos procesar tu pago de tutela. Puedes intentarlo nuevamente o salir.",
+                  "No pudimos procesar tu pago. Puedes intentar nuevamente o salir.",
                   style: TextStyle(fontSize: 14, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 25),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pushReplacementNamed(context, '/checkout');
+                    onPressed: () async {
+                      print("🔁 Intentando reintentar el pago de tutela...");
+
+                      final user = FirebaseAuth.instance.currentUser;
+
+                      if (user == null) {
+                        print("⚠️ Usuario no autenticado");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
                       }
+
+                      if (valorTutela == null) {
+                        print("⚠️ Valor no definido");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("El valor de la tutela no está disponible."),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      final nuevaReferencia = 'tutela_${user.uid}_${const Uuid().v4()}';
+                      print("📌 Nueva referencia generada: $nuevaReferencia");
+
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckoutPage(
+                            tipoPago: 'tutela',
+                            valor: valorTutela!,
+                            referencia: nuevaReferencia,
+                            onTransaccionAprobada: onTransaccionAprobada,
+                          ),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
@@ -64,19 +107,15 @@ class ReintentoPagoTutelaPage extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text("Reintentar",
-                        style: TextStyle(color: Colors.white, fontSize: 14)),
+                    child: const Text("Reintentar", style: TextStyle(color: Colors.white, fontSize: 14)),
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                          context, 'home', (route) => false);
+                      Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey,
@@ -85,8 +124,7 @@ class ReintentoPagoTutelaPage extends StatelessWidget {
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
-                    child: const Text("Cancelar",
-                        style: TextStyle(color: Colors.white, fontSize: 14)),
+                    child: const Text("Cancelar", style: TextStyle(color: Colors.white, fontSize: 14)),
                   ),
                 ),
               ],
@@ -96,4 +134,5 @@ class ReintentoPagoTutelaPage extends StatelessWidget {
       ),
     );
   }
+
 }

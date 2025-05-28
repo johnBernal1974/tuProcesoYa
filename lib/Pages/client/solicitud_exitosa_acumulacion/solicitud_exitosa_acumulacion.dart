@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:tuprocesoya/Pages/client/home/home.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
-import '../historial_solicitudes_redenciones/historial_solicitudes_redenciones.dart';
+import '../historial_solicitudes_acumulacion/historial_solicitudes_acumulacion.dart';
 
-class SolicitudExitosaRedencionPage extends StatelessWidget {
+class SolicitudExitosaAcumulacionPage extends StatelessWidget {
   final String numeroSeguimiento;
 
-  const SolicitudExitosaRedencionPage({super.key, required this.numeroSeguimiento});
+  const SolicitudExitosaAcumulacionPage({super.key, required this.numeroSeguimiento});
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +23,7 @@ class SolicitudExitosaRedencionPage extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             const Text(
-              "Tu solicitud de Redención de Pena ha sido recibida",
+              "Tu solicitud de Acumulación de Penas ha sido recibida",
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, height: 1),
               textAlign: TextAlign.center,
             ),
@@ -42,7 +41,7 @@ class SolicitudExitosaRedencionPage extends StatelessWidget {
             ),
             const SizedBox(height: 30),
             const Text(
-              "Verificaremos la información enviada para radicar la solicitud de redención de pena ante el centro penitenciario o la autoridad correspondiente.",
+              "Verificaremos la información enviada para radicar la solicitud de acumulación de penas ante la autoridad correspondiente.",
               style: TextStyle(fontSize: 14, height: 1.1),
               textAlign: TextAlign.justify,
             ),
@@ -65,7 +64,7 @@ class SolicitudExitosaRedencionPage extends StatelessWidget {
                 children: [
                   TextSpan(
                     text:
-                    "1. Recuerda que esta solicitud será verificada y validada por el equipo. La redención solo será efectiva cuando sea aprobada por el comité o la autoridad correspondiente.",
+                    "1. Esta solicitud será revisada por nuestro equipo. La acumulación de penas solo será efectiva cuando sea aceptada por la autoridad competente.",
                   ),
                 ],
               ),
@@ -78,7 +77,7 @@ class SolicitudExitosaRedencionPage extends StatelessWidget {
                 children: [
                   TextSpan(
                     text:
-                    "2. Te informaremos oportunamente sobre el estado y el resultado de tu solicitud.",
+                    "2. Te mantendremos informado sobre el estado y resultado de tu solicitud.",
                   ),
                 ],
               ),
@@ -89,7 +88,7 @@ class SolicitudExitosaRedencionPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const HistorialSolicitudesRedencionesPage()),
+                    MaterialPageRoute(builder: (context) => const HistorialSolicitudesAcumulacionPage()),
                   );
                 },
                 style: ElevatedButton.styleFrom(

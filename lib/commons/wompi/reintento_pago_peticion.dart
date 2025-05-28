@@ -1,6 +1,9 @@
 // lib/commons/wompi/reintento_pago_peticion.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../../src/colors/colors.dart';
+import 'checkout_page.dart';
 
 class ReintentoPagoPeticionPage extends StatelessWidget {
   final String referencia;
@@ -55,21 +58,47 @@ class ReintentoPagoPeticionPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          '/checkout',
-                          arguments: {
-                            'esPagoDerechoPeticion': true,
-                            'valorDerecho': valorDerecho,
-                            'referenciaDerecho': referencia,
-                            'onTransaccionAprobada': onTransaccionAprobada,
-                          },
+                    onPressed: () async {
+                      print("🔁 Intentando reintentar el pago...");
+
+                      final user = FirebaseAuth.instance.currentUser;
+
+                      if (user == null) {
+                        print("⚠️ Usuario no autenticado");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
+                            backgroundColor: Colors.red,
+                          ),
                         );
+                        return;
                       }
+
+                      if (valorDerecho == null) {
+                        print("⚠️ Valor no definido");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("El valor del derecho no está disponible."),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
+                      }
+
+                      final nuevaReferencia = 'peticion_${user.uid}_${const Uuid().v4()}';
+                      print("📌 Nueva referencia generada: $nuevaReferencia");
+
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckoutPage(
+                            tipoPago: 'peticion',
+                            valor: valorDerecho!,
+                            referencia: nuevaReferencia,
+                            onTransaccionAprobada: onTransaccionAprobada,
+                          ),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
@@ -105,4 +134,5 @@ class ReintentoPagoPeticionPage extends StatelessWidget {
       ),
     );
   }
+
 }

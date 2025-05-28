@@ -1,12 +1,21 @@
-// lib/commons/wompi/reintento_pago_suscripcion.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../src/colors/colors.dart';
+import 'checkout_page.dart';
 
 class ReintentoPagoSuscripcionPage extends StatelessWidget {
   final String referencia;
+  final int? valor;
+  final VoidCallback? onTransaccionAprobada;
 
-  const ReintentoPagoSuscripcionPage({super.key, required this.referencia});
+  const ReintentoPagoSuscripcionPage({
+    super.key,
+    required this.referencia,
+    required this.valor,
+    this.onTransaccionAprobada,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,9 +44,9 @@ class ReintentoPagoSuscripcionPage extends StatelessWidget {
                 const Icon(Icons.error, size: 80, color: Colors.red),
                 const SizedBox(height: 15),
                 const Text(
-                    "Transacción rechazada",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
-                    textAlign: TextAlign.center
+                  "Transacción rechazada",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 10),
                 const Text(
@@ -50,12 +59,36 @@ class ReintentoPagoSuscripcionPage extends StatelessWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        Navigator.pushReplacementNamed(context, '/checkout');
+                    onPressed: () async {
+                      print("🔁 Intentando reintentar el pago de suscripción...");
+
+                      final user = FirebaseAuth.instance.currentUser;
+
+                      if (user == null) {
+                        print("⚠️ Usuario no autenticado");
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                        return;
                       }
+
+                      final nuevaReferencia = 'suscripcion_${user.uid}_${const Uuid().v4()}';
+                      print("📌 Nueva referencia generada: $nuevaReferencia");
+
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => CheckoutPage(
+                            tipoPago: 'suscripcion',
+                            valor: valor ?? 0,
+                            referencia: nuevaReferencia,
+                            onTransaccionAprobada: onTransaccionAprobada,
+                          ),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
@@ -75,8 +108,7 @@ class ReintentoPagoSuscripcionPage extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pushNamedAndRemoveUntil(
-                          context, 'home', (route) => false);
+                      Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.grey,

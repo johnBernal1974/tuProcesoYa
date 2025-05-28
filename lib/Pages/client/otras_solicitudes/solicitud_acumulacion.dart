@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:tuprocesoya/Pages/client/solicitud_exitosa_acumulacion/solicitud_exitosa_acumulacion.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../src/colors/colors.dart';
 import '../solicitud_exitosa_extincion_pena/solicitud_exitosa_extincion_pena.dart';
@@ -169,7 +170,7 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => SolicitudExitosaExtincionPenaPage(numeroSeguimiento: numeroSeguimiento),
+            builder: (_) => SolicitudExitosaAcumulacionPage(numeroSeguimiento: numeroSeguimiento),
           ),
         );
       }
