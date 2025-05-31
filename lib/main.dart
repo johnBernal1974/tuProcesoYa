@@ -47,6 +47,7 @@ import 'Pages/administrador/solicitudes_enviadas_por_correo/traslado_proceso_env
 import 'Pages/administrador/solicitudes_enviadas_por_correo/tutelas_enviadas_por_correo/tutelas_enviadas_por_correo.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import 'Pages/administrador/tutelas/derechos_tutelables_page.dart';
+import 'Pages/administrador/ver_correos_entrantes/ver_correos_entrantes.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
 import 'Pages/bloqueado_page/bloqueado.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
@@ -360,6 +361,7 @@ class MyApp extends StatelessWidget {
         'referidores_page_admin': (context) => const AdminReferidoresPage(),
         'registrar_referidores_page_admin': (context) => const RegistrarReferidorPage(),
         'registraro_asistido_page_admin': (context) => const RegistroAsistidoPage(),
+        'ver_respuestas_correos_page_admin': (context) => const VerRespuestasCorreosPage(),
 
         //Usuario
         'home': (context) => const HomePage(), // Página principal

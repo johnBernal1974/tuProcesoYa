@@ -442,6 +442,8 @@ class _SideBarState extends State<SideBar> {
               'registrar_operadores'),
           _buildDrawerTile(
               context, "Operadores", Icons.account_box, 'operadores_page'),
+          _buildDrawerTile(
+              context, "Respuestas a correos", Icons.mark_email_read_outlined, 'ver_respuestas_correos_page_admin'),
         ]);
 
 

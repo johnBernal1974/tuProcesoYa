@@ -581,101 +581,66 @@ exports.leerCorreosZoho = onSchedule(
       },
     };
 
+    function limpiarHtml(html) {
+      return html
+        .replace(/<\s*html[^>]*>/gi, "")
+        .replace(/<\s*\/\s*html\s*>/gi, "")
+        .replace(/<\s*head[^>]*>.*?<\s*\/\s*head\s*>/gis, "")
+        .replace(/<\s*body[^>]*>/gi, "")
+        .replace(/<\s*\/\s*body\s*>/gi, "")
+        .trim();
+    }
+
     try {
       const connection = await imaps.connect(config);
       await connection.openBox("INBOX");
 
       const searchCriteria = ["UNSEEN"];
       const fetchOptions = {
-        bodies: ["HEADER", "TEXT"],
+        bodies: ["HEADER.FIELDS (FROM TO SUBJECT DATE)", "TEXT", ""],
         markSeen: true,
       };
 
       const results = await connection.search(searchCriteria, fetchOptions);
 
       for (const item of results) {
-        const all = item.parts.find((part) => part.which === "TEXT");
-        const parsed = await simpleParser(all.body);
+        const headerPart = item.parts.find(p => p.which.startsWith("HEADER"));
+        const fullPart = item.parts.find(p => p.which === "");
 
-        const remitente = parsed.from?.text || "";
-        const asunto = parsed.subject || "";
-        const cuerpo = parsed.text || "";
+        if (!fullPart || !fullPart.body) continue;
 
-        // Guardar en Firestore
+        const parsed = await simpleParser(fullPart.body);
+        const headers = headerPart?.body || {};
+
+        const remitente = parsed.from?.text || headers.from || "";
+        const destinatario = parsed.to?.text || headers.to || "";
+        const asunto = parsed.subject || headers.subject || "";
+        const cuerpoHtml = parsed.html ? limpiarHtml(parsed.html) : "";
+        const cuerpo = parsed.text?.trim() || "";
+
         await db.collection("respuestas_correos").add({
           remitente,
+          destinatario,
           asunto,
           cuerpo,
+          cuerpoHtml,
           recibidoEn: new Date().toISOString(),
         });
       }
 
       connection.end();
-      console.log("Correos procesados exitosamente.");
+      console.log("✅ Correos procesados exitosamente.");
     } catch (error) {
-      console.error("Error leyendo correos Zoho:", error);
+      console.error("❌ Error leyendo correos Zoho:", error);
     }
   }
 );
 
-exports.testLeerCorreosZoho = onRequest(
-  {
-    secrets: [
-      ZOHO_USER, ZOHO_PASSWORD, ZOHO_HOST,
-      ZOHO_CLIENT_ID, ZOHO_CLIENT_SECRET, ZOHO_REFRESH_TOKEN
-    ]
-  },
-  async (req, res) => {
-    try {
-      const imapConfig = {
-        imap: {
-          user: process.env.ZOHO_USER,
-          password: process.env.ZOHO_PASSWORD,
-          host: process.env.ZOHO_HOST,
-          port: 993,
-          tls: true,
-          authTimeout: 3000,
-        },
-      };
 
-      const connection = await imaps.connect(imapConfig);
-      await connection.openBox("INBOX");
 
-      const searchCriteria = ["UNSEEN"];
-      const fetchOptions = {
-        bodies: ["HEADER", "TEXT"],
-        markSeen: true,
-      };
 
-      const messages = await connection.search(searchCriteria, fetchOptions);
 
-      const resultados = [];
 
-      for (const item of messages) {
-        const all = item.parts.find((part) => part.which === "TEXT");
-        const id = item.attributes.uid;
-        const mail = await simpleParser(all.body);
 
-        resultados.push({
-          id,
-          from: mail.from?.text,
-          subject: mail.subject,
-          text: mail.text,
-          date: mail.date,
-        });
-      }
-
-      await connection.end();
-
-      res.status(200).json({
-        success: true,
-        correos: resultados,
-      });
-    } catch (error) {
-      console.error("Error leyendo correos:", error);
-      res.status(500).json({ success: false, error: error.message });
-    }
-  }
-);
 
 
