@@ -147,16 +147,6 @@ class _VerRespuestasCorreosPageState extends State<VerRespuestasCorreosPage> {
                               .replaceAll('a. m.', 'am')
                               .replaceAll('p. m.', 'pm')
                               : 'Fecha desconocida';
-
-
-                          final cuerpoTexto = (correo['cuerpo'] ?? '').toString()
-                              .replaceAll(RegExp(r'^> ?', multiLine: true), '');
-
-                          final respuestaTexto = cuerpoTexto;
-                          const textoCitado = '';
-
-                          final citaVisible = _citasVisibles.contains(index);
-
                           return InkWell(
                             onTap: () {
                               Navigator.push(
