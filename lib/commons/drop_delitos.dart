@@ -31,7 +31,7 @@ class _DelitosAutocompleteWidgetState extends State<DelitosAutocompleteWidget> {
 
     delitosPorCategoria = {
       "Delitos contra la vida y la integridad personal": [
-        "Aborto", "Feminicidio", "Homicidio", "Inducción al suicidio", "Lesiones personales", "Omisión de socorro", "Tentativa de homicidio",
+        "Aborto", "Feminicidio", "Homicidio", "Homicidio agravado", "Inducción al suicidio", "Lesiones personales", "Omisión de socorro", "Tentativa de homicidio",
         "Tentativa de femenicidio",
       ],
       "Delitos contra personas y bienes protegidos por el DIH": [
@@ -56,7 +56,7 @@ class _DelitosAutocompleteWidgetState extends State<DelitosAutocompleteWidget> {
         "Cultivo ilícito", "Distribución ilegal de medicamentos", "Microtráfico", "Tráfico, fabricación o porte de estupefacientes",
       ],
       "Delitos contra la administración pública": [
-        "Cohecho propio", "Concusión", "Enriquecimiento ilícito", "Omisión de denuncia", "Peculado por apropiación", "Prevaricato por acción u omisión",
+        "Cohecho propio", "Concusión", "Enriquecimiento ilícito", "Omisión de denuncia", "Peculado por apropiación", "Prevaricato por acción u omisión","Simulación de investidura"
       ],
       "Delitos contra la fe pública": [
         "Alteración de documento de identidad", "Falsedad material en documento público", "Falsedad personal", "Suplantación de identidad", "Uso de documento falso",
