@@ -617,15 +617,74 @@ exports.leerCorreosZoho = onSchedule(
         const asunto = parsed.subject || headers.subject || "";
         const cuerpoHtml = parsed.html ? limpiarHtml(parsed.html) : "";
         const cuerpo = parsed.text?.trim() || "";
+        const timestamp = new Date();
+        const messageId = parsed.messageId || "";
 
+        // ⚠️ Si no hay messageId, no guardar (opcional)
+        if (!messageId) {
+          console.warn("❌ Correo sin messageId, se omite.");
+          continue;
+        }
+
+        // ✅ Verificar si ya existe
+        const yaExiste = await db.collection("respuestas_correos")
+          .where("messageId", "==", messageId)
+          .limit(1)
+          .get();
+
+        if (!yaExiste.empty) {
+          console.log("⚠️ Correo ya registrado:", messageId);
+          continue;
+        }
+
+        // 1. Guardar en colección general
         await db.collection("respuestas_correos").add({
           remitente,
           destinatario,
           asunto,
           cuerpo,
           cuerpoHtml,
-          recibidoEn: new Date().toISOString(),
+          recibidoEn: timestamp.toISOString(),
+          messageId, // 🔒 Para evitar duplicados en el futuro
         });
+
+        // 2. Buscar código de seguimiento en el asunto
+        const regexCodigo = asunto.match(/-\s?(\d{6,})/);
+        const codigoSeguimiento = regexCodigo ? regexCodigo[1] : null;
+
+        if (codigoSeguimiento) {
+          const posibles = await db.collectionGroup("log_correos").get();
+
+          const coincidencias = posibles.docs.filter(doc =>
+            typeof doc.data().subject === "string" &&
+            doc.data().subject.includes(codigoSeguimiento)
+          );
+
+          if (coincidencias.length > 0) {
+            const correoOriginal = coincidencias[0];
+            const pathSolicitud = correoOriginal.ref.parent.parent;
+
+            if (pathSolicitud) {
+              await pathSolicitud.collection("log_correos").add({
+                subject: "📩 Respuesta: " + asunto,
+                remitente,
+                destinatario,
+                cuerpoHtml,
+                timestamp,
+                esRespuesta: true,
+                messageId, // 🔒 También lo puedes registrar aquí
+              });
+
+              console.log(`✅ Respuesta archivada en log_correos de: ${pathSolicitud.id}`);
+            } else {
+              console.warn("❌ No se pudo obtener pathSolicitud para:", codigoSeguimiento);
+            }
+          } else {
+            console.warn("❌ No se encontró coincidencia para el código:", codigoSeguimiento);
+          }
+        } else {
+          console.warn("❌ No se encontró código de seguimiento en el asunto:", asunto);
+        }
       }
 
       connection.end();
