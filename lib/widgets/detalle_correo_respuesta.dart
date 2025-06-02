@@ -17,6 +17,7 @@ class DetalleCorreoPage extends StatelessWidget {
     final asunto = (correo['asunto'] ?? 'Sin asunto').toString();
     final para = (correo['destinatario'] ?? 'Desconocido').toString();
     final recibidoEnRaw = correo['recibidoEn'];
+
     DateTime? recibidoDateTime;
 
     if (recibidoEnRaw is String) {

@@ -30,15 +30,6 @@ class AtenderSolicitudRedencionesPage extends StatefulWidget {
   final String fecha;
   final String idUser;
 
-  // 🔽 Campos adicionales
-  final String diasTrabajados;
-  final String diasRedimidos;
-  final String trabajo;
-  final String tipoActividad;
-  final String categoriaRedencion;
-  final String fechaInicio;
-  final String fechaFin;
-
   const AtenderSolicitudRedencionesPage({
     super.key,
     required this.status,
@@ -46,13 +37,6 @@ class AtenderSolicitudRedencionesPage extends StatefulWidget {
     required this.numeroSeguimiento,
     required this.fecha,
     required this.idUser,
-    required this.diasTrabajados,
-    required this.diasRedimidos,
-    required this.trabajo,
-    required this.tipoActividad,
-    required this.categoriaRedencion,
-    required this.fechaInicio,
-    required this.fechaFin,
   });
 
   @override
@@ -228,22 +212,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
         const SizedBox(height: 30),
 
         /// aca va lo de las redenciones
-        Card(
-          color: Colors.white,
-          margin: const EdgeInsets.symmetric(vertical: 10),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: _buildDetallesRedencion(
-              categoria: widget.categoriaRedencion,
-              tipoActividad: widget.tipoActividad,
-              trabajo: widget.trabajo,
-              fechaInicio: DateTime.tryParse(widget.fechaInicio) ?? DateTime.now(),
-              fechaFin: DateTime.tryParse(widget.fechaFin) ?? DateTime.now(),
-              diasTrabajados: int.tryParse(widget.diasTrabajados) ?? 0,
-              diasRedimidos: int.tryParse(widget.diasRedimidos) ?? 0,
-            ),
-          ),
-        ),
+
         const Divider(color: gris),
         const SizedBox(height: 20),
 
@@ -409,59 +378,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
         ],
       ),
     );
-  }
-
-  Widget _buildDetallesRedencion({
-    required String categoria,
-    required String tipoActividad,
-    required String trabajo,
-    required DateTime fechaInicio,
-    required DateTime fechaFin,
-    required int diasTrabajados,
-    required int diasRedimidos,
-  }) {
-    double fontSize = MediaQuery.of(context).size.width < 600 ? 10 : 12;
-
-    return Card(
-      color: Colors.white,
-      surfaceTintColor: Colors.white,
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Información suministrada por el PPL relacionada con las actividades y tiempos para redención.", style: TextStyle(
-              fontWeight: FontWeight.w900, fontSize: 16
-            )),
-            const SizedBox(height: 25),
-            _buildDetalleItem("Categoría", categoria, fontSize),
-            _buildDetalleItem("Tipo de actividad", tipoActividad, fontSize),
-            _buildDetalleItem("Trabajo realizado", trabajo, fontSize),
-            const SizedBox(height: 5),
-            const Divider(color: gris),
-            const SizedBox(height: 5),
-            _buildDetalleItem("Fecha de inicio", _formatearFechaExtendida(fechaInicio), fontSize),
-            _buildDetalleItem("Fecha de finalización", _formatearFechaExtendida(fechaFin), fontSize),
-            const SizedBox(height: 5),
-            const Divider(color: gris),
-            const SizedBox(height: 5),
-            _buildDetalleItem("Días trabajados", "$diasTrabajados días", fontSize),
-            _buildDetalleItem("Días redimidos", "$diasRedimidos días", fontSize),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-  String _formatearFechaExtendida(DateTime fecha) {
-    final meses = [
-      'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
-      'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'
-    ];
-    return "${fecha.day} de ${meses[fecha.month - 1]} de ${fecha.year}";
   }
 
   Widget infoAccionesAdmin() {
@@ -885,9 +801,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
       await calcularTiempo(widget.idUser);
       await _calculoCondenaController.calcularTiempo(widget.idUser);
 
-      final fechaInicio = latestData['fecha_inicio'] as Timestamp?;
-      final fechaFin = latestData['fecha_fin'] as Timestamp?;
-
       setState(() {
         userData = fetchedData;
         redenciones = SolicitudRedencionesTemplate(
@@ -904,8 +817,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           jdc: fetchedData.juzgadoQueCondeno ?? "",
           numeroSeguimiento: widget.numeroSeguimiento,
           situacion: fetchedData.situacion ?? 'En Reclusión',
-          fechaInicio: _formatearFecha(fechaInicio),
-          fechaFinal: _formatearFecha(fechaFin),
           nui: fetchedData.nui ?? "",
           td: fetchedData.td ?? "",
           patio: fetchedData.patio ?? "",
@@ -1134,8 +1045,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           jdc: userData?.juzgadoQueCondeno ?? "",
           numeroSeguimiento: data['numero_seguimiento'] ?? "",
           situacion: userData?.situacion ?? 'En Reclusión',
-          fechaInicio: _formatearFecha(data['fecha_inicio']),
-          fechaFinal: _formatearFecha(data['fecha_fin']),
           nui: userData?.nui ?? "",
           td: userData?.td ?? "",
           patio: userData?.patio ?? "",
@@ -1177,14 +1086,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     );
   }
 
-  String _formatearFecha(dynamic timestamp) {
-    if (timestamp is Timestamp) {
-      final date = timestamp.toDate();
-      return "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-    }
-    return "";
-  }
-
   String convertirSaltosDeLinea(String texto) {
     return texto.replaceAll('\n', '<br>');
   }
@@ -1200,9 +1101,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-    final fechaInicio = latestData['fecha_inicio'] as Timestamp?;
-    final fechaFin = latestData['fecha_fin'] as Timestamp?;
-
     final redenciones = SolicitudRedencionesTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidad ?? "",
@@ -1217,8 +1115,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
       jdc: userData?.juzgadoQueCondeno ?? "",
       numeroSeguimiento: widget.numeroSeguimiento,
       situacion: userData?.situacion ?? 'En Reclusión',
-      fechaInicio: _formatearFecha(fechaInicio),
-      fechaFinal: _formatearFecha(fechaFin),
       nui: userData?.nui ?? "",
       td: userData?.td ?? "",
       patio: userData?.patio ?? "",

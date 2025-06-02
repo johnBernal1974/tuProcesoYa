@@ -14,8 +14,6 @@ class SolicitudRedencionesTemplate {
   final String jdc;
   final String numeroSeguimiento;
   final String situacion;
-  final String fechaInicio;
-  final String fechaFinal;
   final String nui;
   final String td;
   final String patio;
@@ -34,18 +32,13 @@ class SolicitudRedencionesTemplate {
     required this.jdc,
     required this.numeroSeguimiento,
     required this.situacion,
-    required this.fechaInicio,
-    required this.fechaFinal,
     required this.nui,
     required this.td,
     required this.patio,
   });
 
   String generarTextoHtml() {
-    final fechaInicioFormateada =
-    DateFormat("d 'de' MMMM 'de' y", 'es').format(DateTime.parse(fechaInicio));
-    final fechaFinalFormateada =
-    DateFormat("d 'de' MMMM 'de' y", 'es').format(DateTime.parse(fechaFinal));
+
 
     final buffer = StringBuffer();
 
@@ -66,21 +59,22 @@ class SolicitudRedencionesTemplate {
 
       <span style="font-size: 16px;"><b>I. CONSIDERACIONES</b></span><br><br>
 
-De manera atenta, acudo ante su despacho con el fin de solicitar el cómputo y abono de redención de pena por las actividades desarrolladas durante el período comprendido entre el <b>$fechaInicioFormateada</b> y el <b>$fechaFinalFormateada</b>, en el marco del régimen penitenciario vigente. Esta solicitud tiene como propósito que, previa verificación por parte de la administración penitenciaria, se remita al juzgado el respectivo certificado que acredite los días redimidos, para su correspondiente valoración y aplicación al cómputo de la pena.<br><br>
+Me permito acudir ante su despacho con el fin de solicitar el cómputo y abono de redención de pena a mi favor, conforme a lo dispuesto a la Ley 65 de 1993. Dicha redención se fundamenta en las actividades laborales, educativas o de enseñanza que he venido desarrollando en el establecimiento penitenciario, las cuales son susceptibles de reconocimiento para efectos de redención, 
+
+solicito respetuosamente que ese despacho oficie a dicha entidad para que se sirva certificar formalmente las actividades adelantadas, el tiempo acumulado y los días redimidos que corresponda reconocer, con el fin de que el juzgado pueda realizar el respectivo cómputo y abono al total de la pena privativa de la libertad impuesta.<br><br>
+
 
 
       <span style="font-size: 16px;"><b>II. FUNDAMENTOS DE DERECHO</b></span><br><br>
 
-      Conforme a lo dispuesto en los artículos 82, 97 y 98 de la Ley 65 de 1993, las personas privadas de la libertad tienen derecho a la redención de su pena mediante la participación en actividades laborales, educativas o de enseñanza, siempre que se cumplan las condiciones y proporciones establecidas normativamente.<br><br>
+     Conforme a lo dispuesto en los artículos 82, 97, 98 y 101 de la Ley 65 de 1993, las personas privadas de la libertad tienen derecho a la redención de su pena mediante su participación en actividades laborales, educativas o de enseñanza. Este beneficio penitenciario opera como un mecanismo de resocialización progresiva dentro del sistema, y está sujeto al cumplimiento de las condiciones, requisitos y proporciones establecidas en la normativa vigente. Así, las labores y estudios realizados en el establecimiento penitenciario pueden ser reconocidos para reducir el tiempo de la pena privativa de la libertad, previa certificación por parte de la autoridad competente y valoración judicial.<br><br>
 
-      <span style="font-size: 16px;"><b>III. PRETENSIÓN</b></span><br><br>
+      <span style="font-size: 16px;"><b>III. PRETENSIONES</b></span><br><br>
 
-      <b>ÚNICA:</b> Que se ordene a la autoridad penitenciaria certificar el cómputo y redención de pena correspondiente al periodo indicado, y se abonen los días que resulten procedentes al tiempo de la pena privativa de la libertad impuesta.<br><br>
+      <b>PRIMERO:</b> Que se ordene a la autoridad del establecimiento penitenciario y carcelario emitir la documentación completa para el respectivo trámite.<br><br>
+      <b>SEGUNDO:</b> Que se abonen los días que resulten procedentes al tiempo de la pena impuesta.<br><br><br><br>
 
-      <span style="font-size: 16px;"><b>IV. PRUEBAS</b></span><br><br>
-
-      1. Copia del expediente del proceso penal de la referencia.<br>
-      2. Certificación del INPEC sobre actividades desarrolladas y cómputo de redención entre las fechas mencionadas.<br><br><br>
+      
 
       Por favor compulsar copias de notificaciones a la siguiente dirección electrónica:<br>
       $emailAlternativo<br>
