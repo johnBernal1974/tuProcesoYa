@@ -113,6 +113,9 @@ class _HistorialSolicitudesAcumulacionPageState extends State<HistorialSolicitud
       "Diligenciado": Colors.amber.shade50,
       "Revisado": Colors.teal.shade50,
       "Enviado": Colors.green.shade50,
+      "Negado": Colors.red.shade50,
+      "Concedido": Colors.green.shade200,
+
     }[estado] ?? Colors.grey.shade100;
 
     final icono = {
@@ -120,6 +123,8 @@ class _HistorialSolicitudesAcumulacionPageState extends State<HistorialSolicitud
       "Diligenciado": Icons.search,
       "Revisado": Icons.check_circle_outline,
       "Enviado": Icons.send_outlined,
+      "Negado" : Icons.cancel,
+      "Concedido" : Icons.verified,
     }[estado] ?? Icons.help_outline;
 
     final colorIcono = {
@@ -127,6 +132,8 @@ class _HistorialSolicitudesAcumulacionPageState extends State<HistorialSolicitud
       "Diligenciado": Colors.amber.shade700,
       "Revisado": Colors.teal,
       "Enviado": Colors.green,
+      "Negado" : Colors.red,
+      "Concedido" : Colors.green,
     }[estado] ?? Colors.grey;
 
     final mensaje = {
@@ -134,6 +141,8 @@ class _HistorialSolicitudesAcumulacionPageState extends State<HistorialSolicitud
       "Diligenciado": "Se está analizando tu solicitud",
       "Revisado": "Tu solicitud está lista para ser enviada",
       "Enviado": "Se ha enviado a la autoridad competente",
+      "Negado" : "La autoridad competente ha negado éste beneficio",
+      "Concedido" : "La autoridad ha concedido éste beneficio",
     }[estado] ?? "Estado desconocido";
 
     return Container(

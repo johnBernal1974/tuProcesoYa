@@ -829,9 +829,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
+
             ],
           ),
 
+          // 👇 Mostrar el estado en una sección aparte debajo del título
+          if (normalizedStatus != null && estaEnProceso) ...[
+            const SizedBox(height: 6),
+            _buildEstadoSolicitud(normalizedStatus!),
+          ],
           const SizedBox(height: 4),
           if (negado) ...[
             const SizedBox(height: 4),
@@ -1009,10 +1015,92 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildEstadoSolicitud(String status) {
+    IconData icono;
+    String mensaje;
+    Color backgroundColor;
+    Color borderColor;
+    Color iconColor;
+
+    switch (status) {
+      case 'solicitado':
+        icono = Icons.mark_email_unread_outlined;
+        mensaje = "Has hecho la solicitud de este beneficio.";
+        backgroundColor = Colors.lightBlue.shade50;
+        borderColor = Colors.lightBlue.shade100;
+        iconColor = Colors.lightBlue.shade700;
+        break;
+      case 'diligenciado':
+        icono = Icons.edit_document;
+        mensaje = "La solicitud está siendo diligenciada por nuestro equipo.";
+        backgroundColor = Colors.orange.shade50;
+        borderColor = Colors.orange.shade100;
+        iconColor = Colors.orange.shade700;
+        break;
+      case 'revisado':
+        icono = Icons.search;
+        mensaje = "Se está haciendo la revisión final de la solicitud.";
+        backgroundColor = Colors.amber.shade50;
+        borderColor = Colors.amber.shade100;
+        iconColor = Colors.amber.shade700;
+        break;
+      case 'enviado':
+        icono = Icons.send;
+        mensaje = "La solicitud fue enviada a la autoridad competente.";
+        backgroundColor = Colors.blue.shade50;
+        borderColor = Colors.blue.shade100;
+        iconColor = Colors.blue.shade700;
+        break;
+      case 'negado':
+        icono = Icons.cancel;
+        mensaje = "La autoridad competente negó la solicitud.";
+        backgroundColor = Colors.red.shade50;
+        borderColor = Colors.red.shade100;
+        iconColor = Colors.red.shade700;
+        break;
+      case 'concedido':
+        icono = Icons.verified;
+        mensaje = "La autoridad competente aceptó la solicitud.";
+        backgroundColor = Colors.green.shade50;
+        borderColor = Colors.green.shade100;
+        iconColor = Colors.green.shade700;
+        break;
+      default:
+        icono = Icons.info_outline;
+        mensaje = "Estado actual: ${status[0].toUpperCase()}${status.substring(1)}";
+        backgroundColor = Colors.grey.shade100;
+        borderColor = Colors.grey.shade300;
+        iconColor = Colors.grey.shade600;
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icono, size: 20, color: iconColor),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              mensaje,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
 
   Future<void> _cargarStatusSolicitudes() async {
-    final user = FirebaseFirestore.instance.collection('Ppl').doc(_uid);
-
     final solicitudes = [
       {'coleccion': 'permiso_solicitados', 'id': 'permiso_72h'},
       {'coleccion': 'domiciliaria_solicitados', 'id': 'prision_domiciliaria'},
