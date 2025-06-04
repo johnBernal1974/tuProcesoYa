@@ -1634,7 +1634,7 @@ class _RegistroPageState extends State<RegistroPage> {
         "celularWhatsapp": _mismoNumero
             ? celularController.text.trim()
             : whatsappController.text.trim(),
-        "email": "", // vacío si no se usa
+        "email": "",
         "nombre_ppl": nombre,
         "apellido_ppl": apellido,
         "tipo_documento_ppl": tipoDocumento ?? "",
@@ -1670,9 +1670,21 @@ class _RegistroPageState extends State<RegistroPage> {
         "referidoPor": codigoReferidor,
       };
 
+      // Paso 1: Guardar todos los datos excepto versión
       await FirebaseFirestore.instance.collection("Ppl").doc(userId).set(userData);
 
-      // 👉 Verifica y registra al referido si el código existe
+      // Paso 2: Obtener versión desde Firestore y actualizar solo ese campo
+      final configDoc = await FirebaseFirestore.instance
+          .collection('configuraciones')
+          .doc('h7NXeT2STxoHVv049o3J')
+          .get();
+      final versionApp = configDoc.data()?['version_app'] ?? '0.0.0';
+
+      await FirebaseFirestore.instance.collection("Ppl").doc(userId).update({
+        'version': versionApp,
+      });
+
+      // Manejo de código referido
       if (codigoReferidor.isNotEmpty) {
         final valido = await _codigoReferidoEsValido(codigoReferidor);
         if (valido) {
@@ -1687,7 +1699,7 @@ class _RegistroPageState extends State<RegistroPage> {
       }
 
       if (context.mounted) {
-        Navigator.of(context).pop(); // cierra loading
+        Navigator.of(context).pop(); // cerrar loading
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => EstamosValidandoPage()),
               (route) => false,
@@ -1698,7 +1710,6 @@ class _RegistroPageState extends State<RegistroPage> {
       _mostrarMensaje("Error al guardar el PIN y datos: ${e.toString()}");
     }
   }
-
 
   void _verificarOTP() async {
     final codigo = otpController.text.trim();

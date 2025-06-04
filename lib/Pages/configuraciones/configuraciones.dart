@@ -123,6 +123,10 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
+                _buildConfigField("Versión", "version_app"),
+                const SizedBox(height: 5),
+                const Divider(height: 1, color: gris),
+                const SizedBox(height: 15),
                 _buildConfigField("Tiempo de Prueba", "tiempoDePrueba"),
                 _buildConfigField("Valor Derecho de Petición", "valor_derecho_peticion"),
                 _buildConfigField("Valor Suscripción", "valor_subscripcion"),
@@ -133,7 +137,7 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
                 _buildConfigField("Valor Extinción de la pena", "valor_extincion"),
                 _buildConfigField("Valor Redenciones", "valor_redenciones"),
                 _buildConfigField("Valor Traslado proceso", "valor_traslado_proceso"),
-                _buildConfigField("Versión", "version_app"),
+
               ],
             ),
           ),
@@ -172,13 +176,11 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
                 ),
               ),
               const SizedBox(width: 10),
-              ElevatedButton(
+              IconButton(
                 onPressed: () => _updateValue(key),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: Colors.white,
-                ),
-                child: const Text("Guardar"),
+                icon: const Icon(Icons.save),
+                color: primary,
+                tooltip: 'Guardar',
               ),
             ],
           ),

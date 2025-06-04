@@ -60,14 +60,25 @@ class _RegistrarOperadoresPageState extends State<RegistrarOperadoresPage> {
         password: _passwordController.text,
       );
 
-      await FirebaseFirestore.instance.collection('admin').doc(userCredential.user!.uid).set({
+      final uid = userCredential.user!.uid;
+
+// 🔍 Obtener la versión actual desde la colección 'configuraciones'
+      final configDoc = await FirebaseFirestore.instance
+          .collection('configuraciones')
+          .doc('h7NXeT2STxoHVv049o3J')
+          .get();
+
+      final versionApp = configDoc.data()?['version_app'] ?? '1.0.0';
+
+      await FirebaseFirestore.instance.collection('admin').doc(uid).set({
         'name': _nombreController.text.trim(),
         'apellidos': _apellidosController.text.trim(),
         'celular': _celularController.text.trim(),
         'email': _emailController.text.trim(),
-        'fecha_registro': FieldValue.serverTimestamp(), // ✅ Fecha y hora actual del servidor
+        'fecha_registro': FieldValue.serverTimestamp(),
         'status': 'registrado',
         'rol': '',
+        'version': versionApp, // 🔥 Asignar versión desde Firestore
       });
 
       if (context.mounted) {

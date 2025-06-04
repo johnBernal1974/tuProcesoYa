@@ -35,6 +35,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   String? _versionActual;
   String? _nuevaVersion;
   bool _mostrarBanner = false;
+  bool _cargandoActualizacion = false;
+
 
 
   Color _getColor(String estado) {
@@ -80,40 +82,39 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   void initState() {
     super.initState();
     _cargarTiempoDePrueba();
-    _verificarVersion();
+    _escucharCambiosDeVersion();
   }
 
-  Future<void> _verificarVersion() async {
-    try {
-      // 🔍 Obtener UID del usuario autenticado
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
+  void _escucharCambiosDeVersion() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
-      // 📥 Obtener versión remota desde Firestore
-      final configDoc = await FirebaseFirestore.instance
-          .collection('configuraciones')
-          .doc('h7NXeT2STxoHVv049o3J')
-          .get();
-      final versionRemota = configDoc.data()?['version_app'];
+    // 🔁 Escuchar en tiempo real los cambios en la versión remota
+    FirebaseFirestore.instance
+        .collection('configuraciones')
+        .doc('h7NXeT2STxoHVv049o3J')
+        .snapshots()
+        .listen((configDoc) async {
+      final versionRemota = configDoc.data()?['version_app_admin'];
+      if (versionRemota == null) return;
 
-      // 📥 Obtener versión guardada en el documento del Admin
+      // 🧾 Obtener versión local del admin
       final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(uid).get();
       final versionLocal = adminDoc.data()?['version'] ?? '0.0.0';
 
-      print('🔍 Versión PPL: $versionLocal | Versión disponible: $versionRemota');
+      print('🔁 Escucha versión remota: $versionRemota | Versión local: $versionLocal');
 
       _versionActual = versionLocal;
       _nuevaVersion = versionRemota;
 
-      if (_nuevaVersion != null && _nuevaVersion != _versionActual) {
+      if (_nuevaVersion != _versionActual) {
         setState(() {
           _mostrarBanner = true;
         });
       }
-    } catch (e) {
-      print('❌ Error al verificar versión: $e');
-    }
+    });
   }
+
 
 
   @override
@@ -308,11 +309,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               width: 250,
                               decoration: BoxDecoration(
                                 color: Colors.amber.shade100,
-                                border: Border.all(color: Colors.grey), // 🟫 Borde gris
-                                borderRadius: BorderRadius.circular(12), // 🔵 Bordes redondeados
+                                border: Border.all(color: Colors.grey),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                               child: MaterialBanner(
-                                backgroundColor: Colors.transparent, // 🟡 Para usar el color del Container
+                                backgroundColor: Colors.transparent,
                                 content: Column(
                                   children: [
                                     Text(
@@ -326,29 +327,34 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                   ],
                                 ),
                                 actions: [
-                                  TextButton(
+                                  _cargandoActualizacion
+                                      ? const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                      : TextButton(
                                     onPressed: () async {
+                                      setState(() {
+                                        _cargandoActualizacion = true;
+                                      });
+
                                       final uid = FirebaseAuth.instance.currentUser?.uid;
                                       if (uid != null && _nuevaVersion != null) {
                                         final docRef = FirebaseFirestore.instance.collection('admin').doc(uid);
 
-                                        // 🔎 Mostrar versión actual antes de actualizar
                                         final docSnapshot = await docRef.get();
                                         final versionAnterior = docSnapshot.data()?['version'];
                                         print('🕵️ Versión actual del admin antes de actualizar: $versionAnterior');
 
-                                        // ✅ Actualizar con la nueva versión
                                         await docRef.update({'version': _nuevaVersion});
                                         print('✅ Versión del admin actualizada a: $_nuevaVersion');
                                       }
 
-                                      // 🔄 Recargar la app
                                       html.window.location.reload();
                                     },
                                     child: const Text('Actualizar'),
                                   ),
                                 ],
-
                               ),
                             ),
                           ),

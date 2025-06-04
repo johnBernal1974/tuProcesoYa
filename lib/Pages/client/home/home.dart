@@ -11,6 +11,7 @@ import '../../../models/ppl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/ppl_provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'dart:html' as html;
 
 
 class HomePage extends StatefulWidget {
@@ -45,15 +46,15 @@ class _HomePageState extends State<HomePage> {
   Map<String, String> _statusSolicitudes = {};
   bool _statusLoaded = false;
   int _tiempoDePrueba = 7; // valor por defecto si no está en Firebase
-
-
-
+  String? _versionActual;
+  String? _nuevaVersion;
 
 
   @override
   void initState() {
     super.initState();
     _myAuthProvider = MyAuthProvider();
+    _escucharCambiosDeVersion();
     _cargarValorSuscripcion();
     _calculoCondenaController = CalculoCondenaController(PplProvider()); // 🔥 Instanciar el controlador
     _loadUid();
@@ -125,6 +126,100 @@ class _HomePageState extends State<HomePage> {
     return totalDiasRedimidos;
   }
 
+  void _escucharCambiosDeVersion() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    FirebaseFirestore.instance
+        .collection('configuraciones')
+        .doc('h7NXeT2STxoHVv049o3J')
+        .snapshots()
+        .listen((configDoc) async {
+      final versionRemota = configDoc.data()?['version_app'];
+      if (versionRemota == null) return;
+
+      final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
+      final versionLocal = userDoc.data()?['version'] ?? '0.0.0';
+
+      print('🔁 Escucha versión remota: $versionRemota | Versión local: $versionLocal');
+
+      _versionActual = versionLocal;
+      _nuevaVersion = versionRemota;
+
+      if (_nuevaVersion != _versionActual) {
+        _mostrarAlertaDeActualizacion(_nuevaVersion!); // 🚨 Aquí llamas la alerta obligatoria
+      }
+    });
+  }
+
+
+  void _mostrarAlertaDeActualizacion(String nuevaVersion) {
+    bool _cargando = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              backgroundColor: blanco,
+              title: const Text('Actualización requerida', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Hay una nueva versión disponible de la aplicación. Es necesario que actualices la app para poder continuar',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Nueva versión: $nuevaVersion',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  if (_cargando) ...[
+                    const SizedBox(height: 20),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 10),
+                    const Text('Actualizando...'),
+                  ]
+                ],
+              ),
+              actions: [
+                if (!_cargando)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () async {
+                      setState(() {
+                        _cargando = true;
+                      });
+
+                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                      if (uid != null && _nuevaVersion != null) {
+                        final docRef = FirebaseFirestore.instance.collection('Ppl').doc(uid);
+
+                        final docSnapshot = await docRef.get();
+                        final versionAnterior = docSnapshot.data()?['version'];
+                        print('🕵️ Versión actual del usuario antes de actualizar: $versionAnterior');
+
+                        await docRef.update({'version': _nuevaVersion});
+                        print('✅ Versión del usuario actualizada a: $_nuevaVersion');
+                      }
+
+                      html.window.location.reload(); // 🔄 Recargar app
+                    },
+                    child: const Text('Actualizar ahora'),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
