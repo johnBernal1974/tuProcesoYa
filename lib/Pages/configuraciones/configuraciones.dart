@@ -22,6 +22,7 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
     "valor_extincion": TextEditingController(),
     "valor_redenciones": TextEditingController(),
     "valor_traslado_proceso": TextEditingController(),
+    "version_app": TextEditingController(),
   };
 
   bool _loading = true;
@@ -69,27 +70,36 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
     }
 
     try {
-      int newValue = int.tryParse(_controllers[key]!.text) ?? 0;
+      dynamic newValue;
+
+      // Si el campo es 'version_app', lo tratamos como texto
+      if (key == 'version_app') {
+        newValue = _controllers[key]!.text.trim(); // 🔤 string
+      } else {
+        newValue = int.tryParse(_controllers[key]!.text) ?? 0; // 🔢 int
+      }
+
       await _firestore.collection("configuraciones").doc(_documentId).update({
         key: newValue,
       });
-      if(context.mounted){
+
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Valor actualizado con éxito.")),
         );
       }
-
     } catch (e) {
       if (kDebugMode) {
-        print("Error al actualizar $key: $e");
+        print("❌ Error al actualizar $key: $e");
       }
-      if(context.mounted){
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Error al actualizar el valor.")),
         );
       }
     }
   }
+
 
 
   @override
@@ -123,6 +133,7 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
                 _buildConfigField("Valor Extinción de la pena", "valor_extincion"),
                 _buildConfigField("Valor Redenciones", "valor_redenciones"),
                 _buildConfigField("Valor Traslado proceso", "valor_traslado_proceso"),
+                _buildConfigField("Versión", "version_app"),
               ],
             ),
           ),

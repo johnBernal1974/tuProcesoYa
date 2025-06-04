@@ -163,12 +163,12 @@ class _HistorialSolicitudesTutelaPageState extends State<HistorialSolicitudesTut
                   Expanded(
                     child: Text(
                       switch (data['status']) {
-                        "Solicitado" => "Hemos recibido tu solicitado",
-                        "Diligenciado" => "Se está analizando tu solicitud",
-                        "Revisado" => "Tu solicitud está lista para ser enviada",
-                        "Enviado" => "Se ha enviado a la autoridad competente",
-                        "Negado" => "La autoridad competente dictó que es inprocedente",
-                        "Concedido" => "La autoridad ha concedido  a favor la tutela",
+                        "Solicitado" => "Hemos recibido tu solicitado.",
+                        "Diligenciado" => "Se está analizando tu solicitud.",
+                        "Revisado" => "Tu solicitud está lista para ser enviada.",
+                        "Enviado" => "Se ha enviado a la autoridad competente.",
+                        "Negado" => "La autoridad competente dictó que es inprocedente.",
+                        "Concedido" => "La autoridad ha concedido  a favor la tutela.",
                         _ => "Estado desconocido",
                       },
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),

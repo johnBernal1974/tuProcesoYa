@@ -32,6 +32,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   bool isLoadingAdmins = true; //
   bool mostrarSoloIncompletos = false;
   bool mostrarRedencionesVencidas = false;
+  String? _versionActual;
+  String? _nuevaVersion;
+  bool _mostrarBanner = false;
 
 
   Color _getColor(String estado) {
@@ -77,6 +80,39 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   void initState() {
     super.initState();
     _cargarTiempoDePrueba();
+    _verificarVersion();
+  }
+
+  Future<void> _verificarVersion() async {
+    try {
+      // 🔍 Obtener UID del usuario autenticado
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) return;
+
+      // 📥 Obtener versión remota desde Firestore
+      final configDoc = await FirebaseFirestore.instance
+          .collection('configuraciones')
+          .doc('h7NXeT2STxoHVv049o3J')
+          .get();
+      final versionRemota = configDoc.data()?['version_app'];
+
+      // 📥 Obtener versión guardada en el documento del Admin
+      final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(uid).get();
+      final versionLocal = adminDoc.data()?['version'] ?? '0.0.0';
+
+      print('🔍 Versión PPL: $versionLocal | Versión disponible: $versionRemota');
+
+      _versionActual = versionLocal;
+      _nuevaVersion = versionRemota;
+
+      if (_nuevaVersion != null && _nuevaVersion != _versionActual) {
+        setState(() {
+          _mostrarBanner = true;
+        });
+      }
+    } catch (e) {
+      print('❌ Error al verificar versión: $e');
+    }
   }
 
 
@@ -264,8 +300,60 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                     }
 
                     return Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        if (_mostrarBanner)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              width: 250,
+                              decoration: BoxDecoration(
+                                color: Colors.amber.shade100,
+                                border: Border.all(color: Colors.grey), // 🟫 Borde gris
+                                borderRadius: BorderRadius.circular(12), // 🔵 Bordes redondeados
+                              ),
+                              child: MaterialBanner(
+                                backgroundColor: Colors.transparent, // 🟡 Para usar el color del Container
+                                content: Column(
+                                  children: [
+                                    Text(
+                                      'Versión actual $_versionActual',
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
+                                    Text(
+                                      'Nueva versión $_nuevaVersion',
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () async {
+                                      final uid = FirebaseAuth.instance.currentUser?.uid;
+                                      if (uid != null && _nuevaVersion != null) {
+                                        final docRef = FirebaseFirestore.instance.collection('admin').doc(uid);
+
+                                        // 🔎 Mostrar versión actual antes de actualizar
+                                        final docSnapshot = await docRef.get();
+                                        final versionAnterior = docSnapshot.data()?['version'];
+                                        print('🕵️ Versión actual del admin antes de actualizar: $versionAnterior');
+
+                                        // ✅ Actualizar con la nueva versión
+                                        await docRef.update({'version': _nuevaVersion});
+                                        print('✅ Versión del admin actualizada a: $_nuevaVersion');
+                                      }
+
+                                      // 🔄 Recargar la app
+                                      html.window.location.reload();
+                                    },
+                                    child: const Text('Actualizar'),
+                                  ),
+                                ],
+
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                        // ⬇️ Resto de tu contenido
                         Wrap(
                           alignment: WrapAlignment.spaceEvenly,
                           spacing: 10,
@@ -323,23 +411,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 mostrarSoloIncompletos = false;
                               });
                             }, isSelected: mostrarRedencionesVencidas),
-                            _buildStatCard("Total Usuarios", countTotal, Colors.black87, null,
-                                isSelected: false), // 👉 Deshabilitado, sin acción
+
+                            _buildStatCard("Total Usuarios", countTotal, Colors.black87, null, isSelected: false),
                           ],
                         ),
                         const SizedBox(height: 20),
                         Container(
                           width: 800,
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: gris),
-                              color: blanco
-                            ),
-                            child: _buildSearchField()),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: gris),
+                            color: blanco,
+                          ),
+                          child: _buildSearchField(),
+                        ),
                         const SizedBox(height: 20),
-
-                        // 🔥 Mostrar mensaje si no hay documentos después del filtro
                         filteredDocs.isEmpty
                             ? Center(
                           child: Padding(
@@ -348,7 +435,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               "No hay ${filterStatus == 'registrado' ? 'nuevos usuarios registrados' : filterStatus == 'activado' ? 'usuarios activados' : filterStatus == 'bloqueado' ? 'usuarios bloqueados' : 'documentos'} disponibles.",
                               style: const TextStyle(fontSize: 20, color: Colors.grey),
                             ),
-
                           ),
                         )
                             : _buildUserTable(filteredDocs),

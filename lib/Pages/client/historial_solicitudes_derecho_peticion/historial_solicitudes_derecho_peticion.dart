@@ -430,7 +430,4 @@ class _HistorialSolicitudesDerechosPeticionPageState extends State<HistorialSoli
     List<String> partes = decodedUrl.split('/');
     return partes.last.split('?').first;
   }
-
-
-
 }
