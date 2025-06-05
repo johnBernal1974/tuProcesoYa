@@ -87,10 +87,10 @@ class _HomePageState extends State<HomePage> {
     final doc = await FirebaseFirestore.instance.collection('Ppl').doc(_uid).get();
     if (doc.exists) {
       _ppl = Ppl.fromDocumentSnapshot(doc);
-      final fechaRegistro = _ppl?.fechaRegistro;
-      if (fechaRegistro != null) {
+      final fechaActivacion = _ppl?.fechaActivacion;
+      if (fechaActivacion != null) {
         final now = DateTime.now();
-        final diasPasados = now.difference(fechaRegistro).inDays;
+        final diasPasados = now.difference(fechaActivacion).inDays;
         final configDoc = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
         int tiempoDePrueba = configDoc.docs.first.data()['tiempoDePrueba'] ?? 7;
 
@@ -102,6 +102,8 @@ class _HomePageState extends State<HomePage> {
       }
     }
   }
+
+
 
   Future<double> calcularTotalRedenciones(String pplId) async {
     double totalDiasRedimidos = 0;
@@ -1198,8 +1200,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-
 
 
   Future<void> _cargarStatusSolicitudes() async {

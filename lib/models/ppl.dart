@@ -37,6 +37,7 @@ class Ppl {
   final bool isPaid;
   final String assignedTo;
   final DateTime? fechaRegistro;
+  final DateTime? fechaActivacion;
   final String departamento;
   final String municipio;
   final String direccion;
@@ -79,6 +80,7 @@ class Ppl {
     required this.isPaid,
     required this.assignedTo,
     required this.fechaRegistro,
+    required this.fechaActivacion,
     required this.departamento,
     required this.municipio,
     required this.direccion,
@@ -132,6 +134,13 @@ class Ppl {
         ? DateTime.tryParse(json["fechaRegistro"])
         : (json["fechaRegistro"] is Timestamp
         ? json["fechaRegistro"].toDate()
+        : null))
+        : null,
+    fechaActivacion: json["fechaActivacion"] != null
+        ? (json["fechaActivacion"] is String
+        ? DateTime.tryParse(json["fechaActivacion"])
+        : (json["fechaActivacion"] is Timestamp
+        ? json["fechaActivacion"].toDate()
         : null))
         : null,
     departamento: json["departamento"] ?? '',
@@ -194,6 +203,13 @@ class Ppl {
           ? (data["fechaRegistro"] as Timestamp).toDate()
           : null))
           : null,
+      fechaActivacion: data["fechaActivacion"] != null
+          ? (data["fechaActivacion"] is String
+          ? DateTime.tryParse(data["fechaActivacion"])
+          : (data["fechaActivacion"] is Timestamp
+          ? (data["fechaActivacion"] as Timestamp).toDate()
+          : null))
+          : null,
       departamento: data["departamento"] ?? '',
       municipio: data["municipio"] ?? '',
       direccion: data["direccion"] ?? '',
@@ -239,6 +255,7 @@ class Ppl {
     "isPaid": isPaid,
     "assignedTo": assignedTo,
     "fechaRegistro": fechaRegistro,
+    "fechaActivacion": fechaActivacion,
     "departamento": departamento,
     "municipio": municipio,
     "direccion": direccion,
