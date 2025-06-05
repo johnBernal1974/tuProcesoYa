@@ -21,7 +21,6 @@ import '../../../widgets/exento.dart';
 import '../../../widgets/formulario_estadias_reclusion.dart';
 import '../../../widgets/ingresar_juzgado_conocimiento.dart';
 import '../../../widgets/ingresar_juzgado_ep.dart';
-import '../../../widgets/mensajes_whatsApp_opciones.dart';
 import '../../../widgets/tabla_vista_estadias_reclusion.dart';
 import '../home_admin/home_admin.dart';
 
@@ -66,8 +65,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     final dias = int.tryParse(_diasCondenaController.text) ?? 0;
     return meses + (dias / 30);
   }
-
-
+  int tiempoCondena =0;
 
   ///Mapas de opciones traidas de firestore
   List<Map<String, dynamic>> regionales = [];
@@ -101,7 +99,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   bool _mostrarDropdowns = false;
   bool _mostrarDropdownJuzgadoEjecucion = false;
   bool _mostrarDropdownJuzgadoCondeno = false;
-  bool _mostrarDropdownDelito = false;
   final TextEditingController _autocompleteController = TextEditingController();
 
 
@@ -115,6 +112,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
   late String _tipoDocumento;
+  late PplProvider _pplProvider;
 
   //fecha para redenciones
   final AdminProvider _adminProvider = AdminProvider();
@@ -144,7 +142,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   @override
   void initState() {
     super.initState();
+    _pplProvider = PplProvider();
     _initCalculoCondena();
+      calcularTiempo(widget.doc.id);
     _initFormFields();
     _centroController = TextEditingController();
     cargarCiudades();
@@ -268,6 +268,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   /// 🔹 Contenido principal (Información del PPL y Acudiente)
   Widget _buildMainContent() {
     final status = widget.doc["status"]?.toString().toLowerCase() ?? '';
+    final situacion = widget.doc["situacion"] ?? '';
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,6 +297,34 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
           Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
           const SizedBox(height: 20),
+          Column(
+            children: [
+              if (situacion == "En Reclusión")
+                _buildBenefitCard(
+                  title: 'Permiso Administrativo de 72 horas',
+                  condition: porcentajeEjecutado >= 33.33,
+                  remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                ),
+              if (situacion == "En Reclusión")
+                _buildBenefitCard(
+                  title: 'Prisión Domiciliaria',
+                  condition: porcentajeEjecutado >= 50,
+                  remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                ),
+              if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
+                _buildBenefitCard(
+                  title: 'Libertad Condicional',
+                  condition: porcentajeEjecutado >= 60,
+                  remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                ),
+              _buildBenefitCard(
+                title: 'Extinción de la Pena',
+                condition: porcentajeEjecutado >= 100,
+                remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 50),
           if (status == 'pendiente' ||
               (status == 'activado' &&
                   (widget.doc.data() != null &&
@@ -488,6 +517,128 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildBenefitCard({required String title, required bool condition, required int remainingTime}) {
+    return Card(
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: condition ? Colors.green : Colors.red, width: 1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      elevation: 3,
+      color: condition ? Colors.green : Colors.red.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            Icon(
+              condition ? Icons.notifications : Icons.access_time, // Cambia a reloj si la tarjeta es roja
+              color: condition ? Colors.white : Colors.black, // Negro si la tarjeta es roja
+              size: 24,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: condition
+                          ? 'Se ha completado el tiempo establecido para acceder al beneficio de '
+                          : 'Aún no se puede acceder a ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: condition ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    TextSpan(
+                      text: title, // Texto en negrilla
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold, // Negrilla
+                        color: condition ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    if (!condition) // Solo agregar este texto si la condición es falsa
+                      TextSpan(
+                        text: '. Faltan $remainingTime días para completar el tiempo establecido.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: condition ? Colors.white : Colors.black,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> calcularTiempo(String id) async {
+    final pplData = await _pplProvider.getById(id);
+    if (pplData != null) {
+      final fechaCaptura = pplData.fechaCaptura;
+      final meses = pplData.mesesCondena ?? 0;
+      final dias = pplData.diasCondena ?? 0;
+
+      final totalDiasCondena = (meses * 30) + dias;
+      final fechaActual = DateTime.now();
+
+      if (fechaCaptura == null || totalDiasCondena == 0) {
+        print("❌ Fecha de captura o condena no válida.");
+        return;
+      }
+
+      /// ✅ Esta línea es la que te faltaba
+      tiempoCondena = totalDiasCondena ~/ 30;
+
+      final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
+      final diferenciaRestante = fechaFinCondena.difference(fechaActual);
+      final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
+
+      mesesRestante = (diferenciaRestante.inDays ~/ 30);
+      diasRestanteExactos = diferenciaRestante.inDays % 30;
+
+      mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
+      diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
+
+      porcentajeEjecutado = (diferenciaEjecutado.inDays / totalDiasCondena) * 100;
+
+      print("Porcentaje de condena ejecutado: ${porcentajeEjecutado!.toStringAsFixed(2)}%");
+
+      if (porcentajeEjecutado! >= 33.33) {
+        print("✅ Aplica permiso administrativo de 72 horas");
+      } else {
+        print("❌ No aplica permiso administrativo de 72 horas");
+      }
+
+      if (porcentajeEjecutado! >= 50) {
+        print("✅ Aplica prisión domiciliaria");
+      } else {
+        print("❌ No aplica prisión domiciliaria");
+      }
+
+      if (porcentajeEjecutado! >= 60) {
+        print("✅ Aplica libertad condicional");
+      } else {
+        print("❌ No aplica libertad condicional");
+      }
+
+      if (porcentajeEjecutado! >= 100) {
+        print("✅ Aplica extinción de la pena");
+      } else {
+        print("❌ No aplica extinción de la pena");
+      }
+
+      print("Tiempo restante: $mesesRestante meses y $diasRestanteExactos días");
+      print("Tiempo ejecutado: $mesesEjecutado meses y $diasEjecutadoExactos días");
+    } else {
+      if (kDebugMode) {
+        print("❌ No hay datos");
+      }
+    }
   }
 
   Widget _mensajeAdvertencia(String texto) {

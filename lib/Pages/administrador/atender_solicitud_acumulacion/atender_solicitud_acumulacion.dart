@@ -100,7 +100,6 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
         print("❌ No se pudo obtener el nombre del administrador.");
       }
     }
-
   }
 
   String obtenerNombreArchivo(String url) {
