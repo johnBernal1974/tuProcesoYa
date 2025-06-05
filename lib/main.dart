@@ -8,6 +8,7 @@ import 'package:tuprocesoya/Pages/administrador/historial_solicitud_traslado_pro
 import 'package:tuprocesoya/Pages/client/derecho_de_peticion_solicitud/derecho_de_peticion_solicitud.dart';
 import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
 import 'package:tuprocesoya/Pages/client/historial_solicitudes_acumulacion/historial_solicitudes_acumulacion.dart';
+import 'package:tuprocesoya/Pages/detalle_de_correo_page/detalle_correo_acumulacion.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
@@ -19,10 +20,12 @@ import 'Pages/administrador/atender_extincion_pena/atender_extincion_pena.dart';
 import 'Pages/administrador/atender_libertad_condicional/atender_libertad_condicional.dart';
 import 'Pages/administrador/atender_permiso_72horas/atender_permiso_72horas.dart';
 import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
+import 'Pages/administrador/atender_solicitud_acumulacion/atender_solicitud_acumulacion.dart';
 import 'Pages/administrador/atender_traslado_proceso_admin/atender_traslado_proceso_admin.dart';
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
+import 'Pages/administrador/historial_solicitudes_acumulacion_admin/historial_solicitudes_acumulacion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
 import 'Pages/administrador/historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
@@ -38,12 +41,13 @@ import 'Pages/administrador/referidores/referidores.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
 import 'Pages/administrador/registro_asistido_admin/registro_asistido_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/acumulacion_enviadas_por_correo/acumulacion_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_enviada_por_correo/extincion_perna_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/libertad_condicional_enviada_por_correo/libertad_condicional_enviada_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/permiso_72horas_enviadas_por_correo/permiso_72horas_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/prision_domiciliaria_enviada_por_correo/prision_domiciliaria_enviada_por_correo.dart';
-import 'Pages/administrador/solicitudes_enviadas_por_correo/solicitudes_redenciones_enviada_por_correo/solicitudes_redenciones_enviada_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/redenciones_enviada_por_correo/redenciones_enviada_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/traslado_proceso_enviados_por_correo/traslado_proceso_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/tutelas_enviadas_por_correo/tutelas_enviadas_por_correo.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
@@ -186,6 +190,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_extincion_pena_admin': (context) => const HistorialSolicitudesExtincionPenaAdminPage(),
         'historial_solicitudes_traslado_proceso_admin': (context) => const HistorialSolicitudesTrasladoProcesoAdminPage(),
         'historial_solicitudes_redenciones_admin': (context) => const HistorialSolicitudesRedencionesAdminPage(),
+        'historial_solicitudes_acumulacion_admin': (context) => const HistorialSolicitudesAcumulacionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -461,6 +466,21 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
+          else if (settings.name == 'solicitudes_acumulacion_enviadas_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesAcumulacionEnviadasPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'] ?? "Beneficios penitenciarios",
+                subcategoria: args['subcategoria'] ?? "Redención de pena",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
 
           else if (settings.name == 'atender_derecho_peticion_page') {
             final args = settings.arguments as Map<String, dynamic>;
@@ -607,6 +627,19 @@ class MyApp extends StatelessWidget {
             );
           }
 
+          else if (settings.name == 'atender_acumulacion_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderSolicitudAcumulacionPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+              ),
+            );
+          }
+
           else if (settings.name == 'detalle_correo') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
@@ -674,6 +707,15 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => DetalleCorreoRedencionesPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
+          else if (settings.name == 'detalle_correo_acumulacion') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoAcumulacionPage(
                 idDocumento: args['idDocumento'],
                 correoId: args['correoId'],
               ),

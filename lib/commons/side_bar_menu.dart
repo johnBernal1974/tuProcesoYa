@@ -17,7 +17,6 @@ class SideBar extends StatefulWidget {
 class _SideBarState extends State<SideBar> {
   final MyAuthProvider _authProvider = MyAuthProvider();
   int _pendingSuggestions = 0;
-  int _cantidadRedencionesSolicitadas = 0;
   bool? _isAdmin;
   bool _isLoading = true;
   final ValueNotifier<bool> _isPaid = ValueNotifier<bool>(false);
@@ -31,6 +30,7 @@ class _SideBarState extends State<SideBar> {
   int solicitudesTraslado = 0;
   int solicitudesTutelas = 0;
   int solicitudesPeticion = 0;
+  int solicitudesAcumulacion = 0;
 
 
 
@@ -48,6 +48,7 @@ class _SideBarState extends State<SideBar> {
     _fetchPeticionlicitados();
     _fetchTutelalicitados();
     _fetchExtincionlicitados();
+    _fetchAcumulacionlicitados();
   }
 
   Future<void> _loadData() async {
@@ -278,6 +279,7 @@ class _SideBarState extends State<SideBar> {
       });
     }
   }
+
   Future<void> _fetchExtincionlicitados() async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('extincion_pena_solicitados')
@@ -289,9 +291,17 @@ class _SideBarState extends State<SideBar> {
       });
     }
   }
-
-
-
+  Future<void> _fetchAcumulacionlicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('acumulacion_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesAcumulacion = querySnapshot.docs.length;
+      });
+    }
+  }
 
   Widget _buildDrawerHeader(bool? isAdmin) {
     return Container(
@@ -418,6 +428,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_redenciones_admin',
                   showBadge: solicitudesRedencion > 0,
                   contador: solicitudesRedencion,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Acumulación",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_acumulacion_admin',
+                  showBadge: solicitudesAcumulacion > 0,
+                  contador: solicitudesAcumulacion,
                 ),
               ),
             ],
@@ -548,6 +570,17 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_redenciones_admin',
                   showBadge: solicitudesRedencion > 0,
                   contador: solicitudesRedencion,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Acumulación",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_acumulacion_admin',
+                  showBadge: solicitudesAcumulacion > 0,
+                  contador: solicitudesAcumulacion,
                 ),
               ),
             ],
