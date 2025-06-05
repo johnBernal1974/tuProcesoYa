@@ -1615,6 +1615,9 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
         return;
       }
 
+      /// ✅ Esta línea es la que te faltaba
+      tiempoCondena = totalDiasCondena ~/ 30;
+
       final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
       final diferenciaRestante = fechaFinCondena.difference(fechaActual);
       final diferenciaEjecutado = fechaActual.difference(fechaCaptura);

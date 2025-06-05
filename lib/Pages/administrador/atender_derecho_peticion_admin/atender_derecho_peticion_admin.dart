@@ -1141,59 +1141,63 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
     final pplData = await _pplProvider.getById(id);
     if (pplData != null) {
       final fechaCaptura = pplData.fechaCaptura;
-      final int mesesCondena = pplData.mesesCondena;
-      final int diasCondena = pplData.diasCondena;
-      final int totalDiasCondena = (mesesCondena * 30) + diasCondena;
+      final meses = pplData.mesesCondena ?? 0;
+      final dias = pplData.diasCondena ?? 0;
 
-      if (fechaCaptura == null) return;
-
+      final totalDiasCondena = (meses * 30) + dias;
       final fechaActual = DateTime.now();
-      final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
 
+      if (fechaCaptura == null || totalDiasCondena == 0) {
+        print("❌ Fecha de captura o condena no válida.");
+        return;
+      }
+
+      /// ✅ Esta línea es la que te faltaba
+      tiempoCondena = totalDiasCondena ~/ 30;
+
+      final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
       final diferenciaRestante = fechaFinCondena.difference(fechaActual);
       final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
 
-      setState(() {
-        mesesRestante = diferenciaRestante.inDays ~/ 30;
-        diasRestanteExactos = diferenciaRestante.inDays % 30;
+      mesesRestante = (diferenciaRestante.inDays ~/ 30);
+      diasRestanteExactos = diferenciaRestante.inDays % 30;
 
-        mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
-        diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
-      });
+      mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
+      diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
 
-      // Calcular porcentaje ejecutado
       porcentajeEjecutado = (diferenciaEjecutado.inDays / totalDiasCondena) * 100;
-      print("Porcentaje de condena ejecutado: ${porcentajeEjecutado.toStringAsFixed(2)}%");
 
-      if (porcentajeEjecutado >= 33.33) {
-        print("✅ Aplica: Permiso administrativo de 72 horas");
+      print("Porcentaje de condena ejecutado: ${porcentajeEjecutado!.toStringAsFixed(2)}%");
+
+      if (porcentajeEjecutado! >= 33.33) {
+        print("✅ Aplica permiso administrativo de 72 horas");
       } else {
-        print("❌ No aplica: Permiso administrativo de 72 horas");
+        print("❌ No aplica permiso administrativo de 72 horas");
       }
 
-      if (porcentajeEjecutado >= 50) {
-        print("✅ Aplica: Prisión domiciliaria");
+      if (porcentajeEjecutado! >= 50) {
+        print("✅ Aplica prisión domiciliaria");
       } else {
-        print("❌ No aplica: Prisión domiciliaria");
+        print("❌ No aplica prisión domiciliaria");
       }
 
-      if (porcentajeEjecutado >= 60) {
-        print("✅ Aplica: Libertad condicional");
+      if (porcentajeEjecutado! >= 60) {
+        print("✅ Aplica libertad condicional");
       } else {
-        print("❌ No aplica: Libertad condicional");
+        print("❌ No aplica libertad condicional");
       }
 
-      if (porcentajeEjecutado >= 100) {
-        print("✅ Aplica: Extinción de la pena");
+      if (porcentajeEjecutado! >= 100) {
+        print("✅ Aplica extinción de la pena");
       } else {
-        print("❌ No aplica: Extinción de la pena");
+        print("❌ No aplica extinción de la pena");
       }
 
       print("Tiempo restante: $mesesRestante meses y $diasRestanteExactos días");
       print("Tiempo ejecutado: $mesesEjecutado meses y $diasEjecutadoExactos días");
     } else {
       if (kDebugMode) {
-        print("No hay datos");
+        print("❌ No hay datos");
       }
     }
   }

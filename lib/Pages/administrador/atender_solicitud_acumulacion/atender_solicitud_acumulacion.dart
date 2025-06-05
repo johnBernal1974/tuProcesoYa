@@ -926,6 +926,9 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
         return;
       }
 
+      /// ✅ Esta línea es la que te faltaba
+      tiempoCondena = totalDiasCondena ~/ 30;
+
       final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
       final diferenciaRestante = fechaFinCondena.difference(fechaActual);
       final diferenciaEjecutado = fechaActual.difference(fechaCaptura);

@@ -1608,6 +1608,9 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
         return;
       }
 
+      /// ✅ Esta línea es la que te faltaba
+      tiempoCondena = totalDiasCondena ~/ 30;
+
       final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
       final diferenciaRestante = fechaFinCondena.difference(fechaActual);
       final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
@@ -1654,6 +1657,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       }
     }
   }
+
 
   Widget _datosEjecucionCondena(double totalDiasRedimidos) {
     // 🔹 Asegurar que los cálculos usen `totalDiasRedimidos`
