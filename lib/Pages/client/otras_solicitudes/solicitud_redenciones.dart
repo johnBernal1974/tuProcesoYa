@@ -106,37 +106,53 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
     final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
     final double valorRedenciones = (configSnapshot.docs.first.data()['valor_redenciones'] ?? 0).toDouble();
 
-    if (!context.mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Pago requerido"),
-        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CheckoutPage(
-                    tipoPago: 'redenciones',
-                    valor: valorRedenciones.toInt(),
-                    onTransaccionAprobada: () async {
-                      await enviarSolicitudRedencion();
-                    },
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    if (saldo >= valorRedenciones) {
+      // 💰 Tiene saldo suficiente, descuéntalo y envía
+      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
+        'saldo': saldo - valorRedenciones,
+      });
+      await enviarSolicitudRedencion();
+    } else {
+      // ❌ No tiene saldo suficiente, mostrar diálogo para pagar
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Pago requerido"),
+          content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutPage(
+                      tipoPago: 'redenciones',
+                      valor: valorRedenciones.toInt(),
+                      onTransaccionAprobada: () async {
+                        await enviarSolicitudRedencion();
+                      },
+                    ),
                   ),
-                ),
-              );
-            },
-            child: const Text("Pagar"),
-          ),
-        ],
-      ),
-    );
+                );
+              },
+              child: const Text("Pagar"),
+            ),
+          ],
+        ),
+      );
+    }
   }
+
 
   Future<void> enviarSolicitudRedencion() async {
     User? user = FirebaseAuth.instance.currentUser;

@@ -774,40 +774,56 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     final double valorCondicional =
     (configSnapshot.docs.first.data()['valor_condicional'] ?? 0).toDouble();
 
-    if (!context.mounted) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || !context.mounted) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Pago requerido"),
-        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancelar"),
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    if (saldo >= valorCondicional) {
+      // 💰 Tiene saldo suficiente: descontar y continuar con el envío
+      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
+        'saldo': saldo - valorCondicional,
+      });
+
+      await enviarSolicitudLibertadCondicional(valorCondicional);
+    } else {
+      // ❌ Saldo insuficiente: mostrar opción de pago
+      if(context.mounted){
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: blanco,
+            title: const Text("Pago requerido"),
+            content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Cancelar"),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CheckoutPage(
+                        tipoPago: 'condicional',
+                        valor: valorCondicional.toInt(),
+                        onTransaccionAprobada: () async {
+                          await enviarSolicitudLibertadCondicional(valorCondicional);
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: const Text("Pagar"),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CheckoutPage(
-                    tipoPago: 'condicional',
-                    valor: valorCondicional.toInt(),
-                    onTransaccionAprobada: () async {
-                      await enviarSolicitudLibertadCondicional(valorCondicional);
-                    },
-                  ),
-                ),
-              );
-            },
-            child: const Text("Pagar"),
-          ),
-        ],
-      ),
-    );
+        );
+      }
+    }
   }
 
   Future<bool> validarCampos() async {

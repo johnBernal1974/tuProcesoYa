@@ -102,41 +102,62 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
   }
 
   Future<void> verificarSaldoYEnviarSolicitud() async {
-    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+    final configSnapshot = await FirebaseFirestore.instance
+        .collection('configuraciones')
+        .limit(1)
+        .get();
+
     final double valorExtincion = (configSnapshot.docs.first.data()['valor_extincion'] ?? 0).toDouble();
 
-    if (!context.mounted) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null || !context.mounted) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Pago requerido"),
-        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CheckoutPage(
-                    tipoPago: 'extincion',
-                    valor: valorExtincion.toInt(),
-                    onTransaccionAprobada: () async {
-                      await enviarSolicitudExtincionPena(valorExtincion);
-                    },
-                  ),
-                ),
-              );
-            },
-            child: const Text("Pagar"),
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    if (saldo >= valorExtincion) {
+      // 💰 Tiene saldo suficiente: descontar y proceder
+      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
+        'saldo': saldo - valorExtincion,
+      });
+
+      await enviarSolicitudExtincionPena(valorExtincion);
+    } else {
+      // ❌ No tiene saldo suficiente: mostrar opción de pago
+      if(context.mounted){
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: blanco,
+            title: const Text("Pago requerido"),
+            content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CheckoutPage(
+                        tipoPago: 'extincion',
+                        valor: valorExtincion.toInt(),
+                        onTransaccionAprobada: () async {
+                          await enviarSolicitudExtincionPena(valorExtincion);
+                        },
+                      ),
+                    ),
+                  );
+                },
+                child: const Text("Pagar"),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
+      }
+    }
   }
+
 
   Future<void> enviarSolicitudExtincionPena(double valorExtincion) async {
     User? user = FirebaseAuth.instance.currentUser;

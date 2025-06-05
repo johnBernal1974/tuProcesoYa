@@ -94,38 +94,55 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
     final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
     final double valor = (configSnapshot.docs.first.data()['valor_acumulacion'] ?? 0).toDouble();
 
-    if (!context.mounted) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Pago requerido"),
-        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CheckoutPage(
-                    tipoPago: 'acumulacion',
-                    valor: valor.toInt(),
-                    onTransaccionAprobada: () async {
-                      await enviarSolicitudAcumulacion(valor);
-                    },
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    if (saldo >= valor) {
+      // 💰 Tiene saldo suficiente, descuéntalo y envía
+      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
+        'saldo': saldo - valor,
+      });
+
+      await enviarSolicitudAcumulacion(valor);
+    } else {
+      // ❌ No tiene saldo suficiente, mostrar opción de pago
+      if (!context.mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Pago requerido"),
+          content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutPage(
+                      tipoPago: 'acumulacion',
+                      valor: valor.toInt(),
+                      onTransaccionAprobada: () async {
+                        await enviarSolicitudAcumulacion(valor);
+                      },
+                    ),
                   ),
-                ),
-              );
-            },
-            child: const Text("Pagar"),
-          ),
-        ],
-      ),
-    );
+                );
+              },
+              child: const Text("Pagar"),
+            ),
+          ],
+        ),
+      );
+    }
   }
+
 
   Future<void> enviarSolicitudAcumulacion(double valor) async {
     User? user = FirebaseAuth.instance.currentUser;

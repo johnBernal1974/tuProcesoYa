@@ -23,6 +23,7 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
     "valor_redenciones": TextEditingController(),
     "valor_traslado_proceso": TextEditingController(),
     "version_app": TextEditingController(),
+    "version_app_admin": TextEditingController(),
   };
 
   bool _loading = true;
@@ -72,8 +73,8 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
     try {
       dynamic newValue;
 
-      // Si el campo es 'version_app', lo tratamos como texto
-      if (key == 'version_app') {
+      // ✅ Tratar como string solo los campos de versión
+      if (key == 'version_app' || key == 'version_app_admin') {
         newValue = _controllers[key]!.text.trim(); // 🔤 string
       } else {
         newValue = int.tryParse(_controllers[key]!.text) ?? 0; // 🔢 int
@@ -101,7 +102,6 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
   }
 
 
-
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -123,7 +123,8 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
-                _buildConfigField("Versión", "version_app"),
+                _buildConfigField("Versión usuarios", "version_app"),
+                _buildConfigField("Versión administradores", "version_app_admin"),
                 const SizedBox(height: 5),
                 const Divider(height: 1, color: gris),
                 const SizedBox(height: 15),
@@ -170,7 +171,7 @@ class _ConfiguracionesPageState extends State<ConfiguracionesPage> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2), // 🔹 Borde azul cuando está enfocado
+                      borderSide: const BorderSide(color: primary, width: 2), // 🔹 Borde azul cuando está enfocado
                     ),
                   ),
                 ),

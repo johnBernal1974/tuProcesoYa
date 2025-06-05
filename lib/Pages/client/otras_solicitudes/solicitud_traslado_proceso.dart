@@ -307,37 +307,53 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
     final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
     final double valorTrasladoProceso = (configSnapshot.docs.first.data()['valor_traslado_proceso'] ?? 0).toDouble();
 
-    if (!context.mounted) return;
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Pago requerido"),
-        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CheckoutPage(
-                    tipoPago: 'traslado',
-                    valor: valorTrasladoProceso.toInt(),
-                    onTransaccionAprobada: () async {
-                      await enviarSolicitudTrasladoProceso(valorTrasladoProceso);
-                    },
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
+    if (saldo >= valorTrasladoProceso) {
+      // 💰 Tiene saldo suficiente: descontar y enviar
+      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
+        'saldo': saldo - valorTrasladoProceso,
+      });
+
+      await enviarSolicitudTrasladoProceso(valorTrasladoProceso);
+    } else {
+      // ❌ No tiene saldo suficiente: mostrar opción de pago
+      if (!context.mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Pago requerido"),
+          content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutPage(
+                      tipoPago: 'traslado',
+                      valor: valorTrasladoProceso.toInt(),
+                      onTransaccionAprobada: () async {
+                        await enviarSolicitudTrasladoProceso(valorTrasladoProceso);
+                      },
+                    ),
                   ),
-                ),
-              );
-            },
-            child: const Text("Pagar"),
-          ),
-        ],
-      ),
-    );
+                );
+              },
+              child: const Text("Pagar"),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Future<void> enviarSolicitudTrasladoProceso(double valorTrasladoProceso) async {
