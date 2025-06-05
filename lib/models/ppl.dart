@@ -41,6 +41,7 @@ class Ppl {
   final String municipio;
   final String direccion;
   final String situacion;
+  final String version;
   final bool exento;
   final List<String> beneficiosAdquiridos;
   final List<String> beneficiosNegados;
@@ -82,6 +83,7 @@ class Ppl {
     required this.municipio,
     required this.direccion,
     required this.situacion,
+    required this.version,
     required this.exento,
     required this.beneficiosAdquiridos,
     required this.beneficiosNegados,
@@ -136,6 +138,7 @@ class Ppl {
     municipio: json["municipio"] ?? '',
     direccion: json["direccion"] ?? '',
     situacion: json["situacion"] ?? '',
+    version: json["version"] ?? '',
     exento: json["exento"] ?? false,
     beneficiosAdquiridos:
     List<String>.from(json["beneficiosAdquiridos"] ?? []),
@@ -195,6 +198,7 @@ class Ppl {
       municipio: data["municipio"] ?? '',
       direccion: data["direccion"] ?? '',
       situacion: data["situacion"] ?? '',
+      version: data["version"] ?? '',
       exento: data["exento"] ?? false,
       beneficiosAdquiridos:
       List<String>.from(data["beneficiosAdquiridos"] ?? []),
@@ -239,6 +243,7 @@ class Ppl {
     "municipio": municipio,
     "direccion": direccion,
     "situacion": situacion,
+    "version": version,
     "exento": exento,
     "beneficiosAdquiridos": beneficiosAdquiridos,
     "beneficiosNegados": beneficiosNegados,

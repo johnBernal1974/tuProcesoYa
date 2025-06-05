@@ -285,6 +285,13 @@ class _HomePageState extends State<HomePage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "Versión: ${_ppl?.version ?? ""}",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                      ),
                       Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
                       Text(
                         'Hoy es: ${DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now())}',

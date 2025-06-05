@@ -12,6 +12,7 @@ class SolicitudAcumulacionTemplate {
   final String emailAlternativo;
   final String radicado;
   final String jdc;
+  final String juzgadoEjecucion;
   final String numeroSeguimiento;
   final String situacion;
   final String nui;
@@ -32,6 +33,7 @@ class SolicitudAcumulacionTemplate {
     this.emailAlternativo = "peticiones@tuprocesoya.com",
     required this.radicado,
     required this.jdc,
+    required this.juzgadoEjecucion,
     required this.numeroSeguimiento,
     required this.situacion,
     required this.nui,
@@ -51,7 +53,7 @@ class SolicitudAcumulacionTemplate {
       <b>$entidad</b><br><br>
 
       Asunto: <b>Solicitud de Acumulación Jurídica de Penas Privativas de la Libertad – $numeroSeguimiento</b><br>
-      Radicado principal: <b>$radicado</b><br>
+      Radicado principal: <b>$radicado</b><br><br><br>
       
 
       Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.<br><br>
@@ -63,9 +65,13 @@ comedida que se sirva decretar la acumulación jurídica de penas privativas de 
 los siguientes:<br><br>
 
       <span style="font-size: 16px;"><b>I. HECHOS</b></span><br><br>
-En razón de distintas sentencias condenatorias me encuentro condenado a las siguientes penas:<br><br>     
-      
-  
+
+
+En razón de distintas sentencias condenatorias me encuentro condenado a las siguientes penas:<br><br>
+
+Actualmente me encuentro purgando la pena bajo el radicado <b>$radicado</b>, tramitado en <b>$juzgadoEjecucion.</b><br><br>
+Proceso cuya pena se solicita acumular: Radicado <b>$radicadoAcumular</b>, en manos del <b>$juzgadoAcumular</b>.<br><br><br>
+
      <span style="font-size: 16px;"><b>II. FUNDAMENTOS DE DERECHO</b></span><br><br>
 
 Conforme al artículo 460 de la Ley 906 de 2004, debe aplicarse el instituto de la <b>acumulación jurídica de penas</b>, el cual dispone:<br><br>
@@ -94,8 +100,8 @@ Tratándose de un beneficio establecido a favor del sentenciado, si las penas er
 
 Finalmente, de conformidad con el artículo 31 de la Ley 599 de 2000:<br><br>
 
-<b>2.1.</b> Debe identificarse cuál es la pena más grave debidamente dosificada impuesta mediante sentencia condenatoria en firme.<br>
-<b>2.2.</b> A partir de dicha pena, puede aumentarse otro tanto, sin superar el límite legalmente establecido para el concurso de conductas punibles, cuyo tope máximo es de <b>60 años de prisión</b>.<br><br>
+<i>Debe identificarse cuál es la pena más grave debidamente dosificada impuesta mediante sentencia condenatoria en firme.</i>
+<i>A partir de dicha pena, puede aumentarse otro tanto, sin superar el límite legalmente establecido para el concurso de conductas punibles, cuyo tope máximo es de <b>60 años de prisión</b></i>.<br><br>
 
       <span style="font-size: 16px;"><b>III. PRETENSIONES</b></span><br><br>
 

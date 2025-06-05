@@ -100,6 +100,7 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
         print("❌ No se pudo obtener el nombre del administrador.");
       }
     }
+
   }
 
   String obtenerNombreArchivo(String url) {
@@ -151,7 +152,6 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
               ),
             ),
           ),
-
         ],
       )
           : SingleChildScrollView(
@@ -202,12 +202,44 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
               const SizedBox(height: 20),
               TextField(
                 controller: _radicadoAcumularController,
-                decoration: const InputDecoration(labelText: "Radicado del proceso a acumular"),
+                decoration: const InputDecoration(
+                  labelText: "Radicado del proceso a acumular",
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                ),
               ),
+
+              const SizedBox(height: 12),
+
               TextField(
                 controller: _juzgadoAcumularController,
-                decoration: const InputDecoration(labelText: "Juzgado del proceso a acumular"),
+                decoration: const InputDecoration(
+                  labelText: "Juzgado de conocimiento del proceso a acumular",
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey),
+                  ),
+                ),
               ),
+
             ],
           ),
         ),
@@ -815,11 +847,13 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
           emailAlternativo: "peticiones@tuprocesoya.com",
           radicado: fetchedData.radicado ?? "",
           jdc: fetchedData.juzgadoQueCondeno ?? "",
+          juzgadoEjecucion: fetchedData.juzgadoEjecucionPenas ?? "",
           numeroSeguimiento: widget.numeroSeguimiento,
           situacion: fetchedData.situacion ?? 'En Reclusión',
           nui: fetchedData.nui ?? "",
           td: fetchedData.td ?? "",
           patio: fetchedData.patio ?? "",
+
           radicadoAcumular: _radicadoAcumularController.text.trim(), // 🆕
           juzgadoAcumular: _juzgadoAcumularController.text.trim(),   // 🆕
         );
@@ -837,6 +871,7 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
   void fetchDocumentoSolicitudAcumulacion() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
+
           .collection('acumulacion_solicitados')
           .doc(widget.idDocumento)
           .get();
@@ -857,6 +892,9 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
             asignadoA_P2 = data['asignadoA_P2'] ?? '';
             asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
             fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+
+            _radicadoAcumularController.text = data['radicado_proceso_acumular'] ?? '';
+            _juzgadoAcumularController.text = data['juzgado_proceso_acumular'] ?? '';
           });
         }
       } else {
@@ -1041,6 +1079,7 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
           emailAlternativo: "peticiones@tuprocesoya.com",
           radicado: userData?.radicado ?? "",
           jdc: userData?.juzgadoQueCondeno ?? "",
+          juzgadoEjecucion: userData?.juzgadoEjecucionPenas ?? "",
           numeroSeguimiento: data['numero_seguimiento'] ?? "",
           situacion: userData?.situacion ?? 'En Reclusión',
           nui: userData?.nui ?? "",
@@ -1114,6 +1153,7 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
       emailAlternativo: "peticiones@tuprocesoya.com",
       radicado: userData?.radicado ?? "",
       jdc: userData?.juzgadoQueCondeno ?? "",
+      juzgadoEjecucion: userData?.juzgadoEjecucionPenas ?? "",
       numeroSeguimiento: widget.numeroSeguimiento,
       situacion: userData?.situacion ?? 'En Reclusión',
       nui: userData?.nui ?? "",
@@ -1446,7 +1486,10 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
             "status": "Diligenciado",
             "diligencio": adminFullName,
             "fecha_diligenciamiento": FieldValue.serverTimestamp(),
+            "radicado_proceso_acumular": _radicadoAcumularController.text.trim(),
+            "juzgado_proceso_acumular": _juzgadoAcumularController.text.trim(),
           });
+
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
