@@ -36,27 +36,37 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   String? _nuevaVersion;
   bool _mostrarBanner = false;
   bool _cargandoActualizacion = false;
+  bool mostrarSeguimiento = false;
 
 
 
-  Color _getColor(String estado) {
-    switch (estado.toLowerCase()) {
+
+  Color _getColor(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    final estado = data['status']?.toString().toLowerCase() ?? '';
+
+    if (data['tiene_seguimiento_activo'] == true) {
+      return Colors.lightGreen; // o el color que usas en la tarjeta de seguimiento
+    }
+
+    if (data['requiere_actualizacion_datos'] == true) {
+      return Colors.amberAccent; // o el color que usas en la tarjeta de seguimiento
+    }
+
+    switch (estado) {
       case 'registrado':
         return primary;
-      case 'revisado':
-        return Colors.yellow;
       case 'activado':
         return Colors.green;
       case 'bloqueado':
         return Colors.red;
-      case 'servicio_solicitado':
-        return Colors.blue;
       case 'pendiente':
         return Colors.orange;
       default:
         return Colors.grey;
     }
   }
+
 
   void _activarFiltroAdmin() async {
     if (!mostrarFiltroAdmin) { // Solo cargar si se está activando el filtro
@@ -191,6 +201,12 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                       return diferencia >= 30;
                     }).length;
 
+                    final int countConSeguimiento = docs.where((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return data['tiene_seguimiento_activo'] == true;
+                    }).length;
+
+
 
                     List<QueryDocumentSnapshot> filteredDocs;
 
@@ -236,6 +252,17 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           return status == filterStatus!.toLowerCase();
                         }).toList();
                       }
+                      // 🔎 Filtro por seguimiento activo
+                      if (mostrarSeguimiento) {
+                        filteredDocs = filteredDocs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final status = doc.get('status').toString().toLowerCase();
+                          final tieneSeguimiento = data['tiene_seguimiento_activo'] == true;
+
+                          return status == 'activado' && tieneSeguimiento;
+                        }).toList();
+                      }
+
 
 // 2. Filtro por pago (si aplica)
                       if (filterIsPaid != null) {
@@ -371,6 +398,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 filterIsPaid = null;
                                 mostrarRedencionesVencidas = false;
                                 mostrarSoloIncompletos = false;
+                                mostrarSeguimiento = false;
                               });
                             }, isSelected: filterStatus == "registrado"),
 
@@ -380,14 +408,27 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 filterIsPaid = null;
                                 mostrarSoloIncompletos = false;
                                 mostrarRedencionesVencidas = false;
+                                mostrarSeguimiento = false;
                               });
-                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == false && !mostrarRedencionesVencidas),
+                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == false && !mostrarRedencionesVencidas && mostrarSeguimiento == false),
 
-                            _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.lightGreen, () {
+                            _buildStatCard("Con seguimiento", countConSeguimiento, Colors.lightGreen, () {
+                              setState(() {
+                                filterStatus = 'activado'; // <-- importante: también filtramos por status activado
+                                mostrarSeguimiento = true;
+                                filterIsPaid = null;
+                                mostrarSoloIncompletos = false;
+                                mostrarRedencionesVencidas = false;
+                              });
+                            }, isSelected: mostrarSeguimiento == true),
+
+
+                            _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.amberAccent, () {
                               setState(() {
                                 filterStatus = "activado";
                                 mostrarSoloIncompletos = true;
                                 mostrarRedencionesVencidas = false;
+                                mostrarSeguimiento = false;
                               });
                             }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == true),
 
@@ -397,6 +438,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 filterIsPaid = null;
                                 mostrarRedencionesVencidas = false;
                                 mostrarSoloIncompletos = false;
+                                mostrarSeguimiento = false;
                               });
                             }, isSelected: filterStatus == "pendiente"),
 
@@ -406,6 +448,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 filterIsPaid = null;
                                 mostrarRedencionesVencidas = false;
                                 mostrarSoloIncompletos = false;
+                                mostrarSeguimiento = false;
                               });
                             }, isSelected: filterStatus == "bloqueado"),
 
@@ -415,6 +458,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 filterStatus = null;
                                 filterIsPaid = null;
                                 mostrarSoloIncompletos = false;
+                                mostrarSeguimiento = false;
                               });
                             }, isSelected: mostrarRedencionesVencidas),
 
@@ -805,7 +849,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     Container(
                                       padding: const EdgeInsets.all(4),
                                       decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
-                                      child: Icon(Icons.circle, color: _getColor(status)),
+                                      child: Icon(Icons.circle, color: _getColor(doc)),
                                     ),
                                     const SizedBox(width: 8),
                                     if (status == "registrado") ...[

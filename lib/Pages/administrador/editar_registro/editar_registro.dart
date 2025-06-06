@@ -133,6 +133,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   Timestamp? _ultimaActualizacionRedenciones;
   late TextEditingController _centroController;
   bool centroValidado = false;
+  late String adminFullName = "Desconocido"; // Valor por defecto
+
 
 
 
@@ -143,6 +145,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   void initState() {
     super.initState();
     _pplProvider = PplProvider();
+    adminFullName = AdminProvider().adminFullName ?? "Desconocido";
     _initCalculoCondena();
       calcularTiempo(widget.doc.id);
     _initFormFields();
@@ -373,6 +376,21 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               ),
             ),
           ],
+          ///boton para seguimiento de activados
+          if (status == 'activado')
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.comment),
+                label: const Text("Comentarios (seguimiento)"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => _mostrarComentariosSeguimiento(context),
+              ),
+            ),
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.doc.id),
             builder: (context, snapshot) {
@@ -3149,6 +3167,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget botonGuardar() {
+    String comentario = '';
+    bool marcarParaSeguimiento = false;
     return SizedBox(
       width: 180,
       child: Align(
@@ -3160,7 +3180,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           ),
           onPressed: () async {
-            String adminFullName = await obtenerNombreAdmin();
             bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
             if (!confirmar) return;
 
@@ -3265,6 +3284,33 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
               if (comentario.trim().isEmpty) return;
               nuevoStatus = "activado";
+            }
+
+            else {
+              // ✅ Todos los datos están completos y no hay eventos → solicitar comentario obligatorio
+              if (context.mounted) {
+                final resultadoComentario = await _mostrarDialogoComentarioObligatorio(context);
+                comentario = resultadoComentario['comentario'] ?? '';
+                marcarParaSeguimiento = resultadoComentario['seguimiento'] ?? false;
+              }
+
+              if (comentario.trim().isEmpty) return;
+              nuevoStatus = "activado";
+            }
+
+            if (marcarParaSeguimiento) {
+              // 1. Guardar en la subcolección 'seguimiento'
+              await widget.doc.reference.collection('seguimiento').add({
+                'fecha_inicio': DateTime.now(),
+                'creado_por': adminFullName,
+                'comentario': comentario,
+                'activo': true,
+              });
+
+              // 2. Actualizar el documento principal para facilitar futuros filtros
+              await widget.doc.reference.update({
+                'tiene_seguimiento_activo': true,
+              });
             }
 
             Map<String, String> correosCentro = {
@@ -3490,6 +3536,111 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  Future<Map<String, dynamic>> _mostrarDialogoComentarioObligatorio(BuildContext context) async {
+    TextEditingController comentarioController = TextEditingController();
+    bool requiereSeguimiento = false;
+
+    return await showDialog<Map<String, dynamic>>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            Future<void> _handleGuardar() async {
+              final comentario = comentarioController.text.trim();
+
+              if (comentario.isEmpty && requiereSeguimiento) {
+                final confirmar = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    backgroundColor: blanco,
+                    title: const Text("Guardar solo seguimiento"),
+                    content: const Text("No has escrito ningún comentario. ¿Deseas guardar únicamente el check de seguimiento?"),
+                    actions: [
+                      TextButton(
+                        child: const Text("Cancelar"),
+                        onPressed: () => Navigator.of(context).pop(false),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: primary, foregroundColor: Colors.white),
+                        child: const Text("Sí, guardar"),
+                        onPressed: () => Navigator.of(context).pop(true),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirmar == true && context.mounted) {
+                  Navigator.of(context).pop({
+                    'comentario': '',
+                    'seguimiento': true,
+                  });
+                }
+
+                return;
+              }
+
+              if (comentario.isNotEmpty || requiereSeguimiento) {
+                Navigator.of(context).pop({
+                  'comentario': comentario,
+                  'seguimiento': requiereSeguimiento,
+                });
+              }
+            }
+
+            return AlertDialog(
+              backgroundColor: blanco,
+              title: const Text("Comentario obligatorio para seguimiento de activación"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Por favor, deja un comentario de seguimiento para esta activación."),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: comentarioController,
+                    maxLines: 4,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      hintText: "Escribe el comentario aquí",
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 2),
+                      ),
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  CheckboxListTile(
+                    title: const Text("Marcar este caso para seguimiento periódico"),
+                    value: requiereSeguimiento,
+                    onChanged: (value) => setState(() => requiereSeguimiento = value ?? false),
+                    controlAffinity: ListTileControlAffinity.leading,
+                  ),
+                ],
+              ),
+              actions: [
+                ElevatedButton(
+                  onPressed: (comentarioController.text.trim().isNotEmpty || requiereSeguimiento)
+                      ? _handleGuardar
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text("Guardar comentario"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    ) ?? {};
+  }
+
+
+
   Future<bool> tieneEventoEspecial(DocumentReference docRef) async {
     try {
       final snapshot1 = await docRef.collection('eventos').doc('proceso_en_tribunal').get();
@@ -3702,6 +3853,133 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
+  Future<void> _mostrarComentariosSeguimiento(BuildContext context) async {
+    final snapshot = await widget.doc.reference.collection('seguimiento').orderBy('fecha_inicio', descending: true).get();
+
+    if (snapshot.docs.isEmpty) {
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: blanco,
+            title: const Text("Sin comentarios"),
+            content: const Text("Este usuario activado no tiene comentarios de seguimiento registrados."),
+            actions: [
+              TextButton(
+                child: const Text("Cerrar"),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: const Text("Agregar comentario"),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  _agregarComentarioSeguimiento(context); // 🔁 Método que agregaremos abajo
+                },
+              ),
+            ],
+          ),
+        );
+      }
+      return;
+    }
+
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Comentarios de seguimiento"),
+          content: SizedBox(
+            width: 700,
+            height: 300, // Añade esta línea para evitar el error
+            child: ListView.separated(
+              shrinkWrap: true,
+              itemCount: snapshot.docs.length,
+              separatorBuilder: (_, __) => const Divider(height: 1, color: gris),
+              itemBuilder: (context, index) {
+                final doc = snapshot.docs[index];
+                final comentario = doc['comentario'] ?? '';
+                const SizedBox(height: 12);
+                final creadoPor = doc['creado_por'] ?? 'Desconocido';
+                final fecha = (doc['fecha_inicio'] as Timestamp?)?.toDate();
+                final fechaStr = fecha != null
+                    ? '${fecha.day}/${fecha.month}/${fecha.year} ${fecha.hour}:${fecha.minute.toString().padLeft(2, '0')}'
+                    : 'Sin fecha';
+
+                return ListTile(
+                  title: Text(comentario),
+                  subtitle: Text("Por $creadoPor - $fechaStr", style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  isThreeLine: true,
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cerrar"),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            TextButton(
+              child: const Text("Agregar comentario"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _agregarComentarioSeguimiento(context);
+              },
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _agregarComentarioSeguimiento(BuildContext context) async {
+    final TextEditingController controller = TextEditingController();
+
+    final resultado = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Nuevo comentario de seguimiento"),
+        content: TextField(
+          controller: controller,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            hintText: "Escribe el comentario aquí",
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () {
+              final texto = controller.text.trim();
+              if (texto.isNotEmpty) Navigator.of(context).pop(texto);
+            },
+            child: const Text("Guardar"),
+          ),
+        ],
+      ),
+    );
+
+    if (resultado != null && resultado.isNotEmpty) {
+      await widget.doc.reference.collection('seguimiento').add({
+        'comentario': resultado,
+        'fecha_inicio': Timestamp.now(),
+        'creado_por': adminFullName, // Asegúrate de definir esta variable según tu lógica
+        'activo': true,
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Comentario guardado con éxito.")),
+        );
+      }
+    }
+  }
+
   /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
   Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {
     return await showDialog(
@@ -3725,20 +4003,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         );
       },
     ) ?? false; // En caso de error, devuelve `false` por defecto
-  }
-
-  Future<String> obtenerNombreAdmin() async {
-    AdminProvider adminProvider = AdminProvider();
-
-    // Si ya tiene datos cargados, los devuelve directamente
-    if (adminProvider.adminFullName != null && adminProvider.adminFullName!.isNotEmpty) {
-      return adminProvider.adminFullName!;
-    }
-
-    // Cargar datos si no están disponibles
-    await adminProvider.loadAdminData();
-
-    return adminProvider.adminFullName ?? "Desconocido";
   }
 
   Widget tipoDocumentoPpl(){

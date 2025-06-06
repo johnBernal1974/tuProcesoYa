@@ -177,8 +177,21 @@ class MyApp extends StatelessWidget {
       routes: {
         //administrador
         'editar_registro_admin': (context) {
-          final doc = ModalRoute.of(context)!.settings.arguments as DocumentSnapshot;
-          return EditarRegistroPage(doc: doc);
+          final args = ModalRoute.of(context)?.settings.arguments;
+
+          if (args is DocumentSnapshot) {
+            return EditarRegistroPage(doc: args);
+          } else {
+            return const Scaffold(
+              backgroundColor: blanco,
+              body: Center(
+                child: Text(
+                  '❌ Error: No se proporcionó el documento necesario.',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            );
+          }
         },
         'home_admin': (context) => const HomeAdministradorPage(),
         'buzon_sugerencias_administrador': (context) => const BuzonSugerenciasAdministradorPage(),
