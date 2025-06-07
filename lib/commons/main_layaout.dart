@@ -55,7 +55,7 @@ class _MainLayoutState extends State<MainLayout> {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.grey.shade100,
-      drawer: (isTablet || !isDesktop) ? const SideBar() : null,
+      drawer: const SideBar(),
       appBar: AppBar(
         title: Text(
           widget.pageTitle,
@@ -116,11 +116,11 @@ class _MainLayoutState extends State<MainLayout> {
             child: Flex(
               direction: Axis.horizontal,
               children: [
-                if (isDesktop && !isTablet)
-                  const SizedBox(
-                    width: 300,
-                    child: SideBar(),
-                  ),
+                // if (isDesktop && !isTablet)
+                //   const SizedBox(
+                //     width: 300,
+                //     child: SideBar(),
+                //   ),
                 Expanded(
                   child: Container(
                     constraints: BoxConstraints(

@@ -3294,7 +3294,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 marcarParaSeguimiento = resultadoComentario['seguimiento'] ?? false;
               }
 
-              if (comentario.trim().isEmpty) return;
+              if (comentario.trim().isEmpty && !marcarParaSeguimiento) return;
               nuevoStatus = "activado";
             }
 
