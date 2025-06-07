@@ -21,8 +21,11 @@ import '../../../widgets/exento.dart';
 import '../../../widgets/formulario_estadias_reclusion.dart';
 import '../../../widgets/ingresar_juzgado_conocimiento.dart';
 import '../../../widgets/ingresar_juzgado_ep.dart';
+import '../../../services/resumen_solicitudes_service.dart';
 import '../../../widgets/tabla_vista_estadias_reclusion.dart';
+import '../../seguimiento_solicitudes_page.dart';
 import '../home_admin/home_admin.dart';
+
 
 class EditarRegistroPage extends StatefulWidget {
   final DocumentSnapshot doc;
@@ -300,11 +303,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
           Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
           const SizedBox(height: 20),
-          Container(
-            width: 800, // Aumentamos el ancho para dar espacio a ambas columnas
+          SizedBox(
+            width: 800, // Ampliamos más el ancho total para tres columnas
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Primera columna
                 Expanded(
                   child: Column(
                     children: [
@@ -329,7 +333,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     ],
                   ),
                 ),
+
                 const SizedBox(width: 16),
+
+                // Segunda columna
                 Expanded(
                   child: Column(
                     children: [
@@ -356,6 +363,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               ],
             ),
           ),
+
           const SizedBox(height: 20),
           if (status == 'pendiente' ||
               (status == 'activado' &&
@@ -566,6 +574,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+
+  //FUNCION PARA CONFIGURAR TAMALO DE LETRA PARA MOBILES Y PC
+
+  double responsiveFontSize(BuildContext context, double baseSize) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    if (screenWidth < 600) return baseSize * 0.85; // Para móviles
+    if (screenWidth < 900) return baseSize * 0.95; // Para tablets
+    return baseSize; // Para pantallas grandes
+  }
+
   Widget _buildBenefitSectionCard({
     required String titulo,
     required Widget benefitCard,
@@ -583,7 +601,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           children: [
             Text(
               titulo,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                fontSize: responsiveFontSize(context, 13),
+              ),
             ),
             const SizedBox(height: 8),
             benefitCard,
@@ -603,7 +624,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       elevation: 3,
       color: condition ? Colors.green : Colors.red.shade50,
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(10.0),
         child: Row(
           children: [
             Icon(
@@ -617,26 +638,26 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 TextSpan(
                   children: [
                     TextSpan(
-                      text: condition
-                          ? 'Se puede solicitar.'
-                          : '',
+                      text: condition ? 'Se puede solicitar.' : '',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: responsiveFontSize(context, 12),
                         color: condition ? Colors.white : Colors.black,
                       ),
                     ),
-                    if (!condition) // Solo agregar este texto si la condición es falsa
+                    if (!condition)
                       TextSpan(
                         text: 'Faltan $remainingTime días.',
                         style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w900,
-                          color: condition ? Colors.white : Colors.black,
+                          fontSize: responsiveFontSize(context, 12),
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
                         ),
                       ),
                   ],
                 ),
               ),
             ),
+
           ],
         ),
       ),
@@ -740,6 +761,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 👉 Tercera columna con resumen de solicitudes
+          SizedBox(
+            width: 280,
+            child: ResumenSolicitudesWidget(idPpl: ppl.id),
+          ),
           if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
               widget.doc["situacion"] == "En libertad condicional")
             infoPplNoRecluido(),

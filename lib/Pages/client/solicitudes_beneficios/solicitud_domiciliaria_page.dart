@@ -11,6 +11,7 @@ import '../../../commons/archivo _uplouder.dart';
 import '../../../commons/base_textfield.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/wompi/checkout_page.dart';
+import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/formulario_excepcion_68a.dart';
 import '../solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
@@ -1013,7 +1014,6 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
   }
 
 
-
   Future<void> enviarSolicitudPrisionDomiciliaria(double valorDomiciliaria) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -1061,6 +1061,12 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       final String docId = docIdSolicitud!;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
+
+      // 🔍 Obtener nombre y apellido del PPL
+      final pplDoc = await firestore.collection('Ppl').doc(user.uid).get();
+      final data = pplDoc.data();
+      final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
+      final apellidoPpl = (data?['apellido_ppl'] ?? '').toString();
 
       List<String> urls = [];
 
@@ -1121,8 +1127,17 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
         },
       });
 
-
-      await descontarSaldo(valorDomiciliaria);
+      // 👉 Guardar resumen
+      await ResumenSolicitudesService.guardarResumen(
+        idUser: user.uid,
+        nombrePpl: '$nombrePpl $apellidoPpl',
+        tipo: "Prisión domiciliaria",
+        numeroSeguimiento: numeroSeguimiento,
+        status: "Solicitado",
+        idOriginal: docId,
+        origen: "domiciliaria_solicitados",
+        fecha: Timestamp.now(),
+      );
 
       if (context.mounted) {
         Navigator.pop(context);

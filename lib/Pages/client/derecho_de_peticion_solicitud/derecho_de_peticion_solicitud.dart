@@ -13,6 +13,7 @@ import 'package:tuprocesoya/helper/opciones_menu_derecho_peticion_helper.dart';
 import 'package:tuprocesoya/helper/preguntasDerechoPeticionHelper.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../commons/wompi/checkout_page.dart';
+import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
 
 class DerechoDePeticionSolicitudPage extends StatefulWidget {
@@ -363,41 +364,57 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
     final double valorDerechoPeticion =
     (configSnapshot.docs.first.data()['valor_derecho_peticion'] ?? 0).toDouble();
 
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
     if (!context.mounted) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Pago requerido"),
-        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancelar"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // cerrar el diálogo
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CheckoutPage(
-                    tipoPago: 'peticion',
-                    valor: valorDerechoPeticion.toInt(),
-                    onTransaccionAprobada: () async {
-                      await enviarSolicitudDerechoPeticion(respuestas, valorDerechoPeticion);
-                    },
+    if (saldo >= valorDerechoPeticion) {
+      // ✅ Tiene saldo suficiente: descontar y enviar directamente
+      await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).update({
+        'saldo': saldo - valorDerechoPeticion,
+      });
+      await enviarSolicitudDerechoPeticion(respuestas, valorDerechoPeticion);
+    } else {
+      // ❌ No tiene saldo: mostrar diálogo y enviar al checkout
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Pago requerido"),
+          content: const Text("No tienes saldo suficiente. ¿Deseas realizar el pago para enviar tu solicitud?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutPage(
+                      tipoPago: 'peticion',
+                      valor: valorDerechoPeticion.toInt(),
+                      onTransaccionAprobada: () async {
+                        await enviarSolicitudDerechoPeticion(respuestas, valorDerechoPeticion);
+                      },
+                    ),
                   ),
-                ),
-              );
-            },
-            child: const Text("Pagar"),
-          ),
-        ],
-      ),
-    );
+                );
+              },
+              child: const Text("Pagar"),
+            ),
+          ],
+        ),
+      );
+    }
   }
+
 
   Future<void> enviarSolicitudDerechoPeticion(List<String> respuestas, double valorPeticion) async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -440,8 +457,14 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       FirebaseStorage storage = FirebaseStorage.instance;
       String docId = firestore.collection('derechos_peticion_solicitados').doc().id;
-
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
+
+      // 🔍 Obtener nombre y apellido del PPL
+      final pplDoc = await firestore.collection('Ppl').doc(user.uid).get();
+      final data = pplDoc.data();
+      final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
+      final apellidoPpl = (data?['apellido_ppl'] ?? '').toString();
+
       List<String> archivosUrls = [];
 
       for (PlatformFile file in _selectedFiles) {
@@ -484,7 +507,20 @@ class _DerechoDePeticionSolicitudPageState extends State<DerechoDePeticionSolici
         "status": "Solicitado",
         "asignadoA": "",
       });
-      await descontarSaldo(valorPeticion);
+
+      // 👉 Guardar resumen
+      await ResumenSolicitudesService.guardarResumen(
+        idUser: user.uid,
+        nombrePpl: '$nombrePpl $apellidoPpl',
+        tipo: "Derecho de petición",
+        numeroSeguimiento: numeroSeguimiento,
+        status: "Solicitado",
+        idOriginal: docId,
+        origen: "derechos_peticion_solicitados",
+        fecha: Timestamp.now(),
+      );
+
+      //await descontarSaldo(valorPeticion);
 
       if (context.mounted) {
         Navigator.pop(context);

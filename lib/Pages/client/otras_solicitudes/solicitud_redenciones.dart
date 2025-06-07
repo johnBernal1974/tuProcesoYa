@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../../commons/wompi/checkout_page.dart';
+import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
 import '../solicitud_exitosa_redenciones/solicitud_exitosa_redenciones.dart';
 
@@ -117,7 +118,7 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
       await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
         'saldo': saldo - valorRedenciones,
       });
-      await enviarSolicitudRedencion();
+      await enviarSolicitudRedencion(valorRedenciones);
     } else {
       // ❌ No tiene saldo suficiente, mostrar diálogo para pagar
       if (!context.mounted) return;
@@ -139,7 +140,7 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
                       tipoPago: 'redenciones',
                       valor: valorRedenciones.toInt(),
                       onTransaccionAprobada: () async {
-                        await enviarSolicitudRedencion();
+                        await enviarSolicitudRedencion(valorRedenciones);
                       },
                     ),
                   ),
@@ -154,7 +155,7 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
   }
 
 
-  Future<void> enviarSolicitudRedencion() async {
+  Future<void> enviarSolicitudRedencion(double valor) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null || !context.mounted) return;
 
@@ -179,6 +180,12 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
       String docId = firestore.collection('redenciones_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
+      // 🔍 Obtener nombre y apellido del PPL
+      final pplDoc = await firestore.collection('Ppl').doc(user.uid).get();
+      final data = pplDoc.data();
+      final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
+      final apellidoPpl = (data?['apellido_ppl'] ?? '').toString();
+
       await firestore.collection('redenciones_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
@@ -187,6 +194,17 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
         'status': 'Solicitado',
       });
 
+      // 👉 Guardar resumen
+      await ResumenSolicitudesService.guardarResumen(
+        idUser: user.uid,
+        nombrePpl: '$nombrePpl $apellidoPpl',
+        tipo: "Solicitd redenciones",
+        numeroSeguimiento: numeroSeguimiento,
+        status: "Solicitado",
+        idOriginal: docId,
+        origen: "redenciones_solicitados",
+        fecha: Timestamp.now(),
+      );
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
@@ -214,6 +232,26 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
             ],
           ),
         );
+      }
+    }
+  }
+
+  Future<void> descontarSaldo(double valor) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final docRef = FirebaseFirestore.instance.collection('Ppl').doc(user.uid);
+    final snapshot = await docRef.get();
+
+    if (snapshot.exists) {
+      final datos = snapshot.data();
+      final double saldoActual = (datos?['saldo'] ?? 0).toDouble();
+      final double nuevoSaldo = saldoActual - valor;
+
+      if (nuevoSaldo >= 0) {
+        await docRef.update({'saldo': nuevoSaldo});
+      } else {
+        debugPrint('⚠️ Saldo insuficiente, no se pudo descontar');
       }
     }
   }

@@ -50,7 +50,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     }
 
     if (data['requiere_actualizacion_datos'] == true) {
-      return Colors.amberAccent; // o el color que usas en la tarjeta de seguimiento
+      return Colors.brown; // o el color que usas en la tarjeta de seguimiento
     }
 
     switch (estado) {
@@ -423,7 +423,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                             }, isSelected: mostrarSeguimiento == true),
 
 
-                            _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.amberAccent, () {
+                            _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.brown, () {
                               setState(() {
                                 filterStatus = "activado";
                                 mostrarSoloIncompletos = true;

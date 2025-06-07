@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/Pages/client/solicitud_exitosa_acumulacion/solicitud_exitosa_acumulacion.dart';
 import '../../../commons/wompi/checkout_page.dart';
+import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
-import '../solicitud_exitosa_extincion_pena/solicitud_exitosa_extincion_pena.dart';
 
 class SolicitudAcumulacionPenasPage extends StatefulWidget {
   const SolicitudAcumulacionPenasPage({super.key});
@@ -143,7 +143,6 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
     }
   }
 
-
   Future<void> enviarSolicitudAcumulacion(double valor) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -171,6 +170,13 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
       String docId = firestore.collection('acumulacion_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
+      // 🔍 Obtener nombre y apellido del PPL
+      final pplDoc = await firestore.collection('Ppl').doc(user.uid).get();
+      final data = pplDoc.data();
+      final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
+      final apellidoPpl = (data?['apellido_ppl'] ?? '').toString();
+
+      // ✅ Crear documento principal
       await firestore.collection('acumulacion_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
@@ -180,8 +186,22 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
         'asignadoA': "",
       });
 
+      // 👉 Guardar resumen
+      await ResumenSolicitudesService.guardarResumen(
+        idUser: user.uid,
+        nombrePpl: '$nombrePpl $apellidoPpl',
+        tipo: "Acumulación de penas",
+        numeroSeguimiento: numeroSeguimiento,
+        status: "Solicitado",
+        idOriginal: docId,
+        origen: "acumulacion_solicitados",
+        fecha: Timestamp.now(),
+      );
+
+      // ✅ Descontar saldo
       await descontarSaldo(valor);
 
+      // ✅ Redirigir a pantalla de éxito
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
@@ -227,4 +247,5 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
       }
     }
   }
+
 }

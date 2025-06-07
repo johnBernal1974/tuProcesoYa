@@ -13,6 +13,7 @@ import '../../../commons/main_layaout.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../helper/opciones_menu_tutela_helper.dart';
 import '../../../helper/preguntas_tutela_helper.dart';
+import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
 
 class TutelaSolicitudPage extends StatefulWidget {
@@ -363,40 +364,55 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
     final double valorTutela =
     (configSnapshot.docs.first.data()['valor_tutela'] ?? 0).toDouble();
 
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).get();
+    final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
+
     if (!context.mounted) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Pago requerido"),
-        content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancelar"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // cerrar el diálogo
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => CheckoutPage(
-                    tipoPago: 'tutela',
-                    valor: valorTutela.toInt(),
-                    onTransaccionAprobada: () async {
-                      await enviarSolicitudTutela(respuestas, valorTutela);
-                    },
+    if (saldo >= valorTutela) {
+      // ✅ Tiene saldo suficiente: descontar y enviar directamente
+      await FirebaseFirestore.instance.collection('Ppl').doc(user.uid).update({
+        'saldo': saldo - valorTutela,
+      });
+      await enviarSolicitudTutela(respuestas, valorTutela);
+    } else {
+      // ❌ No tiene saldo: mostrar diálogo y enviar al checkout
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Pago requerido"),
+          content: const Text("No tienes saldo suficiente. ¿Deseas realizar el pago para enviar tu solicitud?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancelar"),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // cerrar el diálogo
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CheckoutPage(
+                      tipoPago: 'tutela',
+                      valor: valorTutela.toInt(),
+                      onTransaccionAprobada: () async {
+                        await enviarSolicitudTutela(respuestas, valorTutela);
+                      },
+                    ),
                   ),
-                ),
-              );
-            },
-            child: const Text("Pagar"),
-          ),
-        ],
-      ),
-    );
+                );
+              },
+              child: const Text("Pagar"),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   Future<void> enviarSolicitudTutela(List<String> respuestas, double valorTutela) async {
@@ -444,6 +460,12 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
       List<String> archivosUrls = [];
 
+      // 🔍 Obtener nombre y apellido del PPL
+      final pplDoc = await firestore.collection('Ppl').doc(user.uid).get();
+      final data = pplDoc.data();
+      final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
+      final apellidoPpl = (data?['apellido_ppl'] ?? '').toString();
+
       for (PlatformFile file in _selectedFiles) {
         try {
           String filePath = 'tutelas/$docId/archivos/${file.name}';
@@ -482,7 +504,17 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
         "status": "Solicitado",
         "asignadoA": "",
       });
-      await descontarSaldo(valorTutela);
+      // 👉 Guardar resumen
+      await ResumenSolicitudesService.guardarResumen(
+        idUser: user.uid,
+        nombrePpl: '$nombrePpl $apellidoPpl',
+        tipo: "Tutela",
+        numeroSeguimiento: numeroSeguimiento,
+        status: "Solicitado",
+        idOriginal: docId,
+        origen: "tutelas_solicitados",
+        fecha: Timestamp.now(),
+      );
 
       if (context.mounted) {
         Navigator.pop(context);

@@ -11,6 +11,7 @@ import '../../../commons/archivo _uplouder.dart';
 import '../../../commons/base_textfield.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/wompi/checkout_page.dart';
+import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
 import '../solicitud_exitosa_permiso_72horas/solicitud_exitosa_permiso_72horas.dart';
 
@@ -1022,6 +1023,12 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       final String docId = docIdSolicitud ??= FirebaseFirestore.instance.collection('permiso_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
+      // 🔍 Obtener nombre y apellido del PPL
+      final pplDoc = await firestore.collection('Ppl').doc(user.uid).get();
+      final data = pplDoc.data();
+      final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
+      final apellidoPpl = (data?['apellido_ppl'] ?? '').toString();
+
       List<String> urls = [];
 
       for (PlatformFile file in _selectedFiles) {
@@ -1063,6 +1070,19 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
         'reparacion': _opcionReparacionSeleccionada,
       });
+
+      // 👉 Guardar resumen
+      await ResumenSolicitudesService.guardarResumen(
+        idUser: user.uid,
+        nombrePpl: '$nombrePpl $apellidoPpl',
+        tipo: "Permiso de 72 horas",
+        numeroSeguimiento: numeroSeguimiento,
+        status: "Solicitado",
+        idOriginal: docId,
+        origen: "permiso_solicitados",
+        fecha: Timestamp.now(),
+      );
+
       await descontarSaldo(valor72horas);
 
 

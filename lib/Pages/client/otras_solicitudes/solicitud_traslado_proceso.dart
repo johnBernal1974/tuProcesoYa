@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../../commons/wompi/checkout_page.dart';
+import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/selector_centro_reclusion.dart';
 import '../solicitud_exitosa_extincion_pena/solicitud_exitosa_extincion_pena.dart';
@@ -383,6 +384,12 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
       String docId = firestore.collection('trasladoProceso_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
+      // 🔍 Obtener nombre y apellido del PPL
+      final pplDoc = await firestore.collection('Ppl').doc(user.uid).get();
+      final data = pplDoc.data();
+      final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
+      final apellidoPpl = (data?['apellido_ppl'] ?? '').toString();
+
       await firestore.collection('trasladoProceso_solicitados').doc(docId).set({
         'id': docId,
         'idUser': user.uid,
@@ -400,8 +407,19 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
         'fecha_traslado': _fechaTraslado != null ? Timestamp.fromDate(_fechaTraslado!) : null,
       });
 
+      // 👉 Guardar resumen
+      await ResumenSolicitudesService.guardarResumen(
+        idUser: user.uid,
+        nombrePpl: '$nombrePpl $apellidoPpl',
+        tipo: "Traslado de proceso",
+        numeroSeguimiento: numeroSeguimiento,
+        status: "Solicitado",
+        idOriginal: docId,
+        origen: "trasladoProceso_solicitados",
+        fecha: Timestamp.now(),
+      );
 
-      await descontarSaldo(valorTrasladoProceso);
+     //await descontarSaldo(valorTrasladoProceso);
 
       if (context.mounted) {
         Navigator.pop(context);
