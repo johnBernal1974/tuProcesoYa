@@ -773,6 +773,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
   void abrirHtmlParaImprimir(String url) {
     html.window.open(url, '_blank');
   }
+
   void _mostrarDetalleCorreo(String correoId) {
     showDialog(
       context: context,

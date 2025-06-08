@@ -303,67 +303,85 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
           Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
           const SizedBox(height: 20),
-          SizedBox(
-            width: 800, // Ampliamos más el ancho total para tres columnas
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Primera columna
-                Expanded(
-                  child: Column(
-                    children: [
-                      if (situacion == "En Reclusión")
-                        _buildBenefitSectionCard(
-                          titulo: "PERMISO DE 72 HORAS",
-                          benefitCard: _buildBenefitCard(
-                            title: 'Permiso Administrativo de 72 horas',
-                            condition: porcentajeEjecutado >= 33.33,
-                            remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                          ),
-                        ),
-                      if (situacion == "En Reclusión")
-                        _buildBenefitSectionCard(
-                          titulo: "PRISIÓN DOMICILIARIA",
-                          benefitCard: _buildBenefitCard(
-                            title: 'Prisión Domiciliaria',
-                            condition: porcentajeEjecutado >= 50,
-                            remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                          ),
-                        ),
-                    ],
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Contenedor de beneficios
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-
-                const SizedBox(width: 16),
-
-                // Segunda columna
-                Expanded(
-                  child: Column(
+                child: SizedBox(
+                  width: 400,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
-                        _buildBenefitSectionCard(
-                          titulo: "LIBERTAD CONDICIONAL",
-                          benefitCard: _buildBenefitCard(
-                            title: 'Libertad Condicional',
-                            condition: porcentajeEjecutado >= 60,
-                            remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                          ),
+                      // Primera columna
+                      Expanded(
+                        child: Column(
+                          children: [
+                            if (situacion == "En Reclusión")
+                              _buildBenefitMinimalSection(
+                                titulo: "PERMISO DE 72 HORAS",
+                                condition: porcentajeEjecutado >= 33.33,
+                                remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                              ),
+                            if (situacion == "En Reclusión")
+                              _buildBenefitMinimalSection(
+                                titulo: "PRISIÓN DOMICILIARIA",
+                                condition: porcentajeEjecutado >= 50,
+                                remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                              ),
+                          ],
                         ),
-                      _buildBenefitSectionCard(
-                        titulo: "EXTINCIÓN DE LA PENA",
-                        benefitCard: _buildBenefitCard(
-                          title: 'Extinción de la Pena',
-                          condition: porcentajeEjecutado >= 100,
-                          remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                      ),
+                      const SizedBox(width: 16),
+                      // Segunda columna
+                      Expanded(
+                        child: Column(
+                          children: [
+                            if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
+                              _buildBenefitMinimalSection(
+                                titulo: "LIBERTAD CONDICIONAL",
+                                condition: porcentajeEjecutado >= 60,
+                                remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                              ),
+                            _buildBenefitMinimalSection(
+                              titulo: "EXTINCIÓN DE LA PENA",
+                              condition: porcentajeEjecutado >= 100,
+                              remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
+              ),
 
+              const SizedBox(width: 70),
+
+              // Widget de resumen de solicitudes
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    const Text("Solicitudes hechas por el PPL", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    SizedBox(
+                      width: 280,
+                      child: ResumenSolicitudesWidget(idPpl: ppl.id),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 20),
           if (status == 'pendiente' ||
               (status == 'activado' &&
@@ -574,6 +592,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  Widget _buildBenefitMinimalSection({
+    required String titulo,
+    required bool condition,
+    required int remainingTime,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Text(
+            titulo,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: responsiveFontSize(context, 13),
+            ),
+          ),
+        ),
+        _buildBenefitCard(
+          condition: condition,
+          remainingTime: remainingTime,
+        ),
+      ],
+    );
+  }
 
   //FUNCION PARA CONFIGURAR TAMALO DE LETRA PARA MOBILES Y PC
 
@@ -584,80 +627,36 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return baseSize; // Para pantallas grandes
   }
 
-  Widget _buildBenefitSectionCard({
-    required String titulo,
-    required Widget benefitCard,
+  Widget _buildBenefitCard({
+    required bool condition,
+    required int remainingTime,
   }) {
-    return Card(
-      surfaceTintColor: blanco,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              titulo,
-              style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: responsiveFontSize(context, 13),
-              ),
-            ),
-            const SizedBox(height: 8),
-            benefitCard,
-          ],
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade400),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: condition ? Colors.green.withOpacity(0.25) : Colors.red.withOpacity(0.25),
+          borderRadius: BorderRadius.circular(10),
         ),
-      ),
-    );
-  }
-
-
-  Widget _buildBenefitCard({required String title, required bool condition, required int remainingTime}) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: condition ? Colors.green : Colors.red, width: 1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      elevation: 3,
-      color: condition ? Colors.green : Colors.red.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(10.0),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              condition ? Icons.check_circle : Icons.access_time, // Cambia a reloj si la tarjeta es roja
-              color: condition ? Colors.white : Colors.black, // Negro si la tarjeta es roja
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: condition ? 'Se puede solicitar.' : '',
-                      style: TextStyle(
-                        fontSize: responsiveFontSize(context, 12),
-                        color: condition ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    if (!condition)
-                      TextSpan(
-                        text: 'Faltan $remainingTime días.',
-                        style: TextStyle(
-                          fontSize: responsiveFontSize(context, 12),
-                          fontWeight: FontWeight.w900,
-                          color: Colors.black,
-                        ),
-                      ),
-                  ],
+            if (condition)
+              const Icon(Icons.check_circle, color: Colors.green, size: 18)
+            else
+              Text(
+                "$remainingTime días",
+                style: TextStyle(
+                  fontSize: responsiveFontSize(context, 13),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red.shade800,
                 ),
               ),
-            ),
-
           ],
         ),
       ),
@@ -761,11 +760,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 👉 Tercera columna con resumen de solicitudes
-          SizedBox(
-            width: 280,
-            child: ResumenSolicitudesWidget(idPpl: ppl.id),
-          ),
           if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
               widget.doc["situacion"] == "En libertad condicional")
             infoPplNoRecluido(),

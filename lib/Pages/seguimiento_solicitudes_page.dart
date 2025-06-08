@@ -1,19 +1,33 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-import 'detalle_solicitudes_page.dart';
+import '../src/colors/colors.dart';
+import '../widgets/email_status_widget.dart';
 
-class ResumenSolicitudesWidget extends StatelessWidget {
+class ResumenSolicitudesWidget extends StatefulWidget {
   final String idPpl;
+  final bool mostrarCorreos;
 
-  const ResumenSolicitudesWidget({super.key, required this.idPpl});
+  const ResumenSolicitudesWidget({
+    super.key,
+    required this.idPpl,
+    this.mostrarCorreos = false,
+  });
 
+  @override
+  State<ResumenSolicitudesWidget> createState() => _ResumenSolicitudesWidgetState();
+}
+
+class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
           .collection('solicitudes_usuario')
-          .where('idUser', isEqualTo: idPpl)
+          .where('idUser', isEqualTo: widget.idPpl)
           .orderBy('fecha', descending: true)
           .get(),
       builder: (context, snapshot) {
@@ -28,8 +42,8 @@ class ResumenSolicitudesWidget extends StatelessWidget {
         final solicitudes = snapshot.data!.docs;
 
         return ListView.builder(
-          shrinkWrap: true, // 🔥 Evita error de altura infinita
-          physics: const NeverScrollableScrollPhysics(), // 🔥 Importante si está dentro de un scroll padre
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
           itemCount: solicitudes.length,
           itemBuilder: (context, index) {
             final doc = solicitudes[index];
@@ -40,39 +54,175 @@ class ResumenSolicitudesWidget extends StatelessWidget {
             final origen = doc['origen'] ?? '';
             final idOriginal = doc['idOriginal'] ?? '';
 
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 6),
-              child: ListTile(
-                dense: true,
-                leading: CircleAvatar(
-                  backgroundColor: estilo['color'],
-                  child: Icon(estilo['icon'], color: Colors.white),
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Card(
+                  surfaceTintColor: blanco,
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  child: ListTile(
+                    dense: true,
+                    leading: CircleAvatar(
+                      backgroundColor: estilo['color'],
+                      child: Icon(estilo['icon'], color: Colors.white),
+                    ),
+                    title: Text(
+                      tipo,
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Seguimiento: $numero", style: const TextStyle(fontSize: 11)),
+                        Text("Estado: ${estilo['texto']}", style: const TextStyle(fontSize: 11)),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          backgroundColor: blanco,
+                          title: const Text("Correos enviados"),
+                          content: SizedBox(
+                            width: 600,
+                            height: 300,
+                            child: ListaCorreosWidget(
+                              solicitudId: idOriginal,
+                              nombreColeccion: origen,
+                              onTapCorreo: (correoId) {
+                                Navigator.of(context).pop(); // Cierra el diálogo
+
+                                _mostrarDetalleCorreo(
+                                  correoId: correoId,
+                                  solicitudId: idOriginal,
+                                  nombreColeccion: origen,
+                                );
+                              },
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              child: const Text("Cerrar"),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-                title: Text(tipo, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Seguimiento: $numero", style: const TextStyle(fontSize: 11)),
-                    Text("Estado: ${estilo['texto']}", style: const TextStyle(fontSize: 11)),
-                  ],
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 14),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => DetalleSolicitudPage(
-                        origen: origen,
-                        idDocumento: idOriginal,
-                      ),
+
+                if (widget.mostrarCorreos)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16.0, bottom: 12.0),
+                    child: ListaCorreosWidget(
+                      nombreColeccion: origen,
+                      solicitudId: idOriginal,
+                      onTapCorreo: (correoHtmlUrl) async {
+                        final url = Uri.parse(correoHtmlUrl);
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("No se pudo abrir el correo.")),
+                          );
+                        }
+                      },
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _mostrarDetalleCorreo({
+    required String correoId,
+    required String solicitudId,
+    required String nombreColeccion,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+
+            return Container(
+              color: Colors.white,
+              width: isMobile ? double.infinity : 1000,
+              padding: const EdgeInsets.all(20),
+              child: FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection(nombreColeccion)
+                    .doc(solicitudId)
+                    .collection('log_correos')
+                    .doc(correoId)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return const Text("No se encontró información del correo.");
+                  }
+
+                  final data = snapshot.data!.data() as Map<String, dynamic>;
+                  final to = (data['to'] as List).join(', ');
+                  final cc = (data['cc'] as List?)?.join(', ') ?? '';
+                  final subject = data['subject'] ?? '';
+                  final htmlContent = data['html'] ?? '';
+                  final archivos = data['archivos'] as List?;
+                  final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+                  final fechaEnvio = timestamp != null
+                      ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
+                      : 'Fecha no disponible';
+
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Text("Para: ", style: TextStyle(fontSize: 13)),
+                            Text(to, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ],
+                        ),
+                        if (cc.isNotEmpty)
+                          Text("CC: $cc", style: const TextStyle(fontSize: 13)),
+                        const SizedBox(height: 10),
+                        Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text("📅 Fecha de envío: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                        const Divider(),
+                        Html(data: htmlContent),
+                        if (archivos != null && archivos.isNotEmpty) ...[
+                          const Divider(),
+                          const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ...archivos.map((a) => Text("- ${a['nombre']}"))
+                        ],
+                        const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            child: const Text("Cerrar"),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        )
+                      ],
                     ),
                   );
                 },
               ),
             );
           },
-        );
-      },
+        ),
+      ),
     );
   }
 
