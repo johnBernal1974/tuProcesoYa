@@ -37,6 +37,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   bool _mostrarBanner = false;
   bool _cargandoActualizacion = false;
   bool mostrarSeguimiento = false;
+  bool mostrarSoloUsuariosConSolicitudes = false;
+  int countUsuariosConSolicitudes =0;
 
 
 
@@ -88,6 +90,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       filterStatus = null; // 🔥 Establecer filtro en "Total Usuarios"
     });
   }
+
   @override
   void initState() {
     super.initState();
@@ -124,8 +127,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       }
     });
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -422,6 +423,23 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               });
                             }, isSelected: mostrarSeguimiento == true),
 
+                            _buildStatCard(
+                              "Con solicitudes", // título
+                              countUsuariosConSolicitudes, // número obtenido
+                              Colors.deepPurpleAccent, // color
+                                  () {
+                                setState(() {
+                                  mostrarSoloUsuariosConSolicitudes = true;
+                                  filterStatus = null;
+                                  filterIsPaid = null;
+                                  mostrarSeguimiento = false;
+                                  mostrarSoloIncompletos = false;
+                                  mostrarRedencionesVencidas = false;
+                                });
+                              },
+                              isSelected: mostrarSoloUsuariosConSolicitudes == true,
+                            ),
+
 
                             _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.brown, () {
                               setState(() {
@@ -500,6 +518,24 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
+
+  Future<int> contarUsuariosConSolicitudes() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('solicitudes_usuario')
+        .get();
+
+    final Set<String> usuariosUnicos = {};
+
+    for (var doc in snapshot.docs) {
+      final idUser = doc['idUser'];
+      if (idUser != null) {
+        usuariosUnicos.add(idUser);
+      }
+    }
+
+    return usuariosUnicos.length;
+  }
+
 
   Future<void> _cargarTiempoDePrueba() async {
     try {

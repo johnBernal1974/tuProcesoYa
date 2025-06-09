@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
+import '../../widgets/html_video_player.dart';
 import '../../widgets/preguntas_expandibles.dart';
 import '../../widgets/redes_sociales.dart';
 
@@ -84,7 +85,51 @@ class InfoPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 30),
-
+                  Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            backgroundColor: blancoCards,
+                            contentPadding: const EdgeInsets.all(0),
+                            content: const HtmlVideoPlayer(
+                              videoUrl: 'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/video_introduccionTuProcesoYa.mp4?alt=media&token=319ca517-c558-4cee-8f8d-edd8c6264eea',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Cerrar'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                      child: Column(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.asset(
+                              'assets/images/video_thumbnail.jpeg',
+                              width: 300,
+                              height: 300,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Conoce a ¡Tu Proceso Ya!\nen solo un minuto',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: Colors.deepPurple,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
                   Wrap(
                     alignment: WrapAlignment.center,
                     spacing: 20,
