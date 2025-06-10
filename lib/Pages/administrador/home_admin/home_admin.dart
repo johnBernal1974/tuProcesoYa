@@ -37,8 +37,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   bool _mostrarBanner = false;
   bool _cargandoActualizacion = false;
   bool mostrarSeguimiento = false;
-  bool mostrarSoloUsuariosConSolicitudes = false;
+  bool mostrarConSolicitudes = false;
   int countUsuariosConSolicitudes =0;
+  Set<String> idsConSolicitudes = {};
+  late Future<Set<String>> _idsConSolicitudesFuture;
+
 
 
 
@@ -48,7 +51,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     final estado = data['status']?.toString().toLowerCase() ?? '';
 
     if (data['tiene_seguimiento_activo'] == true) {
-      return Colors.lightGreen; // o el color que usas en la tarjeta de seguimiento
+      return Colors.pinkAccent; // o el color que usas en la tarjeta de seguimiento
     }
 
     if (data['requiere_actualizacion_datos'] == true) {
@@ -96,7 +99,19 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     super.initState();
     _cargarTiempoDePrueba();
     _escucharCambiosDeVersion();
+    _idsConSolicitudesFuture = _obtenerIdsConSolicitudes();
   }
+
+  Future<Set<String>> _obtenerIdsConSolicitudes() async {
+    final snapshot = await FirebaseFirestore.instance.collection('solicitudes_usuario').get();
+
+    return snapshot.docs
+        .map((s) => s['idUser']?.toString())
+        .where((id) => id != null)
+        .cast<String>()
+        .toSet();
+  }
+
 
   void _escucharCambiosDeVersion() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -128,6 +143,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     });
   }
 
+  // Panel de administración corregido con filtros funcionales
+
   @override
   Widget build(BuildContext context) {
     return MainLayout(
@@ -136,270 +153,156 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         child: Center(
           child: SizedBox(
             width: MediaQuery.of(context).size.width >= 1000 ? double.infinity : double.infinity,
-            child: FutureBuilder<DocumentSnapshot>(
-              future: _firebaseFirestore.collection('admin').doc(FirebaseAuth.instance.currentUser?.uid ?? "").get(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+            child: FutureBuilder<Set<String>>(
+              future: _idsConSolicitudesFuture,
+              builder: (context, snapshotSolicitudes) {
+                if (!snapshotSolicitudes.hasData) return const Center(child: CircularProgressIndicator());
+                final idsConSolicitudes = snapshotSolicitudes.data!;
 
-                String userRole = snapshot.data!.exists && snapshot.data!.data() != null
-                    ? snapshot.data!.get('rol').toString().toLowerCase()
-                    : "";
-                List<String> rolesOperadores = ["operador 1", "operador 2", "operador 3"];
-                bool esOperador = rolesOperadores.contains(userRole);
-                String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
-
-                return StreamBuilder<QuerySnapshot>(
-                  stream: _firebaseFirestore.collection('Ppl').snapshots(),
+                return FutureBuilder<DocumentSnapshot>(
+                  future: _firebaseFirestore.collection('admin').doc(FirebaseAuth.instance.currentUser?.uid ?? "").get(),
                   builder: (context, snapshot) {
-                    if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
+                    if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-                    final docs = snapshot.data!.docs;
+                    String userRole = snapshot.data!.exists && snapshot.data!.data() != null
+                        ? snapshot.data!.get('rol').toString().toLowerCase()
+                        : "";
+                    List<String> rolesOperadores = ["operador 1", "operador 2", "operador 3"];
+                    bool esOperador = rolesOperadores.contains(userRole);
+                    String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
 
-                    final int countRegistrado = docs.where((doc) {
-                      final assignedTo = doc.get('assignedTo') ?? "";
-                      final status = doc.get('status').toString().toLowerCase();
-                      return status == 'registrado' && (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
-                    }).length;
+                    return StreamBuilder<QuerySnapshot>(
+                      stream: _firebaseFirestore.collection('Ppl').snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-                    final int countActivado = docs.where((doc) {
-                      final status = doc.get('status').toString().toLowerCase();
-                      final data = doc.data() as Map<String, dynamic>;
-                      final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
-                      return status == 'activado' && requiereActualizacion != true;
-                    }).length;
+                        final docs = snapshot.data!.docs;
 
-                    final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
-                    final int countPendiente = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'pendiente').length;
-                    final int countActivadoIncompleto = docs.where((doc) {
-                      final status = doc.get('status').toString().toLowerCase();
-                      final data = doc.data() as Map<String, dynamic>;
-                      return status == 'activado' && (data['requiere_actualizacion_datos'] == true);
-                    }).length;
+                        final int countRegistrado = docs.where((doc) {
+                          final assignedTo = doc.get('assignedTo') ?? "";
+                          final status = doc.get('status').toString().toLowerCase();
+                          return status == 'registrado' && (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
+                        }).length;
 
-                    final int countTotal = docs.where((doc) {
-                      final assignedTo = doc.get('assignedTo') ?? "";
-                      final status = doc.get('status').toString().toLowerCase();
+                        final int countActivado = docs.where((doc) {
+                          final status = doc.get('status').toString().toLowerCase();
+                          final data = doc.data() as Map<String, dynamic>;
+                          final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
+                          return status == 'activado' && requiereActualizacion != true;
+                        }).length;
 
-                      if (esOperador) {
-                        return (status == 'registrado' && (assignedTo.isEmpty || assignedTo == currentUserUid)) ||
-                            status == 'activado' || status == 'bloqueado';
-                      }
-                      return true;
-                    }).length;
+                        final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
+                        final int countPendiente = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'pendiente').length;
 
-                    final int countRedencionesVencidas = docs.where((doc) {
-                      final status = doc.get('status').toString().toLowerCase();
-                      final data = doc.data() as Map<String, dynamic>;
+                        final int countActivadoIncompleto = docs.where((doc) {
+                          final status = doc.get('status').toString().toLowerCase();
+                          final data = doc.data() as Map<String, dynamic>;
+                          return status == 'activado' && (data['requiere_actualizacion_datos'] == true);
+                        }).length;
 
-                      if (status != 'activado') return false;
+                        final int countTotal = docs.where((doc) {
+                          final assignedTo = doc.get('assignedTo') ?? "";
+                          final status = doc.get('status').toString().toLowerCase();
+                          if (esOperador) {
+                            return (status == 'registrado' && (assignedTo.isEmpty || assignedTo == currentUserUid)) ||
+                                status == 'activado' || status == 'bloqueado';
+                          }
+                          return true;
+                        }).length;
 
-                      final ts = data['ultima_actualizacion_redenciones'];
-                      if (ts == null || ts is! Timestamp) return false;
+                        final int countRedencionesVencidas = docs.where((doc) {
+                          final status = doc.get('status').toString().toLowerCase();
+                          final data = doc.data() as Map<String, dynamic>;
+                          if (status != 'activado') return false;
+                          final ts = data['ultima_actualizacion_redenciones'];
+                          if (ts == null || ts is! Timestamp) return false;
+                          final diferencia = DateTime.now().difference(ts.toDate()).inDays;
+                          return diferencia >= 30;
+                        }).length;
 
-                      final diferencia = DateTime.now().difference(ts.toDate()).inDays;
-                      return diferencia >= 30;
-                    }).length;
+                        final int countConSeguimiento = docs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return data['tiene_seguimiento_activo'] == true;
+                        }).length;
 
-                    final int countConSeguimiento = docs.where((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      return data['tiene_seguimiento_activo'] == true;
-                    }).length;
+                        final int countUsuariosConSolicitudes = docs.where((doc) {
+                          return idsConSolicitudes.contains(doc.id);
+                        }).length;
 
+                        List<QueryDocumentSnapshot> filteredDocs = docs;
 
-
-                    List<QueryDocumentSnapshot> filteredDocs;
-
-                    if (searchQuery.trim().isNotEmpty) {
-                      // 🔍 Búsqueda se hace sobre TODOS los documentos
-                      final query = searchQuery.toLowerCase();
-                      filteredDocs = docs.where((doc) {
-                        final nombre = doc.get('nombre_ppl').toString().toLowerCase();
-                        final apellido = doc.get('apellido_ppl').toString().toLowerCase();
-                        final identificacion = doc.get('numero_documento_ppl').toString().toLowerCase();
-                        final acudiente = ("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}").toLowerCase();
-                        final celularAcudiente = doc.get('celular').toString().toLowerCase();
-                        return nombre.contains(query) ||
-                            apellido.contains(query) ||
-                            identificacion.contains(query) ||
-                            acudiente.contains(query) ||
-                            celularAcudiente.contains(query);
-                      }).toList();
-                    } else {
-                      // ✅ Si NO se está buscando, aplica filtros normales
-                      filteredDocs = docs;
-
-                      if (filterStatus != null) {
-                        filteredDocs = filteredDocs.where((doc) {
+                        filteredDocs = docs.where((doc) {
                           final status = doc.get('status').toString().toLowerCase();
                           final assignedTo = doc.get('assignedTo') ?? "";
                           final data = doc.data() as Map<String, dynamic>;
                           final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
 
-                          if (esOperador && filterStatus == "registrado") {
-                            return status == filterStatus!.toLowerCase() &&
-                                (assignedTo.isEmpty || assignedTo == currentUserUid);
+                          if (mostrarConSolicitudes && !idsConSolicitudes.contains(doc.id)) return false;
+
+                          if (mostrarSeguimiento) {
+                            final tieneSeguimiento = data['tiene_seguimiento_activo'] == true;
+                            return status == 'activado' && tieneSeguimiento;
                           }
 
-                          if (filterStatus == "activado") {
-                            if (mostrarSoloIncompletos) {
-                              return status == "activado" && requiereActualizacion == true;
-                            } else {
-                              return status == "activado" && requiereActualizacion != true;
+                          if (mostrarRedencionesVencidas) {
+                            final ts = data['ultima_actualizacion_redenciones'];
+                            if (ts == null || ts is! Timestamp) return false;
+                            final diferencia = DateTime.now().difference(ts.toDate()).inDays;
+                            return status == 'activado' && diferencia >= 30;
+                          }
+
+                          if (filterStatus != null) {
+                            if (filterStatus == 'registrado') {
+                              return status == 'registrado' && (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
                             }
+                            if (filterStatus == 'activado') {
+                              return mostrarSoloIncompletos
+                                  ? status == 'activado' && requiereActualizacion == true
+                                  : status == 'activado' && requiereActualizacion != true;
+                            }
+                            return status == filterStatus;
                           }
 
-                          return status == filterStatus!.toLowerCase();
+                          return true;
                         }).toList();
-                      }
-                      // 🔎 Filtro por seguimiento activo
-                      if (mostrarSeguimiento) {
-                        filteredDocs = filteredDocs.where((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          final status = doc.get('status').toString().toLowerCase();
-                          final tieneSeguimiento = data['tiene_seguimiento_activo'] == true;
-
-                          return status == 'activado' && tieneSeguimiento;
-                        }).toList();
-                      }
 
 
-// 2. Filtro por pago (si aplica)
-                      if (filterIsPaid != null) {
-                        filteredDocs = filteredDocs.where((doc) => doc.get('isPaid') == filterIsPaid).toList();
-                      }
+                        if (mostrarSeguimiento) {
+                          filteredDocs = filteredDocs.where((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            final status = doc.get('status').toString().toLowerCase();
+                            return status == 'activado' && data['tiene_seguimiento_activo'] == true;
+                          }).toList();
+                        }
 
-// 3. Filtro por búsqueda general
-                      if (searchQuery.trim().isNotEmpty) {
-                        final query = searchQuery.toLowerCase();
-                        filteredDocs = filteredDocs.where((doc) {
-                          final nombre = doc.get('nombre_ppl').toString().toLowerCase();
-                          final apellido = doc.get('apellido_ppl').toString().toLowerCase();
-                          final identificacion = doc.get('numero_documento_ppl').toString().toLowerCase();
-                          final acudiente = ("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}").toLowerCase();
-                          final celularAcudiente = doc.get('celular').toString().toLowerCase();
-                          return nombre.contains(query) || apellido.contains(query) || identificacion.contains(query) || acudiente.contains(query) || celularAcudiente.contains(query);
-                        }).toList();
-                      }
+                        if (mostrarConSolicitudes) {
+                          filteredDocs = filteredDocs.where((doc) => idsConSolicitudes.contains(doc.id)).toList();
+                        }
 
-// 4. Filtro por búsqueda de administrador (si aplica)
-                      if (searchAdminQuery.trim().isNotEmpty && !isLoadingAdmins) {
-                        filteredDocs = filteredDocs.where((doc) {
-                          final assignedAdminId = doc.get('assignedTo')?.toString() ?? "";
-                          final assignedAdminName = adminNamesMap[assignedAdminId]?.toLowerCase() ?? "";
-                          return assignedAdminName.contains(searchAdminQuery);
-                        }).toList();
-                      }
+                        if (mostrarRedencionesVencidas) {
+                          filteredDocs = filteredDocs.where((doc) {
+                            final status = doc.get('status').toString().toLowerCase();
+                            final data = doc.data() as Map<String, dynamic>;
+                            if (status != 'activado') return false;
+                            final ts = data['ultima_actualizacion_redenciones'];
+                            if (ts == null || ts is! Timestamp) return false;
+                            final diferencia = DateTime.now().difference(ts.toDate()).inDays;
+                            return diferencia >= 30;
+                          }).toList();
+                        }
 
-// 5. 🔥 Filtro por redenciones vencidas
-                      if (mostrarRedencionesVencidas) {
-                        filteredDocs = filteredDocs.where((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          final ts = data['ultima_actualizacion_redenciones'];
-                          if (ts == null || ts is! Timestamp) return false;
-
-                          final diferencia = DateTime.now().difference(ts.toDate()).inDays;
-                          return diferencia >= 30;
-                        }).toList();
-                      }
-
-                      if (filterIsPaid != null) {
-                        filteredDocs = filteredDocs.where((doc) => doc.get('isPaid') == filterIsPaid).toList();
-                      }
-                    }
-                    if (searchQuery.trim().isNotEmpty) {
-                      final query = searchQuery.toLowerCase();
-                      filteredDocs = filteredDocs.where((doc) {
-                        final nombre = doc.get('nombre_ppl').toString().toLowerCase();
-                        final apellido = doc.get('apellido_ppl').toString().toLowerCase();
-                        final identificacion = doc.get('numero_documento_ppl').toString().toLowerCase();
-                        final acudiente = ("${doc.get('nombre_acudiente')} ${doc.get('apellido_acudiente')}").toLowerCase();
-                        final celularAcudiente = doc.get('celular').toString().toLowerCase();
-                        return nombre.contains(query) || apellido.contains(query) || identificacion.contains(query) || acudiente.contains(query) || celularAcudiente.contains(query);
-                      }).toList();
-                    }
-
-                    if (searchAdminQuery.trim().isNotEmpty && !isLoadingAdmins) {
-                      filteredDocs = filteredDocs.where((doc) {
-                        final assignedAdminId = doc.get('assignedTo')?.toString() ?? "";
-                        final assignedAdminName = adminNamesMap[assignedAdminId]?.toLowerCase() ?? "";
-                        return assignedAdminName.contains(searchAdminQuery);
-                      }).toList();
-                    }
-
-                    return Column(
-                      children: [
-                        if (_mostrarBanner)
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Container(
-                              width: 250,
-                              decoration: BoxDecoration(
-                                color: Colors.amber.shade100,
-                                border: Border.all(color: Colors.grey),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: MaterialBanner(
-                                backgroundColor: Colors.transparent,
-                                content: Column(
-                                  children: [
-                                    Text(
-                                      'Versión actual $_versionActual',
-                                      style: const TextStyle(fontSize: 11),
-                                    ),
-                                    Text(
-                                      'Nueva versión $_nuevaVersion',
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
-                                    ),
-                                  ],
-                                ),
-                                actions: [
-                                  _cargandoActualizacion
-                                      ? const Padding(
-                                    padding: EdgeInsets.all(8.0),
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                      : TextButton(
-                                    onPressed: () async {
-                                      setState(() {
-                                        _cargandoActualizacion = true;
-                                      });
-
-                                      final uid = FirebaseAuth.instance.currentUser?.uid;
-                                      if (uid != null && _nuevaVersion != null) {
-                                        final docRef = FirebaseFirestore.instance.collection('admin').doc(uid);
-
-                                        final docSnapshot = await docRef.get();
-                                        final versionAnterior = docSnapshot.data()?['version'];
-                                        print('🕵️ Versión actual del admin antes de actualizar: $versionAnterior');
-
-                                        await docRef.update({'version': _nuevaVersion});
-                                        print('✅ Versión del admin actualizada a: $_nuevaVersion');
-                                      }
-
-                                      html.window.location.reload();
-                                    },
-                                    child: const Text('Actualizar'),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        const SizedBox(height: 20),
-                        // ⬇️ Resto de tu contenido
-                        Wrap(
-                          alignment: WrapAlignment.spaceEvenly,
-                          spacing: 10,
-                          runSpacing: 20,
+                        return Wrap(
+                          spacing: 16,
+                          runSpacing: 16,
                           children: [
                             _buildStatCard("Registrados", countRegistrado, primary, () {
                               setState(() {
                                 filterStatus = "registrado";
                                 filterIsPaid = null;
-                                mostrarRedencionesVencidas = false;
                                 mostrarSoloIncompletos = false;
+                                mostrarRedencionesVencidas = false;
                                 mostrarSeguimiento = false;
+                                mostrarConSolicitudes = false;
                               });
                             }, isSelected: filterStatus == "registrado"),
 
@@ -410,63 +313,57 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 mostrarSoloIncompletos = false;
                                 mostrarRedencionesVencidas = false;
                                 mostrarSeguimiento = false;
+                                mostrarConSolicitudes = false;
                               });
-                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == false && !mostrarRedencionesVencidas && mostrarSeguimiento == false),
+                            }, isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento),
 
-                            _buildStatCard("Con seguimiento", countConSeguimiento, Colors.lightGreen, () {
+                            _buildStatCard("Con seguimiento", countConSeguimiento, Colors.pinkAccent, () {
                               setState(() {
-                                filterStatus = 'activado'; // <-- importante: también filtramos por status activado
+                                filterStatus = "activado";
                                 mostrarSeguimiento = true;
-                                filterIsPaid = null;
+                                mostrarSoloIncompletos = false;
+                                mostrarRedencionesVencidas = false;
+                                mostrarConSolicitudes = false;
+                              });
+                            }, isSelected: mostrarSeguimiento),
+
+                            _buildStatCard("Con solicitudes", countUsuariosConSolicitudes, Colors.deepPurpleAccent, () {
+                              setState(() {
+                                mostrarConSolicitudes = true;
+                                filterStatus = null;
+                                mostrarSeguimiento = false;
                                 mostrarSoloIncompletos = false;
                                 mostrarRedencionesVencidas = false;
                               });
-                            }, isSelected: mostrarSeguimiento == true),
-
-                            _buildStatCard(
-                              "Con solicitudes", // título
-                              countUsuariosConSolicitudes, // número obtenido
-                              Colors.deepPurpleAccent, // color
-                                  () {
-                                setState(() {
-                                  mostrarSoloUsuariosConSolicitudes = true;
-                                  filterStatus = null;
-                                  filterIsPaid = null;
-                                  mostrarSeguimiento = false;
-                                  mostrarSoloIncompletos = false;
-                                  mostrarRedencionesVencidas = false;
-                                });
-                              },
-                              isSelected: mostrarSoloUsuariosConSolicitudes == true,
-                            ),
-
+                            }, isSelected: mostrarConSolicitudes),
 
                             _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.brown, () {
                               setState(() {
                                 filterStatus = "activado";
                                 mostrarSoloIncompletos = true;
-                                mostrarRedencionesVencidas = false;
                                 mostrarSeguimiento = false;
+                                mostrarRedencionesVencidas = false;
+                                mostrarConSolicitudes = false;
                               });
-                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos == true),
+                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos),
 
                             _buildStatCard("Pendientes", countPendiente, Colors.orange, () {
                               setState(() {
                                 filterStatus = "pendiente";
-                                filterIsPaid = null;
-                                mostrarRedencionesVencidas = false;
                                 mostrarSoloIncompletos = false;
                                 mostrarSeguimiento = false;
+                                mostrarRedencionesVencidas = false;
+                                mostrarConSolicitudes = false;
                               });
                             }, isSelected: filterStatus == "pendiente"),
 
                             _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
                               setState(() {
                                 filterStatus = "bloqueado";
-                                filterIsPaid = null;
-                                mostrarRedencionesVencidas = false;
                                 mostrarSoloIncompletos = false;
                                 mostrarSeguimiento = false;
+                                mostrarRedencionesVencidas = false;
+                                mostrarConSolicitudes = false;
                               });
                             }, isSelected: filterStatus == "bloqueado"),
 
@@ -474,41 +371,19 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               setState(() {
                                 mostrarRedencionesVencidas = true;
                                 filterStatus = null;
-                                filterIsPaid = null;
                                 mostrarSoloIncompletos = false;
                                 mostrarSeguimiento = false;
+                                mostrarConSolicitudes = false;
                               });
                             }, isSelected: mostrarRedencionesVencidas),
 
                             _buildStatCard("Total Usuarios", countTotal, Colors.black87, null, isSelected: false),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        Container(
-                          width: 800,
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: gris),
-                            color: blanco,
-                          ),
-                          child: _buildSearchField(),
-                        ),
-                        const SizedBox(height: 20),
-                        filteredDocs.isEmpty
-                            ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Text(
-                              "No hay ${filterStatus == 'registrado' ? 'nuevos usuarios registrados' : filterStatus == 'activado' ? 'usuarios activados' : filterStatus == 'bloqueado' ? 'usuarios bloqueados' : 'documentos'} disponibles.",
-                              style: const TextStyle(fontSize: 20, color: Colors.grey),
-                            ),
-                          ),
-                        )
-                            : _buildUserTable(filteredDocs),
-                      ],
-                    );
 
+                            _buildUserTable(filteredDocs),
+                          ],
+                        );
+                      },
+                    );
                   },
                 );
               },
@@ -518,6 +393,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
+
 
   Future<int> contarUsuariosConSolicitudes() async {
     final snapshot = await FirebaseFirestore.instance
@@ -888,6 +764,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                       child: Icon(Icons.circle, color: _getColor(doc)),
                                     ),
                                     const SizedBox(width: 8),
+
                                     if (status == "registrado") ...[
                                       Container(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -902,10 +779,15 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         ),
                                       ),
                                     ],
+
+                                    // 🔒 Solo muestra la lupa si tiene seguimiento activo de forma segura
+                                    if ((doc.data() as Map<String, dynamic>)['tiene_seguimiento_activo'] == true) ...[
+                                      const SizedBox(width: 8),
+                                      const Icon(Icons.search, size: 18, color: Colors.black54),
+                                    ],
                                   ],
                                 ),
                               ),
-
                               // Situación
                               DataCell(
                                 Builder(
