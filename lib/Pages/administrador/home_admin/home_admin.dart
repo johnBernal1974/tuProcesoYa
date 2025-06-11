@@ -229,43 +229,62 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           return idsConSolicitudes.contains(doc.id);
                         }).length;
 
-                        List<QueryDocumentSnapshot> filteredDocs = docs;
+                        List<QueryDocumentSnapshot> filteredDocs;
 
-                        filteredDocs = docs.where((doc) {
-                          final status = doc.get('status').toString().toLowerCase();
-                          final assignedTo = doc.get('assignedTo') ?? "";
-                          final data = doc.data() as Map<String, dynamic>;
-                          final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
+                        if (searchQuery.trim().isNotEmpty) {
+                          final query = searchQuery.toLowerCase();
+                          // 👇 búsqueda global en todos los docs
+                          filteredDocs = docs.where((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
+                            final nombre = data['nombre_ppl']?.toString().toLowerCase() ?? '';
+                            final apellido = data['apellido_ppl']?.toString().toLowerCase() ?? '';
+                            final identificacion = data['numero_documento_ppl']?.toString().toLowerCase() ?? '';
+                            final acudiente = ("${data['nombre_acudiente'] ?? ''} ${data['apellido_acudiente'] ?? ''}").toLowerCase();
+                            final celularAcudiente = data['celular']?.toString().toLowerCase() ?? '';
 
-                          if (mostrarConSolicitudes && !idsConSolicitudes.contains(doc.id)) return false;
+                            return nombre.contains(query) ||
+                                apellido.contains(query) ||
+                                identificacion.contains(query) ||
+                                acudiente.contains(query) ||
+                                celularAcudiente.contains(query);
+                          }).toList();
+                        } else {
+                          // 👇 solo aplica filtros si NO hay búsqueda
+                          filteredDocs = docs.where((doc) {
+                            final status = doc.get('status').toString().toLowerCase();
+                            final assignedTo = doc.get('assignedTo') ?? "";
+                            final data = doc.data() as Map<String, dynamic>;
+                            final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
 
-                          if (mostrarSeguimiento) {
-                            final tieneSeguimiento = data['tiene_seguimiento_activo'] == true;
-                            return status == 'activado' && tieneSeguimiento;
-                          }
+                            if (mostrarConSolicitudes && !idsConSolicitudes.contains(doc.id)) return false;
 
-                          if (mostrarRedencionesVencidas) {
-                            final ts = data['ultima_actualizacion_redenciones'];
-                            if (ts == null || ts is! Timestamp) return false;
-                            final diferencia = DateTime.now().difference(ts.toDate()).inDays;
-                            return status == 'activado' && diferencia >= 30;
-                          }
-
-                          if (filterStatus != null) {
-                            if (filterStatus == 'registrado') {
-                              return status == 'registrado' && (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
+                            if (mostrarSeguimiento) {
+                              final tieneSeguimiento = data['tiene_seguimiento_activo'] == true;
+                              return status == 'activado' && tieneSeguimiento;
                             }
-                            if (filterStatus == 'activado') {
-                              return mostrarSoloIncompletos
-                                  ? status == 'activado' && requiereActualizacion == true
-                                  : status == 'activado' && requiereActualizacion != true;
+
+                            if (mostrarRedencionesVencidas) {
+                              final ts = data['ultima_actualizacion_redenciones'];
+                              if (ts == null || ts is! Timestamp) return false;
+                              final diferencia = DateTime.now().difference(ts.toDate()).inDays;
+                              return status == 'activado' && diferencia >= 30;
                             }
-                            return status == filterStatus;
-                          }
 
-                          return true;
-                        }).toList();
+                            if (filterStatus != null) {
+                              if (filterStatus == 'registrado') {
+                                return status == 'registrado' && (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
+                              }
+                              if (filterStatus == 'activado') {
+                                return mostrarSoloIncompletos
+                                    ? status == 'activado' && requiereActualizacion == true
+                                    : status == 'activado' && requiereActualizacion != true;
+                              }
+                              return status == filterStatus;
+                            }
 
+                            return true;
+                          }).toList();
+                        }
 
                         if (mostrarSeguimiento) {
                           filteredDocs = filteredDocs.where((doc) {
@@ -291,95 +310,109 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           }).toList();
                         }
 
-                        return Wrap(
-                          spacing: 16,
-                          runSpacing: 16,
+                        return Column(
                           children: [
-                            _buildStatCard("Registrados", countRegistrado, primary, () {
-                              setState(() {
-                                filterStatus = "registrado";
-                                filterIsPaid = null;
-                                mostrarSoloIncompletos = false;
-                                mostrarRedencionesVencidas = false;
-                                mostrarSeguimiento = false;
-                                mostrarConSolicitudes = false;
-                              });
-                            }, isSelected: filterStatus == "registrado"),
+                            SizedBox(
+                              width: 300,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                child: _buildSearchField(),
+                              ),
+                            ),
+                            const SizedBox(height: 30),
+                            Wrap(
+                              spacing: 16,
+                              runSpacing: 16,
+                              children: [
+                                _buildStatCard("Registrados", countRegistrado, primary, () {
+                                  setState(() {
+                                    filterStatus = "registrado";
+                                    filterIsPaid = null;
+                                    mostrarSoloIncompletos = false;
+                                    mostrarRedencionesVencidas = false;
+                                    mostrarSeguimiento = false;
+                                    mostrarConSolicitudes = false;
+                                  });
+                                }, isSelected: filterStatus == "registrado"),
 
-                            _buildStatCard("Usuarios Activados", countActivado, Colors.green, () {
-                              setState(() {
-                                filterStatus = "activado";
-                                filterIsPaid = null;
-                                mostrarSoloIncompletos = false;
-                                mostrarRedencionesVencidas = false;
-                                mostrarSeguimiento = false;
-                                mostrarConSolicitudes = false;
-                              });
-                            }, isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento),
+                                _buildStatCard("Usuarios Activados", countActivado, Colors.green, () {
+                                  setState(() {
+                                    filterStatus = "activado";
+                                    filterIsPaid = null;
+                                    mostrarSoloIncompletos = false;
+                                    mostrarRedencionesVencidas = false;
+                                    mostrarSeguimiento = false;
+                                    mostrarConSolicitudes = false;
+                                  });
+                                }, isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento),
 
-                            _buildStatCard("Con seguimiento", countConSeguimiento, Colors.pinkAccent, () {
-                              setState(() {
-                                filterStatus = "activado";
-                                mostrarSeguimiento = true;
-                                mostrarSoloIncompletos = false;
-                                mostrarRedencionesVencidas = false;
-                                mostrarConSolicitudes = false;
-                              });
-                            }, isSelected: mostrarSeguimiento),
+                                _buildStatCard("Con seguimiento", countConSeguimiento, Colors.pinkAccent, () {
+                                  setState(() {
+                                    filterStatus = "activado";
+                                    mostrarSeguimiento = true;
+                                    mostrarSoloIncompletos = false;
+                                    mostrarRedencionesVencidas = false;
+                                    mostrarConSolicitudes = false;
+                                  });
+                                }, isSelected: mostrarSeguimiento),
 
-                            _buildStatCard("Con solicitudes", countUsuariosConSolicitudes, Colors.deepPurpleAccent, () {
-                              setState(() {
-                                mostrarConSolicitudes = true;
-                                filterStatus = null;
-                                mostrarSeguimiento = false;
-                                mostrarSoloIncompletos = false;
-                                mostrarRedencionesVencidas = false;
-                              });
-                            }, isSelected: mostrarConSolicitudes),
+                                _buildStatCard("Con solicitudes", countUsuariosConSolicitudes, Colors.deepPurpleAccent, () {
+                                  setState(() {
+                                    mostrarConSolicitudes = true;
+                                    filterStatus = null;
+                                    mostrarSeguimiento = false;
+                                    mostrarSoloIncompletos = false;
+                                    mostrarRedencionesVencidas = false;
+                                  });
+                                }, isSelected: mostrarConSolicitudes),
 
-                            _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.brown, () {
-                              setState(() {
-                                filterStatus = "activado";
-                                mostrarSoloIncompletos = true;
-                                mostrarSeguimiento = false;
-                                mostrarRedencionesVencidas = false;
-                                mostrarConSolicitudes = false;
-                              });
-                            }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos),
+                                _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.brown, () {
+                                  setState(() {
+                                    filterStatus = "activado";
+                                    mostrarSoloIncompletos = true;
+                                    mostrarSeguimiento = false;
+                                    mostrarRedencionesVencidas = false;
+                                    mostrarConSolicitudes = false;
+                                  });
+                                }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos),
 
-                            _buildStatCard("Pendientes", countPendiente, Colors.orange, () {
-                              setState(() {
-                                filterStatus = "pendiente";
-                                mostrarSoloIncompletos = false;
-                                mostrarSeguimiento = false;
-                                mostrarRedencionesVencidas = false;
-                                mostrarConSolicitudes = false;
-                              });
-                            }, isSelected: filterStatus == "pendiente"),
+                                _buildStatCard("Pendientes", countPendiente, Colors.orange, () {
+                                  setState(() {
+                                    filterStatus = "pendiente";
+                                    mostrarSoloIncompletos = false;
+                                    mostrarSeguimiento = false;
+                                    mostrarRedencionesVencidas = false;
+                                    mostrarConSolicitudes = false;
+                                  });
+                                }, isSelected: filterStatus == "pendiente"),
 
-                            _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
-                              setState(() {
-                                filterStatus = "bloqueado";
-                                mostrarSoloIncompletos = false;
-                                mostrarSeguimiento = false;
-                                mostrarRedencionesVencidas = false;
-                                mostrarConSolicitudes = false;
-                              });
-                            }, isSelected: filterStatus == "bloqueado"),
+                                _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
+                                  setState(() {
+                                    filterStatus = "bloqueado";
+                                    mostrarSoloIncompletos = false;
+                                    mostrarSeguimiento = false;
+                                    mostrarRedencionesVencidas = false;
+                                    mostrarConSolicitudes = false;
+                                  });
+                                }, isSelected: filterStatus == "bloqueado"),
 
-                            _buildStatCard("Redenciones vencidas", countRedencionesVencidas, Colors.blue, () {
-                              setState(() {
-                                mostrarRedencionesVencidas = true;
-                                filterStatus = null;
-                                mostrarSoloIncompletos = false;
-                                mostrarSeguimiento = false;
-                                mostrarConSolicitudes = false;
-                              });
-                            }, isSelected: mostrarRedencionesVencidas),
+                                _buildStatCard("Redenciones vencidas", countRedencionesVencidas, Colors.blue, () {
+                                  setState(() {
+                                    mostrarRedencionesVencidas = true;
+                                    filterStatus = null;
+                                    mostrarSoloIncompletos = false;
+                                    mostrarSeguimiento = false;
+                                    mostrarConSolicitudes = false;
+                                  });
+                                }, isSelected: mostrarRedencionesVencidas),
 
-                            _buildStatCard("Total Usuarios", countTotal, Colors.black87, null, isSelected: false),
+                                _buildStatCard("Total Usuarios", countTotal, Colors.black87, null, isSelected: false),
 
-                            _buildUserTable(filteredDocs),
+                                _buildUserTable(filteredDocs),
+                              ],
+                            ),
+                            const SizedBox(height: 30),
+
                           ],
                         );
                       },
