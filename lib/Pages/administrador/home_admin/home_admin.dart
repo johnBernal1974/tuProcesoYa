@@ -7,6 +7,7 @@ import 'dart:html' as html;
 
 
 import '../../../src/colors/colors.dart';
+import '../../../widgets/datos_ejecucion_condena.dart';
 
 class HomeAdministradorPage extends StatefulWidget {
   const HomeAdministradorPage({super.key});
@@ -41,7 +42,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   int countUsuariosConSolicitudes =0;
   Set<String> idsConSolicitudes = {};
   late Future<Set<String>> _idsConSolicitudesFuture;
-
+  bool filtrarPorExentos = false;
 
 
 
@@ -55,7 +56,10 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     }
 
     if (data['requiere_actualizacion_datos'] == true) {
-      return Colors.brown; // o el color que usas en la tarjeta de seguimiento
+      return Colors.brown.shade300; // o el color que usas en la tarjeta de seguimiento
+    }
+    if (data['exento'] == true) {
+      return Colors.black; // o el color que usas en la tarjeta de seguimiento
     }
 
     switch (estado) {
@@ -229,6 +233,12 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           return idsConSolicitudes.contains(doc.id);
                         }).length;
 
+                        final int countExentos = docs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return data['exento'] == true;
+                        }).length;
+
+
                         List<QueryDocumentSnapshot> filteredDocs;
 
                         if (searchQuery.trim().isNotEmpty) {
@@ -251,10 +261,12 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         } else {
                           // 👇 solo aplica filtros si NO hay búsqueda
                           filteredDocs = docs.where((doc) {
+                            final data = doc.data() as Map<String, dynamic>;
                             final status = doc.get('status').toString().toLowerCase();
                             final assignedTo = doc.get('assignedTo') ?? "";
-                            final data = doc.data() as Map<String, dynamic>;
                             final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
+
+                            if (filtrarPorExentos && data['exento'] != true) return false;
 
                             if (mostrarConSolicitudes && !idsConSolicitudes.contains(doc.id)) return false;
 
@@ -272,7 +284,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                             if (filterStatus != null) {
                               if (filterStatus == 'registrado') {
-                                return status == 'registrado' && (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
+                                return status == 'registrado' &&
+                                    (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
                               }
                               if (filterStatus == 'activado') {
                                 return mostrarSoloIncompletos
@@ -284,6 +297,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                             return true;
                           }).toList();
+
                         }
 
                         if (mostrarSeguimiento) {
@@ -332,6 +346,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     mostrarRedencionesVencidas = false;
                                     mostrarSeguimiento = false;
                                     mostrarConSolicitudes = false;
+                                    filtrarPorExentos = false;
+
+
                                   });
                                 }, isSelected: filterStatus == "registrado"),
 
@@ -343,6 +360,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     mostrarRedencionesVencidas = false;
                                     mostrarSeguimiento = false;
                                     mostrarConSolicitudes = false;
+                                    filtrarPorExentos = false;
+
+
                                   });
                                 }, isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento),
 
@@ -353,8 +373,27 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     mostrarSoloIncompletos = false;
                                     mostrarRedencionesVencidas = false;
                                     mostrarConSolicitudes = false;
+                                    filtrarPorExentos = false;
                                   });
                                 }, isSelected: mostrarSeguimiento),
+
+                                _buildStatCard(
+                                  "Exentos",
+                                  countExentos,
+                                  Colors.black,
+                                      () {
+                                    setState(() {
+                                      filtrarPorExentos = true;
+                                      filterStatus = null;
+                                      mostrarSoloIncompletos = false;
+                                      mostrarRedencionesVencidas = false;
+                                      mostrarSeguimiento = false;
+                                      mostrarConSolicitudes = false;
+                                    });
+                                  },
+                                  isSelected: filtrarPorExentos,
+                                ),
+
 
                                 _buildStatCard("Con solicitudes", countUsuariosConSolicitudes, Colors.deepPurpleAccent, () {
                                   setState(() {
@@ -363,16 +402,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     mostrarSeguimiento = false;
                                     mostrarSoloIncompletos = false;
                                     mostrarRedencionesVencidas = false;
+                                    filtrarPorExentos = false;
+
+
                                   });
                                 }, isSelected: mostrarConSolicitudes),
 
-                                _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.brown, () {
+                                _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.brown.shade300, () {
                                   setState(() {
                                     filterStatus = "activado";
                                     mostrarSoloIncompletos = true;
                                     mostrarSeguimiento = false;
                                     mostrarRedencionesVencidas = false;
                                     mostrarConSolicitudes = false;
+                                    filtrarPorExentos = false;
+
+
                                   });
                                 }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos),
 
@@ -383,6 +428,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     mostrarSeguimiento = false;
                                     mostrarRedencionesVencidas = false;
                                     mostrarConSolicitudes = false;
+                                    filtrarPorExentos = false;
+
+
                                   });
                                 }, isSelected: filterStatus == "pendiente"),
 
@@ -393,6 +441,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     mostrarSeguimiento = false;
                                     mostrarRedencionesVencidas = false;
                                     mostrarConSolicitudes = false;
+                                    filtrarPorExentos = false;
+
+
                                   });
                                 }, isSelected: filterStatus == "bloqueado"),
 
@@ -403,6 +454,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     mostrarSoloIncompletos = false;
                                     mostrarSeguimiento = false;
                                     mostrarConSolicitudes = false;
+                                    filtrarPorExentos = false;
+
+
                                   });
                                 }, isSelected: mostrarRedencionesVencidas),
 
@@ -486,11 +540,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     }
   }
 
-  /// 📆 Función para manejar errores en la conversión de fechas
-  String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
-    if (fecha == null) return "Fecha no disponible";
-    return DateFormat(formato, 'es').format(fecha);
-  }
 
   // Widget para construir tarjetas de estadísticas con efecto de selección
   Widget _buildStatCard(String title, int count, Color color, VoidCallback? onTap, {bool isSelected = false}) {
@@ -739,6 +788,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         showCheckboxColumn: false,
                         columnSpacing: 25,
                         columns: const [
+                          DataColumn(label: Text('Condena\ncumplida', style: TextStyle(fontSize: 12))),
                           DataColumn(label: Text('Estado')),
                           DataColumn(label: Text('Situación')),
                           DataColumn(label: Text('Actualización\nRedención', style: TextStyle(fontSize: 12))),
@@ -787,6 +837,66 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               }
                             },
                             cells: [
+                              // Condena cumplida
+                              DataCell(
+                                FutureBuilder<Map<String, dynamic>>(
+                                  future: calcularPorcentajeCondenaDesdeEstadias(doc),
+                                  builder: (context, snapshot) {
+                                    if (!snapshot.hasData) {
+                                      return const SizedBox(
+                                        width: 100,
+                                        height: 45,
+                                        child: Center(
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                      );
+                                    }
+
+                                    final data = snapshot.data!;
+                                    final porcentaje = data['porcentaje'] as double;
+                                    final dias = data['dias_ejecutados'] as int? ?? 0;
+                                    final redimidos = data['dias_redimidos'] as int? ?? 0;
+                                    final total = data['total_condena_dias'] as int? ?? 0;
+
+                                    return Center(
+                                      child: Card(
+                                        elevation: 1,
+                                        margin: EdgeInsets.zero,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 6.0),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              SizedBox(
+                                                width: 80,
+                                                height: 8,
+                                                child: LinearProgressIndicator(
+                                                  value: (porcentaje / 100).clamp(0.0, 1.0),
+                                                  backgroundColor: Colors.grey.shade300,
+                                                  valueColor: AlwaysStoppedAnimation(
+                                                    porcentaje >= 100
+                                                        ? Colors.green
+                                                        : porcentaje >= 30
+                                                        ? Colors.orange
+                                                        : Colors.red,
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                "${porcentaje.toStringAsFixed(1)}%",
+                                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+
                               // Estado
                               DataCell(
                                 Row(
@@ -970,6 +1080,166 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         );
       },
     );
+  }
+
+  Widget _datosEjecucionCondena({
+    required int diasEjecutados,
+    required int diasRedimidos,
+    required int mesesCondena,
+    required int diasCondena,
+    required bool isExento,
+  }) {
+    final totalDiasCondena = (mesesCondena * 30) + diasCondena;
+    final totalCumplido = diasEjecutados + diasRedimidos;
+    final totalRestante = totalDiasCondena - totalCumplido;
+
+    final porcentaje = totalDiasCondena > 0
+        ? (totalCumplido / totalDiasCondena) * 100
+        : 0.0;
+
+    final mesesEjecutados = diasEjecutados ~/ 30;
+    final diasEjecutadosExactos = diasEjecutados % 30;
+    final mesesRestantes = totalRestante ~/ 30;
+    final diasRestantesExactos = totalRestante % 30;
+    int meses = diasEjecutados ~/ 30;
+    int diasRestantes = diasEjecutados % 30;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (isExento)
+          Card(
+            color: Colors.amber.shade100,
+            elevation: 3,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber, color: Colors.red),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Esta persona ha sido determinada como EXENTA según el Artículo 68A. Imposibilidad de solicitud de beneficios penitenciarios.',
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 16),
+        Card(
+          color: Colors.white,
+          surfaceTintColor: blancoCards,
+          elevation: 2,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('📌 Datos de ejecución de condena',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                RichText(
+                  text: TextSpan(
+                    style: const TextStyle(fontSize: 14, color: Colors.black),
+                    children: [
+                      const TextSpan(text: 'Condenado a: '),
+                      TextSpan(
+                        text: '$mesesCondena meses',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const TextSpan(text: ' y '),
+                      TextSpan(
+                        text: '$diasCondena días',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ),
+                Text('Días redimidos: $diasRedimidos'),
+                Text('Ejecutado físico: $meses meses y $diasRestantes días'),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: gris),
+                const SizedBox(height: 12),
+                // Text('Total cumplido: $totalCumplido días'),
+                // Text('Total restante: $totalRestante días'),
+                const SizedBox(height: 8),
+                const Text('Total de tiempo cumplido', style: TextStyle(fontWeight: FontWeight.w900)),
+                const SizedBox(height: 8),
+                Text('⏳ Tiempo ejecutado: $mesesEjecutados meses y $diasEjecutadosExactos días'),
+                Text('⏳ Tiempo restante: $mesesRestantes meses y $diasRestantesExactos días'),
+                const SizedBox(height: 8),
+                Text('✅ Porcentaje ejecutado: ${porcentaje.toStringAsFixed(2)}%'),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  Future<Map<String, dynamic>> calcularPorcentajeCondenaDesdeEstadias(DocumentSnapshot doc) async {
+    final data = doc.data() as Map<String, dynamic>;
+    final mesesCondena = data['meses_condena'] ?? 0;
+    final diasCondena = data['dias_condena'] ?? 0;
+    final totalDiasCondena = (mesesCondena * 30) + diasCondena;
+
+    if (totalDiasCondena == 0) {
+      return {
+        'porcentaje': 0.0,
+        'dias_ejecutados': 0,
+        'dias_redimidos': 0,
+        'total_condena_dias': 0,
+      };
+    }
+
+    // Calcular días de reclusión efectiva desde subcolección "estadias"
+    final estadiasSnapshot = await FirebaseFirestore.instance
+        .collection('Ppl')
+        .doc(doc.id)
+        .collection('estadias')
+        .get();
+
+    int totalDiasReclusion = 0;
+    for (final estadia in estadiasSnapshot.docs) {
+      final ingreso = estadia['fecha_ingreso'];
+      final salida = estadia['fecha_salida'];
+      if (ingreso is Timestamp) {
+        final inicio = ingreso.toDate();
+        final fin = (salida is Timestamp) ? salida.toDate() : DateTime.now();
+        totalDiasReclusion += fin.difference(inicio).inDays;
+      }
+    }
+
+    // Calcular días redimidos desde subcolección "redenciones"
+    final redencionesSnapshot = await FirebaseFirestore.instance
+        .collection('Ppl')
+        .doc(doc.id)
+        .collection('redenciones')
+        .get();
+
+    int totalRedimidos = 0;
+    for (final red in redencionesSnapshot.docs) {
+      final diasRedimidos = red.data()['dias_redimidos'];
+      if (diasRedimidos is num) {
+        totalRedimidos += diasRedimidos.toInt();
+      }
+    }
+
+    final totalCumplido = totalDiasReclusion + totalRedimidos;
+    final porcentaje = totalCumplido * 100 / totalDiasCondena;
+
+    return {
+      'porcentaje': porcentaje,
+      'dias_ejecutados': totalDiasReclusion,
+      'dias_redimidos': totalRedimidos,
+      'total_condena_dias': totalDiasCondena,
+    };
   }
 
   Widget iconoPruebaYPago(QueryDocumentSnapshot doc) {

@@ -33,6 +33,7 @@ class _IngresarJuzgadoEjecucionWidgetState extends State<IngresarJuzgadoEjecucio
     'QUIPILE',
     'RIOHACHA',
     'SANTA MARTA',
+    'SANTUARIO',
     'SINCELEJO',
     'TUNJA',
     'VALLEDUPAR',
