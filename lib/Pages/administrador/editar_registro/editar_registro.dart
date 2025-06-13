@@ -2441,7 +2441,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _direccionController.text = data['direccion'] ?? "";
   }
 
-
   Widget _datosEjecucionCondena(double totalDiasRedimidos, bool isExento) {
     final meses = _calculoCondenaController.mesesEjecutado ?? 0;
     final dias = _calculoCondenaController.diasEjecutadoExactos ?? 0;
@@ -3658,7 +3657,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     ) ?? {};
   }
-
 
 
   Future<bool> tieneEventoEspecial(DocumentReference docRef) async {

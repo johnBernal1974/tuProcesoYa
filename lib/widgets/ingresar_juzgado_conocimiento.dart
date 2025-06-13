@@ -253,13 +253,21 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: Colors.amber.shade50,
+          backgroundColor: blancoCards,
           title: const Text("Agregar nueva ciudad"),
           content: TextField(
             controller: ciudadController,
             decoration: const InputDecoration(
               labelText: "Nombre de la ciudad",
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey), // Borde por defecto
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey), // Borde cuando está habilitado
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.grey), // Borde cuando está enfocado
+              ),
             ),
           ),
           actions: [
