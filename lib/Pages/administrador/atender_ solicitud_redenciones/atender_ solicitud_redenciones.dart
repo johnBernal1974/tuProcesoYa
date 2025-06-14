@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_redenciones.dart';
 import '../../../plantillas/plantilla_traslado_proceso.dart';
@@ -1162,6 +1163,14 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: widget.idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "redenciones_solicitados",
+      );
+
+
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -1447,6 +1456,13 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
             "fecha_diligenciamiento": FieldValue.serverTimestamp(),
           });
 
+          // 🔁 Actualizar también el resumen en solicitudes_usuario
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "redenciones_solicitados",
+          );
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Solicitud marcada como diligenciada")),
@@ -1509,6 +1525,12 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
             "reviso": adminFullName,
             "fecha_revision": FieldValue.serverTimestamp(),
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "redenciones_solicitados",
+          );
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

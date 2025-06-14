@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_extincion_pena.dart';
 import '../../../src/colors/colors.dart';
@@ -1762,6 +1763,13 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: widget.idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "extincion_pena_solicitados",
+      );
+
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -2053,6 +2061,13 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
             "pretenciones": _pretencionesController.text,
           });
 
+          // 🔁 Actualizar también el resumen en solicitudes_usuario
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "extincion_pena_solicitados",
+          );
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Solicitud marcada como diligenciada")),
@@ -2121,6 +2136,12 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
             "fundamentos_de_derecho": _fundamentosDerechoController.text,
             "pretenciones": _pretencionesController.text,
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "extincion_pena_solicitados",
+          );
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

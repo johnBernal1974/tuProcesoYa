@@ -17,6 +17,7 @@ import '../../../commons/ia_backend_service/IASuggestionCardTutela.dart';
 import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../helper/helpersTutela/derechos_vulnerados_helper.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../helper/texto_tutela_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_derecho_peticion.dart';
@@ -1481,8 +1482,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
     }
   }
 
-
-
   Future<void> cargarNormasAplicables(String docId) async {
     try {
       final doc = await FirebaseFirestore.instance
@@ -1580,8 +1579,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
       }
     }
   }
-
-
 
   // corregido full - autollenado por IA o se puede escribir igualmente
   Widget ingresarHechos() {
@@ -1883,6 +1880,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "tutelas_solicitados",
+      );
+
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Mailersend: ${response.body}");
@@ -2131,6 +2135,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             "normas_aplicables": _normasAplicablesController.text,
             "pruebas": _pruebasController.text,
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "tutelas_solicitados",
+          );
+
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Solicitud marcada como diligenciada"))
@@ -2182,6 +2193,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             "normas_aplicables": _normasAplicablesController.text,
             "pruebas": _pruebasController.text,
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "tutelas_solicitados",
+          );
+
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Solicitud guardada como 'Revisado'"))

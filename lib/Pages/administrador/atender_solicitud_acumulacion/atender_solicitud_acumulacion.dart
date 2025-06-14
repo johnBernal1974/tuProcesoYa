@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_acumulacion.dart';
 import '../../../src/colors/colors.dart';
@@ -1205,6 +1206,13 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: widget.idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "acumulacion_solicitados",
+      );
+
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -1403,8 +1411,6 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
     );
   }
 
-
-
   Future<void> subirHtmlCorreoADocumentoSolicitudAcumulacion({
     required String idDocumento,
     required String htmlContent,
@@ -1492,6 +1498,12 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
             "juzgado_proceso_acumular": _juzgadoAcumularController.text.trim(),
           });
 
+          // 🔁 Actualizar también el resumen en solicitudes_usuario
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "acumulacion_solicitados",
+          );
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -1555,6 +1567,12 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
             "reviso": adminFullName,
             "fecha_revision": FieldValue.serverTimestamp(),
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "acumulacion_solicitados",
+          );
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

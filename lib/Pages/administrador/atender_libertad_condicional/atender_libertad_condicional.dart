@@ -14,6 +14,7 @@ import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_condicional.dart';
 import '../../../src/colors/colors.dart';
@@ -2289,6 +2290,12 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: widget.idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "condicional_solicitados",
+      );
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -2592,6 +2599,13 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
             "anexos": _anexosController.text,
           });
 
+          // 🔁 Actualizar también el resumen en solicitudes_usuario
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "condicional_solicitados",
+          );
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Solicitud marcada como diligenciada")),
@@ -2661,6 +2675,12 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
             "pretenciones": _pretencionesController.text,
             "anexos": _anexosController.text,
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "condicional_solicitados",
+          );
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

@@ -14,6 +14,7 @@ import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_permiso_72horas.dart';
 import '../../../src/colors/colors.dart';
@@ -126,9 +127,6 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
   Map<String, dynamic>? solicitudData;
   String? _opcionReparacionSeleccionada;
   late CalculoCondenaController _calculoCondenaController;
-
-
-
 
 
   @override
@@ -1399,8 +1397,6 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
     }
   }
 
-
-
   String formatearFechaCaptura(String fechaString) {
     try {
       final fecha = DateTime.parse(fechaString); // convierte el string en DateTime
@@ -1548,11 +1544,6 @@ Durante el disfrute del permiso, permaneceré en el domicilio ubicado en la $dir
 Esta solicitud representa para mí una oportunidad de inmenso valor en mi proceso de reintegración social y familiar, reafirmando mi propósito de construir un proyecto de vida digno y en armonía con mi entorno.
 """;
   }
-
-
-
-
-
 
   void fetchDocumentoPermiso72Horas() async {
     try {
@@ -2249,6 +2240,13 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: widget.idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "permiso_solicitados",
+      );
+
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -2547,6 +2545,13 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
             "anexos": _anexosController.text,
           });
 
+          // 🔁 Actualizar también el resumen en solicitudes_usuario
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "permiso_solicitados",
+          );
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Solicitud marcada como diligenciada")),
@@ -2616,6 +2621,12 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
             "pretenciones": _pretencionesController.text,
             "anexos": _anexosController.text,
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "permiso_solicitados",
+          );
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

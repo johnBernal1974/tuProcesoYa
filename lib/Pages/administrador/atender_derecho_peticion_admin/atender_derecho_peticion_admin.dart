@@ -15,6 +15,7 @@ import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/ia_backend_service/IASuggestionCard.dart';
 import '../../../commons/ia_backend_service/ia_backend_service.dart';
 import '../../../commons/main_layaout.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_derecho_peticion.dart';
 import '../../../src/colors/colors.dart';
@@ -1625,6 +1626,14 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: widget.idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "derechos_peticion_solicitados",
+      );
+
+
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -1875,6 +1884,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             "fundamentos_de_derecho": _fundamentosDerechoController.text,
             "peticion_concreta": _peticionConcretaController.text
           });
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "derechos_peticion_solicitados",
+          );
+
+
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Solicitud marcada como diligenciada"))
@@ -1921,6 +1937,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             "reviso": adminFullName, // Guarda el nombre del admin
             "fecha_revision": FieldValue.serverTimestamp(),
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "derechos_peticion_solicitados",
+          );
+
           if(context.mounted){
             ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("Solicitud guardada como 'Revisado'"))

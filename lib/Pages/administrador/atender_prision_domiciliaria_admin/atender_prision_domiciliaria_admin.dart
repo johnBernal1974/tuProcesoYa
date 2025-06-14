@@ -14,6 +14,7 @@ import '../../../commons/admin_provider.dart';
 import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_domiciliaria.dart';
 import '../../../src/colors/colors.dart';
@@ -1494,7 +1495,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
       int diasEjecutados,
       ) {
     return """
-1. Conforme a los artículos 141, 143 y 146 de la Ley 65 de 1993 (Código Penitenciario y Carcelario), modificada por la Ley 1709 de 2014, las personas privadas de la libertad tienen derecho a redimir parte de su pena a través de actividades como el estudio, el trabajo y la participación en labores culturales o deportivas, previa autorización del centro penitenciario. Estos días redimidos deben ser sumados al tiempo efectivo de reclusión para efectos del cómputo del cumplimiento total de la pena y la evaluación de beneficios como la prisión domiciliaria.
+1. Conforme a los artículos 97, 98 y 101 de la Ley 65 de 1993 (Código Penitenciario y Carcelario), las personas privadas de la libertad tienen derecho a redimir parte de su pena a través de actividades como el estudio, el trabajo y la participación en labores culturales o deportivas, previa autorización del centro penitenciario. Estos días redimidos deben ser sumados al tiempo efectivo de reclusión para efectos del cómputo del cumplimiento total de la pena y la evaluación de beneficios como la prisión domiciliaria.
 
 2. Conforme a lo dispuesto en el artículo 38G del Código Penal, modificado por el artículo 4 de la Ley 1709 de 2014, el cumplimiento de la pena privativa de la libertad en lugar de residencia puede ser autorizado cuando se hayan cumplido los siguientes requisitos: haber purgado la mitad (½) de la pena impuesta, demostrar arraigo familiar y social, garantizar el cumplimiento de las obligaciones legales mediante caución, no pertenecer al núcleo familiar de la víctima y no haber sido condenado por delitos exceptuados.
 
@@ -2254,6 +2255,12 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: widget.idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "domiciliaria_solicitados",
+      );
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -2554,6 +2561,14 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
             "anexos": _anexosController.text,
           });
 
+          // 🔁 Actualizar también el resumen en solicitudes_usuario
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "domiciliaria_solicitados",
+          );
+
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Solicitud marcada como diligenciada")),
@@ -2622,6 +2637,12 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
             "pretenciones": _pretencionesController.text,
             "anexos": _anexosController.text,
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "domiciliaria_solicitados",
+          );
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

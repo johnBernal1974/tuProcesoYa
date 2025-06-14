@@ -13,6 +13,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_traslado_proceso.dart';
 import '../../../src/colors/colors.dart';
@@ -1243,6 +1244,13 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
+
+      await ResumenSolicitudesHelper.actualizarResumen(
+        idOriginal: widget.idDocumento,
+        nuevoStatus: "Enviado",
+        origen: "trasladoProceso_solicitados",
+      );
+
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -1441,8 +1449,6 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     );
   }
 
-
-
   Future<void> subirHtmlCorreoADocumentoTrasladoProceso({
     required String idDocumento,
     required String htmlContent,
@@ -1528,6 +1534,13 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
             "fecha_diligenciamiento": FieldValue.serverTimestamp(),
           });
 
+          // 🔁 Actualizar también el resumen en solicitudes_usuario
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Diligenciado",
+            origen: "trasladoProceso_solicitados",
+          );
+
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Solicitud marcada como diligenciada")),
@@ -1590,6 +1603,12 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
             "reviso": adminFullName,
             "fecha_revision": FieldValue.serverTimestamp(),
           });
+
+          await ResumenSolicitudesHelper.actualizarResumen(
+            idOriginal: idDocumento,
+            nuevoStatus: "Revisado",
+            origen: "trasladoProceso_solicitados",
+          );
 
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
