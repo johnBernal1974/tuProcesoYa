@@ -15,13 +15,13 @@ import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../models/ppl.dart';
 import '../../../providers/ppl_provider.dart';
 import '../../../src/colors/colors.dart';
+import '../../../widgets/actualizar_nodo_30%.dart';
 import '../../../widgets/card_comuncar_con_el_usuario.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/exento.dart';
 import '../../../widgets/formulario_estadias_reclusion.dart';
 import '../../../widgets/ingresar_juzgado_conocimiento.dart';
 import '../../../widgets/ingresar_juzgado_ep.dart';
-import '../../../services/resumen_solicitudes_service.dart';
 import '../../../widgets/tabla_vista_estadias_reclusion.dart';
 import '../../seguimiento_solicitudes_page.dart';
 import '../home_admin/home_admin.dart';
@@ -417,14 +417,42 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 onPressed: () => _mostrarComentariosSeguimiento(context),
               ),
             ),
-          FutureBuilder<double>(
-            future: calcularTotalRedenciones(widget.doc.id),
-            builder: (context, snapshot) {
-              double totalRedimido = snapshot.data ?? 0.0;
-              return _datosEjecucionCondena(totalRedimido, isExento);
+          LayoutBuilder(
+            builder: (context, constraints) {
+              bool esPantallaAncha = constraints.maxWidth > 600; // Puedes ajustar el ancho si deseas
+
+              return esPantallaAncha
+                  ? Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: FutureBuilder<double>(
+                      future: calcularTotalRedenciones(widget.doc.id),
+                      builder: (context, snapshot) {
+                        double totalRedimido = snapshot.data ?? 0.0;
+                        return _datosEjecucionCondena(totalRedimido, isExento);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  MostrarTiempoBeneficioCard(idPpl: ppl.id),
+                ],
+              )
+                  : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FutureBuilder<double>(
+                    future: calcularTotalRedenciones(widget.doc.id),
+                    builder: (context, snapshot) {
+                      double totalRedimido = snapshot.data ?? 0.0;
+                      return _datosEjecucionCondena(totalRedimido, isExento);
+                    },
+                  ),
+                  MostrarTiempoBeneficioCard(idPpl: ppl.id),
+                ],
+              );
             },
           ),
-
           const SizedBox(height: 20),
           nombrePpl(),
           const SizedBox(height: 15),
@@ -4241,5 +4269,40 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
 }
+
+class MostrarTiempoBeneficioCard extends StatelessWidget {
+  final String idPpl;
+
+  const MostrarTiempoBeneficioCard({super.key, required this.idPpl});
+
+  Future<bool> _debeMostrarCard() async {
+    final doc = await FirebaseFirestore.instance.collection('Ppl').doc(idPpl).get();
+    final data = doc.data();
+
+    // Mostrar solo si no existe el campo o el nivel es distinto de 'superado'
+    if (data == null) return false;
+    final nivel = data['nivel_tiempo_beneficio'];
+    return nivel == null || nivel != 'superado';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool>(
+      future: _debeMostrarCard(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox(); // También puedes poner CircularProgressIndicator si prefieres
+        }
+
+        if (snapshot.data == true) {
+          return TiempoBeneficioCard(idPpl: idPpl);
+        } else {
+          return const SizedBox(); // No mostrar nada si ya es 'superado'
+        }
+      },
+    );
+  }
+}
+
+
