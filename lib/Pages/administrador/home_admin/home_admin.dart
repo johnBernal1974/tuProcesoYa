@@ -4,10 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
 import 'dart:html' as html;
-
-
 import '../../../src/colors/colors.dart';
-import '../../../widgets/datos_ejecucion_condena.dart';
 
 class HomeAdministradorPage extends StatefulWidget {
   const HomeAdministradorPage({super.key});
@@ -146,8 +143,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       }
     });
   }
-
-  // Panel de administración corregido con filtros funcionales
 
   @override
   Widget build(BuildContext context) {
@@ -326,6 +321,98 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                         return Column(
                           children: [
+                            if (_mostrarBanner)
+                              Center(
+                                child: Container(
+                                  constraints: const BoxConstraints(maxWidth: 480),
+                                  margin: const EdgeInsets.symmetric(vertical: 16),
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.95),
+                                    border: Border.all(color: Colors.grey.shade300),
+                                    borderRadius: BorderRadius.circular(12),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.08),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        "Actualización disponible",
+                                        style: TextStyle(fontWeight: FontWeight.bold),
+                                      ),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text("Versión actual: $_versionActual /" , style: const TextStyle(fontSize: 11)),
+                                              const SizedBox(width: 10),
+                                              Text("Nueva versión: $_nuevaVersion", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+
+                                            ],
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: _cargandoActualizacion
+                                                ? null
+                                                : () async {
+                                              setState(() {
+                                                _cargandoActualizacion = true;
+                                              });
+
+                                              final uid = FirebaseAuth.instance.currentUser?.uid;
+                                              if (uid != null && _nuevaVersion != null) {
+                                                await FirebaseFirestore.instance
+                                                    .collection('admin')
+                                                    .doc(uid)
+                                                    .update({
+                                                  'version': _nuevaVersion,
+                                                  'fecha_actualizacion_version':
+                                                  FieldValue.serverTimestamp(),
+                                                });
+
+                                                setState(() {
+                                                  _mostrarBanner = false;
+                                                });
+                                              }
+
+                                              Future.delayed(const Duration(milliseconds: 300), () {
+                                                Navigator.of(context).pushReplacement(
+                                                  MaterialPageRoute(
+                                                      builder: (context) => super.widget),
+                                                );
+                                              });
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.deepPurple,
+                                              foregroundColor: Colors.white,
+                                              padding:
+                                              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                            ),
+                                            child: _cargandoActualizacion
+                                                ? const SizedBox(
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                  strokeWidth: 2, color: Colors.white),
+                                            )
+                                                : const Text("Actualizar"),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 12),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
                             SizedBox(
                               width: 300,
                               child: Padding(
