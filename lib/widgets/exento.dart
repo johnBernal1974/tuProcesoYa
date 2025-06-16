@@ -54,35 +54,23 @@ class _EditarExclusionWidgetState extends State<EditarExclusionWidget> {
       margin: const EdgeInsets.symmetric(vertical: 16),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            const Text(
-              "Exclusión conforme al artículo 68A",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            Checkbox(
+              value: _exento,
+              onChanged: (valor) {
+                setState(() {
+                  _exento = valor ?? false;
+                });
+              },
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Checkbox(
-                  value: _exento,
-                  onChanged: (valor) {
-                    setState(() {
-                      _exento = valor ?? false;
-                    });
-                  },
-                ),
-                const Text("Marcar como exento del artículo 68A", style: TextStyle(fontSize: 14)),
-              ],
+            const Expanded(
+              child: Text("Marcar como exento del artículo 68A", style: TextStyle(fontSize: 14)),
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton(
-                onPressed: _guardarExclusion,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
-                child: const Text("Guardar", style: TextStyle(color: Colors.white)),
-              ),
+            IconButton(
+              icon: const Icon(Icons.save, color: Colors.deepPurple),
+              tooltip: "Guardar",
+              onPressed: _guardarExclusion,
             ),
           ],
         ),

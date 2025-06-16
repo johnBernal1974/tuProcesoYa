@@ -18,6 +18,7 @@ import '../../../src/colors/colors.dart';
 import '../../../widgets/actualizar_nodo_30%.dart';
 import '../../../widgets/card_comuncar_con_el_usuario.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/estado_de_pago.dart';
 import '../../../widgets/exento.dart';
 import '../../../widgets/formulario_estadias_reclusion.dart';
 import '../../../widgets/ingresar_juzgado_conocimiento.dart';
@@ -116,6 +117,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   double porcentajeEjecutado =0;
   late String _tipoDocumento;
   late PplProvider _pplProvider;
+  int? _tiempoDePruebaDias;
 
   //fecha para redenciones
   final AdminProvider _adminProvider = AdminProvider();
@@ -154,6 +156,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _initFormFields();
     _centroController = TextEditingController();
     cargarCiudades();
+    _cargarTiempoDePrueba();
 
     final data = widget.doc.data() as Map<String, dynamic>?;
 
@@ -201,6 +204,21 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _asignarDocumento(); // Bloquea el documento al abrirlo
     _adminProvider.loadAdminData(); // 🔥 Cargar info del admin
     calcularTotalRedenciones(widget.doc.id); // 🔥 Llama la función aquí
+  }
+
+  Future<void> _cargarTiempoDePrueba() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+      if (snapshot.docs.isNotEmpty) {
+        final doc = snapshot.docs.first;
+        final valor = doc.get('tiempoDePrueba');
+        setState(() {
+          _tiempoDePruebaDias = valor is int ? valor : int.tryParse(valor.toString());
+        });
+      }
+    } catch (e) {
+      debugPrint('Error al cargar tiempoDePrueba: $e');
+    }
   }
 
 
@@ -302,6 +320,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             ],
           ),
           Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
+          CardEstadoPruebaYPago(
+            doc: widget.doc,
+            tiempoDePruebaDias: _tiempoDePruebaDias,
+          ),
+
           const SizedBox(height: 20),
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -927,99 +950,97 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min, // Evita que el Column ocupe toda la altura
           children: [
-            // 🔥 Botón para ver redenciones
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: () => _mostrarHistorialRedenciones(context),
-                icon: const Icon(Icons.remove_red_eye, color: Colors.black87),
-                label: const Text("Ver Redenciones", style: TextStyle(color: negro)),
-              ),
-            ),
-            const SizedBox(height: 15),
-            const Text(
-              "Registrar Redención",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Registrar Redención",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                TextButton.icon(
+                  onPressed: () => _mostrarHistorialRedenciones(context),
+                  icon: const Icon(Icons.remove_red_eye, color: Colors.black87),
+                  label: const Text("Ver Redenciones", style: TextStyle(color: negro)),
+                ),
+              ],
             ),
             const SizedBox(height: 20),
 
-            // 📅 Selección de fecha de redención
-            // 📅 Selección de fecha de redención
-            TextField(
-              controller: _fechaController,
-              readOnly: true,
-              decoration: InputDecoration(
-                labelText: "Fecha de Redención",
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Borde gris
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Borde gris en estado normal
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: primary), // 🔹 Borde gris en estado activo
-                ),
-              ),
-              onTap: () => _selectFechaRedencion(context),
-            ),
-            const SizedBox(height: 15),
-
-// ⏳ Cantidad de días redimidos
-            TextField(
-              controller: _diasController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: "Cantidad de Días Redimidos",
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Borde gris
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: Colors.grey), // 🔹 Borde gris en estado normal
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(6),
-                  borderSide: const BorderSide(color: primary), // 🔹 Borde gris en estado activo
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // 📌 Botón para guardar la redención
-            SizedBox(
-              width: 250,
-              child: ElevatedButton(
-                onPressed: widget.doc["status"] == "bloqueado"
-                    ? null // 🔹 Desactiva el botón si el usuario está bloqueado
-                    : () async {
-                  await _guardarRedencion(widget.doc.id);
-                  await calcularTotalRedenciones(widget.doc.id);
-                  _initCalculoCondena();
-                  setState(() {});
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: widget.doc["status"] == "bloqueado"
-                      ? Colors.black // 🔹 Cambia el color del botón cuando está deshabilitado
-                      : Colors.green,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(
-                  "Guardar Redención",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: widget.doc["status"] == "bloqueado" ? Colors.black54 : Colors.white,
+            Row(
+              children: [
+                // 📅 Campo de fecha
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: TextField(
+                      controller: _fechaController,
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: "Fecha de Redención",
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
+                        suffixIcon: const Icon(Icons.calendar_today, color: Colors.grey),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: const BorderSide(color: primary),
+                        ),
+                      ),
+                      onTap: () => _selectFechaRedencion(context),
+                    ),
                   ),
                 ),
-              ),
+
+                // 🔢 Campo de días redimidos
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: TextField(
+                      controller: _diasController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: "Cantidad de Días Redimidos",
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: const BorderSide(color: Colors.grey),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(6),
+                          borderSide: const BorderSide(color: primary),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // 💾 Botón de guardar como ícono
+                IconButton(
+                  onPressed: widget.doc["status"] == "bloqueado"
+                      ? null
+                      : () async {
+                    await _guardarRedencion(widget.doc.id);
+                    await calcularTotalRedenciones(widget.doc.id);
+                    _initCalculoCondena();
+                    setState(() {});
+                  },
+                  icon: const Icon(Icons.save, size: 28),
+                  tooltip: "Guardar redención",
+                  color: widget.doc["status"] == "bloqueado" ? Colors.grey : Colors.green,
+                ),
+              ],
             ),
+
             const SizedBox(height: 20),
             const Divider(height: 1, color: gris),
             const SizedBox(height: 20),

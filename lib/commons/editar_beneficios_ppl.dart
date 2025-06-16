@@ -104,13 +104,17 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
             ..._beneficiosDisponibles.map((beneficio) => Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  beneficio,
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
                 Row(
                   children: [
                     Expanded(
+                      flex: 2,
+                      child: Text(
+                        beneficio,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
                       child: Row(
                         children: [
                           Checkbox(
@@ -128,6 +132,7 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
                       ),
                     ),
                     Expanded(
+                      flex: 2,
                       child: Row(
                         children: [
                           Checkbox(
@@ -146,10 +151,10 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
                     ),
                   ],
                 ),
-
                 const Divider(),
               ],
             )),
+
             const SizedBox(height: 10),
             SizedBox(
               width: 250,
