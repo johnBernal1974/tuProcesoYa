@@ -49,7 +49,10 @@ class _EditarExclusionWidgetState extends State<EditarExclusionWidget> {
   Widget build(BuildContext context) {
     return Card(
       surfaceTintColor: Colors.purple.shade100,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Colors.grey), // 🔹 Borde gris
+      ),
       elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 16),
       child: Padding(
@@ -65,7 +68,8 @@ class _EditarExclusionWidgetState extends State<EditarExclusionWidget> {
               },
             ),
             const Expanded(
-              child: Text("Marcar como exento del artículo 68A", style: TextStyle(fontSize: 14)),
+              child: Text("Marcar como exento del artículo 68A",
+                  style: TextStyle(fontSize: 14)),
             ),
             IconButton(
               icon: const Icon(Icons.save, color: Colors.deepPurple),

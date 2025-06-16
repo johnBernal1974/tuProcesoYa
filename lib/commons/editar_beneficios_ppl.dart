@@ -89,7 +89,10 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
     return Card(
       surfaceTintColor: Colors.amber.shade600,
       margin: const EdgeInsets.only(bottom: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: const BorderSide(color: Colors.grey), // 🔹 Borde gris
+      ),
       elevation: 4,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -154,7 +157,6 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
                 const Divider(),
               ],
             )),
-
             const SizedBox(height: 10),
             SizedBox(
               width: 250,
@@ -169,4 +171,5 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
       ),
     );
   }
+
 }

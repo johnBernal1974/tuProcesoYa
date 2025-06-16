@@ -807,57 +807,71 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   /// 🔹 Widgets adicionales (Historial y acciones)
   Widget _buildExtraWidget() {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
-              widget.doc["situacion"] == "En libertad condicional")
-            infoPplNoRecluido(),
-          const SizedBox(height: 20),
-          EditarExclusionWidget(
-            pplId: widget.doc['id'],
-            exentoInicial: widget.doc['exento'] ?? false,
+    return Container(
+      decoration: BoxDecoration(
+        color: blanco,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1), // Color suave
+            offset: const Offset(-4, 0), // Desplazamiento hacia la izquierda
+            blurRadius: 8,
+            spreadRadius: 2,
           ),
-          const SizedBox(height: 20),
-          EditarBeneficiosWidget(
-            pplId: widget.doc["id"],
-            beneficiosAdquiridosInicial: ppl.beneficiosAdquiridos,
-            beneficiosNegadosInicial: ppl.beneficiosNegados, // 🔥 Añadir esta línea
-          ),
-          agregarRedenciones(),
-          const SizedBox(height: 20),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey, width: 1),
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.white,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
-                const SizedBox(height: 20),
-                const Text(
-                  "Historial Acciones Administrativas",
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 10),
-                historialAccionUsuario(),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 50),
-          WhatsAppCardWidget(
-            celularWhatsApp: widget.doc['celularWhatsapp'] ?? '',
-            docId: widget.doc.id,
-          ),
-          const SizedBox(height: 50),
-
         ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+                widget.doc["situacion"] == "En libertad condicional")
+              infoPplNoRecluido(),
+            const SizedBox(height: 20),
+            EditarExclusionWidget(
+              pplId: widget.doc['id'],
+              exentoInicial: widget.doc['exento'] ?? false,
+            ),
+            const SizedBox(height: 20),
+            EditarBeneficiosWidget(
+              pplId: widget.doc["id"],
+              beneficiosAdquiridosInicial: ppl.beneficiosAdquiridos,
+              beneficiosNegadosInicial: ppl.beneficiosNegados, // 🔥 Añadir esta línea
+            ),
+            agregarRedenciones(),
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey, width: 1),
+                borderRadius: BorderRadius.circular(10),
+                color: Colors.white,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Historial Acciones Administrativas",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 10),
+                  historialAccionUsuario(),
+                ],
+              ),
+            ),
+      
+            const SizedBox(height: 50),
+            WhatsAppCardWidget(
+              celularWhatsApp: widget.doc['celularWhatsapp'] ?? '',
+              docId: widget.doc.id,
+            ),
+            const SizedBox(height: 50),
+      
+          ],
+        ),
       ),
     );
   }
@@ -941,9 +955,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8), // 🔹 Bordes suavemente redondeados
-        border: Border.all(color: Colors.grey.shade400, width: 1), // 🔹 Borde gris
+        color: blancoCards,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade400, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1), // Color de sombra sutil
+            blurRadius: 8, // Difuminado
+            offset: const Offset(2, 4), // Desplazamiento de la sombra
+          ),
+        ],
       ),
       child: SingleChildScrollView(
         child: Column(
