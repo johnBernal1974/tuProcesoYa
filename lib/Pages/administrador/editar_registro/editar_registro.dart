@@ -3298,6 +3298,31 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             final docSnapshot = await widget.doc.reference.get();
             final data = docSnapshot.data() as Map<String, dynamic>?;
 
+// 🔒 Validar centro_validado ANTES DE TODO
+            final centroValidado = data?['centro_validado'] == true;
+            final centroFinal = selectedCentro ?? widget.doc['centro_reclusion'] ?? '';
+
+            if (!centroValidado && _centroController.text.trim().isEmpty) {
+              if (context.mounted) {
+                await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: Colors.white,
+                    title: const Text("Centro de reclusión requerido"),
+                    content: const Text("Debes validar el centro de reclusión antes de guardar."),
+                    actions: [
+                      TextButton(
+                        child: const Text("Cerrar"),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                );
+              }
+              return; // 🚫 Se detiene aquí el proceso
+            }
+
+
             final rawFechaCaptura = data?['fecha_captura'];
             final tieneFechaCaptura = rawFechaCaptura != null &&
                 rawFechaCaptura.toString().trim().isNotEmpty;
@@ -3438,22 +3463,39 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'correo_sanidad': '',
             };
 
-            String centroFinal = selectedCentro ?? widget.doc['centro_reclusion'];
-            if (centroFinal.isNotEmpty) {
-              var centroEncontrado = centrosReclusionTodos.firstWhere(
-                    (centro) => centro['id'] == centroFinal,
-                orElse: () => <String, Object>{},
-              );
-              if (centroEncontrado.containsKey('correos')) {
-                var correosMap = centroEncontrado['correos'] as Map<String, dynamic>;
-                correosCentro = {
-                  'correo_direccion': correosMap['correo_direccion']?.toString() ?? '',
-                  'correo_juridica': correosMap['correo_juridica']?.toString() ?? '',
-                  'correo_principal': correosMap['correo_principal']?.toString() ?? '',
-                  'correo_sanidad': correosMap['correo_sanidad']?.toString() ?? '',
-                };
+            if (!centroValidado) {
+              // 🔴 Si el campo del Autocomplete está vacío, no permitir guardar
+              if (_centroController.text.trim().isEmpty) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("⚠️ Debes validar el centro de reclusión antes de guardar."),
+                      backgroundColor: Colors.red,
+                      duration: Duration(seconds: 3),
+                    ),
+                  );
+                }
+                return; // 🚫 Detener guardado
+              }
+
+              // ✅ Si sí hay centro escrito, cargar correos
+              if (centroFinal.isNotEmpty) {
+                final centroEncontrado = centrosReclusionTodos.firstWhere(
+                      (centro) => centro['id'] == centroFinal,
+                  orElse: () => <String, Object>{},
+                );
+                if (centroEncontrado.containsKey('correos')) {
+                  final correosMap = centroEncontrado['correos'] as Map<String, dynamic>;
+                  correosCentro = {
+                    'correo_direccion': correosMap['correo_direccion']?.toString() ?? '',
+                    'correo_juridica': correosMap['correo_juridica']?.toString() ?? '',
+                    'correo_principal': correosMap['correo_principal']?.toString() ?? '',
+                    'correo_sanidad': correosMap['correo_sanidad']?.toString() ?? '',
+                  };
+                }
               }
             }
+
 
             try {
               final Map<String, dynamic> datosActualizados = {
@@ -3510,7 +3552,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
 
               await widget.doc.reference.update(datosActualizados);
-              await widget.doc.reference.collection('correos_centro_reclusion').doc('emails').set(correosCentro);
+              if (!centroValidado) {
+                await widget.doc.reference
+                    .collection('correos_centro_reclusion')
+                    .doc('emails')
+                    .set(correosCentro);
+              }
+
               await FirebaseFirestore.instance
                   .collection('Ppl')
                   .doc(widget.doc.id)
@@ -3638,11 +3686,18 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
             } catch (error) {
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error al guardar: $error'),
-                    backgroundColor: Colors.red,
-                    duration: const Duration(seconds: 2),
+                await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: Colors.white,
+                    title: const Text("Centro de reclusión requerido"),
+                    content: const Text("Debes validar el centro de reclusión antes de guardar."),
+                    actions: [
+                      TextButton(
+                        child: const Text("Cerrar"),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
                   ),
                 );
               }
