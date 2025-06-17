@@ -66,6 +66,7 @@ dependencies:
   firebase_auth_web: ^5.9.8
   pin_code_fields: ^8.0.1
   cloud_functions: ^4.6.8
+  diacritic: ^0.1.3
 
 
 

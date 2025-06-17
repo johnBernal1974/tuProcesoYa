@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:diacritic/diacritic.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -264,11 +265,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           // 👇 búsqueda global en todos los docs
                           filteredDocs = docs.where((doc) {
                             final data = doc.data() as Map<String, dynamic>;
-                            final nombre = data['nombre_ppl']?.toString().toLowerCase() ?? '';
-                            final apellido = data['apellido_ppl']?.toString().toLowerCase() ?? '';
-                            final identificacion = data['numero_documento_ppl']?.toString().toLowerCase() ?? '';
-                            final acudiente = ("${data['nombre_acudiente'] ?? ''} ${data['apellido_acudiente'] ?? ''}").toLowerCase();
-                            final celularAcudiente = data['celular']?.toString().toLowerCase() ?? '';
+                            final nombre = normalizar(data['nombre_ppl']?.toString() ?? '');
+                            final apellido = normalizar(data['apellido_ppl']?.toString() ?? '');
+                            final identificacion = normalizar(data['numero_documento_ppl']?.toString() ?? '');
+                            final acudiente = normalizar("${data['nombre_acudiente'] ?? ''} ${data['apellido_acudiente'] ?? ''}");
+                            final celularAcudiente = normalizar(data['celular']?.toString() ?? '');
 
                             return nombre.contains(query) ||
                                 apellido.contains(query) ||
@@ -696,7 +697,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
-  // Barra de busqueda por rol
+
+  String normalizar(String texto) {
+    return removeDiacritics(texto.toLowerCase());
+  }
+
   Widget _buildSearchField() {
     return FutureBuilder<DocumentSnapshot>(
       future: _firebaseFirestore.collection('admin').doc(FirebaseAuth.instance.currentUser?.uid ?? "").get(),
@@ -717,7 +722,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
               controller: _searchController,
               onChanged: (value) {
                 setState(() {
-                  searchQuery = value.toLowerCase();
+                  searchQuery = normalizar(value);
                 });
               },
               decoration: InputDecoration(
@@ -780,7 +785,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                   controller: _adminSearchController,
                   onChanged: (value) {
                     setState(() {
-                      searchAdminQuery = value.toLowerCase();
+                      searchAdminQuery = normalizar(value);
                     });
                   },
                   decoration: InputDecoration(
@@ -823,6 +828,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       },
     );
   }
+
 
   Widget _buildUserTable(List<QueryDocumentSnapshot> docs) {
     String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";

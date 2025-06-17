@@ -30,6 +30,9 @@ class _DelitosAutocompleteWidgetState extends State<DelitosAutocompleteWidget> {
     super.initState();
 
     delitosPorCategoria = {
+      "Delitos contra el régimen constitucional y legal": [
+        "Sedición"
+      ],
       "Delitos contra la vida y la integridad personal": [
         "Aborto", "Feminicidio", "Homicidio", "Homicidio agravado", "Inducción al suicidio", "Lesiones personales", "Omisión de socorro", "Tentativa de homicidio",
         "Tentativa de femenicidio",

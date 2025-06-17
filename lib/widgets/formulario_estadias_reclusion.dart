@@ -22,16 +22,12 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
 
   Future<void> _guardarEstadia() async {
     if (_fechaIngreso == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Debes seleccionar la fecha de ingreso")),
-      );
+      _mostrarAlerta("Debes seleccionar la fecha de ingreso");
       return;
     }
 
     if (_fechaSalida != null && _fechaSalida!.isBefore(_fechaIngreso!)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("La fecha de salida no puede ser anterior a la de ingreso")),
-      );
+      _mostrarAlerta("La fecha de salida no puede ser anterior a la de ingreso");
       return;
     }
 
@@ -54,12 +50,8 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
 
       final seSolapan = nuevaInicio.isBefore(fin) && nuevaFin.isAfter(inicio);
       if (seSolapan) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Ya existe una estadía entre ${_formatearFecha(inicio)} y ${_formatearFecha(fin)} que se solapa con la actual.",
-            ),
-          ),
+        _mostrarAlerta(
+            "Ya existe una estadía entre ${_formatearFecha(inicio)} y ${_formatearFecha(fin)} que se solapa con la actual."
         );
         return;
       }
@@ -99,15 +91,6 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
 
       mensajeFinal += "\n📌 Fecha de captura agregada automáticamente: $fechaFormateada";
     }
-
-// Mostrar un solo SnackBar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(mensajeFinal),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 4),
-      ),
-    );
   }
 
 
@@ -214,5 +197,27 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
   String _formatearFecha(DateTime fecha) {
     return "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";
   }
+
+  void _mostrarAlerta(String mensaje) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.white,
+          title: const Text("Aviso"),
+          content: Text(mensaje),
+          actions: [
+            TextButton(
+              child: const Text("Cerrar"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
 }

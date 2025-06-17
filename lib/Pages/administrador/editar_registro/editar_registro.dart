@@ -641,12 +641,26 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     return Column(children: mensajes);
                   },
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                Wrap(
+                  alignment: WrapAlignment.spaceEvenly,
+                  spacing: 12,
+                  runSpacing: 12,
                   children: [
                     if (widget.doc["status"] != "bloqueado") ...[
                       botonGuardar(),
                       bloquearUsuario(),
+
+                      if (widget.doc["isNotificatedActivated"] == false)
+                        botonEnviarWhatsappDesdeImagen(widget.doc["celularWhatsapp"], widget.doc.id)
+                      else ...[
+                        estadoNotificacionWidget(
+                          widget.doc["isNotificatedActivated"],
+                          widget.doc["celularWhatsapp"],
+                          widget.doc.id,
+                        ),
+
+                        const SizedBox(height: 20),
+                      ],
                     ] else
                       FutureBuilder<bool>(
                         future: _adminPuedeDesbloquear(),
@@ -656,13 +670,42 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                         },
                       ),
                   ],
-                ),
+                )
+
               ],
             ),
 
           ),
         ],
       ),
+    );
+  }
+
+  Widget botonEnviarWhatsappDesdeImagen(String celular, String docId) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green.shade600,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      onPressed: () async {
+        await enviarMensajeWhatsApp(celular, docId);
+
+        // 🔄 Actualizar el nodo en Firestore después del envío
+        try {
+          await FirebaseFirestore.instance.collection('Ppl').doc(docId).update({
+            'isNotificatedActivated': true,
+          });
+        } catch (e) {
+          print('Error actualizando isNotificatedActivated: $e');
+        }
+      },
+      icon: Image.asset(
+        'assets/images/icono_whatsapp.png',
+        height: 24,
+        width: 24,
+      ),
+      label: const Text("Notificar activación"),
     );
   }
 
@@ -874,8 +917,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  estadoNotificacionWidget(widget.doc["isNotificatedActivated"]),
-                  const SizedBox(height: 20),
                   const Text(
                     "Historial Acciones Administrativas",
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
@@ -3279,7 +3320,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget botonGuardar() {
-    String comentario = '';
     bool marcarParaSeguimiento = false;
     return SizedBox(
       width: 180,
@@ -3321,7 +3361,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
               return; // 🚫 Se detiene aquí el proceso
             }
-
 
             final rawFechaCaptura = data?['fecha_captura'];
             final tieneFechaCaptura = rawFechaCaptura != null &&
@@ -4386,7 +4425,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Widget estadoNotificacionWidget(bool isNotificatedActivated) {
+  Widget estadoNotificacionWidget(bool isNotificatedActivated, String celularWhatsapp, String docId) {
     Color color = isNotificatedActivated ? Colors.green : Colors.red;
     IconData icono = isNotificatedActivated ? Icons.notifications_active_outlined : Icons.error;
     String mensaje = isNotificatedActivated
@@ -4396,39 +4435,68 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey, width: 1), // 🔹 Borde gris de 1px
+        border: Border.all(color: Colors.grey, width: 1),
       ),
-      padding: const EdgeInsets.all(10), // 🔹 Padding de 10px alrededor
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 0.0),
-        child: Column(
-          children: [
-            estadoUsuarioWidget(widget.doc["status"]),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icono, color: color, size: 20),
-                const SizedBox(width: 8), // Espacio entre icono y texto
-                Expanded( // Permite que el texto se ajuste dentro del espacio disponible
-                  child: Text(
-                    mensaje,
-                    style: TextStyle(
-                      color: color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+      padding: const EdgeInsets.all(10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          estadoUsuarioWidget(widget.doc["status"]),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(icono, color: color, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  mensaje,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (isNotificatedActivated)
+            Center(
+              child: Card(
+                surfaceTintColor: blanco,
+                elevation: 2,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: InkWell(
+                  onTap: () => enviarMensajeWhatsApp(celularWhatsapp, docId),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Column(
+                      children: [
+                        const Text(
+                          "Notificar nuevamente de la activación?",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Image.asset(
+                          "assets/images/icono_whatsapp.png",
+                          height: 40,
+                          width: 40,
+                        ),
+                      ],
                     ),
-                    overflow: TextOverflow.ellipsis, // Evita desbordamientos
-                    maxLines: 1, // Mantiene el texto en una sola línea
-                    softWrap: false, // Evita saltos de línea
                   ),
                 ),
-              ],
+              ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
+
 }
 
 class MostrarTiempoBeneficioCard extends StatelessWidget {
