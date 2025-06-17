@@ -1920,12 +1920,12 @@ class _RegistroPageState extends State<RegistroPage> {
         }
       }
 
-      // 🔹 Validar formato del número de documento (Debe ser de 8 o 10 dígitos)
-      if (!RegExp(r'^\d{6}$|^\d{10}$').hasMatch(documento)) {
-        if(context.mounted){
+      // 🔹 Validar formato del número de documento (Debe tener entre 6 y 10 dígitos)
+      if (!RegExp(r'^\d{6,10}$').hasMatch(documento)) {
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text("El número de documento debe tener mínimo 6 dígitos."),
+              content: Text("El número de documento debe tener entre 6 y 10 dígitos."),
               backgroundColor: Colors.red,
               duration: Duration(seconds: 2),
             ),
@@ -1933,7 +1933,6 @@ class _RegistroPageState extends State<RegistroPage> {
           return;
         }
       }
-
       // 🔥 Validación de documento ya registrado en Firestore
       final existeDocumento = await _verificarDuplicadosFirestore(documento: documento);
       if (existeDocumento) return;

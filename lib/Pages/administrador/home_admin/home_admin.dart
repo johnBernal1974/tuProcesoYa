@@ -1342,23 +1342,37 @@ class _TablaDataSource extends DataTableSource {
 
         // 🔷 Redención
         DataCell(aplicaRedencion
-            ? Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.update, size: 16),
-            const SizedBox(height: 2),
-            Text(
-              data['ultima_actualizacion_redenciones'] != null
-                  ? DateFormat("d 'de' MMMM 'de' y", 'es_CO').format(
-                  convertirTimestampADateTime(data['ultima_actualizacion_redenciones']) ?? DateTime.now())
-                  : 'Sin revisión',
-              style: const TextStyle(fontSize: 10),
-              textAlign: TextAlign.center,
-            ),
-          ],
+            ? Builder(
+          builder: (_) {
+            final fechaRedencion = convertirTimestampADateTime(data['ultima_actualizacion_redenciones']);
+            final bool mostrarAlerta = fechaRedencion != null &&
+                DateTime.now().difference(fechaRedencion).inDays > 90;
+
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  mostrarAlerta ? Icons.warning_amber_rounded : Icons.update,
+                  size: 16,
+                  color: mostrarAlerta ? Colors.red : Colors.black87,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  fechaRedencion != null
+                      ? DateFormat("d 'de' MMMM 'de' y", 'es_CO').format(fechaRedencion)
+                      : 'Sin revisión',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: mostrarAlerta ? Colors.red : Colors.black87,
+                    fontWeight: mostrarAlerta ? FontWeight.bold : FontWeight.normal,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            );
+          },
         )
             : const Text("No aplica", style: TextStyle(color: Colors.grey, fontSize: 10))),
-
         // 🔷 Último seguimiento
         DataCell(_buildSeguimiento(data['ultimo_seguimiento'])),
 
