@@ -40,23 +40,25 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   Set<String> idsConSolicitudes = {};
   late Future<Set<String>> _idsConSolicitudesFuture;
   bool filtrarPorExentos = false;
+  String? _docIdSeleccionado;
 
 
 
 
-  Color _getColor(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+
+  Color getColor(Map<String, dynamic> data) {
     final estado = data['status']?.toString().toLowerCase() ?? '';
 
     if (data['tiene_seguimiento_activo'] == true) {
-      return Colors.pinkAccent; // o el color que usas en la tarjeta de seguimiento
+      return Colors.pinkAccent;
     }
 
     if (data['requiere_actualizacion_datos'] == true) {
-      return Colors.brown.shade300; // o el color que usas en la tarjeta de seguimiento
+      return Colors.brown.shade300;
     }
+
     if (data['exento'] == true) {
-      return Colors.black; // o el color que usas en la tarjeta de seguimiento
+      return Colors.black;
     }
 
     switch (estado) {
@@ -70,6 +72,27 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         return Colors.orange;
       default:
         return Colors.grey;
+    }
+  }
+
+  String getTextoEstado(Map<String, dynamic> data) {
+    final estado = data['status']?.toString().toLowerCase() ?? '';
+
+    if (data['tiene_seguimiento_activo'] == true) return 'Seguimiento';
+    if (data['requiere_actualizacion_datos'] == true) return 'Actualizar';
+    if (data['exento'] == true) return 'Exento';
+
+    switch (estado) {
+      case 'registrado':
+        return 'Registrado';
+      case 'activado':
+        return 'Activado';
+      case 'bloqueado':
+        return 'Bloqueado';
+      case 'pendiente':
+        return 'Pendiente';
+      default:
+        return '';
     }
   }
 
@@ -872,301 +895,61 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   }
 
   Widget _buildDataTable(List<QueryDocumentSnapshot> registros, Map<String, Map<String, dynamic>> porcentajesPorDocId) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: IntrinsicWidth(
-        child: DataTable(
-          showCheckboxColumn: false,
-          columnSpacing: 25,
-          columns: const [
-            DataColumn(label: Text("✔️ >30%")),
-            DataColumn(label: Text('Estado')),
-            DataColumn(label: Text('Situación')),
-            DataColumn(label: Text('Actualización\nRedención', style: TextStyle(fontSize: 12))),
-            DataColumn(label: Text('PPL')),
-            DataColumn(label: Text('Identificación')),
-            DataColumn(label: Text('Acudiente')),
-            DataColumn(label: Text('WhatsApp')),
-            DataColumn(label: Text('Pago', style: TextStyle(fontSize: 11))),
-            DataColumn(label: Text('Prueba', style: TextStyle(fontSize: 11))),
-            DataColumn(label: Text('Registro')),
-          ],
-          rows: registros.asMap().entries.map((entry) {
-            int index = entry.key;
-            var doc = entry.value;
-            final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-            final String status = (data['status'] ?? '').toString().toLowerCase();
-            final String situacion = data['situacion'] ?? '';
-            final bool aplicaRedencion = situacion == 'En Reclusión';
-            final bool isAssigned = (data['assignedTo'] ?? '').toString().isNotEmpty;
+    final int rowsPerPage = calcularRowsPerPage(registros.length);
 
-            return DataRow(
-              color: MaterialStateProperty.resolveWith<Color?>(
-                    (Set<MaterialState> states) => index % 2 == 0 ? Colors.white : primary.withOpacity(0.05),
-              ),
-              onSelectChanged: (bool? selected) async {
-                if (selected == true) {
-                  String userRole = await _obtenerRolActual();
-                  if (userRole != "operador") {
-                    Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
-                    return;
-                  }
+    return Container(
+      color: Colors.white, // Fondo blanco para toda la tabla
+      padding: const EdgeInsets.all(8), // Espaciado opcional
+      child: PaginatedDataTable(
+        header: const Text(''),
+        rowsPerPage: rowsPerPage,
+        columnSpacing: 30,
+        showCheckboxColumn: false,
+        columns: const [
+          DataColumn(label: Text("Beneficios")),
+          DataColumn(label: Text('Estado')),
+          DataColumn(label: Text('Situación')),
+          DataColumn(label: Text('Última\nRedención', style: TextStyle(fontSize: 12))),
+          DataColumn(label: Text('Último\nSeguimiento', style: TextStyle(fontSize: 12))),
+          DataColumn(label: Text('PPL')),
+          DataColumn(label: Text('Identificación')),
+          DataColumn(label: Text('Acudiente')),
+          DataColumn(label: Text('WhatsApp')),
+          DataColumn(label: Text('Pago')),
+          DataColumn(label: Text('Prueba')),
+          DataColumn(label: Text('Registro')),
+        ],
+          source: _TablaDataSource(
+            context: context,
+            registros: registros,
+            porcentajesPorDocId: porcentajesPorDocId,
+            onRowSelected: (doc) async {
+              setState(() {
+                _docIdSeleccionado = doc.id;
+              });
 
-                  if ((data['assignedTo'] ?? '').toString().isEmpty) {
-                    bool confirmar = await _mostrarDialogoConfirmacion();
-                    if (!confirmar) return;
-                  }
+              await Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
 
-                  Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
-                }
-              },
-              cells: [
-                // Primera celda: ícono por nivel de tiempo
-                DataCell(
-                  Builder(builder: (_) {
-                    final nivel = data['nivel_tiempo_beneficio'] ?? 'desconocido';
+              // Cuando regresas, el mismo doc seguirá seleccionado gracias al fondo
+              setState(() {}); // Refresca la tabla por si algo cambió
+            },
 
-                    Icon icono;
-                    String texto;
+            convertirFecha: _convertirTimestampADateTime,
+            tiempoDePruebaDias: _tiempoDePruebaDias,
+            onTapPagoPendiente: (doc) => _mostrarDialogoPagoPendiente(doc),
+            getColor: getColor,
+            getTextoEstado: getTextoEstado,
+            docIdSeleccionado: _docIdSeleccionado, // 👈 pásala aquí
+          )
 
-                    switch (nivel) {
-                      case 'superado':
-                        icono = const Icon(Icons.check_circle, color: Colors.green, size: 20);
-                        texto = 'Con beneficios';
-                        break;
-                      case 'cercano':
-                        icono = const Icon(Icons.access_time, color: Colors.orange, size: 20);
-                        texto = 'Está cercano';
-                        break;
-                      case 'bajo':
-                        icono = const Icon(Icons.cancel, color: Colors.red, size: 20);
-                        texto = 'Falta tiempo';
-                        break;
-                      default:
-                        icono = const Icon(Icons.help_outline, color: Colors.grey, size: 20);
-                        texto = 'Sin dato';
-                    }
-
-                    return Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          icono,
-                          const SizedBox(height: 4),
-                          Text(
-                            texto,
-                            style: const TextStyle(fontSize: 10, color: Colors.black54),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ),
-                // Estado
-                DataCell(Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(borderRadius: BorderRadius.circular(5)),
-                      child: Icon(Icons.circle, color: _getColor(doc)),
-                    ),
-                    const SizedBox(width: 8),
-                    if (status == "registrado") ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: isAssigned ? primary : Colors.red,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Icon(
-                          isAssigned ? Icons.check_circle : Icons.cancel,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ],
-                    if (data['tiene_seguimiento_activo'] == true) ...[
-                      const SizedBox(width: 8),
-                      const Icon(Icons.search, size: 18, color: Colors.black54),
-                    ],
-                  ],
-                )),
-
-                // Situación
-                DataCell(
-                  Builder(
-                    builder: (_) {
-                      if (situacion == 'En Reclusión') {
-                        return const Icon(Icons.lock, color: Colors.grey, size: 15);
-                      } else if (situacion == 'En Prisión domiciliaria') {
-                        return const Icon(Icons.home, color: Colors.orange, size: 15);
-                      } else if (situacion == 'En libertad condicional') {
-                        return const Icon(Icons.directions_walk, color: Colors.green, size: 15);
-                      } else {
-                        return const SizedBox();
-                      }
-                    },
-                  ),
-                ),
-
-                // Actualización redención
-                DataCell(
-                  aplicaRedencion
-                      ? Column(
-                    children: [
-                      iconoRevision(
-                        data['ultima_actualizacion_redenciones'] is Timestamp
-                            ? (data['ultima_actualizacion_redenciones'] as Timestamp).toDate()
-                            : null,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        data.containsKey('ultima_actualizacion_redenciones') &&
-                            data['ultima_actualizacion_redenciones'] != null
-                            ? DateFormat("d 'de' MMMM 'de' y", 'es_CO').format(
-                            (data['ultima_actualizacion_redenciones'] as Timestamp).toDate())
-                            : 'Sin revisión',
-                        style: const TextStyle(fontSize: 10),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  )
-                      : const Text('No aplica', style: TextStyle(color: Colors.grey)),
-                ),
-
-                // PPL
-                DataCell(Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(data['nombre_ppl'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text(data['apellido_ppl'], style: const TextStyle(fontSize: 12)),
-                  ],
-                )),
-
-                // Identificación
-                DataCell(Text(data['numero_documento_ppl'].toString(), style: const TextStyle(fontSize: 12))),
-
-                // Acudiente
-                DataCell(Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(data['nombre_acudiente'], style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text(data['apellido_acudiente'], style: const TextStyle(fontSize: 12)),
-                  ],
-                )),
-
-                // WhatsApp
-                DataCell(Text((data['celularWhatsapp'] ?? '').toString(), style: const TextStyle(fontSize: 12))),
-
-                // Pago
-                DataCell(Icon(
-                  data['isPaid'] ? Icons.check_circle : Icons.cancel,
-                  color: data['isPaid'] ? Colors.blue : Colors.grey,
-                  size: 15,
-                )),
-
-                // Prueba
-                DataCell(iconoPruebaYPago(doc)),
-
-                // Fecha
-                DataCell(Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      DateFormat("dd 'de' MMMM 'de' yyyy", 'es')
-                          .format(_convertirTimestampADateTime(data['fechaRegistro'])!),
-                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
-                    ),
-                    Text(
-                      DateFormat('hh:mm a', 'es').format(_convertirTimestampADateTime(data['fechaRegistro'])!),
-                      style: const TextStyle(fontSize: 10, color: Colors.black54),
-                    ),
-                  ],
-                )),
-              ],
-            );
-          }).toList(),
-        ),
       ),
     );
   }
 
-
-
-
-  // Future<Map<String, Map<String, dynamic>>> precargarPorcentajes(List<QueryDocumentSnapshot> docs) async {
-  //   Map<String, Map<String, dynamic>> resultados = {};
-  //
-  //   for (var doc in docs) {
-  //     final resultado = await calcularPorcentajeCondenaDesdeEstadias(doc);
-  //     resultados[doc.id] = resultado;
-  //   }
-  //
-  //   return resultados;
-  // }
-
-
-
-  // Future<Map<String, dynamic>> calcularPorcentajeCondenaDesdeEstadias(DocumentSnapshot doc) async {
-  //   print('🔄 Ejecutando cálculo de porcentaje para ${doc.id}');
-  //   final data = doc.data() as Map<String, dynamic>;
-  //   final mesesCondena = data['meses_condena'] ?? 0;
-  //   final diasCondena = data['dias_condena'] ?? 0;
-  //   final totalDiasCondena = (mesesCondena * 30) + diasCondena;
-  //
-  //   if (totalDiasCondena == 0) {
-  //     return {
-  //       'porcentaje': 0.0,
-  //       'dias_ejecutados': 0,
-  //       'dias_redimidos': 0,
-  //       'total_condena_dias': 0,
-  //     };
-  //   }
-  //
-  //   // Calcular días de reclusión efectiva desde subcolección "estadias"
-  //   final estadiasSnapshot = await FirebaseFirestore.instance
-  //       .collection('Ppl')
-  //       .doc(doc.id)
-  //       .collection('estadias')
-  //       .get();
-  //
-  //   int totalDiasReclusion = 0;
-  //   for (final estadia in estadiasSnapshot.docs) {
-  //     final ingreso = estadia['fecha_ingreso'];
-  //     final salida = estadia['fecha_salida'];
-  //     if (ingreso is Timestamp) {
-  //       final inicio = ingreso.toDate();
-  //       final fin = (salida is Timestamp) ? salida.toDate() : DateTime.now();
-  //       totalDiasReclusion += fin.difference(inicio).inDays;
-  //     }
-  //   }
-  //
-  //   // Calcular días redimidos desde subcolección "redenciones"
-  //   final redencionesSnapshot = await FirebaseFirestore.instance
-  //       .collection('Ppl')
-  //       .doc(doc.id)
-  //       .collection('redenciones')
-  //       .get();
-  //
-  //   int totalRedimidos = 0;
-  //   for (final red in redencionesSnapshot.docs) {
-  //     final diasRedimidos = red.data()['dias_redimidos'];
-  //     if (diasRedimidos is num) {
-  //       totalRedimidos += diasRedimidos.toInt();
-  //     }
-  //   }
-  //
-  //   final totalCumplido = totalDiasReclusion + totalRedimidos;
-  //   final porcentaje = totalCumplido * 100 / totalDiasCondena;
-  //
-  //   return {
-  //     'porcentaje': porcentaje,
-  //     'dias_ejecutados': totalDiasReclusion,
-  //     'dias_redimidos': totalRedimidos,
-  //     'total_condena_dias': totalDiasCondena,
-  //   };
-  // }
+  int calcularRowsPerPage(int totalRegistros) {
+    if (totalRegistros <= 5) return totalRegistros;
+    return 10; // Valor por defecto si hay suficientes registros
+  }
 
   Widget iconoPruebaYPago(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -1367,4 +1150,355 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     return ""; // Si hay un error, devolver vacío
   }
 
+
 }
+
+Widget iconoPruebaYPago({
+  required Map<String, dynamic> data,
+  required int? tiempoDePruebaDias,
+  required void Function() onTapPagoPendiente,
+}) {
+  final isPaid = data['isPaid'] == true;
+
+  if (!data.containsKey('fechaActivacion')) {
+    return const Tooltip(
+      message: "Usuario aún no ha sido activado",
+      child: Icon(Icons.help_outline, color: Colors.grey, size: 15),
+    );
+  }
+
+  final fechaActivacion = convertirTimestampADateTime(data['fechaActivacion']);
+  if (fechaActivacion == null) {
+    return const Tooltip(
+      message: "Fecha de activación no válida",
+      child: Icon(Icons.error_outline, color: Colors.red, size: 15),
+    );
+  }
+
+  if (tiempoDePruebaDias == null) {
+    return const Tooltip(
+      message: "Cargando configuración de prueba...",
+      child: Icon(Icons.hourglass_top, color: Colors.grey, size: 15),
+    );
+  }
+
+  final diasDesdeActivacion = DateTime.now().difference(fechaActivacion).inDays;
+
+  if (isPaid) {
+    return const Tooltip(
+      message: "Pago realizado",
+      child: Icon(Icons.verified_user, color: Colors.green, size: 15),
+    );
+  }
+
+  if (diasDesdeActivacion < tiempoDePruebaDias) {
+    final diasRestantes = tiempoDePruebaDias - diasDesdeActivacion;
+    return Tooltip(
+      message: "En periodo de prueba ($diasRestantes días restantes)",
+      child: const Icon(Icons.lock_clock, color: Colors.orange, size: 15),
+    );
+  }
+
+  final bool yaSeEnvio = data['recordatorioWhatsappEnviado'] == true;
+  final DateTime? fechaRecordatorio = convertirTimestampADateTime(data['fechaRecordatorioWhatsapp']);
+  final String mensajeTooltip = yaSeEnvio && fechaRecordatorio != null
+      ? "Prueba vencida sin pago\nRecordatorio enviado el ${DateFormat("dd/MM/yyyy hh:mm a").format(fechaRecordatorio)}"
+      : "Prueba vencida sin pago";
+
+  return Tooltip(
+    message: mensajeTooltip,
+    child: Row(
+      children: [
+        InkWell(
+          onTap: onTapPagoPendiente,
+          child: const Icon(Icons.lock_outline, color: Colors.red, size: 15),
+        ),
+        if (yaSeEnvio) ...[
+          const SizedBox(width: 4),
+          const Icon(Icons.mark_chat_read, size: 15, color: Colors.green),
+        ],
+      ],
+    ),
+  );
+}
+
+
+// 🔹 FUNCIONES AUXILIARES (afuera de clases)
+DateTime? convertirTimestampADateTime(dynamic timestamp) {
+  if (timestamp is Timestamp) {
+    return timestamp.toDate();
+  }
+  return null;
+}
+
+class _TablaDataSource extends DataTableSource {
+  final BuildContext context;
+  final List<QueryDocumentSnapshot> registros;
+  final Map<String, Map<String, dynamic>> porcentajesPorDocId;
+  final void Function(QueryDocumentSnapshot doc) onRowSelected;
+  final DateTime? Function(dynamic)? convertirFecha;
+  final int? tiempoDePruebaDias; // 🔹 nuevo
+  final void Function(QueryDocumentSnapshot) onTapPagoPendiente;
+  final Color Function(Map<String, dynamic>) getColor;
+  final String Function(Map<String, dynamic>) getTextoEstado;
+  final String? docIdSeleccionado;
+
+  _TablaDataSource({
+    required this.context,
+    required this.registros,
+    required this.porcentajesPorDocId,
+    required this.onRowSelected,
+    this.convertirFecha,
+    required this.tiempoDePruebaDias,
+    required this.onTapPagoPendiente,
+    required this.getColor,
+    required this.getTextoEstado,
+    required this.docIdSeleccionado,
+  });
+
+  @override
+  DataRow? getRow(int index) {
+    if (index >= registros.length) return null;
+    final doc = registros[index];
+    final data = doc.data() as Map<String, dynamic>;
+    final String status = (data['status'] ?? '').toString().toLowerCase();
+    final String situacion = data['situacion'] ?? '';
+    final bool isPaid = data['isPaid'] ?? false;
+    final bool isAssigned = (data['assignedTo'] ?? '').toString().isNotEmpty;
+    final bool aplicaRedencion = situacion == 'En Reclusión';
+    final colorEstado = getColor(data);
+    final textoEstado = getTextoEstado(data);
+
+    return DataRow.byIndex(
+      index: index,
+      onSelectChanged: (_) => onRowSelected(doc),
+      color: MaterialStateProperty.resolveWith<Color?>(
+            (Set<MaterialState> states) {
+          if (docIdSeleccionado == doc.id) {
+            return Colors.yellow.withOpacity(0.2); // fondo de la fila seleccionada
+          }
+          return index % 2 == 0 ? Colors.white : Colors.blue.withOpacity(0.05);
+        },
+      ),
+
+      cells: [
+        // 🔷 Nivel beneficio
+        DataCell(Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _getIconoPorNivel(data['nivel_tiempo_beneficio']),
+            const SizedBox(height: 2),
+            Text(_getTextoPorNivel(data['nivel_tiempo_beneficio']), style: const TextStyle(fontSize: 10)),
+          ],
+        )),
+
+        // 🔷 Estado
+        // 🔷 Estado
+        DataCell(
+          Row(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 15,
+                    height: 15,
+                    decoration: BoxDecoration(
+                      color: colorEstado,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    textoEstado,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: colorEstado,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              const SizedBox(width: 4),
+
+              // 🔴 Solo si NO está asignado Y el estado es 'registrado'
+              if (!isAssigned && status == 'registrado')
+                Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.only(left: 4),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        // 🔷 Situación
+        DataCell(_getIconoPorSituacion(situacion)),
+
+        // 🔷 Redención
+        DataCell(aplicaRedencion
+            ? Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.update, size: 16),
+            const SizedBox(height: 2),
+            Text(
+              data['ultima_actualizacion_redenciones'] != null
+                  ? DateFormat("d 'de' MMMM 'de' y", 'es_CO').format(
+                  convertirTimestampADateTime(data['ultima_actualizacion_redenciones']) ?? DateTime.now())
+                  : 'Sin revisión',
+              style: const TextStyle(fontSize: 10),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        )
+            : const Text("No aplica", style: TextStyle(color: Colors.grey, fontSize: 10))),
+
+        // 🔷 Último seguimiento
+        DataCell(_buildSeguimiento(data['ultimo_seguimiento'])),
+
+        // 🔷 PPL
+        DataCell(Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(data['nombre_ppl'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(data['apellido_ppl'] ?? '', style: const TextStyle(fontSize: 12)),
+          ],
+        )),
+
+        // 🔷 Documento
+        DataCell(Text(data['numero_documento_ppl'].toString(), style: const TextStyle(fontSize: 12))),
+
+        // 🔷 Acudiente
+        DataCell(Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(data['nombre_acudiente'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(data['apellido_acudiente'] ?? '', style: const TextStyle(fontSize: 12)),
+          ],
+        )),
+
+        // 🔷 WhatsApp
+        DataCell(Text(data['celularWhatsapp'] ?? '', style: const TextStyle(fontSize: 12))),
+
+        // 🔷 Pago
+        DataCell(Icon(isPaid ? Icons.check_circle : Icons.cancel, color: isPaid ? Colors.blue : Colors.grey)),
+
+        // 🔷 Prueba
+        DataCell(
+          iconoPruebaYPago(
+            data: data,
+            tiempoDePruebaDias: tiempoDePruebaDias,
+            onTapPagoPendiente: () => onTapPagoPendiente(doc),
+          ),
+        ),
+
+        // 🔷 Registro
+        DataCell(Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              DateFormat("dd 'de' MMMM 'de' yyyy", 'es').format(
+                  convertirTimestampADateTime(data['fechaRegistro']) ?? DateTime.now()),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
+            ),
+            Text(
+              DateFormat('hh:mm a', 'es').format(
+                  convertirTimestampADateTime(data['fechaRegistro']) ?? DateTime.now()),
+              style: const TextStyle(fontSize: 10, color: Colors.black54),
+            ),
+          ],
+        )),
+      ],
+    );
+  }
+
+  @override
+  bool get isRowCountApproximate => false;
+
+  @override
+  int get rowCount => registros.length;
+
+  @override
+  int get selectedRowCount => 0;
+
+  // Helpers:
+  Widget _getIconoPorSituacion(String situacion) {
+    switch (situacion) {
+      case 'En Reclusión':
+        return const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lock, size: 15, color: Colors.grey),
+            Text("Reclusión", style: TextStyle(fontSize: 10)),
+          ],
+        );
+      case 'En Prisión domiciliaria':
+        return const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.home, size: 15, color: Colors.orange),
+            Text("Domiciliaria", style: TextStyle(fontSize: 10)),
+          ],
+        );
+      case 'En libertad condicional':
+        return const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.directions_walk, size: 15, color: Colors.green),
+            Text("Condicional", style: TextStyle(fontSize: 10)),
+          ],
+        );
+      default:
+        return const Text('-', style: TextStyle(fontSize: 10));
+    }
+  }
+
+  Widget _buildSeguimiento(dynamic timestamp) {
+    if (timestamp is Timestamp) {
+      final fecha = timestamp.toDate();
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(DateFormat("d 'de' MMMM 'de' y", 'es_CO').format(fecha), style: const TextStyle(fontSize: 10)),
+          Text(DateFormat('hh:mm a', 'es_CO').format(fecha), style: const TextStyle(fontSize: 10)),
+        ],
+      );
+    }
+    return const Text("Sin seguimiento", style: TextStyle(fontSize: 10, color: Colors.grey));
+  }
+
+  Icon _getIconoPorNivel(dynamic nivel) {
+    switch (nivel) {
+      case 'superado':
+        return const Icon(Icons.check_circle, color: Colors.green, size: 20);
+      case 'cercano':
+        return const Icon(Icons.access_time, color: Colors.orange, size: 20);
+      case 'bajo':
+        return const Icon(Icons.cancel, color: Colors.red, size: 20);
+      default:
+        return const Icon(Icons.help_outline, color: Colors.grey, size: 20);
+    }
+  }
+
+  String _getTextoPorNivel(dynamic nivel) {
+    switch (nivel) {
+      case 'superado':
+        return 'Beneficios';
+      case 'cercano':
+        return 'Cercano';
+      case 'bajo':
+        return 'Lejano';
+      default:
+        return 'Sin dato';
+    }
+  }
+
+}
+
+

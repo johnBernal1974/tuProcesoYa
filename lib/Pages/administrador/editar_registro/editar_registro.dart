@@ -264,26 +264,49 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return MainLayout(
       pageTitle: 'Datos generales',
       content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Center(
-            child: isWide
-                ? Row( // escritorio
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: 4, child: _buildMainContent()),
-                const SizedBox(width: 50),
-                Expanded(flex: 2, child: _buildExtraWidget()),
-              ],
-            )
-                : Column( // móvil
-              children: [
-                _buildMainContent(),
-                const SizedBox(height: 30),
-                _buildExtraWidget(),
-              ],
+        child: Column(
+          children: [
+            // 🔹 Botón de retroceso manual
+            Align(
+              alignment: Alignment.centerLeft, // 🔹 Alinea a la izquierda
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.of(context).maybePop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Volver', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primary,
+                  foregroundColor: blanco,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ),
-          ),
+            SizedBox(height: 25),
+
+            Form(
+              key: _formKey,
+              child: Center(
+                child: isWide
+                    ? Row( // escritorio
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(flex: 4, child: _buildMainContent()),
+                    const SizedBox(width: 50),
+                    Expanded(flex: 2, child: _buildExtraWidget()),
+                  ],
+                )
+                    : Column( // móvil
+                  children: [
+                    _buildMainContent(),
+                    const SizedBox(height: 30),
+                    _buildExtraWidget(),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -3378,7 +3401,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             else {
               // ✅ Todos los datos están completos y no hay eventos → solicitar comentario obligatorio
               if (context.mounted) {
-                final resultadoComentario = await _mostrarDialogoComentarioObligatorio(context);
+                final resultadoComentario = await _mostrarDialogoComentarioObligatorio(
+                  context,
+                  FirebaseFirestore.instance.collection('Ppl').doc(ppl.id), // Documento principal del PPL
+                  widget.doc.reference.collection('seguimiento'),          // Subcolección de seguimiento
+                  adminFullName,                                           // Nombre del administrador actual
+                );
+
                 comentario = resultadoComentario['comentario'] ?? '';
                 marcarParaSeguimiento = resultadoComentario['seguimiento'] ?? false;
               }
@@ -3625,13 +3654,18 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  Future<Map<String, dynamic>> _mostrarDialogoComentarioObligatorio(BuildContext context) async {
+  Future<Map<String, dynamic>> _mostrarDialogoComentarioObligatorio(
+      BuildContext context,
+      DocumentReference pplDocRef, // 🔹 documento del PPL
+      CollectionReference seguimientoCollection, // 🔹 colección donde se guardan los comentarios
+      String adminFullName, // 🔹 nombre del admin que crea el comentario
+      ) async {
     TextEditingController comentarioController = TextEditingController();
     bool requiereSeguimiento = false;
 
-    return await showDialog<Map<String, dynamic>>(
+    final resultado = await showDialog<Map<String, dynamic>>(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
@@ -3660,6 +3694,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 );
 
                 if (confirmar == true && context.mounted) {
+                  // ✅ 1. Actualizar nodo del PPL
+                  await pplDocRef.update({
+                    'ultimo_seguimiento': Timestamp.now(),
+                  });
+
                   Navigator.of(context).pop({
                     'comentario': '',
                     'seguimiento': true,
@@ -3670,6 +3709,19 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
 
               if (comentario.isNotEmpty || requiereSeguimiento) {
+                // ✅ 1. Guardar comentario en subcolección
+                await seguimientoCollection.add({
+                  'comentario': comentario,
+                  'fecha_inicio': Timestamp.now(),
+                  'creado_por': adminFullName,
+                  'activo': true,
+                });
+
+                // ✅ 2. Actualizar nodo del PPL
+                await pplDocRef.update({
+                  'ultimo_seguimiento': Timestamp.now(),
+                });
+
                 Navigator.of(context).pop({
                   'comentario': comentario,
                   'seguimiento': requiereSeguimiento,
@@ -3725,8 +3777,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           },
         );
       },
-    ) ?? {};
+    );
+
+    comentarioController.dispose();
+    return resultado ?? {};
   }
+
 
 
   Future<bool> tieneEventoEspecial(DocumentReference docRef) async {
@@ -4053,11 +4109,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
 
     if (resultado != null && resultado.isNotEmpty) {
+      // 🔹 Guarda el comentario en la subcolección
       await widget.doc.reference.collection('seguimiento').add({
         'comentario': resultado,
         'fecha_inicio': Timestamp.now(),
-        'creado_por': adminFullName, // Asegúrate de definir esta variable según tu lógica
+        'creado_por': adminFullName, // Asegúrate de que esta variable esté disponible
         'activo': true,
+      });
+
+      // 🔹 Actualiza el campo 'ultimo_seguimiento' en el documento principal
+      await widget.doc.reference.update({
+        'ultimo_seguimiento': Timestamp.now(),
       });
 
       if (context.mounted) {
@@ -4067,6 +4129,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       }
     }
   }
+
 
   /// 🔹 Función para mostrar un AlertDialog de confirmación antes de guardar
   Future<bool> _mostrarDialogoConfirmacionBotonGuardar() async {
