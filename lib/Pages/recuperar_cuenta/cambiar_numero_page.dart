@@ -115,6 +115,19 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
       data?['celular'] = celularController.text.trim();
 
       await newDocRef.set(data!);
+      await copiarYEliminarSubcolecciones(widget.userId, nuevoUID);
+
+      // 🔹 Registrar en historial_acciones
+      await FirebaseFirestore.instance
+          .collection('Ppl')
+          .doc(nuevoUID)
+          .collection('historial_acciones')
+          .add({
+        'accion': 'Cambio de celular',
+        'admin': 'Hecha por el mismo usuario',
+        'fecha': FieldValue.serverTimestamp(),
+      });
+
       await originalDocRef.delete();
 
       await eliminarUsuarioAnteriorHttp(widget.userId);
@@ -130,8 +143,6 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
       if (mounted) setState(() => _loading = false); // 👈 Desactivar el loader
     }
   }
-
-
 
 
   Future<void> eliminarUsuarioAnteriorHttp(String uid) async {
@@ -290,5 +301,31 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
     );
   }
 
+  Future<void> copiarYEliminarSubcolecciones(String originalUID, String nuevoUID) async {
+    final firestore = FirebaseFirestore.instance;
+    final subcolecciones = [
+      'seguimiento',
+      'redenciones',
+      'historial_acciones',
+      'estadias',
+      'comentarios',
+      'correos_centro_reclusion',
+      'eventos'
+    ];
+
+    for (String subcoleccion in subcolecciones) {
+      final originalSubcolRef = firestore.collection('Ppl').doc(originalUID).collection(subcoleccion);
+      final newSubcolRef = firestore.collection('Ppl').doc(nuevoUID).collection(subcoleccion);
+
+      final snapshots = await originalSubcolRef.get();
+
+      if (snapshots.docs.isNotEmpty) {
+        for (final doc in snapshots.docs) {
+          await newSubcolRef.doc(doc.id).set(doc.data());      // ✅ Copia el documento
+          await originalSubcolRef.doc(doc.id).delete();        // ✅ Elimina el original
+        }
+      }
+    }
+  }
 
 }

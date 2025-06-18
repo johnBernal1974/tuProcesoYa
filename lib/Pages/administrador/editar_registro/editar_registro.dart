@@ -3259,7 +3259,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               color = Colors.blue;
               icono = Icons.lock_open;
               textoAccion = "Desbloqueado por: ";
-            } else if (accion == "activado") {
+            }else if (accion == "Cambio de celular") {
+              color = Colors.blue;
+              icono = Icons.call;
+              textoAccion = "Cambio de celular";
+            }
+            else if (accion == "activado") {
               color = Colors.green;
               icono = Icons.check_circle;
               textoAccion = "Activado por: ";
