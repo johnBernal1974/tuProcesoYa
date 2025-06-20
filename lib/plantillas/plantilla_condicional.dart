@@ -90,8 +90,8 @@ class LibertadCondicionalTemplate {
         Delito: <b>$delito</b>.<br>
         Asunto: <br>
         <b>Solicitud Redencion de Penas</b><br>
-        <b>Solicitud de libertad condicional con la 38G - $numeroSeguimiento</b><br>
-        <span style="font-size: 12px; color: #666666;">"De acuerdo al artículo 471 del Código de Procedimiento Penal"</span><br><br>
+        <b>Solicitud de libertad condicional con el art. 471 del CPP - $numeroSeguimiento</b><br><br>
+        
 
         “Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.”<br><br>
         E.S.D<br><br>

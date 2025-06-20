@@ -139,8 +139,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   late TextEditingController _centroController;
   bool centroValidado = false;
   late String adminFullName = "Desconocido"; // Valor por defecto
-
-
+  bool mostrarBotonNotificar = false;
 
 
   /// opciones de documento de identidad
@@ -996,8 +995,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         // 🔥 **LIMPIAR los campos después de guardar**
         _fechaController.clear();
         _diasController.clear();
-        setState(() {}); // 🔄 Refrescar UI después de limpiar
+        setState(() {
+          mostrarBotonNotificar = true; // 🔔 Mostrar botón de notificación
+        });
       }
+
     } catch (e) {
       if (kDebugMode) {
         print("❌ Error guardando la redención: $e");
@@ -1105,19 +1107,53 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
 
                 // 💾 Botón de guardar como ícono
-                IconButton(
-                  onPressed: widget.doc["status"] == "bloqueado"
-                      ? null
-                      : () async {
-                    await _guardarRedencion(widget.doc.id);
-                    await calcularTotalRedenciones(widget.doc.id);
-                    _initCalculoCondena();
-                    setState(() {});
-                  },
-                  icon: const Icon(Icons.save, size: 28),
-                  tooltip: "Guardar redención",
-                  color: widget.doc["status"] == "bloqueado" ? Colors.grey : Colors.green,
+                Row(
+                  children: [
+                    // 💾 Botón de guardar como ícono
+                    IconButton(
+                      onPressed: widget.doc["status"] == "bloqueado"
+                          ? null
+                          : () async {
+                        await _guardarRedencion(widget.doc.id);
+                        await calcularTotalRedenciones(widget.doc.id);
+                        _initCalculoCondena();
+                      },
+
+                      icon: const Icon(Icons.save, size: 28),
+                      tooltip: "Guardar redención",
+                      color: widget.doc["status"] == "bloqueado" ? Colors.grey : Colors.green,
+                    ),
+
+                    const SizedBox(width: 12),
+
+                    // 🛎️ Botón para notificar al usuario
+                    if (mostrarBotonNotificar)
+                      ElevatedButton.icon(
+                        onPressed: widget.doc["status"] == "bloqueado"
+                            ? null
+                            : () {
+                          _notificarAlUsuario(
+                            widget.doc["nombre_acudiente"],
+                            widget.doc["nombre_ppl"],
+                            widget.doc["apellido_ppl"],
+                            widget.doc["celularWhatsapp"],
+                          );
+                        },
+                        icon: const Icon(Icons.notifications_active_outlined),
+                        label: const Text("Notificar al usuario"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                      ),
+
+                  ],
                 ),
+                const SizedBox(height: 20),
+                const Divider(height: 1, color: gris),
+
               ],
             ),
 
@@ -1220,6 +1256,27 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
+  void _notificarAlUsuario(String nombreAcudiente, String nombrePpl, String apellidoPpl, String celular) async {
+    final mensaje = Uri.encodeComponent(
+        "Hola *$nombreAcudiente*,\n\nHay un cambio en el proceso de $nombrePpl $apellidoPpl. La autoridad competente le ha concedido una nueva redención de penas. Los días redimidos ya fueron cargados a la aplicación.\n\n"
+
+        "Ingresa a tu aplicación dando click aca:\nhttps://www.tuprocesoya.com\n\n\n"
+            "Puedes revisar esta información ingresando al menú / Tus redenciones.\n\n Es para un placer para nosotros contar con tu confianza\n\nTu equipo de *TU PROCESO YA*"
+    );
+
+    final url = Uri.parse("https://wa.me/$celular?text=$mensaje");
+
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No se pudo abrir WhatsApp.")),
+      );
+    }
+  }
+
+
 
   Widget iconoRevision(DateTime? ultimaActualizacion) {
     if (ultimaActualizacion == null) {
