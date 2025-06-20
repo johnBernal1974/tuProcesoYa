@@ -22,6 +22,7 @@ class ResumenSolicitudesWidget extends StatefulWidget {
 }
 
 class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<QuerySnapshot>(
@@ -81,33 +82,39 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                     onTap: () {
                       showDialog(
                         context: context,
-                        builder: (_) => AlertDialog(
-                          backgroundColor: blanco,
-                          title: const Text("Correos enviados"),
-                          content: SizedBox(
-                            width: 600,
-                            height: 300,
-                            child: ListaCorreosWidget(
-                              solicitudId: idOriginal,
-                              nombreColeccion: origen,
-                              onTapCorreo: (correoId) {
-                                Navigator.of(context).pop(); // Cierra el diálogo
+                          builder: (_) => AlertDialog(
+                            backgroundColor: blanco,
+                            title: const Text("Correos de la solicitud"),
+                            content: SizedBox(
+                              width: 600,
+                              height: 300,
+                              child: Scrollbar( // 🔹 Añadido scrollbar para mejor UX
+                                thumbVisibility: true,
+                                child: SingleChildScrollView(
+                                  child: ListaCorreosWidget(
+                                    solicitudId: idOriginal,
+                                    nombreColeccion: origen,
+                                    onTapCorreo: (correoId) {
+                                      Navigator.of(context).pop(); // Cierra el diálogo
 
-                                _mostrarDetalleCorreo(
-                                  correoId: correoId,
-                                  solicitudId: idOriginal,
-                                  nombreColeccion: origen,
-                                );
-                              },
+                                      _mostrarDetalleCorreo(
+                                        correoId: correoId,
+                                        solicitudId: idOriginal,
+                                        nombreColeccion: origen,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
                             ),
+                            actions: [
+                              TextButton(
+                                child: const Text("Cerrar"),
+                                onPressed: () => Navigator.of(context).pop(),
+                              ),
+                            ],
                           ),
-                          actions: [
-                            TextButton(
-                              child: const Text("Cerrar"),
-                              onPressed: () => Navigator.of(context).pop(),
-                            ),
-                          ],
-                        ),
+
                       );
                     },
                   ),
@@ -168,16 +175,32 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
+
                   if (!snapshot.hasData || !snapshot.data!.exists) {
                     return const Text("No se encontró información del correo.");
                   }
 
                   final data = snapshot.data!.data() as Map<String, dynamic>;
-                  final to = (data['to'] as List).join(', ');
+
+                  final toList = (data['to'] as List?)?.whereType<String>().toList();
+                  final destinatario = data['destinatario'] as String?;
+
+                  final to = toList != null && toList.isNotEmpty
+                      ? toList.join(', ')
+                      : (destinatario?.isNotEmpty == true ? destinatario : '(sin destinatario)');
                   final cc = (data['cc'] as List?)?.join(', ') ?? '';
-                  final subject = data['subject'] ?? '';
-                  final htmlContent = data['html'] ?? '';
-                  final archivos = data['archivos'] as List?;
+                  final subject = data['subject'] ?? '(sin asunto)';
+                  final htmlContent = data['cuerpoHtml'] ?? data['html'] ?? data['text'] ?? '(sin contenido)';
+
+                  final fromList = (data['from'] as List?)?.whereType<String>().toList();
+                  final remitente = data['remitente'] as String?;
+
+                  final from = fromList != null && fromList.isNotEmpty
+                      ? fromList.join(', ')
+                      : (remitente?.isNotEmpty == true ? remitente : 'peticiones@tuprocesoya.com');
+
+                  final archivos = data['archivos'] as List? ?? [];
+
                   final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
                   final fechaEnvio = timestamp != null
                       ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
@@ -188,23 +211,19 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Text("Para: ", style: TextStyle(fontSize: 13)),
-                            Text(to, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
+                        Text("📤 De: $from", style: const TextStyle(fontSize: 13)),
+                        Text("📥 Para: $to", style: const TextStyle(fontSize: 13)),
                         if (cc.isNotEmpty)
-                          Text("CC: $cc", style: const TextStyle(fontSize: 13)),
+                          Text("📋 CC: $cc", style: const TextStyle(fontSize: 13)),
                         const SizedBox(height: 10),
-                        Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text("📌 Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
                         Text("📅 Fecha de envío: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
                         const Divider(),
                         Html(data: htmlContent),
-                        if (archivos != null && archivos.isNotEmpty) ...[
+                        if (archivos.isNotEmpty) ...[
                           const Divider(),
-                          const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ...archivos.map((a) => Text("- ${a['nombre']}"))
+                          const Text("📎 Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ...archivos.map((a) => Text("- ${a['nombre']}")).toList(),
                         ],
                         const SizedBox(height: 20),
                         Align(
@@ -225,6 +244,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
       ),
     );
   }
+
 
   Map<String, dynamic> _obtenerEstiloEstado(String status) {
     switch (status.toLowerCase()) {

@@ -158,9 +158,9 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                   columns: const [
                     DataColumn(label: Text("Fecha", style: TextStyle(fontSize: 12))),
                     DataColumn(label: Text("Usuario", style: TextStyle(fontSize: 12))),
-                    DataColumn(label: Text("ID Usuario", style: TextStyle(fontSize: 12))),
                     DataColumn(label: Text("Método Pago", style: TextStyle(fontSize: 12))),
                     DataColumn(label: Text("Monto", style: TextStyle(fontSize: 12))),
+                    DataColumn(label: Text("Servicio", style: TextStyle(fontSize: 12))), // ✅ Nueva columna
                     DataColumn(label: Text("Referencia de pago", style: TextStyle(fontSize: 12))),
                     DataColumn(label: Text("Estado", style: TextStyle(fontSize: 12))),
                   ],
@@ -172,16 +172,28 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                     var paymentMethod = transaction["paymentMethod"] ?? "Desconocido";
                     var userId = transaction["userId"];
                     var transaccion = transaction["transactionId"];
+                    var referenciaOriginal = transaction["reference"] ?? "";
+                    var referenciaFormateada = referenciaOriginal.split('_').first;
+                    if (referenciaFormateada.isNotEmpty) {
+                      referenciaFormateada = referenciaFormateada[0].toUpperCase() + referenciaFormateada.substring(1);
+                    }
 
                     return DataRow(cells: [
                       DataCell(Text(formattedDate, style: const TextStyle(fontSize: 12))),
                       DataCell(FutureBuilder<String>(
                         future: _getUserName(userId),
                         builder: (context, snapshot) {
-                          return Text(snapshot.data ?? "Cargando...", style: const TextStyle(fontSize: 12));
+                          final nombre = snapshot.data ?? "Cargando...";
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(nombre, style: const TextStyle(fontSize: 12)),
+                              const SizedBox(height: 2),
+                              Text(userId, style: TextStyle(fontSize: 10, color: Colors.black.withOpacity(0.6))),
+                            ],
+                          );
                         },
                       )),
-                      DataCell(Text(userId, style: const TextStyle(fontSize: 12))),
                       DataCell(Text(paymentMethod, style: const TextStyle(fontSize: 12))),
                       DataCell(
                         Text(
@@ -194,6 +206,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                           ),
                         ),
                       ),
+                      DataCell(Text(referenciaFormateada, style: const TextStyle(fontSize: 12))), // ✅ Nueva celda
                       DataCell(Text(transaccion, style: const TextStyle(fontSize: 12))),
                       DataCell(Text(
                         estado,
@@ -207,6 +220,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                   }).toList(),
                 ),
               ),
+
               const SizedBox(height: 16),
             ],
           );
@@ -224,16 +238,19 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
     var paymentMethod = transaction["paymentMethod"] ?? "Desconocido";
     var userId = transaction["userId"];
     var transaccionId = transaction["transactionId"];
+    var referenciaOriginal = transaction["reference"] ?? "";
+    var referenciaFormateada = referenciaOriginal.split('_').first;
+    if (referenciaFormateada.isNotEmpty) {
+      referenciaFormateada = referenciaFormateada[0].toUpperCase() + referenciaFormateada.substring(1);
+    }
 
     return Container(
-      width: double.infinity, // 🔥 Hace que la tarjeta ocupe todo el ancho disponible
+      width: double.infinity,
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Card(
         color: blanco,
         surfaceTintColor: blanco,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8), // Opcional: Redondea las esquinas
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -248,21 +265,32 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                   decoration: estado == "Rechazado" ? TextDecoration.lineThrough : TextDecoration.none,
                 ),
               ),
-
               const SizedBox(height: 5),
               Text("$formattedDate - $paymentMethod", style: const TextStyle(fontSize: 12)),
+
+              // 🔽 Nombre e ID del usuario
               FutureBuilder<String>(
                 future: _getUserName(userId),
                 builder: (context, snapshot) {
-                  return Text(
-                    "Usuario: ${snapshot.data ?? "Cargando..."}",
-                    style: const TextStyle(fontSize: 12, color: Colors.black),
+                  final nombre = snapshot.data ?? "Cargando...";
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(nombre, style: const TextStyle(fontSize: 12, color: Colors.black)),
+                      const SizedBox(height: 2),
+                      Text(userId, style: TextStyle(fontSize: 10, color: Colors.black.withOpacity(0.6))),
+                    ],
                   );
                 },
               ),
-              Text("ID: $userId", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+
+              const SizedBox(height: 5),
+              // 🔽 Servicio
+              Text(referenciaFormateada, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+
               const SizedBox(height: 5),
               Text("No. Transacción: $transaccionId", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+
               const SizedBox(height: 5),
               Text(
                 estado,
@@ -278,6 +306,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
       ),
     );
   }
+
 
 
 

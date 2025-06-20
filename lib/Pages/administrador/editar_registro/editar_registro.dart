@@ -349,8 +349,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           ),
 
           const SizedBox(height: 20),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Wrap(
+            spacing: 20, // espacio horizontal entre widgets cuando caben en una fila
+            runSpacing: 20, // espacio vertical entre widgets cuando se apilan
             children: [
               // Contenedor de beneficios
               Container(
@@ -358,9 +359,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade400),
                   borderRadius: BorderRadius.circular(12),
+                  color: blanco
                 ),
                 child: SizedBox(
-                  width: 400,
+                  width: 350,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -370,16 +372,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                           children: [
                             if (situacion == "En Reclusión")
                               _buildBenefitMinimalSection(
-                                titulo: "PERMISO DE 72 HORAS",
+                                titulo: "72 Horas",
                                 condition: porcentajeEjecutado >= 33.33,
-                                remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                                remainingTime: _calcularDias(33),
                               ),
-                            if (situacion == "En Reclusión")
-                              _buildBenefitMinimalSection(
-                                titulo: "PRISIÓN DOMICILIARIA",
-                                condition: porcentajeEjecutado >= 50,
-                                remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                              ),
+                            _buildBenefitMinimalSection(
+                              titulo: "Condicional",
+                              condition: porcentajeEjecutado >= 60,
+                              remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                            ),
+
                           ],
                         ),
                       ),
@@ -389,13 +391,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                         child: Column(
                           children: [
                             if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
-                              _buildBenefitMinimalSection(
-                                titulo: "LIBERTAD CONDICIONAL",
-                                condition: porcentajeEjecutado >= 60,
-                                remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                              ),
+                              if (situacion == "En Reclusión")
+                                _buildBenefitMinimalSection(
+                                  titulo: "Domiciliaria",
+                                  condition: porcentajeEjecutado >= 50,
+                                  remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                                ),
+
                             _buildBenefitMinimalSection(
-                              titulo: "EXTINCIÓN DE LA PENA",
+                              titulo: "Extinción",
                               condition: porcentajeEjecutado >= 100,
                               remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
                             ),
@@ -406,8 +410,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 ),
               ),
-
-              const SizedBox(width: 70),
 
               // Widget de resumen de solicitudes
               Container(
@@ -681,6 +683,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  int _calcularDias(int metaPorcentaje) {
+    final diferencia = porcentajeEjecutado - metaPorcentaje;
+    return (diferencia.abs() / 100 * tiempoCondena * 30).round();
+  }
+
+
+
   Widget botonEnviarWhatsappDesdeImagen(String celular, String docId) {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
@@ -714,24 +723,45 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     required bool condition,
     required int remainingTime,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 8.0),
-          child: Text(
-            titulo,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: responsiveFontSize(context, 13),
+    return Card(
+      color: Colors.white,
+      surfaceTintColor: blanco,
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: condition ? Colors.green.shade700 : Colors.red.shade700, // Borde dinámico
+          width: 2.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              titulo,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Colors.black,
+              ),
             ),
-          ),
+            const SizedBox(height: 4),
+            Text(
+              condition
+                  ? "Hace $remainingTime días"
+                  : "Faltan $remainingTime días",
+              style: TextStyle(
+                color: condition ? Colors.green.shade700 : Colors.red.shade700,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-        _buildBenefitCard(
-          condition: condition,
-          remainingTime: remainingTime,
-        ),
-      ],
+      ),
     );
   }
 
@@ -744,41 +774,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return baseSize; // Para pantallas grandes
   }
 
-  Widget _buildBenefitCard({
-    required bool condition,
-    required int remainingTime,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade400),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: condition ? Colors.green.withOpacity(0.25) : Colors.red.withOpacity(0.25),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (condition)
-              const Icon(Icons.check_circle, color: Colors.green, size: 18)
-            else
-              Text(
-                "$remainingTime días",
-                style: TextStyle(
-                  fontSize: responsiveFontSize(context, 13),
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red.shade800,
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Future<void> calcularTiempo(String id) async {
     final pplData = await _pplProvider.getById(id);

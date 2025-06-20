@@ -21,39 +21,70 @@ class ListaCorreosWidget extends StatelessWidget {
 
     for (final correo in correosSnapshot.docs) {
       final correoData = correo.data();
-      final messageId = correoData['messageId'];
-      final email = (correoData['to'] as List?)?.join(", ") ?? "(sin destinatario)";
-      final timestamp = (correoData['timestamp'] as Timestamp?)?.toDate();
       final correoId = correo.id;
+      final messageId = correoData['messageId'];
+      final timestamp = (correoData['timestamp'] as Timestamp?)?.toDate();
 
-      String? estado;
-      if (messageId != null) {
-        final eventosSnapshot = await FirebaseFirestore.instance
-            .collection("resend_eventos_basico")
-            .where("messageId", isEqualTo: messageId)
-            .orderBy("timestamp", descending: true)
-            .limit(1)
-            .get();
+      String email;
+      String estadoFinal;
 
-        if (eventosSnapshot.docs.isNotEmpty) {
-          estado = eventosSnapshot.docs.first.data()['type'];
+      // 📨 SI ES ENVIADO (tiene 'to')
+      if (correoData.containsKey('to') && correoData['to'] is List) {
+        email = (correoData['to'] as List?)?.join(", ") ?? "(sin destinatario)";
+        String? estado;
+
+        if (messageId != null) {
+          final eventosSnapshot = await FirebaseFirestore.instance
+              .collection("resend_eventos_basico")
+              .where("messageId", isEqualTo: messageId)
+              .orderBy("timestamp", descending: true)
+              .limit(1)
+              .get();
+
+          if (eventosSnapshot.docs.isNotEmpty) {
+            estado = eventosSnapshot.docs.first.data()['type'];
+          }
         }
+
+        estadoFinal = estado ?? "(sin estado)";
+      }
+
+      // 📥 SI ES RECIBIDO (no tiene 'to', pero sí 'from')
+      else if (correoData.containsKey('from') || correoData.containsKey('remitente')) {
+        // Obtener remitente
+        final fromList = (correoData['from'] as List?)?.whereType<String>().toList();
+        final remitente = correoData['remitente'] as String?;
+        email = fromList != null && fromList.isNotEmpty
+            ? fromList.join(', ')
+            : (remitente?.isNotEmpty == true ? remitente! : "peticiones@tuprocesoya.com");
+
+        // Detectar si es respuesta
+        final esRespuesta = correoData['esRespuesta'] == true || correoData['EsRespuesta'] == true;
+
+        estadoFinal = esRespuesta ? "respuesta" : "recibido";
+      }
+
+      // ❓ SI NO HAY NI 'to' NI 'from'
+      else {
+        email = "(correo sin dirección)";
+        estadoFinal = "(sin estado)";
       }
 
       resultado.add({
-        'estado': estado ?? '(sin estado)',
+        'estado': estadoFinal,
         'correo': email,
         'fecha': timestamp,
         'id': correoId,
       });
     }
-
     return resultado;
   }
 
   Widget _estadoConIcono(String estado) {
     late Icon icono;
     late String texto;
+    estado = estado.toLowerCase().trim();
+
 
     switch (estado) {
       case 'email.delivered':
@@ -68,6 +99,15 @@ class ListaCorreosWidget extends StatelessWidget {
         icono = const Icon(Icons.error, color: Colors.red, size: 16);
         texto = 'Rebotado';
         break;
+      case 'respuesta':
+        icono = const Icon(Icons.mark_email_read, color: Colors.deepPurple, size: 16);
+        texto = 'Respuesta';
+        break;
+
+      case 'recibido':
+        icono = const Icon(Icons.inbox, color: Colors.orange, size: 16);
+        texto = 'Correo recibido';
+        break;
       default:
         icono = const Icon(Icons.help_outline, color: Colors.grey, size: 16);
         texto = estado;
@@ -81,6 +121,7 @@ class ListaCorreosWidget extends StatelessWidget {
       ],
     );
   }
+
 
   Color _estadoColor(String estado) {
     switch (estado) {
@@ -136,9 +177,27 @@ class ListaCorreosWidget extends StatelessWidget {
                     ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _estadoConIcono(estado),
-                    const SizedBox(height: 8),
-                    Text("📧 $correo", style: const TextStyle(fontSize: 13)),
+                    RichText(
+                      text: TextSpan(
+                        text: estado.toLowerCase().contains('recibido') || estado.toLowerCase().contains('respuesta')
+                            ? "De: "
+                            : "Para: ",
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: Colors.black,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: correo,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.normal,
+                              color: Colors.black,
+                            ),
+                          )
+                        ],
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Text("📅 $fecha", style: const TextStyle(fontSize: 12, color: Colors.black87)),
                   ],
@@ -150,10 +209,12 @@ class ListaCorreosWidget extends StatelessWidget {
                     Expanded(flex: 4, child: Text(fecha, style: const TextStyle(fontSize: 13))),
                   ],
                 ),
+
               ),
             );
           }).toList(),
         );
+
       },
     );
   }

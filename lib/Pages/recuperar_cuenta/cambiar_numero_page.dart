@@ -113,6 +113,7 @@ class _CambiarNumeroPageState extends State<CambiarNumeroPage> {
 
       final data = originalSnapshot.data();
       data?['celular'] = celularController.text.trim();
+      data?['id'] = nuevoUID;
 
       await newDocRef.set(data!);
       await copiarYEliminarSubcolecciones(widget.userId, nuevoUID);
