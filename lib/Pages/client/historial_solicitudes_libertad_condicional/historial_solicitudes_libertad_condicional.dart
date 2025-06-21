@@ -266,12 +266,13 @@ class _HistorialSolicitudesLibertadCondicionalPageState extends State<HistorialS
                     }
                     if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                       return const Text(
-                        "Aún no hay correos enviados a la autoridad competente para esta solicitud.",
+                        "Aún no hay correos enviados o recibidos para esta solicitud.",
                         style: TextStyle(fontSize: 11),
                       );
                     }
 
                     final correos = snapshot.data!.docs;
+
                     return Container(
                       margin: const EdgeInsets.only(top: 12),
                       decoration: BoxDecoration(
@@ -280,45 +281,71 @@ class _HistorialSolicitudesLibertadCondicionalPageState extends State<HistorialS
                       ),
                       child: Column(
                         children: [
+                          // Encabezado
                           Container(
                             color: Colors.grey.shade100,
                             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                             child: const Row(
                               children: [
                                 Expanded(
-                                  flex: 2,
-                                  child: Text("Estado", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  flex: 3,
+                                  child: Text(
+                                    "Estado",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
                                 ),
                                 Expanded(
                                   flex: 4,
-                                  child: Text("Fecha", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  child: Text(
+                                    "Fecha",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
                                 ),
                                 Expanded(
-                                  flex: 3,
-                                  child: Text("Ver", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  flex: 2,
+                                  child: Text(
+                                    "Ver",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           const Divider(height: 1, color: Colors.grey),
+                          // Iterar correos
                           ...correos.map((doc) {
                             final correo = doc.data() as Map<String, dynamic>;
+
+                            // 📍 Determinar estado
+                            final esRespuesta = correo['esRespuesta'] == true || correo['EsRespuesta'] == true;
+                            final tipo = (correo['tipo'] ?? 'enviado').toString().toLowerCase().trim();
+                            final estado = esRespuesta ? 'respuesta' : tipo;
+
+                            // 📍 Formatear fecha
                             final fecha = (correo['timestamp'] as Timestamp?)?.toDate();
                             final fechaTexto = fecha != null
                                 ? DateFormat("dd/MM/yyyy - hh:mm a", 'es').format(fecha)
                                 : 'Fecha no disponible';
-                            final estado = correo['tipo'] ?? 'Enviado';
 
                             return Column(
                               children: [
-                                Padding(
+                                Container(
                                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                                   child: Row(
                                     children: [
-                                      Expanded(flex: 2, child: Text(estado, style: const TextStyle(fontSize: 11))),
-                                      Expanded(flex: 4, child: Text(fechaTexto, style: const TextStyle(fontSize: 10))),
                                       Expanded(
                                         flex: 3,
+                                        child: _estadoConIcono(estado),
+                                      ),
+                                      Expanded(
+                                        flex: 4,
+                                        child: Text(
+                                          fechaTexto,
+                                          style: const TextStyle(fontSize: 10),
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
                                         child: Align(
                                           alignment: Alignment.centerLeft,
                                           child: TextButton(
@@ -363,6 +390,49 @@ class _HistorialSolicitudesLibertadCondicionalPageState extends State<HistorialS
     );
   }
 
+  Widget _estadoConIcono(String estado) {
+    late Icon icono;
+    late String texto;
+    estado = estado.toLowerCase().trim();
+
+    switch (estado) {
+      case 'email.delivered':
+        icono = const Icon(Icons.check_circle, color: Colors.green, size: 16);
+        texto = 'Entregado';
+        break;
+      case 'email.sent':
+        icono = const Icon(Icons.send, color: Colors.green, size: 16);
+        texto = 'Enviado';
+        break;
+      case 'enviado': // ✅ NUEVO CASO
+        icono = const Icon(Icons.send, color: Colors.green, size: 16);
+        texto = 'Enviado';
+        break;
+      case 'email.bounced':
+        icono = const Icon(Icons.error, color: Colors.red, size: 16);
+        texto = 'Rebotado';
+        break;
+      case 'respuesta':
+        icono = const Icon(Icons.mark_email_read, color: Colors.deepPurple, size: 16);
+        texto = 'Respuesta';
+        break;
+      case 'recibido':
+        icono = const Icon(Icons.inbox, color: Colors.orange, size: 16);
+        texto = 'Correo recibido';
+        break;
+      default:
+        icono = const Icon(Icons.help_outline, color: Colors.grey, size: 16);
+        texto = estado;
+    }
+
+    return Row(
+      children: [
+        icono,
+        const SizedBox(width: 6),
+        Flexible(child: Text(texto, style: const TextStyle(fontSize: 13))),
+      ],
+    );
+  }
 
   Widget _buildDatoReparacion(String? valorRaw) {
     String textoAMostrar;
@@ -456,24 +526,7 @@ class _HistorialSolicitudesLibertadCondicionalPageState extends State<HistorialS
       ),
     );
   }
-  Widget _buildDatoColumna2(String titulo, String valor) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            titulo,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            valor,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   String obtenerNombreArchivo(String url) {
     String decodedUrl = Uri.decodeFull(url);

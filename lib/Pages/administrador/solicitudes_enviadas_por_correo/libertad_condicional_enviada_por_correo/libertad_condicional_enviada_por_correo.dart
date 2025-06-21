@@ -239,16 +239,11 @@ class _SolicitudesLibertadCondicionalEnviadasPorCorreoPageState extends State<So
                                     "📡 Estado del envío",
                                     style: TextStyle(fontWeight: FontWeight.bold),
                                   ),
-                                  SizedBox(
-                                      height: 300, // o el valor que consideres adecuado
-                                      child:
-                                      ListaCorreosWidget(
-                                        solicitudId: widget.idDocumento,
-                                        nombreColeccion: "condicional_solicitados",
-                                        onTapCorreo: _mostrarDetalleCorreo,
-                                      )
+                                  ListaCorreosWidget(
+                                    solicitudId: widget.idDocumento,
+                                    nombreColeccion: "condicional_solicitados",
+                                    onTapCorreo: _mostrarDetalleCorreo,
                                   ),
-
                                 ],
                               ),
                             ),
@@ -785,6 +780,7 @@ class _SolicitudesLibertadCondicionalEnviadasPorCorreoPageState extends State<So
   void abrirHtmlParaImprimir(String url) {
     html.window.open(url, '_blank');
   }
+
   void _mostrarDetalleCorreo(String correoId) {
     showDialog(
       context: context,
@@ -815,39 +811,85 @@ class _SolicitudesLibertadCondicionalEnviadasPorCorreoPageState extends State<So
                   }
 
                   final data = snapshot.data!.data() as Map<String, dynamic>;
-                  final to = (data['to'] as List).join(', ');
-                  final cc = (data['cc'] as List?)?.join(', ') ?? '';
+
+                  // 📬 Para enviados
+                  final toList = data['to'] is List ? List<String>.from(data['to']) : null;
+                  final ccList = data['cc'] is List ? List<String>.from(data['cc']) : null;
+
+                  // 📥 Para respuestas recibidas
+                  final fromList = data['from'] is List ? List<String>.from(data['from']) : null;
+                  final remitente = data['remitente'] as String?;
+
+                  final esRespuesta = data['esRespuesta'] == true || data['EsRespuesta'] == true;
+
                   final subject = data['subject'] ?? '';
-                  final htmlContent = data['html'] ?? '';
                   final archivos = data['archivos'] as List?;
                   final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
                   final fechaEnvio = timestamp != null
                       ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
                       : 'Fecha no disponible';
 
+                  // ✅ Cuerpo del mensaje: usar html o cuerpoHtml
+                  final htmlContent = data['html'] ?? data['cuerpoHtml'] ?? '<p>(Sin contenido disponible)</p>';
+
                   return SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Text("Para: ", style: TextStyle(fontSize: 13)),
-                            Text(to, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                          ],
-                        ),
-                        if (cc.isNotEmpty)
-                          Text("CC: $cc", style: const TextStyle(fontSize: 13)),
+
+                        if (!esRespuesta && toList != null)
+                          Row(
+                            children: [
+                              const Text("Para: ", style: TextStyle(fontSize: 13)),
+                              Flexible(
+                                child: Text(toList.join(', '), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              ),
+                            ],
+                          ),
+
+                        if (!esRespuesta && ccList != null && ccList.isNotEmpty)
+                          Text("CC: ${ccList.join(', ')}", style: const TextStyle(fontSize: 13)),
+
+                        if (esRespuesta) ...[
+                          Row(
+                            children: [
+                              const Text("De: ", style: TextStyle(fontSize: 13)),
+                              Flexible(
+                                child: Text(
+                                  fromList?.join(', ') ?? remitente ?? "Desconocido",
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          if ((data['destinatario'] ?? "").toString().trim().isNotEmpty)
+                            Row(
+                              children: [
+                                const Text("Para: ", style: TextStyle(fontSize: 13)),
+                                Flexible(
+                                  child: Text(
+                                    data['destinatario'],
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
                         const SizedBox(height: 10),
                         Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text("📅 Fecha de envío: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                        Text("📅 Fecha: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
                         const Divider(),
+
                         Html(data: htmlContent),
+
                         if (archivos != null && archivos.isNotEmpty) ...[
                           const Divider(),
                           const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ...archivos.map((a) => Text("- ${a['nombre']}"))
+                          ...archivos.map((a) => Text("- ${a['nombre']}")),
                         ],
+
                         const SizedBox(height: 20),
                         Align(
                           alignment: Alignment.centerRight,
@@ -867,5 +909,6 @@ class _SolicitudesLibertadCondicionalEnviadasPorCorreoPageState extends State<So
       ),
     );
   }
+
 
 }

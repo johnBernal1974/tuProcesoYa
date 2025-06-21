@@ -216,51 +216,71 @@ class _HistorialSolicitudesExtincionPenaPageState extends State<HistorialSolicit
                       ),
                       child: Column(
                         children: [
+                          // Encabezado
                           Container(
                             color: Colors.grey.shade100,
                             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                             child: const Row(
                               children: [
                                 Expanded(
-                                  flex: 2,
-                                  child: Text("Estado", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  flex: 3,
+                                  child: Text(
+                                    "Estado",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
                                 ),
                                 Expanded(
                                   flex: 4,
-                                  child: Text("Fecha", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  child: Text(
+                                    "Fecha",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
                                 ),
                                 Expanded(
-                                  flex: 3,
-                                  child: Text("Ver", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  flex: 2,
+                                  child: Text(
+                                    "Ver",
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                           const Divider(height: 1, color: Colors.grey),
+                          // Iterar correos
                           ...correos.map((doc) {
                             final correo = doc.data() as Map<String, dynamic>;
+
+                            // 📍 Determinar estado
+                            final esRespuesta = correo['esRespuesta'] == true || correo['EsRespuesta'] == true;
+                            final tipo = (correo['tipo'] ?? 'enviado').toString().toLowerCase().trim();
+                            final estado = esRespuesta ? 'respuesta' : tipo;
+
+                            // 📍 Formatear fecha
                             final fecha = (correo['timestamp'] as Timestamp?)?.toDate();
                             final fechaTexto = fecha != null
                                 ? DateFormat("dd/MM/yyyy - hh:mm a", 'es').format(fecha)
                                 : 'Fecha no disponible';
-                            final estado = correo['tipo'] ?? 'Enviado';
 
                             return Column(
                               children: [
-                                Padding(
+                                Container(
                                   padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                                   child: Row(
                                     children: [
                                       Expanded(
-                                        flex: 2,
-                                        child: Text(estado, style: const TextStyle(fontSize: 11)),
+                                        flex: 3,
+                                        child: _estadoConIcono(estado),
                                       ),
                                       Expanded(
                                         flex: 4,
-                                        child: Text(fechaTexto, style: const TextStyle(fontSize: 10)),
+                                        child: Text(
+                                          fechaTexto,
+                                          style: const TextStyle(fontSize: 10),
+                                        ),
                                       ),
                                       Expanded(
-                                        flex: 3,
+                                        flex: 2,
                                         child: Align(
                                           alignment: Alignment.centerLeft,
                                           child: TextButton(
@@ -340,6 +360,50 @@ class _HistorialSolicitudesExtincionPenaPageState extends State<HistorialSolicit
           ),
         ],
       ),
+    );
+  }
+
+  Widget _estadoConIcono(String estado) {
+    late Icon icono;
+    late String texto;
+    estado = estado.toLowerCase().trim();
+
+    switch (estado) {
+      case 'email.delivered':
+        icono = const Icon(Icons.check_circle, color: Colors.green, size: 16);
+        texto = 'Entregado';
+        break;
+      case 'email.sent':
+        icono = const Icon(Icons.send, color: Colors.green, size: 16);
+        texto = 'Enviado';
+        break;
+      case 'enviado': // ✅ NUEVO CASO
+        icono = const Icon(Icons.send, color: Colors.green, size: 16);
+        texto = 'Enviado';
+        break;
+      case 'email.bounced':
+        icono = const Icon(Icons.error, color: Colors.red, size: 16);
+        texto = 'Rebotado';
+        break;
+      case 'respuesta':
+        icono = const Icon(Icons.mark_email_read, color: Colors.deepPurple, size: 16);
+        texto = 'Respuesta';
+        break;
+      case 'recibido':
+        icono = const Icon(Icons.inbox, color: Colors.orange, size: 16);
+        texto = 'Correo recibido';
+        break;
+      default:
+        icono = const Icon(Icons.help_outline, color: Colors.grey, size: 16);
+        texto = estado;
+    }
+
+    return Row(
+      children: [
+        icono,
+        const SizedBox(width: 6),
+        Flexible(child: Text(texto, style: const TextStyle(fontSize: 13))),
+      ],
     );
   }
 
