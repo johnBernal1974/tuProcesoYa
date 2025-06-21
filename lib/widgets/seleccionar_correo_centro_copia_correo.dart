@@ -6,11 +6,14 @@ import '../src/colors/colors.dart';
 class SeleccionarCorreoCentroReclusion extends StatefulWidget {
   final String idUser;
   final Function(String correoSeleccionado) onEnviarCorreo;
+  final VoidCallback? onOmitir;
+
 
   const SeleccionarCorreoCentroReclusion({
     super.key,
     required this.idUser,
     required this.onEnviarCorreo,
+    this.onOmitir,
   });
 
   @override
@@ -214,6 +217,17 @@ class _SeleccionarCorreoCentroReclusionState
                   onPressed: _confirmarYEnviarCorreo,
                 ),
               ),
+            const SizedBox(height: 8),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Cierra el diálogo actual
+                  widget.onOmitir?.call();     // Ejecuta el callback si existe
+                },
+                child: const Text("Omitir este paso"),
+              ),
+            ),
+
           ],
         ),
       ),

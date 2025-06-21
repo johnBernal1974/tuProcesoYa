@@ -192,21 +192,16 @@ class _SolicitudesLibertadCondicionalEnviadasPorCorreoPageState extends State<So
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.start,
                                   children: [
                                     const SizedBox(height: 30),
                                     const Text(
                                       "📡 Estado del envío",
                                       style: TextStyle(fontWeight: FontWeight.bold),
                                     ),
-                                    SizedBox(
-                                        height: 300, // o el valor que consideres adecuado
-                                        child:
-                                        ListaCorreosWidget(
-                                          solicitudId: widget.idDocumento,
-                                          nombreColeccion: "condicional_solicitados",
-                                          onTapCorreo: _mostrarDetalleCorreo,
-                                        )
+                                    ListaCorreosWidget(
+                                      solicitudId: widget.idDocumento,
+                                      nombreColeccion: "condicional_solicitados",
+                                      onTapCorreo: _mostrarDetalleCorreo,
                                     ),
                                   ],
                                 ),

@@ -129,6 +129,11 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
   String? _opcionReparacionSeleccionada;
   late CalculoCondenaController _calculoCondenaController;
 
+  ///NUEVOS PARA TODAS LAS PANTALLAS DE ATENDER
+  String? correoManual;
+  String? entidadSeleccionada;
+  String? nombreCiudadSeleccionada;
+
 
 
   @override
@@ -1020,18 +1025,6 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
           const SizedBox(height: 20),
-          SelectorCorreoManualFlexible(
-            entidadSeleccionada: entidad, // ← tu variable ya existente
-            onCorreoValidado: (correo, entidad) {
-              setState(() {
-                correoSeleccionado = correo;
-                nombreCorreoSeleccionado = "Manual";
-                this.entidad = entidad;
-              });
-            },
-          ),
-
-          const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1423,8 +1416,6 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
     }
   }
 
-
-
   String generarTextoConsideracionesParaLibertadCondicional({
     required String direccion,
     required String municipio,
@@ -1455,28 +1446,44 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           "${esPlural ? "quienes son" : "quien es"} parte esencial de mi vida y ${esPlural ? "representan" : "representa"} mi principal motivación para continuar avanzando de manera positiva en mi proceso de resocialización.";
     }
 
-    // 🔹 Comportamiento
-    final textoComportamiento = (situacion == "En Prisión domiciliaria")
-        ? "Durante el tiempo que he permanecido en prisión domiciliaria, he mantenido un comportamiento ejemplar, cumpliendo con las condiciones impuestas, y participando activamente en mi proceso de resocialización y fortalecimiento familiar."
-        : "Durante mi tiempo de reclusión, he mantenido un comportamiento ejemplar, cumpliendo con las normas del establecimiento, participando activamente en actividades de resocialización, trabajo y educación, y demostrando compromiso con mi proceso de transformación personal.";
-
-    // 🔹 Cumplimiento
-    final textoCumplimientoPena =
-        "A la fecha, he cumplido $mesesEjecutados meses y $diasRestantes días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. "
-        "En consecuencia, he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito legal para solicitar el beneficio de libertad condicional.";
-
-    return """
+    // 🔹 Texto para prisión domiciliaria
+    if (situacion == "En Prisión domiciliaria") {
+      return """
 Honorable Juez, respetuosamente me permito solicitar la concesión del beneficio de libertad condicional, como una oportunidad para continuar con mi proceso de resocialización y reintegración a la sociedad en un entorno familiar estable y de apoyo.
 
-$textoComportamiento
+Durante el tiempo que he permanecido en prisión domiciliaria, he mantenido un comportamiento ejemplar, cumpliendo con las condiciones impuestas, y participando activamente en mi proceso de resocialización y fortalecimiento familiar.
 
-$textoCumplimientoPena
+A la fecha, he cumplido $mesesEjecutados meses y $diasRestantes días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. En consecuencia, he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito legal para solicitar el beneficio de libertad condicional.
 
 De ser concedido el beneficio, residiré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable, y quien ha asumido el compromiso de acompañarme y garantizar que cumpla con todas las condiciones que se me impongan.$textoHijos
 
 Esta solicitud representa para mí una oportunidad de inmenso valor para consolidar mi proceso de reintegración social y familiar, contribuyendo activamente a la construcción de un proyecto de vida digno y en libertad.
 """;
+    }
+
+    // 🔹 Texto para reclusión
+    return """
+    
+Honorable Juez.
+    
+Respetuosamente me permito solicitar que me sea reconocido y redimido el tiempo que se encuentra pendiente a mi favor, correspondiente a las actividades de trabajo, estudio o enseñanza que he desarrollado durante mi permanencia en el centro de reclusión.
+
+A la fecha, he cumplido un total de $mesesEjecutados meses y $diasRestantes días de la pena impuesta, incluyendo el tiempo redimido que ya ha sido debidamente reconocido. Adicionalmente, una vez sea reconocido el tiempo de redención que aún se encuentra pendiente de validación, se completaría ampliamente el sesenta por ciento (60%) de la condena, es decir, las tres quintas (3/5) partes exigidas por el artículo 64 del Código Penal para acceder al beneficio de libertad condicional.
+
+En virtud de lo anterior, y conforme a los principios de legalidad y resocialización, solicito de manera respetuosa que me sea concedido el beneficio de libertad condicional, al considerar que cumplo con los requisitos establecidos en la normativa penal vigente. Esta solicitud se fundamenta en el avance efectivo del cumplimiento de la pena, así como en mi conducta, actitud frente al proceso de resocialización y compromiso con la reintegración social.
+
+De ser concedido el beneficio, residiré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable, y quien ha asumido el compromiso de acompañarme y garantizar que cumpla con todas las condiciones que se me impongan.$textoHijos
+
+Su señoría, me dirijo a usted con profundo respeto y humildad, reconociendo el grave error que cometí y aceptando con entereza las consecuencias de mis actos. Pido perdón a Dios, a la sociedad colombiana, a la justicia y, sobre todo, a mi familia, quienes también han sufrido con el peso de mis decisiones.
+
+Hoy me encuentro en un camino de reflexión y transformación personal. Cada día, desde mi reclusión, trabajo con honestidad por cambiar, crecer y reparar en lo posible el daño causado. Mi mayor anhelo es continuar este proceso desde el entorno familiar, rodeado del amor y el apoyo de mis seres queridos, quienes han sido mi principal contención emocional y motivación.
+
+Solicito respetuosamente que sea estudiada la posibilidad de acceder al beneficio de libertad condicional, entendiendo que este paso no solo fortalecería mis vínculos familiares, sino que también sería un escenario más propicio para avanzar en mi proceso de resocialización, permitiéndome asumir con mayor responsabilidad mi reintegración efectiva a la sociedad.
+
+Comprendo la importancia de las decisiones que se toman en estos procesos y agradezco profundamente la oportunidad de ser escuchado. Mi compromiso es seguir construyendo un futuro con libertad, con respeto por la ley y por la dignidad humana. Asimismo, manifiesto mi total disposición para acogerme a las condiciones que se estimen necesarias, incluyendo la realización de actividades de utilidad pública u obras sociales, como expresión concreta de voluntad de contribuir positivamente a la comunidad y reafirmar mi proceso de resocialización.
+""";
   }
+
 
 
 
@@ -1489,13 +1496,16 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 """;
     }
 
-    // Default (En Reclusión)
+    // Caso por defecto: En Reclusión
     return """
-PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite de libertad condicional.
+PRIMERO: Que se tenga en cuenta la redención de pena que ya ha sido obtenida por el suscrito mediante actividades desarrolladas dentro del establecimiento penitenciario, y que se autorice, por parte del despacho, la verificación, validación y cómputo de las redenciones que aún se encuentren pendientes de aprobación, a fin de que sean sumadas al tiempo de reclusión efectiva para efectos del cálculo total del cumplimiento de la pena.
 
-SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de las tres quintas partes de la pena, la buena conducta y el entorno familiar favorable.
+SEGUNDO: Que se ordene al establecimiento penitenciario y carcelario, área jurídica, emitir la documentación correspondiente para el trámite de libertad condicional como lo indica el art.471 del CPP.
+
+TERCERO: Que se conceda el beneficio de libertad condicional, al cumplir con los requisitos del artículo 64 del Código Penal, demostrando arraigo familiar y social, así como el cumplimiento del 60% de la pena impuesta.
 """;
   }
+
 
   String generarTextoFundamentosDesdeDatos(
       Ppl userData,
@@ -1522,19 +1532,22 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
 
     // 🔹 Situación por defecto: En Reclusión
     return """
-1. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es un mecanismo de cumplimiento de la pena bajo vigilancia estatal, aplicable a quienes hayan cumplido las tres quintas partes de la pena y demuestren buena conducta.
+1. Conforme a los artículos 97, 98 y 101 de la Ley 65 de 1993 (Código Penitenciario y Carcelario), las personas privadas de la libertad tienen derecho a redimir parte de su pena a través de actividades como el estudio, el trabajo y la participación en labores culturales o deportivas, previa autorización del centro penitenciario. Estos días redimidos deben ser sumados al tiempo efectivo de reclusión para efectos del cómputo del cumplimiento total de la pena y la evaluación de beneficios como la libertad condicional.
 
-2. Durante mi permanencia en el centro de reclusión, he cumplido más del 60% de la pena impuesta, observando una conducta ejemplar, compromiso constante con procesos de resocialización, educación y trabajo, y respeto por las normas internas.
+2. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es un mecanismo de cumplimiento de la pena bajo vigilancia estatal, aplicable a quienes hayan cumplido las tres quintas partes de la pena y demuestren buena conducta.
 
-3. En atención a los artículos 21 y 42 de la Constitución Política, solicito el beneficio como medio para fortalecer el derecho fundamental a la dignidad humana y la importancia de la familia como núcleo esencial de la sociedad.
+3. Durante mi permanencia en el centro de reclusión, he cumplido más del 60% de la pena impuesta, observando una conducta ejemplar, compromiso constante con procesos de resocialización, educación y trabajo, y respeto por las normas internas.
 
-4. El artículo 145 de la Ley 65 de 1993 señala que cumplidos los requisitos de tiempo, comportamiento y plan de resocialización, es procedente acceder a la libertad condicional, condiciones que se reflejan en mi trayectoria penitenciaria.
+4. En atención a los artículos 21 y 42 de la Constitución Política, solicito el beneficio como medio para fortalecer el derecho fundamental a la dignidad humana y la importancia de la familia como núcleo esencial de la sociedad.
 
-5. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos de este beneficio.
+5. El artículo 145 de la Ley 65 de 1993 señala que cumplidos los requisitos de tiempo, comportamiento y plan de resocialización, es procedente acceder a la libertad condicional, condiciones que se reflejan en mi trayectoria penitenciaria.
 
-6. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, resalta la necesidad de que la privación de la libertad tenga como fin principal la rehabilitación social, principio que oriento en mi solicitud.
+6. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos de este beneficio.
+
+7. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, resalta la necesidad de que la privación de la libertad tenga como fin principal la rehabilitación social, principio que oriento en mi solicitud.
 """;
   }
+
 
 
   String generarTextoAnexos(
@@ -2432,7 +2445,6 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
                       idUser: widget.idUser,
                       onEnviarCorreo: (correoDestino) async {
                         BuildContext? dialogContext;
-
                         showDialog(
                           context: context,
                           barrierDismissible: false,
@@ -2458,11 +2470,11 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
                         try {
                           correoSeleccionado = correoDestino; // 👉 ¡Aquí está el cambio clave!
                           await enviarCorreoResend(
-                            asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
+                            asuntoPersonalizado: "Copia Solicitud libertad condicional - $numeroSeguimiento",
                             prefacioHtml: """
-                          <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
-                          <hr>
-                        """,
+                            <p><strong>📌 Nota:</strong> Información copiada al centro de reclusión: ${userData?.centroReclusion ?? ''}</p>
+                            <hr>
+                          """,
                           );
                           envioExitoso = true;
                         } catch (e) {
@@ -2486,15 +2498,253 @@ SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text("Aceptar"),
+                                  child: const Text("Cerrar"),
                                 ),
                               ],
                             ),
                           );
+                          // ✅ MOSTRAR WIDGET PARA CORREO MANUAL DE REPARTO
 
-                          Navigator.pushReplacementNamed(context, 'historial_solicitudes_libertad_condicional_admin');
+                          if(context.mounted){
+                            String? nombreCiudadSeleccionada;
+                            await showDialog(
+                              context: context,
+                              builder: (context) {
+                                String? correoManual;
+                                String? entidadSeleccionada = userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas';
+                                return AlertDialog(
+                                  backgroundColor: blanco,
+                                  title: const Text("¿Enviar copia a reparto?"),
+                                  content: UnconstrainedBox(
+                                    constrainedAxis: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: MediaQuery.of(context).size.width * 0.9, // o 0.9 si lo quieres más ancho
+                                      ),
+                                      child: SelectorCorreoManualFlexible(
+                                        entidadSeleccionada: entidadSeleccionada,
+                                        onCorreoValidado: (correo, entidad) {
+                                          correoManual = correo;
+                                          entidadSeleccionada = entidad;
+                                        },
+                                        onCiudadNombreSeleccionada: (nombre) {
+                                          nombreCiudadSeleccionada = nombre;
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: const Text("Omitir"),
+                                    ),
+                                    TextButton(
+                                      onPressed: () async {
+                                        if (correoManual != null && correoManual!.isNotEmpty) {
+                                          // Mostrar cargando
+                                          BuildContext? dialogContext;
+                                          showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (ctx) {
+                                              dialogContext = ctx;
+                                              return const AlertDialog(
+                                                backgroundColor: blanco,
+                                                title: Text("Enviando..."),
+                                                content: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text("Por favor espera mientras se envía el correo."),
+                                                    SizedBox(height: 20),
+                                                    CircularProgressIndicator(),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+
+                                          try {
+                                            correoSeleccionado = correoManual;
+                                            await enviarCorreoResend(
+                                              asuntoPersonalizado: "Solicitud libertad condicional (copia) - $numeroSeguimiento",
+                                              prefacioHtml: """
+<p><strong>Entidad de reparto:</strong> ${nombreCiudadSeleccionada ?? ''}</p>
+<hr>
+""",
+                                            );
+
+                                            if (context.mounted) {
+                                              Navigator.of(dialogContext!).pop();
+                                              await showDialog(
+                                                context: context,
+                                                builder: (_) => AlertDialog(
+                                                  backgroundColor: blanco,
+                                                  title: const Text("✅ Envío exitoso"),
+                                                  content: const Text("El correo fue enviado correctamente al correo de reparto."),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context).pop();
+                                                        Navigator.pushReplacementNamed(
+                                                          context,
+                                                          'historial_solicitudes_libertad_condicional_admin',
+                                                        );
+                                                      },
+                                                      child: const Text("Aceptar"),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            if (context.mounted) {
+                                              Navigator.of(dialogContext!).pop();
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                                              );
+                                            }
+                                          }
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text("Debe ingresar un correo válido antes de enviar."),
+                                              backgroundColor: Colors.orange,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: const Text("Enviar"),
+                                    ),
+                                  ],
+                                );
+
+                              },
+                            );
+                          }
+
+                          if(context.mounted){
+                            Navigator.pushReplacementNamed(context, 'historial_solicitudes_libertad_condicional_admin');
+                          }
                         }
                       },
+                        onOmitir: () async {
+                          Navigator.of(context).pop(); // cerrar el diálogo de centro
+
+                          // Mostrar directamente el diálogo de reparto
+                          String? nombreCiudadSeleccionada;
+                          await showDialog(
+                            context: context,
+                            builder: (context) {
+                              String? correoManual;
+                              String? entidadSeleccionada = userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas';
+                              return AlertDialog(
+                                backgroundColor: blanco,
+                                title: const Text("¿Enviar copia a reparto?"),
+                                content: UnconstrainedBox(
+                                  constrainedAxis: Axis.horizontal,
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: MediaQuery.of(context).size.width * 0.9, // o 0.9 si lo quieres más ancho
+                                    ),
+                                    child: SelectorCorreoManualFlexible(
+                                      entidadSeleccionada: entidadSeleccionada,
+                                      onCorreoValidado: (correo, entidad) {
+                                        correoManual = correo;
+                                        entidadSeleccionada = entidad;
+                                      },
+                                      onCiudadNombreSeleccionada: (nombre) {
+                                        nombreCiudadSeleccionada = nombre;
+                                      },
+                                    ),
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(),
+                                    child: const Text("Omitir"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      if (correoManual != null && correoManual!.isNotEmpty) {
+                                        // Mostrar cargando
+                                        BuildContext? dialogContext;
+                                        showDialog(
+                                          context: context,
+                                          barrierDismissible: false,
+                                          builder: (ctx) {
+                                            dialogContext = ctx;
+                                            return const AlertDialog(
+                                              backgroundColor: blanco,
+                                              title: Text("Enviando..."),
+                                              content: Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text("Por favor espera mientras se envía el correo."),
+                                                  SizedBox(height: 20),
+                                                  CircularProgressIndicator(),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        );
+
+                                        try {
+                                          correoSeleccionado = correoManual;
+                                          await enviarCorreoResend(
+                                            asuntoPersonalizado: "Solicitud libertad condicional (copia) - $numeroSeguimiento",
+                                            prefacioHtml: """
+<p><strong>Entidad de reparto:</strong> ${nombreCiudadSeleccionada ?? ''}</p>
+<hr>
+""",
+                                          );
+
+                                          if (context.mounted) {
+                                            Navigator.of(dialogContext!).pop();
+                                            await showDialog(
+                                              context: context,
+                                              builder: (_) => AlertDialog(
+                                                backgroundColor: blanco,
+                                                title: const Text("✅ Envío exitoso"),
+                                                content: const Text("El correo fue enviado correctamente al correo de reparto."),
+                                                actions: [
+                                                  TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context).pop();
+                                                      Navigator.pushReplacementNamed(
+                                                        context,
+                                                        'historial_solicitudes_libertad_condicional_admin',
+                                                      );
+                                                    },
+                                                    child: const Text("Aceptar"),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          if (context.mounted) {
+                                            Navigator.of(dialogContext!).pop();
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                                            );
+                                          }
+                                        }
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text("Debe ingresar un correo válido antes de enviar."),
+                                            backgroundColor: Colors.orange,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    child: const Text("Enviar"),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        }
                     ),
                   ),
                 ),
