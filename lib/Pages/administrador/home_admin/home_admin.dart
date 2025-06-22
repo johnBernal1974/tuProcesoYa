@@ -397,27 +397,31 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                                     .doc(uid)
                                                     .update({
                                                   'version': _nuevaVersion,
-                                                  'fecha_actualizacion_version':
-                                                  FieldValue.serverTimestamp(),
+                                                  'fecha_actualizacion_version': FieldValue.serverTimestamp(),
                                                 });
 
                                                 setState(() {
                                                   _mostrarBanner = false;
                                                 });
-                                              }
 
-                                              Future.delayed(const Duration(milliseconds: 300), () {
-                                                Navigator.of(context).pushReplacement(
-                                                  MaterialPageRoute(
-                                                      builder: (context) => super.widget),
-                                                );
-                                              });
+                                                // 📢 Envía el mensaje al ServiceWorker para que haga skipWaiting
+                                                html.window.navigator.serviceWorker?.controller?.postMessage('skipWaiting');
+
+                                                // ⏳ Espera brevemente antes de recargar
+                                                Future.delayed(const Duration(milliseconds: 200), () {
+                                                  html.window.location.reload();
+                                                });
+
+                                              } else {
+                                                setState(() {
+                                                  _cargandoActualizacion = false;
+                                                });
+                                              }
                                             },
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.deepPurple,
                                               foregroundColor: Colors.white,
-                                              padding:
-                                              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                             ),
                                             child: _cargandoActualizacion
                                                 ? const SizedBox(

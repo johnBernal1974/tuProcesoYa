@@ -202,8 +202,8 @@ class _HomePageState extends State<HomePage> {
                       final uid = FirebaseAuth.instance.currentUser?.uid;
                       if (uid != null && _nuevaVersion != null) {
                         final docRef = FirebaseFirestore.instance.collection('Ppl').doc(uid);
-
                         final docSnapshot = await docRef.get();
+
                         final versionAnterior = docSnapshot.data()?['version'];
                         print('🕵️ Versión actual del usuario antes de actualizar: $versionAnterior');
 
@@ -211,10 +211,17 @@ class _HomePageState extends State<HomePage> {
                         print('✅ Versión del usuario actualizada a: $_nuevaVersion');
                       }
 
-                      html.window.location.reload(); // 🔄 Recargar app
+                      // 📢 Indicar al service worker que haga skipWaiting
+                      html.window.navigator.serviceWorker?.controller?.postMessage('skipWaiting');
+
+                      // ⏳ Pequeño retraso para que el SW se active antes del reload
+                      Future.delayed(const Duration(milliseconds: 200), () {
+                        html.window.location.reload();
+                      });
                     },
                     child: const Text('Actualizar ahora'),
                   ),
+
               ],
             );
           },
