@@ -38,6 +38,7 @@ class _LoginPageState extends State<LoginPage> {
   bool _puedeReenviar = false;
 
 
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -86,23 +87,39 @@ class _LoginPageState extends State<LoginPage> {
                         ? const CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
                     )
-                        : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.double_arrow, color: Colors.black),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Regístrate aquí",
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: screenWidth > 600 ? 28 : 26,
-                            fontWeight: FontWeight.w900,
-                          ),
+                        : ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ],
+                      ),
+                      icon: const Icon(
+                        Icons.double_arrow,
+                        color: Colors.white,
+                      ),
+                      label: Text(
+                        "Regístrate aquí",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: screenWidth > 600 ? 28 : 26,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _isLoading = true;
+                        });
+                        Navigator.pushNamed(context, "register").then((_) {
+                          setState(() {
+                            _isLoading = false;
+                          });
+                        });
+                      },
                     ),
                   ),
+
                   const SizedBox(height: 30),
                   const Divider(color: gris, height: 1),
                   const SizedBox(height: 30),
@@ -130,7 +147,7 @@ class _LoginPageState extends State<LoginPage> {
                   child: Text(
                     _isOtp ? "Si ya tienes una cuenta creada" : "Iniciar sesión",
                     style: TextStyle(
-                      fontSize: screenWidth > 600 ? 28 : 24,
+                      fontSize: screenWidth > 600 ? 24 : 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
@@ -255,25 +272,33 @@ class _LoginPageState extends State<LoginPage> {
     String celular = _celularController.text.trim();
     final codigo = _otpController.text.trim();
 
+    // ✅ Validación del número
     if (!celular.startsWith('+')) {
       if (celular.length == 10 && RegExp(r'^\d{10}$').hasMatch(celular)) {
         celular = '+57$celular';
       } else {
-        _mostrarMensaje("Ingresa un número válido de 10 dígitos.");
+        _mostrarMensaje(
+          "Ingresa un número válido de 10 dígitos.",
+          color: Colors.red,
+        );
         return;
       }
     }
 
-    if (codigo.isNotEmpty && codigo.length != 6) {
-      _mostrarMensaje("El código de verificación debe tener 6 dígitos.");
+    // ✅ Validación del código si ya fue enviado
+    if (_confirmationResult != null && (codigo.isEmpty || codigo.length != 6)) {
+      _mostrarMensaje(
+        "El código debe tener 6 dígitos.",
+        color: Colors.red,
+      );
       return;
     }
 
     try {
       setState(() => _isLoadingOtp = true);
 
+      // 🔵 Primer paso: Enviar el código
       if (_confirmationResult == null) {
-        // Primer paso: enviar el código
         try {
           final auth = FirebaseAuth.instance;
           final confirmation = await auth.signInWithPhoneNumber(celular);
@@ -281,89 +306,86 @@ class _LoginPageState extends State<LoginPage> {
             _confirmationResult = confirmation;
             _iniciarTemporizadorReenvio();
           });
-          _mostrarMensaje("Código enviado. Ingresa el código recibido.");
+
+          _mostrarMensaje(
+            "Código enviado correctamente. Por favor revisa tu SMS.",
+            color: primary,
+          );
         } on FirebaseAuthException catch (e) {
-          String errorMsg = "Error al enviar el código. Intenta de nuevo.";
+          String errorMsg;
           switch (e.code) {
             case 'invalid-phone-number':
-              errorMsg = "El número de teléfono ingresado no es válido.";
+              errorMsg = "Número de teléfono inválido.";
               break;
             case 'network-request-failed':
-              errorMsg = "Problemas de conexión. Verifica tu internet.";
+              errorMsg = "Error de conexión. Por favor verifica tu internet.";
               break;
             case 'too-many-requests':
-              errorMsg = "Demasiados intentos. Espera un momento antes de volver a intentarlo.";
+              errorMsg = "Demasiados intentos. Intenta más tarde.";
               break;
             default:
-              errorMsg = "Error al enviar el código: ${e.message}";
-              break;
+              errorMsg = "Error al enviar el código: ${e.message}.";
           }
           _mostrarMensaje(errorMsg, color: Colors.red);
         }
+
       } else {
-        // Segundo paso: confirmar el código
+        // 🟢 Segundo paso: Confirmar el código
         try {
           final cred = await _confirmationResult!.confirm(codigo);
-
           if (cred.user != null) {
             final userDoc = await FirebaseFirestore.instance
                 .collection('Ppl')
                 .doc(cred.user!.uid)
                 .get();
 
-            if (userDoc.exists) {
-              final data = userDoc.data()!;
-              final status = data['status']?.toString().trim() ?? "";
+            if (!userDoc.exists) {
+              _mostrarMensaje(
+                "Usuario no encontrado. Por favor regístrate.",
+                color: Colors.red,
+              );
+              return;
+            }
 
-              if (status == 'bloqueado') {
+            final status = userDoc.data()?['status']?.toString().trim() ?? "";
+            switch (status) {
+              case 'bloqueado':
                 if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, 'bloqueo_page', (_) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, 'bloqueo_page', (_) => false);
                 }
-                return;
-              }
-
-              if (status == 'registrado') {
+                break;
+              case 'registrado':
                 if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (_) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, 'estamos_validando', (_) => false);
                 }
-              } else {
+                break;
+              default:
                 if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, 'home', (_) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                      context, 'home', (_) => false);
                 }
-              }
-            } else {
-              _mostrarMensaje("Usuario no encontrado. Por favor regístrate.");
             }
           }
         } on FirebaseAuthException catch (e) {
-          String errorMsg = "Error al verificar el código.";
+          String errorMsg;
           switch (e.code) {
-            case 'invalid-phone-number':
-              errorMsg = "El número de teléfono ingresado no es válido.";
-              break;
             case 'invalid-verification-code':
-              errorMsg = "El código de verificación es incorrecto.";
+              errorMsg = "El código es incorrecto. Por favor verifica.";
               break;
             case 'session-expired':
-              errorMsg = "La sesión del código ha expirado. Solicita uno nuevo.";
+              errorMsg = "La sesión ha expirado. Por favor solicita un nuevo código.";
               break;
             case 'network-request-failed':
-              errorMsg = "Problemas de conexión. Revisa tu internet.";
+              errorMsg = "Error de conexión. Revisa tu internet.";
               break;
             case 'too-many-requests':
-              errorMsg = "Has intentado demasiadas veces. Por seguridad, debes esperar un momento.";
-              break;
-            case 'invalid-app-credential':
-              errorMsg = "Hubo un error de autenticación. Por favor, intenta nuevamente.";
-              break;
-            case 'app-not-authorized':
-              errorMsg = "Esta aplicación no está autorizada para realizar autenticaciones. Contacta soporte.";
+              errorMsg = "Has intentado demasiado. Espera unos segundos antes de intentar otra vez.";
               break;
             default:
-              errorMsg = "Error: ${e.message}";
-              break;
+              errorMsg = "Error al verificar el código: ${e.message}.";
           }
-
           _mostrarMensaje(errorMsg, color: Colors.red);
         }
       }
@@ -371,6 +393,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _isLoadingOtp = false);
     }
   }
+
 
 
   void _iniciarTemporizadorReenvio() {
@@ -621,6 +644,29 @@ class _LoginPageState extends State<LoginPage> {
             ),
           ),
         ),
+
+        if (_confirmationResult != null) ...[
+          const SizedBox(height: 10),
+          _puedeReenviar
+              ? TextButton(
+            onPressed: () async {
+              setState(() => _confirmationResult = null); // Reiniciamos para enviar
+              await _loginConOTP();
+            },
+            child: const Text(
+              "¿No recibiste el código? Reenviar",
+              style: TextStyle(
+                color: Colors.blueAccent,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          )
+              : Text(
+            "Podrás reenviar el código en $_contadorReenvio segundos",
+            style: const TextStyle(fontSize: 12, color: Colors.black54),
+          ),
+        ]
+
       ],
     );
   }
