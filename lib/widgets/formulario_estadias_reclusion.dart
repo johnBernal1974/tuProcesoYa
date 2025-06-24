@@ -31,11 +31,11 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
       return;
     }
 
+    // Verificar que no se solape con estadías
     final estadiasExistentes = await FirebaseFirestore.instance
         .collection('Ppl')
         .doc(widget.pplId)
         .collection('estadias')
-        .where('tipo', isEqualTo: 'Reclusión') // Puedes quitar esto si aplica a todos
         .get();
 
     final nuevaInicio = _fechaIngreso!;
@@ -59,7 +59,6 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
 
     final uidAdmin = FirebaseAuth.instance.currentUser?.uid;
 
-    // 👉 Guardamos la estadía
     await FirebaseFirestore.instance
         .collection('Ppl')
         .doc(widget.pplId)
@@ -72,24 +71,27 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
       'creado_en': Timestamp.now(),
     });
 
-    // ✅ Verificamos y actualizamos fecha_captura si es necesario
     final doc = await FirebaseFirestore.instance.collection('Ppl').doc(widget.pplId).get();
-    final data = doc.data();
-    final status = data?['status'] ?? '';
-    final rawFechaCaptura = data?['fecha_captura'];
-    final yaTieneFechaCaptura = rawFechaCaptura != null &&
-        rawFechaCaptura.toString().trim().isNotEmpty;
-    String mensajeFinal = "Estadía registrada correctamente";
+    final data = doc.data() ?? {};
+    final status = data['status'] ?? '';
+    final yaTieneFechaCaptura = data['fecha_captura'] != null;
+
+    String mensajeFinal = "Estadía registrada correctamente.";
 
     if (status == 'registrado' && !yaTieneFechaCaptura) {
-      final fechaFormateada = _formatearFecha(_fechaIngreso!);
-      await FirebaseFirestore.instance.collection('Ppl').doc(widget.pplId).update({
-        'fecha_captura': fechaFormateada,
-      });
+      await FirebaseFirestore.instance.collection('Ppl').doc(widget.pplId).update(
+          {'fecha_captura': Timestamp.fromDate(_fechaIngreso!)}
+      );
+      mensajeFinal += "\n📌 Fecha de captura agregada automáticamente.";
+    }
 
-      debugPrint("✅ Nodo fecha_captura agregado automáticamente: $fechaFormateada");
-
-      mensajeFinal += "\n📌 Fecha de captura agregada automáticamente: $fechaFormateada";
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensajeFinal),
+          backgroundColor: Colors.green,
+        ),
+      );
     }
   }
 
@@ -218,6 +220,5 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
       },
     );
   }
-
 
 }

@@ -1659,7 +1659,6 @@ class _RegistroPageState extends State<RegistroPage> {
         "isPaid": false,
         "assignedTo": "",
         "fechaRegistro": DateTime.now(),
-        "fecha_captura": "",
         "saldo": 0,
         "departamento": departamentoSeleccionado ?? "",
         "municipio": ciudad,

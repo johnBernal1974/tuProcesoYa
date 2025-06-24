@@ -140,6 +140,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   bool centroValidado = false;
   late String adminFullName = "Desconocido"; // Valor por defecto
   bool mostrarBotonNotificar = false;
+  int mesesCondena = 0;
+  int diasCondena = 0;
+
 
 
   /// opciones de documento de identidad
@@ -180,8 +183,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         selectedDelito = null;
       }
 
-      final mesesCondena = data['meses_condena'];
-      final diasCondena = data['dias_condena'];
+      mesesCondena = data['meses_condena'];
+      diasCondena = data['dias_condena'];
 
       if (mesesCondena != null &&
           diasCondena != null &&
@@ -265,24 +268,29 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       content: SingleChildScrollView(
         child: Column(
           children: [
-            // 🔹 Botón de retroceso manual
-            Align(
-              alignment: Alignment.centerLeft, // 🔹 Alinea a la izquierda
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(context).maybePop(),
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Volver', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primary,
-                  foregroundColor: blanco,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.of(context).maybePop(),
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Volver', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primary,
+                    foregroundColor: blanco,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
-              ),
+                CardEstadoPruebaYPago(
+                  doc: widget.doc,
+                  tiempoDePruebaDias: _tiempoDePruebaDias,
+                ),
+              ],
             ),
-            SizedBox(height: 25),
+            const SizedBox(height: 25),
 
             Form(
               key: _formKey,
@@ -342,11 +350,21 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             ],
           ),
           Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
-          CardEstadoPruebaYPago(
-            doc: widget.doc,
-            tiempoDePruebaDias: _tiempoDePruebaDias,
-          ),
-
+          const SizedBox(height: 20),
+          if (status == 'activado')
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.comment),
+                label: const Text("Comentarios (seguimiento)"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () => _mostrarComentariosSeguimiento(context),
+              ),
+            ),
           const SizedBox(height: 20),
           Wrap(
             spacing: 20, // espacio horizontal entre widgets cuando caben en una fila
@@ -362,48 +380,78 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
                 child: SizedBox(
                   width: 350,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Column(
                     children: [
-                      // Primera columna
-                      Expanded(
-                        child: Column(
-                          children: [
-                            if (situacion == "En Reclusión")
-                              _buildBenefitMinimalSection(
-                                titulo: "72 Horas",
-                                condition: porcentajeEjecutado >= 33.33,
-                                remainingTime: _calcularDias(33),
+                      if (mesesCondena <= 0 && diasCondena <= 0) ...[
+                        Container(
+                          width: 600,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.orange),
+                          ),
+                          child: const Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  'No se ha ingresado tiempo de condena. Por eso no se ha calculado el progreso.',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12
+                                  ),
+                                ),
                               ),
-                            _buildBenefitMinimalSection(
-                              titulo: "Condicional",
-                              condition: porcentajeEjecutado >= 60,
-                              remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                            ),
-
-                          ],
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 16),
-                      // Segunda columna
-                      Expanded(
-                        child: Column(
-                          children: [
-                            if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
-                              if (situacion == "En Reclusión")
+                        const SizedBox(height: 16),
+                      ],
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Primera columna
+                          Expanded(
+                            child: Column(
+                              children: [
+                                if (situacion == "En Reclusión")
+                                  _buildBenefitMinimalSection(
+                                    titulo: "72 Horas",
+                                    condition: porcentajeEjecutado >= 33.33,
+                                    remainingTime: _calcularDias(33),
+                                  ),
                                 _buildBenefitMinimalSection(
-                                  titulo: "Domiciliaria",
-                                  condition: porcentajeEjecutado >= 50,
-                                  remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                                  titulo: "Condicional",
+                                  condition: porcentajeEjecutado >= 60,
+                                  remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
                                 ),
 
-                            _buildBenefitMinimalSection(
-                              titulo: "Extinción",
-                              condition: porcentajeEjecutado >= 100,
-                              remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                              ],
                             ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(width: 16),
+                          // Segunda columna
+                          Expanded(
+                            child: Column(
+                              children: [
+                                if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
+                                  if (situacion == "En Reclusión")
+                                    _buildBenefitMinimalSection(
+                                      titulo: "Domiciliaria",
+                                      condition: porcentajeEjecutado >= 50,
+                                      remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                                    ),
+
+                                _buildBenefitMinimalSection(
+                                  titulo: "Extinción",
+                                  condition: porcentajeEjecutado >= 100,
+                                  remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -450,20 +498,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             ),
           ],
           ///boton para seguimiento de activados
-          if (status == 'activado')
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.comment),
-                label: const Text("Comentarios (seguimiento)"),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                onPressed: () => _mostrarComentariosSeguimiento(context),
-              ),
-            ),
           LayoutBuilder(
             builder: (context, constraints) {
               bool esPantallaAncha = constraints.maxWidth > 600; // Puedes ajustar el ancho si deseas
@@ -2571,6 +2605,23 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   void _initCalculoCondena() async {
     try {
+      final mesesCondena = widget.doc['meses_condena'] ?? 0;
+      final diasCondena = widget.doc['dias_condena'] ?? 0;
+
+      // 🔐 Salir si no hay datos suficientes
+      if ((mesesCondena <= 0) && (diasCondena <= 0)) {
+        debugPrint(
+            "⚠️ Sin datos de condena (meses/días), no se ejecuta el cálculo.");
+        setState(() {
+          mesesRestante = 0;
+          diasRestanteExactos = 0;
+          mesesEjecutado = 0;
+          diasEjecutadoExactos = 0;
+          porcentajeEjecutado = 0.0;
+        });
+        return; // 🚀 Salir sin seguir
+      }
+
       final fechaCapturaRaw = widget.doc.get('fecha_captura');
       DateTime? fechaCaptura = _convertirFecha(fechaCapturaRaw);
 
@@ -2579,30 +2630,27 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         return;
       }
 
-      debugPrint("📌 Fecha de captura convertida correctamente: $fechaCaptura");
+      debugPrint("📌 Fecha de captura: $fechaCaptura");
 
-      // 🔥 Llamar directamente al cálculo sin necesidad de obtener días redimidos aquí
       await _calculoCondenaController.calcularTiempo(widget.doc.id);
 
-      // 🔥 Actualizar los valores obtenidos del controlador
       setState(() {
         mesesRestante = _calculoCondenaController.mesesRestante ?? 0;
         diasRestanteExactos = _calculoCondenaController.diasRestanteExactos ?? 0;
         mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
         diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
-        porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0;
+        porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
       });
 
-      debugPrint("✅ Cálculo de condena con redenciones actualizado:");
-      debugPrint("   - Meses ejecutados: $mesesEjecutado");
-      debugPrint("   - Días ejecutados: $diasEjecutadoExactos");
-      debugPrint("   - Meses restantes: $mesesRestante");
-      debugPrint("   - Días restantes: $diasRestanteExactos");
-      debugPrint("   - Porcentaje ejecutado: ${porcentajeEjecutado.toStringAsFixed(1)}%");
+      debugPrint(
+          "✅ Cálculo actualizado: Meses ejecutados=$mesesEjecutado, Días ejecutados=$diasEjecutadoExactos, Porcentaje ejecutado=${porcentajeEjecutado.toStringAsFixed(1)}%"
+      );
+
     } catch (e) {
       debugPrint("❌ Error en _initCalculoCondena: $e");
     }
   }
+
 
   void _initFormFields() {
     final data = widget.doc.data() as Map<String, dynamic>;
