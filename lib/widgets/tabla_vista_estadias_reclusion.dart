@@ -103,11 +103,9 @@ class TablaEstadiasAdmin extends StatelessWidget {
                                     ],
                                   ),
                                 );
-                                if (confirmar == true) {
-                                  final tipoEstadia = data['tipo'];
-                                  final fechaIngresoEstadia = (data['fecha_ingreso'] as Timestamp).toDate();
 
-                                  // Eliminamos la estadía
+                                if (confirmar == true) {
+                                  // 🔥 Eliminar la estadía
                                   await FirebaseFirestore.instance
                                       .collection('Ppl')
                                       .doc(pplId)
@@ -115,34 +113,39 @@ class TablaEstadiasAdmin extends StatelessWidget {
                                       .doc(id)
                                       .delete();
 
-                                  // Si era una estadía de Reclusión, verificamos si era la más antigua
-                                  if (tipoEstadia == 'Reclusión') {
-                                    final snapshot = await FirebaseFirestore.instance
+                                  // 🔍 Consultar todas las estadías que quedan
+                                  final estadiasSnapshot = await FirebaseFirestore.instance
+                                      .collection('Ppl')
+                                      .doc(pplId)
+                                      .collection('estadias')
+                                      .orderBy('fecha_ingreso')
+                                      .get();
+
+                                  if (estadiasSnapshot.docs.isEmpty) {
+                                    // ❌ No quedan estadías → eliminar fecha_captura
+                                    await FirebaseFirestore.instance
                                         .collection('Ppl')
                                         .doc(pplId)
-                                        .collection('estadias')
-                                        .where('tipo', isEqualTo: 'Reclusión')
-                                        .orderBy('fecha_ingreso')
-                                        .limit(1)
-                                        .get();
+                                        .update({'fecha_captura': FieldValue.delete()});
+                                    debugPrint("📛 Sin estadías. Nodo 'fecha_captura' eliminado correctamente.");
+                                  } else {
+                                    // ✅ Tomar la estadía más antigua
+                                    final fechaIngresoMasAntigua = (estadiasSnapshot.docs.first['fecha_ingreso'] as Timestamp).toDate();
 
-                                    final primeraEstadia = snapshot.docs.isNotEmpty
-                                        ? (snapshot.docs.first['fecha_ingreso'] as Timestamp).toDate()
-                                        : null;
-
-                                    // Si no hay más reclusiones o la primera ya no es la misma
-                                    if (primeraEstadia == null || primeraEstadia.isAfter(fechaIngresoEstadia)) {
-                                      await FirebaseFirestore.instance
-                                          .collection('Ppl')
-                                          .doc(pplId)
-                                          .update({'fecha_captura': null});
-
-                                      debugPrint("📛 Nodo 'fecha_captura' eliminado tras borrar la primera estadía de Reclusión");
-                                    }
+                                    await FirebaseFirestore.instance
+                                        .collection('Ppl')
+                                        .doc(pplId)
+                                        .update({'fecha_captura': Timestamp.fromDate(fechaIngresoMasAntigua)});
+                                    debugPrint("✅ 'fecha_captura' actualizada a la estadía más antigua: $fechaIngresoMasAntigua");
                                   }
+
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Estadía eliminada correctamente')),
+                                  );
                                 }
                               },
                             ),
+
                           ],
                         )),
                       ]);

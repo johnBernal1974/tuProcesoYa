@@ -70,7 +70,7 @@ los siguientes:<br><br>
 En razón de distintas sentencias condenatorias me encuentro condenado a las siguientes penas:<br><br>
 
 Actualmente me encuentro purgando la pena bajo el radicado <b>$radicado</b>, tramitado en <b>$juzgadoEjecucion.</b><br><br>
-Proceso cuya pena se solicita acumular: Radicado <b>$radicadoAcumular</b>, en manos del <b>$juzgadoAcumular</b>.<br><br><br>
+Proceso cuya pena se solicita acumular: Radicado <b>$radicadoAcumular</b>, $juzgadoAcumular.<br><br><br>
 
      <span style="font-size: 16px;"><b>II. FUNDAMENTOS DE DERECHO</b></span><br><br>
 

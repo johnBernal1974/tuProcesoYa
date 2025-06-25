@@ -78,7 +78,7 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
 
     String mensajeFinal = "Estadía registrada correctamente.";
 
-    if (status == 'registrado' && !yaTieneFechaCaptura) {
+    if ((status == 'activado' || status == 'registrado' || status == 'pendiente') && !yaTieneFechaCaptura) {
       await FirebaseFirestore.instance.collection('Ppl').doc(widget.pplId).update(
           {'fecha_captura': Timestamp.fromDate(_fechaIngreso!)}
       );
@@ -220,5 +220,72 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
       },
     );
   }
+
+  Future<void> _eliminarEstadia(String estadiaId) async {
+    try {
+      final estadiasRef = FirebaseFirestore.instance
+          .collection('Ppl')
+          .doc(widget.pplId)
+          .collection('estadias');
+
+      // 🗑️ Eliminar la estadía
+      await estadiasRef.doc(estadiaId).delete();
+
+      // 🔍 Consultar si quedan más estadías
+      final estadiasActualizadas = await estadiasRef.get();
+
+      if (estadiasActualizadas.size == 0) {
+        // ✅ Si ya no hay estadías, limpiar `fecha_captura`
+        await FirebaseFirestore.instance
+            .collection('Ppl')
+            .doc(widget.pplId)
+            .update({'fecha_captura': FieldValue.delete()});
+        debugPrint(
+            "📌 Sin estadías. Campo fecha_captura eliminado correctamente.");
+      } else {
+        // ✅ Opcional: Recalcular fecha_captura con la estadía más antigua
+        final estadiasOrdenadas = estadiasActualizadas.docs
+          ..sort((a, b) {
+            final fechaA = (a.data()['fecha_ingreso'] as Timestamp).toDate();
+            final fechaB = (b.data()['fecha_ingreso'] as Timestamp).toDate();
+            return fechaA.compareTo(fechaB); // orden ascendente
+          });
+
+        final fechaIngresoMasAntigua = (estadiasOrdenadas.first
+            .data()['fecha_ingreso'] as Timestamp)
+            .toDate();
+
+        await FirebaseFirestore.instance
+            .collection('Ppl')
+            .doc(widget.pplId)
+            .update(
+          {'fecha_captura': Timestamp.fromDate(fechaIngresoMasAntigua)},
+        );
+
+        debugPrint(
+            "🔄 fecha_captura actualizada a la estadía más antigua: $fechaIngresoMasAntigua");
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Estadía eliminada correctamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("❌ Error eliminando estadía: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Error eliminando estadía'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
 
 }

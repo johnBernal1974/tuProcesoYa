@@ -721,6 +721,73 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     return (diferencia.abs() / 100 * tiempoCondena * 30).round();
   }
 
+  Future<int> calcularDiasEfectivos(String pplId) async {
+    final estadiasSnapshot = await FirebaseFirestore.instance
+        .collection('Ppl')
+        .doc(pplId)
+        .collection('estadias')
+        .get();
+
+    int diasEfectivos = 0;
+
+    if (estadiasSnapshot.docs.isEmpty) {
+      print('⚠️ No hay estadías registradas.');
+      return 0;
+    }
+
+    // ✅ Identificamos qué tipos existen
+    final tiposPresentes = estadiasSnapshot.docs
+        .map((doc) => (doc.data()['tipo'] as String).trim().toLowerCase())
+        .toSet();
+
+    print('ℹ️ Tipos presentes: $tiposPresentes');
+
+    // ✅ Determinamos qué tipos suman
+    final Set<String> tiposQueSuman = {};
+
+    if (tiposPresentes.contains('reclusión') &&
+        tiposPresentes.contains('domiciliaria') &&
+        tiposPresentes.contains('condicional')) {
+      tiposQueSuman.addAll(['reclusión', 'domiciliaria', 'condicional']);
+    } else if (tiposPresentes.contains('reclusión') &&
+        tiposPresentes.contains('domiciliaria')) {
+      tiposQueSuman.addAll(['reclusión', 'domiciliaria']);
+    } else if (tiposPresentes.contains('reclusión') &&
+        tiposPresentes.length == 1) {
+      tiposQueSuman.add('reclusión');
+    } else if (tiposPresentes.contains('domiciliaria') &&
+        tiposPresentes.contains('condicional') &&
+        !tiposPresentes.contains('reclusión')) {
+      tiposQueSuman.addAll(['domiciliaria', 'condicional']);
+    } else if (tiposPresentes.contains('domiciliaria') &&
+        tiposPresentes.length == 1) {
+      tiposQueSuman.add('domiciliaria');
+    } else if (tiposPresentes.contains('condicional') &&
+        tiposPresentes.length == 1) {
+      tiposQueSuman.add('condicional');
+    }
+
+    print('✅ Tipos que suman: $tiposQueSuman');
+
+    // ✅ Calculamos días efectivos
+    for (final doc in estadiasSnapshot.docs) {
+      final data = doc.data();
+      final tipo = (data['tipo'] as String).trim().toLowerCase();
+      if (tiposQueSuman.contains(tipo)) {
+        final fechaIngreso = (data['fecha_ingreso'] as Timestamp).toDate();
+        final fechaSalida = data['fecha_salida'] != null
+            ? (data['fecha_salida'] as Timestamp).toDate()
+            : DateTime.now();
+        final diff = fechaSalida.difference(fechaIngreso).inDays;
+        diasEfectivos += diff;
+        print('➡️ Sumar $diff días por tipo $tipo (${fechaIngreso} a ${fechaSalida})');
+      }
+    }
+
+    print('🎯 Total días efectivos: $diasEfectivos');
+    return diasEfectivos;
+  }
+
 
 
   Widget botonEnviarWhatsappDesdeImagen(String celular, String docId) {
@@ -810,68 +877,41 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   Future<void> calcularTiempo(String id) async {
     final pplData = await _pplProvider.getById(id);
-    if (pplData != null) {
-      final fechaCaptura = pplData.fechaCaptura;
-      final meses = pplData.mesesCondena ?? 0;
-      final dias = pplData.diasCondena ?? 0;
+    if (pplData == null) return;
 
-      final totalDiasCondena = (meses * 30) + dias;
-      final fechaActual = DateTime.now();
+    final status = pplData.status ?? '';
+    final fechaCaptura = pplData.fechaCaptura;
+    final meses = pplData.mesesCondena ?? 0;
+    final dias = pplData.diasCondena ?? 0;
 
-      if (fechaCaptura == null || totalDiasCondena == 0) {
-        print("❌ Fecha de captura o condena no válida.");
-        return;
-      }
-
-      /// ✅ Esta línea es la que te faltaba
-      tiempoCondena = totalDiasCondena ~/ 30;
-
-      final fechaFinCondena = fechaCaptura.add(Duration(days: totalDiasCondena));
-      final diferenciaRestante = fechaFinCondena.difference(fechaActual);
-      final diferenciaEjecutado = fechaActual.difference(fechaCaptura);
-
-      mesesRestante = (diferenciaRestante.inDays ~/ 30);
-      diasRestanteExactos = diferenciaRestante.inDays % 30;
-
-      mesesEjecutado = diferenciaEjecutado.inDays ~/ 30;
-      diasEjecutadoExactos = diferenciaEjecutado.inDays % 30;
-
-      porcentajeEjecutado = (diferenciaEjecutado.inDays / totalDiasCondena) * 100;
-
-      print("Porcentaje de condena ejecutado: ${porcentajeEjecutado!.toStringAsFixed(2)}%");
-
-      if (porcentajeEjecutado! >= 33.33) {
-        print("✅ Aplica permiso administrativo de 72 horas");
-      } else {
-        print("❌ No aplica permiso administrativo de 72 horas");
-      }
-
-      if (porcentajeEjecutado! >= 50) {
-        print("✅ Aplica prisión domiciliaria");
-      } else {
-        print("❌ No aplica prisión domiciliaria");
-      }
-
-      if (porcentajeEjecutado! >= 60) {
-        print("✅ Aplica libertad condicional");
-      } else {
-        print("❌ No aplica libertad condicional");
-      }
-
-      if (porcentajeEjecutado! >= 100) {
-        print("✅ Aplica extinción de la pena");
-      } else {
-        print("❌ No aplica extinción de la pena");
-      }
-
-      print("Tiempo restante: $mesesRestante meses y $diasRestanteExactos días");
-      print("Tiempo ejecutado: $mesesEjecutado meses y $diasEjecutadoExactos días");
-    } else {
-      if (kDebugMode) {
-        print("❌ No hay datos");
-      }
+    // 🔐 Validación inicial
+    if (status == 'pendiente' || fechaCaptura == null || (meses <= 0 && dias <= 0)) {
+      setState(() {
+        tiempoCondena = 0;
+        porcentajeEjecutado = 0.0;
+      });
+      return;
     }
+
+    final totalDiasCondena = (meses * 30) + dias;
+    if (totalDiasCondena <= 0) return;
+
+    // ✅ NUEVO: Obtener los días efectivos según las estadías y las condiciones
+    final diasEfectivos = await calcularDiasEfectivos(id); // <- método que tú implementaste
+
+    // ✅ Calcular el porcentaje de cumplimiento
+    final porcentaje = (diasEfectivos / totalDiasCondena) * 100;
+
+    setState(() {
+      tiempoCondena = totalDiasCondena ~/ 30;
+      porcentajeEjecutado = porcentaje.clamp(0.0, 100.0); // Limitar entre 0 y 100
+    });
+
+    debugPrint(
+        "✅ Porcentaje ejecutado (ajustado): ${porcentajeEjecutado.toStringAsFixed(2)}%"
+    );
   }
+
 
   Widget _mensajeAdvertencia(String texto) {
     return Container(

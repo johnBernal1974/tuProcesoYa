@@ -54,7 +54,7 @@ class CalculoCondenaController with ChangeNotifier {
       final totalDiasCondena = (_mesesCondena! * 30) + _diasCondena!;
 
       // 🔹 Días efectivos de reclusión
-      final diasEjecutados = await calcularDiasEjecutadosDesdeEstadias(id, fechaCaptura);
+      final diasEjecutados = await calcularDiasEfectivosDesdeEstadias(id, fechaCaptura);
 
       // 🔹 Total computado = reclusión + redención
       final totalComputado = diasEjecutados + _totalDiasRedimidos.toInt();
@@ -117,38 +117,63 @@ class CalculoCondenaController with ChangeNotifier {
   }
 
   /// ✅ Calcula la cantidad total de días en reclusión efectiva (excluye condicional/domiciliaria)
-  Future<int> calcularDiasEjecutadosDesdeEstadias(String pplId, DateTime? fechaCaptura) async {
+  Future<int> calcularDiasEfectivosDesdeEstadias(String pplId, DateTime? fechaCaptura) async {
     try {
       final snapshot = await FirebaseFirestore.instance
           .collection('Ppl')
           .doc(pplId)
           .collection('estadias')
-          .where('tipo', isEqualTo: 'Reclusión')
           .get();
 
       if (snapshot.docs.isEmpty) {
+        // Si no hay estadías, usar solo la fecha captura si existe
         if (fechaCaptura == null) return 0;
-        final dias = DateTime.now().difference(fechaCaptura).inDays;
-        debugPrint("📌 Usando fecha de captura, días ejecutados: $dias");
-        return dias;
+        return DateTime.now().difference(fechaCaptura).inDays;
       }
 
-      int totalDias = 0;
+      // 🔹 1) Recolectar todos los tipos presentes
+      final tiposPresentes = snapshot.docs
+          .map((doc) => doc.data()['tipo'] as String)
+          .toSet();
+
+      // 🔹 2) Determinar qué tipos suman
+      Set<String> tiposQueSuman = {};
+      if (tiposPresentes.contains('Reclusión') && tiposPresentes.contains('Domiciliaria') && tiposPresentes.contains('Condicional')) {
+        tiposQueSuman.addAll(['Reclusión', 'Domiciliaria', 'Condicional']);
+      } else if (tiposPresentes.contains('Reclusión') && tiposPresentes.contains('Domiciliaria')) {
+        tiposQueSuman.addAll(['Reclusión', 'Domiciliaria']);
+      } else if (tiposPresentes.contains('Domiciliaria') && tiposPresentes.contains('Condicional')) {
+        tiposQueSuman.addAll(['Domiciliaria', 'Condicional']);
+      } else if (tiposPresentes.contains('Reclusión')) {
+        tiposQueSuman.add('Reclusión');
+      } else if (tiposPresentes.contains('Domiciliaria')) {
+        tiposQueSuman.add('Domiciliaria');
+      } else if (tiposPresentes.contains('Condicional')) {
+        tiposQueSuman.add('Condicional');
+      }
+
+      // 🔹 3) Calcular días efectivos
+      int totalDiasEfectivos = 0;
       final hoy = DateTime.now();
 
       for (var doc in snapshot.docs) {
-        final entrada = (doc['fecha_ingreso'] as Timestamp).toDate();
-        final salida = doc.data().containsKey('fecha_salida') && doc['fecha_salida'] != null
-            ? (doc['fecha_salida'] as Timestamp).toDate()
-            : hoy;
+        final data = doc.data();
+        final tipo = data['tipo'] as String;
+        if (tiposQueSuman.contains(tipo)) {
+          final ingreso = (data['fecha_ingreso'] as Timestamp).toDate();
+          final salida = data['fecha_salida'] != null
+              ? (data['fecha_salida'] as Timestamp).toDate()
+              : hoy;
 
-        totalDias += salida.difference(entrada).inDays;
+          totalDiasEfectivos += salida.difference(ingreso).inDays;
+        }
       }
 
-      debugPrint("📌 Total días de reclusión efectiva (estadías): $totalDias");
-      return totalDias;
+      debugPrint(
+          "✅ Total días efectivos para PPL $pplId (tipos sumados: $tiposQueSuman): $totalDiasEfectivos");
+      return totalDiasEfectivos;
     } catch (e) {
-      debugPrint("❌ Error al calcular días ejecutados desde estadías: $e");
+      debugPrint("❌ Error calculando días efectivos: $e");
       return 0;
     }
   }
