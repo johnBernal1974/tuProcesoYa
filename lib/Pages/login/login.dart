@@ -36,6 +36,7 @@ class _LoginPageState extends State<LoginPage> {
   int _contadorReenvio = 60;
   Timer? _timer;
   bool _puedeReenviar = false;
+  bool _tienesCuenta = false;
 
 
 
@@ -64,6 +65,10 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 if (_isOtp) ...[
                   // 🔵 Solo muestra esto si estamos en OTP (Usuario normal)
+
+                  Image.asset(
+                      'assets/images/logo_tu_proceso_ya_transparente.png', height: 60),
+                  const SizedBox(height: 30),
                   const Text(
                     '¿No tienes una cuenta?',
                     style: TextStyle(
@@ -103,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
                         "Regístrate aquí",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: screenWidth > 600 ? 28 : 26,
+                          fontSize: screenWidth > 600 ? 18 : 18,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -123,58 +128,78 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 30),
                   const Divider(color: gris, height: 1),
                   const SizedBox(height: 30),
-                ],
-                // 🔵 Siempre muestra este título (pero cambia el texto si es admin o normal)
-                GestureDetector(
-                  onTap: () {
-                    _clickCounter++;
-                    if (_clickCounter == 3) {
-                      setState(() {
-                        _isOtp = false;
-                        _clickCounter = 0;
-                      });
-                    }
-                    _tapTimer?.cancel();
-                    _tapTimer = Timer(const Duration(seconds: 2), () {
-                      _clickCounter = 0;
-                    });
-                  },
-                  onLongPress: () {
-                    setState(() {
-                      _isOtp = false;
-                    });
-                  },
-                  child: Text(
-                    _isOtp ? "Si ya tienes una cuenta creada" : "Iniciar sesión",
-                    style: TextStyle(
-                      fontSize: screenWidth > 600 ? 24 : 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                // 🔥 Este espacio adicional debajo del título
-                if (_isOtp)
-                  formularioOTP()
-                else
-                  formularioCorreoContrasena(),
-
-                const SizedBox(height: 40),
-
-                if (_isOtp) // 🔵 El botón de recuperar solo para usuarios normales
                   GestureDetector(
                     onTap: () {
-                      Navigator.pushNamed(context, "forgot_password");
+                      setState(() {
+                        _tienesCuenta = !_tienesCuenta;
+                      });
                     },
-                    child: Text(
-                      "¿Quieres recuperar tu cuenta?",
+                    child: const Text(
+                      "Ya estoy registrado",
                       style: TextStyle(
-                        color: gris,
-                        fontSize: screenWidth > 600 ? 18 : 14,
-                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
                       ),
                     ),
-                  ),
+                  )
+                ],
+                const SizedBox(height: 30),
+                if(_tienesCuenta)
+                Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        _clickCounter++;
+                        if (_clickCounter == 3) {
+                          setState(() {
+                            _isOtp = false;
+                            _clickCounter = 0;
+                          });
+                        }
+                        _tapTimer?.cancel();
+                        _tapTimer = Timer(const Duration(seconds: 2), () {
+                          _clickCounter = 0;
+                        });
+                      },
+                      onLongPress: () {
+                        setState(() {
+                          _isOtp = false;
+                        });
+                      },
+                      child: Text(
+                        _isOtp ? "Inicio de sesión" : "Iniciar sesión",
+                        style: TextStyle(
+                          fontSize: screenWidth > 600 ? 24 : 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    // 🔥 Este espacio adicional debajo del título
+                    if (_isOtp)
+                      formularioOTP()
+                    else
+                      formularioCorreoContrasena(),
+
+                    const SizedBox(height: 40),
+
+                    if (_isOtp) // 🔵 El botón de recuperar solo para usuarios normales
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, "forgot_password");
+                        },
+                        child: Text(
+                          "¿Quieres recuperar tu cuenta?",
+                          style: TextStyle(
+                            color: gris,
+                            fontSize: screenWidth > 600 ? 18 : 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+
+                  ],
+                ),
+
               ],
             ),
 
@@ -557,7 +582,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget formularioOTP() {
     return Column(
       children: [
-        const Text("Inicia sesión con el número de celular que registraste."),
+        const Text("Ingresa el número de celular que registraste."),
         const SizedBox(height: 25),
 
         // CAMPO DE CELULAR
