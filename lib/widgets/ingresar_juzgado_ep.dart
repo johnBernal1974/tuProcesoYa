@@ -70,28 +70,30 @@ class _IngresarJuzgadoEjecucionWidgetState extends State<IngresarJuzgadoEjecucio
         return;
       }
 
-      // 🔔 Confirmación previa
-      final confirmar = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Confirmar guardado'),
-          content: Text(
-            '¿Deseas guardar el siguiente juzgado?\n\n$juzgadoEP\n\nCorreo: $correo',
+      if(context.mounted){
+        // 🔔 Confirmación previa
+        final confirmar = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: blanco,
+            title: const Text('Confirmar guardado'),
+            content: Text(
+              '¿Deseas guardar el siguiente juzgado?\n\n$juzgadoEP\n\nCorreo: $correo',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Guardar'),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmar != true) return;
+        );
+        if (confirmar != true) return;
+      }
 
       // Guardar
       final String id = Random().nextInt(1000000).toString();
@@ -193,7 +195,7 @@ class _IngresarJuzgadoEjecucionWidgetState extends State<IngresarJuzgadoEjecucio
             TextField(
               controller: _nombreJuzgadoController,
               decoration: const InputDecoration(
-                labelText: 'Nombre del juzgado (se guardará en mayúsculas)',
+                labelText: 'Solo ingrese el número del juzgado',
                 floatingLabelBehavior: FloatingLabelBehavior.always,
                 border: OutlineInputBorder(),
                 enabledBorder: OutlineInputBorder(

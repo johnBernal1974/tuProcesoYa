@@ -542,11 +542,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           tipoDocumentoPpl(),
           const SizedBox(height: 15),
           numeroDocumentoPpl(),
-          const SizedBox(height: 15),
+          const SizedBox(height: 25),
           seleccionarCentroReclusion(),
-          const SizedBox(height: 15),
+          const SizedBox(height: 25),
           seleccionarJuzgadoEjecucionPenas(),
-          const SizedBox(height: 15),
+          const SizedBox(height: 25),
           seleccionarJuzgadoQueCondeno(),
           const SizedBox(height: 15),
           LayoutBuilder(
@@ -1954,228 +1954,284 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
   Widget seleccionarCentroReclusion() {
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
-              widget.doc["situacion"] == "En libertad condicional")
-              ? Colors.black
-              : primary,
-          width: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
-              widget.doc["situacion"] == "En libertad condicional")
-              ? 3
-              : 1.5,
-        ),
-        borderRadius: BorderRadius.circular(4),
-        color: Colors.white,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+                  widget.doc["situacion"] == "En libertad condicional")
+                  ? Colors.black
+                  : primary,
+              width: (widget.doc["situacion"] == "En Prisión domiciliaria" ||
+                  widget.doc["situacion"] == "En libertad condicional")
+                  ? 3
+                  : 1.5,
+            ),
+            borderRadius: BorderRadius.circular(4),
+            color: Colors.white,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Centro de reclusión", style: TextStyle(fontSize: 11)),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _mostrarDropdowns = true;
-                    selectedCentro = null;
-                  });
-                  _fetchTodosCentrosReclusion();
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: centroValidado ? Colors.green : primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                ),
-                child: Text(centroValidado ? "Validado" : "Validar centro"),
+              const SizedBox(height: 16), // Espacio extra para que no tape el contenido
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const SizedBox(), // El título ahora está en la pestañita
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _mostrarDropdowns = true;
+                        selectedCentro = null;
+                      });
+                      _fetchTodosCentrosReclusion();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: centroValidado ? Colors.green : primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                    ),
+                    child: Text(centroValidado ? "Validado" : "Validar centro"),
+                  ),
+                ],
               ),
-
+              const SizedBox(height: 6),
+              Text(widget.doc['regional'] ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+              const SizedBox(height: 6),
+              Text(widget.doc['centro_reclusion'] ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
+              const SizedBox(height: 12),
+              if (_mostrarDropdowns) ...[
+                const SizedBox(height: 18),
+                Autocomplete<Map<String, dynamic>>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<Map<String, dynamic>>.empty();
+                    }
+                    return centrosReclusionTodos.where((option) =>
+                        option['nombre']
+                            .toString()
+                            .toLowerCase()
+                            .contains(textEditingValue.text.toLowerCase()));
+                  },
+                  displayStringForOption: (option) => option['nombre'],
+                  fieldViewBuilder:
+                      (context, controller, focusNode, onEditingComplete) {
+                    _centroController = controller;
+                    return TextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      decoration: InputDecoration(
+                        hintText: "Busca ingresando la ciudad",
+                        labelText: "Centro de reclusión",
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.grey, width: 1),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.grey, width: 1),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Colors.grey, width: 1),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      ),
+                    );
+                  },
+                  onSelected: (Map<String, dynamic> option) {
+                    setState(() {
+                      selectedCentro = option['id']?.toString();
+                      selectedRegional = option['regional']?.toString();
+                    });
+                  },
+                  optionsViewBuilder: (context, onSelected, options) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        color: Colors.amber.shade50,
+                        elevation: 4,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            maxHeight: 250,
+                            minWidth: 100,
+                          ),
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            itemBuilder: (context, index) {
+                              final option = options.elementAt(index);
+                              return ListTile(
+                                title: Text(option['nombre']),
+                                onTap: () => onSelected(option),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final nombreCentro =
+                        widget.doc['centro_reclusion']?.toString() ?? '';
+                    if (nombreCentro.isNotEmpty) {
+                      setState(() {
+                        _centroController.text = nombreCentro;
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.download),
+                  label: const Text("Cargar centro guardado"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey[200],
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                if (selectedCentro != null)
+                  Text(
+                    "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
+                          (centro) => centro['id'].toString() == selectedCentro,
+                      orElse: () => {'nombre': 'No encontrado'},
+                    )['nombre']}",
+                    style:
+                    const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+                  ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _mostrarDropdowns = false;
+                        selectedCentro = null;
+                      });
+                    },
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cancel, size: 15),
+                        Text("Cancelar", style: TextStyle(fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
-
-          const SizedBox(height: 6),
-          Text(widget.doc['regional'] ?? '',
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-          const SizedBox(height: 6),
-          Text(widget.doc['centro_reclusion'] ?? '',
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1)),
-
-          const SizedBox(height: 12),
-
-          if (_mostrarDropdowns) ...[
-            const SizedBox(height: 18),
-            Autocomplete<Map<String, dynamic>>(
-              optionsBuilder: (TextEditingValue textEditingValue) {
-                if (textEditingValue.text.isEmpty) {
-                  return const Iterable<Map<String, dynamic>>.empty();
-                }
-                return centrosReclusionTodos.where((option) =>
-                    option['nombre']
-                        .toString()
-                        .toLowerCase()
-                        .contains(textEditingValue.text.toLowerCase()));
-              },
-              displayStringForOption: (option) => option['nombre'],
-              fieldViewBuilder: (context, controller, focusNode, onEditingComplete) {
-                _centroController = controller; // lo usamos para cargar centro guardado
-                return TextField(
-                  controller: controller,
-                  focusNode: focusNode,
-                  decoration: InputDecoration(
-                    hintText: "Busca ingresando la ciudad",
-                    labelText: "Centro de reclusión",
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                  ),
-                );
-
-              },
-              onSelected: (Map<String, dynamic> option) {
-                setState(() {
-                  selectedCentro = option['id']?.toString();
-                  selectedRegional = option['regional']?.toString();
-                });
-              },
-              optionsViewBuilder: (context, onSelected, options) {
-                return Align(
-                  alignment: Alignment.topLeft,
-                  child: Material(
-                    color: Colors.amber.shade50,
-                    elevation: 4,
-                    borderRadius: BorderRadius.circular(8),
-                    child: Container(
-                      constraints: const BoxConstraints(
-                        maxHeight: 250, // Máxima altura si hay muchas opciones
-                        minWidth: 100, // Se adapta al contenido, pero con un mínimo
-                      ),
-                      child: ListView.builder(
-                        padding: EdgeInsets.zero,
-                        shrinkWrap: true,
-                        itemCount: options.length,
-                        itemBuilder: (context, index) {
-                          final option = options.elementAt(index);
-                          return ListTile(
-                            title: Text(option['nombre']),
-                            onTap: () => onSelected(option),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () {
-                final nombreCentro = widget.doc['centro_reclusion']?.toString() ?? '';
-                if (nombreCentro.isNotEmpty) {
-                  setState(() {
-                    _centroController.text = nombreCentro;
-                  });
-                }
-              },
-              icon: const Icon(Icons.download),
-              label: const Text("Cargar centro guardado"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey[200],
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        ),
+        // 🔲 Pestañita negra superior izquierda
+        Positioned(
+          top: -10,
+          left: 0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: const BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(4),
+                bottomRight: Radius.circular(4),
               ),
             ),
-            const SizedBox(height: 10),
-            if (selectedCentro != null)
-              Text(
-                "Centro seleccionado: ${centrosReclusionTodos.firstWhere(
-                      (centro) => centro['id'].toString() == selectedCentro,
-                  orElse: () => {'nombre': 'No encontrado'},
-                )['nombre']}",
-                style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-              ),
-            const SizedBox(height: 10),
-            Align(
-              alignment: Alignment.center,
-              child: GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _mostrarDropdowns = false;
-                    selectedCentro = null;
-                  });
-                },
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.cancel, size: 15),
-                    Text("Cancelar", style: TextStyle(fontSize: 11)),
-                  ],
-                ),
+            child: const Text(
+              "Centro de reclusión",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ],
-        ],
-      ),
+          ),
+        ),
+      ],
     );
   }
+
 
 
   Widget seleccionarJuzgadoEjecucionPenas() {
     if (!_mostrarDropdownJuzgadoEjecucion &&
         widget.doc['juzgado_ejecucion_penas'] != null &&
         widget.doc['juzgado_ejecucion_penas'].toString().trim().isNotEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(4),
-          color: Colors.white,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _mostrarDropdownJuzgadoEjecucion = true;
-                  selectedJuzgadoEjecucionPenas = null;
-                  selectedJuzgadoEjecucionEmail = null;
-                  selectedCiudad = null;
-                });
-                _fetchJuzgadosEjecucion();
-              },
-              child: const Row(
-                children: [
-                  Text("Juzgado de Ejecución de Penas", style: TextStyle(fontSize: 11)),
-                  Icon(Icons.edit, size: 15),
-                ],
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16), // espacio para que la pestaña no tape
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdownJuzgadoEjecucion = true;
+                      selectedJuzgadoEjecucionPenas = null;
+                      selectedJuzgadoEjecucionEmail = null;
+                      selectedCiudad = null;
+                    });
+                    _fetchJuzgadosEjecucion();
+                  },
+                  child: const Row(
+                    children: [
+                      Text("Juzgado de Ejecución de Penas", style: TextStyle(fontSize: 11)),
+                      Icon(Icons.edit, size: 15),
+                    ],
+                  ),
+                ),
+                Text(
+                  widget.doc['juzgado_ejecucion_penas'] ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  "correo: ${widget.doc['juzgado_ejecucion_penas_email'] ?? 'No disponible'}",
+                  style: const TextStyle(fontSize: 12, height: 1),
+                ),
+              ],
+            ),
+          ),
+          // 🟣 Pestañita negra arriba a la izquierda
+          Positioned(
+            top: -10,
+            left: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: const BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  bottomRight: Radius.circular(4),
+                ),
+              ),
+              child: const Text(
+                "Juzgado de Ejecución de Penas",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            Text(
-              widget.doc['juzgado_ejecucion_penas'] ?? '',
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "correo: ${widget.doc['juzgado_ejecucion_penas_email'] ?? 'No disponible'}",
-              style: const TextStyle(fontSize: 12, height: 1),
-            ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
@@ -2374,55 +2430,84 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     if (!_mostrarDropdownJuzgadoCondeno &&
         widget.doc['juzgado_que_condeno'] != null &&
         widget.doc['juzgado_que_condeno'].toString().trim().isNotEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(4),
-          color: Colors.white,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            GestureDetector(
-              onTap: () {
-                setState(() {
-                  _mostrarDropdownJuzgadoCondeno = true;
-                  selectedJuzgadoNombre = null;
-                  selectedCiudad = null;
-                  selectedJuzgadoConocimientoEmail = null;
-                });
-                _fetchTodosJuzgadosConocimiento();
-              },
-              child: const Row(
-                children: [
-                  Text("Ciudad del Juzgado", style: TextStyle(fontSize: 11)),
-                  Icon(Icons.edit, size: 15),
-                ],
-              ),
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(4),
+              color: Colors.white,
             ),
-            Text(
-              widget.doc['ciudad'] ?? '',
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-            ),
-            const SizedBox(height: 10),
-            const Text("Juzgado de Conocimiento", style: TextStyle(fontSize: 11)),
-            Text(
-              widget.doc['juzgado_que_condeno'] ?? '',
-              style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
-            ),
-            const SizedBox(height: 10),
-            Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("correo: ", style: TextStyle(fontSize: 12)),
+                const SizedBox(height: 16), // Espacio para que la pestaña no tape
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _mostrarDropdownJuzgadoCondeno = true;
+                      selectedJuzgadoNombre = null;
+                      selectedCiudad = null;
+                      selectedJuzgadoConocimientoEmail = null;
+                    });
+                    _fetchTodosJuzgadosConocimiento();
+                  },
+                  child: const Row(
+                    children: [
+                      Text("Ciudad del Juzgado", style: TextStyle(fontSize: 11)),
+                      Icon(Icons.edit, size: 15),
+                    ],
+                  ),
+                ),
                 Text(
-                  widget.doc['juzgado_que_condeno_email'] ?? 'No disponible',
-                  style: const TextStyle(fontSize: 12, height: 1),
+                  widget.doc['ciudad'] ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+                ),
+                const SizedBox(height: 10),
+                const Text("Juzgado de Conocimiento", style: TextStyle(fontSize: 11)),
+                Text(
+                  widget.doc['juzgado_que_condeno'] ?? '',
+                  style: const TextStyle(fontWeight: FontWeight.bold, height: 1),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Text("correo: ", style: TextStyle(fontSize: 12)),
+                    Text(
+                      widget.doc['juzgado_que_condeno_email'] ?? 'No disponible',
+                      style: const TextStyle(fontSize: 12, height: 1),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+          // 🟣 Pestañita negra arriba a la izquierda
+          Positioned(
+            top: -10,
+            left: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: const BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(4),
+                  bottomRight: Radius.circular(4),
+                ),
+              ),
+              child: const Text(
+                "Juzgado de conocimiento",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -2445,7 +2530,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 8),
-
           Autocomplete<Map<String, String>>(
             optionsBuilder: (TextEditingValue textEditingValue) {
               if (textEditingValue.text.isEmpty) {
@@ -2457,10 +2541,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'correo': juzgado['correo'].toString(),
                 'ciudad': juzgado['ciudad'].toString(),
               })
-                  .where((juzgado) =>
-                  juzgado['nombre']!
-                      .toLowerCase()
-                      .contains(textEditingValue.text.toLowerCase()));
+                  .where((juzgado) => juzgado['nombre']!
+                  .toLowerCase()
+                  .contains(textEditingValue.text.toLowerCase()));
             },
             displayStringForOption: (option) => option['nombre']!,
             fieldViewBuilder:
@@ -2483,7 +2566,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     borderRadius: BorderRadius.circular(10),
                     borderSide: const BorderSide(color: Colors.grey, width: 1),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   suffixIcon: selectedJuzgadoNombre != null
                       ? IconButton(
                     icon: const Icon(Icons.clear, color: Colors.red),
@@ -2530,7 +2614,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               );
             },
           ),
-
           const SizedBox(height: 10),
           if (selectedJuzgadoNombre != null && selectedCiudad != null) ...[
             const Text("Ciudad del Juzgado", style: TextStyle(fontSize: 11)),
@@ -2544,7 +2627,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               style: const TextStyle(fontSize: 12, height: 1.3),
             ),
           ],
-
           const SizedBox(height: 25),
           Align(
             alignment: Alignment.center,
@@ -2575,7 +2657,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 await showDialog(
                   context: context,
                   builder: (context) => Dialog(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
                     child: const SizedBox(
                       width: 600,
                       child: Padding(
@@ -2592,9 +2675,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   Future.delayed(const Duration(milliseconds: 50), () {
                     setState(() {
                       _autocompleteController.text = textoAnterior;
-                      _autocompleteController.selection = TextSelection.fromPosition(
-                        TextPosition(offset: _autocompleteController.text.length),
-                      );
+                      _autocompleteController.selection =
+                          TextSelection.fromPosition(
+                            TextPosition(
+                                offset: _autocompleteController.text.length),
+                          );
                     });
                   });
                 });
@@ -2605,7 +2690,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                textStyle: const TextStyle(fontSize: 13),
+                textStyle: const TextStyle(fontSize: 16),
               ),
             ),
           ),
@@ -2613,6 +2698,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
+
 
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;

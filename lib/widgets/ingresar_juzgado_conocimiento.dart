@@ -31,6 +31,39 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
       return;
     }
 
+    if (!correo.contains('@') || !correo.contains('.')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El correo ingresado no es válido.')),
+      );
+      return;
+    }
+
+    // ✅ Confirmación previa
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text('Confirmar guardado'),
+        content: Text(
+          '¿Deseas guardar el siguiente juzgado?\n\n'
+              'Ciudad: $ciudadSeleccionada\n'
+              'Nombre: $nombre\n'
+              'Correo: $correo',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Guardar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmar != true) return;
+
     try {
       final firestore = FirebaseFirestore.instance;
 
@@ -62,6 +95,7 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
       );
     }
   }
+
 
 
   @override
@@ -141,6 +175,7 @@ class _IngresarJuzgadoCondenoWidgetState extends State<IngresarJuzgadoCondenoWid
               decoration: const InputDecoration(
                 labelText: 'Nombre del juzgado (se guardará en mayúsculas)',
                 floatingLabelBehavior: FloatingLabelBehavior.always,
+                hintText: "Ejemplo. Juzgado 001 de conocimiento...",
                 border: OutlineInputBorder(),
                 enabledBorder: OutlineInputBorder(
                   borderSide: BorderSide(color: Colors.grey),
