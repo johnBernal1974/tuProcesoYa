@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tuprocesoya/commons/side_bar_menu.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
+import '../widgets/tabla_tarifas.dart';
 import 'admin_provider.dart'; // Importamos la clase AdminProvider
 
 class MainLayout extends StatefulWidget {
@@ -80,7 +81,7 @@ class _MainLayoutState extends State<MainLayout> {
                     ),
                   );
                 }
-                if (!_isAdmin) return const SizedBox(); // No mostrar nada si no es admin
+                if (!_isAdmin) return const SizedBox();
                 if (_adminProvider.adminName == null) {
                   return const Padding(
                     padding: EdgeInsets.all(8.0),
@@ -90,24 +91,49 @@ class _MainLayoutState extends State<MainLayout> {
                     ),
                   );
                 }
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Center(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.person, color: Colors.white),
-                        const SizedBox(width: 4),
-                        Text(
-                          _adminProvider.adminName!,
-                          style: const TextStyle(fontSize: 14, color: Colors.white),
-                        ),
-                      ],
+                return Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => Dialog(
+                            insetPadding: const EdgeInsets.all(16),
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(8),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 500),
+                                child: TablaPreciosWidget(),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.table_view, color: Colors.white),
+                      label: const Text(
+                        "Tarifas",
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.person, color: Colors.white),
+                          const SizedBox(width: 4),
+                          Text(
+                            _adminProvider.adminName!,
+                            style: const TextStyle(fontSize: 14, color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 );
               },
             ),
+
         ],
       ),
       body: Column(

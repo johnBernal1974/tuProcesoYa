@@ -194,6 +194,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                     bool esOperador = rolesOperadores.contains(userRole);
                     String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
 
+                    /// EN ESTA PARTE SE HACE EL FILTRADO
+
                     return StreamBuilder<QuerySnapshot>(
                       stream: _firebaseFirestore.collection('Ppl').snapshots(),
                       builder: (context, snapshot) {

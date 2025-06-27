@@ -2,10 +2,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../src/colors/colors.dart';
+import '../src/colors/colors.dart';
 
-class TablaPreciosPage extends StatelessWidget {
-  const TablaPreciosPage({super.key});
+class TablaPreciosWidget extends StatelessWidget {
+  const TablaPreciosWidget({super.key});
 
   Future<Widget> _construirTablaPrecios() async {
     final configSnapshot = await FirebaseFirestore.instance
@@ -14,7 +14,12 @@ class TablaPreciosPage extends StatelessWidget {
         .get();
 
     if (configSnapshot.docs.isEmpty) {
-      return const Center(child: Text('No se encontraron configuraciones.'));
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text('No se encontraron configuraciones.'),
+        ),
+      );
     }
 
     final data = configSnapshot.docs.first.data();
@@ -46,7 +51,7 @@ class TablaPreciosPage extends StatelessWidget {
         ),
         child: Card(
           elevation: 4,
-          margin: const EdgeInsets.all(24),
+          margin: const EdgeInsets.all(16),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -129,25 +134,20 @@ class TablaPreciosPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white, // Fondo blanco
-      appBar: AppBar(
-        title: const Text('Tabla de Precios'),
-        titleTextStyle: const TextStyle(color: Colors.white),
-        backgroundColor: Colors.deepPurple,
-      ),
-      body: FutureBuilder<Widget>(
-        future: _construirTablaPrecios(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          return snapshot.data!;
-        },
-      ),
+    return FutureBuilder<Widget>(
+      future: _construirTablaPrecios(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: Padding(
+            padding: EdgeInsets.all(24),
+            child: CircularProgressIndicator(),
+          ));
+        }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+        return snapshot.data!;
+      },
     );
   }
 }
