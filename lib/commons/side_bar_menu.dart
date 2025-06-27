@@ -330,7 +330,7 @@ class _SideBarState extends State<SideBar> {
         items.addAll([
 
           _buildDrawerTile(
-              context, "Intro", Icons.art_track_sharp, 'intro_page'),
+              context, "Tarifas", Icons.art_track_sharp, 'precios_page'),
           _buildDrawerTile(
               context, "Página principal", Icons.home_filled, 'home_admin'),
           _buildDrawerTile(context, "Configuraciones", Icons.settings,

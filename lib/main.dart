@@ -261,7 +261,7 @@ class MyApp extends StatelessWidget {
         'tutela_solicitud': (context) => const TutelaSolicitudPage(),
         'info': (context) => const InfoPage(),
         'bloqueo_page': (context) => const BloqueadoPage(),
-        'intro_page': (context) => const IntroPage(),
+        'precios_page': (context) => const TablaPreciosPage(),
 
       },
         onGenerateRoute: (settings) {
