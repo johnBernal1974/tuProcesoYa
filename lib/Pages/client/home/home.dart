@@ -308,7 +308,41 @@ class _HomePageState extends State<HomePage> {
                       ),
                       const SizedBox(height: 10),
                       if (_isTrial && !_isPaid) _buildTrialCard(context),
-                      _isPaid || _isTrial ? _buildPaidContent() : _buildUnpaidContent(),
+
+                      _isPaid
+                          ? Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.green.shade600),
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.verified, color: Colors.black, size: 20),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Suscripción activa",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _buildPaidContent(),
+                        ],
+                      )
+                          : _isTrial
+                          ? _buildPaidContent()
+                          : _buildUnpaidContent(),
+
                       const SizedBox(height: 20),
                     ],
                   ),
@@ -338,29 +372,84 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTrialCard(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            backgroundColor: blanco,
-            title: const Text("Periodo de prueba"),
-            content: const Text(
-              "Actualmente estás disfrutando del periodo de prueba gratuito. "
-                  "Si deseas acceder de inmediato a todos los beneficios, puedes realizar el pago de la suscripción desde ahora.",
-              style: TextStyle(fontSize: 14),
-              textAlign: TextAlign.justify,
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancelar"),
+    return SizedBox(
+      child: Card(
+        surfaceTintColor: blanco,
+        elevation: 6,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        color: Colors.white,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              const SizedBox(height: 10),
+              const Text(
+                "¡Felicidades!",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: primary,
+                ),
+                textAlign: TextAlign.center,
               ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: primary),
-                onPressed: () async {
-                  Navigator.pop(context); // Cierra el diálogo
+              const Text(
+                "Tu cuenta ha sido activada exitosamente.",
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text.rich(
+                TextSpan(
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: gris,
+                    height: 1.3,
+                  ),
+                  children: [
+                    const TextSpan(text: "Tienes "),
+                    TextSpan(
+                      text: "${_diasRestantesPrueba * 24} horas",
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    const TextSpan(text: " para conocer todo lo que "),
+                    const TextSpan(
+                      text: "Tu Proceso Ya ",
+                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                    ),
+                    const TextSpan(text: "puede ofrecerte. "),
+                    const TextSpan(
+                      text: "\n\nPasado este tiempo perderás el acceso a la plataforma.\n\n",
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                    const TextSpan(
+                      text: "Juntos logramos más. Activa tu suscripción ahora mismo y mantén el respaldo que necesitas.",
+                      style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
+                    ),
+                  ],
+                ),
+                textAlign: TextAlign.center,
+              ),
 
+              const SizedBox(height: 15),
+
+              // 🔽 Botón de pago directo
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: () async {
                   final user = FirebaseAuth.instance.currentUser;
 
                   if (user == null) {
@@ -385,7 +474,7 @@ class _HomePageState extends State<HomePage> {
 
                     final int valorSuscripcion = snapshot.docs.first["valor_subscripcion"];
 
-                    if(context.mounted){
+                    if (context.mounted) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -421,90 +510,18 @@ class _HomePageState extends State<HomePage> {
                     );
                   }
                 },
-                child: const Text("Pagar suscripción", style: TextStyle(color: blanco)),
+                child: const Text(
+                  'Pagar suscripción',
+                  style: TextStyle(color: blanco),
+                ),
               ),
             ],
           ),
-        );
-      },
-      child: SizedBox(
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Card(
-              surfaceTintColor: blanco,
-              elevation: 6,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const SizedBox(height: 10),
-                    const Text(
-                      "¡ Felicidades !",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: primary,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const Text(
-                      "Disfruta de tu regalo de bienvenida.",
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      "Aún tienes $_diasRestantesPrueba días para explorar todas las funciones de nuestra aplicación.",
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: gris,
-                        height: 1.1,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            Positioned(
-              top: -25,
-              right: -250,
-              left: 20,
-              child: Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.15),
-                      blurRadius: 6,
-                      offset: const Offset(2, 4),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(6),
-                child: Image.asset(
-                  "assets/images/regalo.png",
-                  height: 50,
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );
   }
+
 
   Future<void> _checkSubscriptionStatus() async {
     final user = FirebaseAuth.instance.currentUser;

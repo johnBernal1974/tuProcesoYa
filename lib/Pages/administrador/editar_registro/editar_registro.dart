@@ -1335,8 +1335,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     final mensaje = Uri.encodeComponent(
         "Hola *$nombreAcudiente*,\n\nHay un cambio en el proceso de $nombrePpl $apellidoPpl. La autoridad competente le ha concedido una nueva redención de penas. Los días redimidos ya fueron cargados a la aplicación.\n\n"
 
-        "Ingresa a tu aplicación dando click aca:\nhttps://www.tuprocesoya.com\n\n\n"
-            "Puedes revisar esta información ingresando al menú / Tus redenciones.\n\n Es para un placer para nosotros contar con tu confianza\n\nTu equipo de *TU PROCESO YA*"
+        "Ingresa a tu aplicación dando click acá:\nhttps://www.tuprocesoya.com\n\n\n"
+            "Puedes revisar esta información ingresando al menú / Tus redenciones.\n\n Es un placer para nosotros contar con tu confianza\n\nTu equipo de *TU PROCESO YA*"
     );
 
     final url = Uri.parse("https://wa.me/$celular?text=$mensaje");
@@ -3483,11 +3483,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             final docSnapshot = await widget.doc.reference.get();
             final data = docSnapshot.data() as Map<String, dynamic>?;
 
-// 🔒 Validar centro_validado ANTES DE TODO
+// 🔒 Validar centro_validado solo si situación es "En Reclusión"
             final centroValidado = data?['centro_validado'] == true;
             final centroFinal = selectedCentro ?? widget.doc['centro_reclusion'] ?? '';
+            final situacion = data?['situacion']?.toString().trim() ?? '';
 
-            if (!centroValidado && _centroController.text.trim().isEmpty) {
+            if (situacion == 'En Reclusión' && !centroValidado && _centroController.text.trim().isEmpty) {
               if (context.mounted) {
                 await showDialog(
                   context: context,
@@ -3506,6 +3507,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
               return; // 🚫 Se detiene aquí el proceso
             }
+
 
             final rawFechaCaptura = data?['fecha_captura'];
             final tieneFechaCaptura = rawFechaCaptura != null &&
@@ -3531,7 +3533,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             }
 
             List<String> camposFaltantes = [];
-            String situacion = (widget.doc['situacion'] ?? '').toString();
 
             if (situacion == 'En Reclusión') {
               String? centro = selectedCentro ?? widget.doc['centro_reclusion'];
@@ -3647,27 +3648,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               'correo_sanidad': '',
             };
 
-            if (!centroValidado) {
-              // 🔴 Si el campo del Autocomplete está vacío, no permitir guardar
-              if (_centroController.text.trim().isEmpty) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("⚠️ Debes validar el centro de reclusión antes de guardar."),
-                      backgroundColor: Colors.red,
-                      duration: Duration(seconds: 3),
-                    ),
-                  );
-                }
-                return; // 🚫 Detener guardado
-              }
-
+            // 🔄 Cargar correos del centro de reclusión si la situación es En Reclusión y el centro no ha sido validado
+            if (situacion == 'En Reclusión' && !centroValidado) {
               // ✅ Si sí hay centro escrito, cargar correos
               if (centroFinal.isNotEmpty) {
                 final centroEncontrado = centrosReclusionTodos.firstWhere(
                       (centro) => centro['id'] == centroFinal,
                   orElse: () => <String, Object>{},
                 );
+
                 if (centroEncontrado.containsKey('correos')) {
                   final correosMap = centroEncontrado['correos'] as Map<String, dynamic>;
                   correosCentro = {
@@ -3679,7 +3668,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 }
               }
             }
-
 
             try {
               final Map<String, dynamic> datosActualizados = {
@@ -3743,12 +3731,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     .set(correosCentro);
               }
 
-              await FirebaseFirestore.instance
-                  .collection('Ppl')
-                  .doc(widget.doc.id)
-                  .update({
-                'centro_validado': true,
-              });
+              if (situacion == 'En Reclusión') {
+                await FirebaseFirestore.instance
+                    .collection('Ppl')
+                    .doc(widget.doc.id)
+                    .update({
+                  'centro_validado': true,
+                });
+              }
 
               if (comentario.isNotEmpty) {
                 await widget.doc.reference.collection('comentarios').add({
@@ -4021,7 +4011,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     comentarioController.dispose();
     return resultado ?? {};
   }
-
 
 
   Future<bool> tieneEventoEspecial(DocumentReference docRef) async {
@@ -4430,7 +4419,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   Future<void> enviarMensajeWhatsApp(String whatsApp, String docId) async {
     if (whatsApp.isEmpty) {
       if (kDebugMode) {
-        print('El número de whatsApp es inválido');
+        print('El número de WhatsApp es inválido');
       }
       return;
     }
@@ -4441,54 +4430,60 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
 
     // Obtener el nombre del acudiente desde Firestore
-    String nombreAcudiente = "Estimado usuario"; // Valor por defecto si no se encuentra
+    String nombreAcudiente = "Estimado usuario";
     try {
       DocumentSnapshot doc = await FirebaseFirestore.instance.collection('Ppl').doc(docId).get();
       if (doc.exists && doc.data() != null) {
         nombreAcudiente = doc['nombre_acudiente'] ?? "Estimado usuario";
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("Error obteniendo nombre del acudiente: $e");
-      }
+      if (kDebugMode) print("Error obteniendo nombre del acudiente: $e");
     }
 
-    // Obtener días de prueba desde configuración
-    int diasPrueba = 7; // Valor por defecto
+    // Obtener días de prueba y valor de suscripción desde configuración
+    int diasPrueba = 1;
+    int valorSuscripcion = 49900; // Valor por defecto
     try {
       final configSnap = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
       if (configSnap.docs.isNotEmpty) {
-        diasPrueba = configSnap.docs.first.data()['tiempoDePrueba'] ?? 7;
+        final data = configSnap.docs.first.data();
+        diasPrueba = data['tiempoDePrueba'] ?? 1;
+        valorSuscripcion = data['valor_subscripcion']?? 0 ;
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("Error obteniendo configuración: $e");
-      }
+      if (kDebugMode) print("Error obteniendo configuración: $e");
     }
 
     // Construir el mensaje
     String mensaje = Uri.encodeComponent(
         "Hola *$nombreAcudiente*,\n\n"
-            "¡Nos alegra darte la bienvenida a *Tu Proceso Ya*! \n\n"
-            "Tu cuenta ha sido activada exitosamente. Desde ahora podrás gestionar solicitudes y hacer seguimiento a la situación de tu ser querido PPL de forma rápida y sencilla.\n\n"
-            "Contarás con *$diasPrueba días completamente gratis* para explorar todas las funcionalidades de nuestra plataforma.\n\n"
-            "Pasado ese tiempo, deberás activar tu suscripción para seguir disfrutando de nuestros servicios y de los *precios especiales* diseñados para ti.\n\n"
-            "Ingresa a la aplicación aquí: https://www.tuprocesoya.com\n\n"
-            "Gracias por confiar en nosotros.\n\n"
-            "Cordialmente,\n*El equipo de soporte de Tu Proceso Ya*"
+            "¡Bienvenido a *Tu Proceso Ya*!\n\n"
+            "Tu cuenta ha sido activada exitosamente. Ahora puedes gestionar solicitudes y hacer seguimiento a la situación jurídica de tu ser querido PPL de forma ágil y segura.\n\n"
+            "Tendrás *$diasPrueba día${diasPrueba > 1 ? 's' : ''} completamente gratuito${diasPrueba > 1 ? 's' : ''}* para explorar todas las funciones de nuestra plataforma.\n\n"
+            "*Importante:* Este acceso especial es temporal. Para seguir disfrutando del servicio y obtener *6 meses de acceso completo*, activa tu suscripción por solo *${formatoPesos.format(valorSuscripcion)}*.\n\n"
+            "No dejes pasar esta oportunidad de acompañar a tu ser querido con las herramientas adecuadas.\n\n"
+            "Accede ahora desde aquí: https://www.tuprocesoya.com\n\n"
+            "Estamos aquí para apoyarte.\n\n"
+            "*El equipo de soporte de Tu Proceso Ya*"
     );
 
-    String whatsappBusinessUri = "whatsapp://send?phone=$whatsApp&text=$mensaje"; // WhatsApp Business
-    String webUrl = "https://wa.me/$whatsApp?text=$mensaje"; // WhatsApp Web
+    String whatsappBusinessUri = "whatsapp://send?phone=$whatsApp&text=$mensaje";
+    String webUrl = "https://wa.me/$whatsApp?text=$mensaje";
 
-    // Intenta abrir WhatsApp Business o normal
     if (await canLaunchUrl(Uri.parse(whatsappBusinessUri))) {
       await launchUrl(Uri.parse(whatsappBusinessUri));
     } else {
-      // Si no está instalado, abrir WhatsApp Web o enviar al usuario a instalarlo
       await launchUrl(Uri.parse(webUrl), mode: LaunchMode.externalApplication);
     }
   }
+
+  final NumberFormat formatoPesos = NumberFormat.currency(
+    locale: 'es_CO',
+    symbol: '\$',
+    decimalDigits: 0,
+    customPattern: '\u00A4#,##0',
+  );
+
 
   Future<void> validarYEnviarMensaje() async{
     String whatsApp = widget.doc['celularWhatsapp'] ?? '';

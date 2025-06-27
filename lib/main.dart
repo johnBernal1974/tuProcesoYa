@@ -99,6 +99,7 @@ import 'Pages/detalle_de_correo_page/detalle_correo_redenciones.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_traslado_proceso.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_tutela.dart';
 import 'Pages/detalle_de_correo_page/detalle_de_correo_page.dart';
+import 'Pages/intro_page/intro_page.dart';
 import 'Pages/landing_page/info_page.dart';
 import 'Pages/login/login.dart';
 import 'Pages/recuperar_cuenta/recuperar_cuenta.dart';
@@ -260,6 +261,7 @@ class MyApp extends StatelessWidget {
         'tutela_solicitud': (context) => const TutelaSolicitudPage(),
         'info': (context) => const InfoPage(),
         'bloqueo_page': (context) => const BloqueadoPage(),
+        'intro_page': (context) => const IntroPage(),
 
       },
         onGenerateRoute: (settings) {

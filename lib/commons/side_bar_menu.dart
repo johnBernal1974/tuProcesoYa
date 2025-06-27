@@ -328,6 +328,9 @@ class _SideBarState extends State<SideBar> {
       if (rol == "masterFull") {
         // Para master y masterFull se muestran todos los ítems de admin.
         items.addAll([
+
+          _buildDrawerTile(
+              context, "Intro", Icons.art_track_sharp, 'intro_page'),
           _buildDrawerTile(
               context, "Página principal", Icons.home_filled, 'home_admin'),
           _buildDrawerTile(context, "Configuraciones", Icons.settings,
