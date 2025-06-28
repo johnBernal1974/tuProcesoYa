@@ -216,6 +216,13 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           return status == 'activado' && requiereActualizacion != true;
                         }).length;
 
+                        final int countSuscritos = docs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final isPaid = data['isPaid'] == true;
+                          return isPaid;
+                        }).length;
+
+
                         final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
                         final int countPendiente = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'pendiente').length;
 
@@ -303,18 +310,41 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               return status == 'activado' && diferencia >= 30;
                             }
 
-                            if (filterStatus != null) {
+                            if (filterStatus != null || filterIsPaid != null) {
+                              // Si hay filtro por status "registrado"
                               if (filterStatus == 'registrado') {
-                                return status == 'registrado' &&
+                                final coincideStatus = status == 'registrado' &&
                                     (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
+                                if (filterIsPaid == true) {
+                                  return coincideStatus && data['isPaid'] == true;
+                                }
+                                return coincideStatus;
                               }
+
+                              // Si hay filtro por status "activado"
                               if (filterStatus == 'activado') {
-                                return mostrarSoloIncompletos
+                                final coincideStatus = mostrarSoloIncompletos
                                     ? status == 'activado' && requiereActualizacion == true
                                     : status == 'activado' && requiereActualizacion != true;
+                                if (filterIsPaid == true) {
+                                  return coincideStatus && data['isPaid'] == true;
+                                }
+                                return coincideStatus;
                               }
-                              return status == filterStatus;
+
+                              // Si solo hay filtro por isPaid (y no importa status)
+                              if (filterStatus == null && filterIsPaid == true) {
+                                return data['isPaid'] == true;
+                              }
+
+                              // Otro status cualquiera
+                              final coincideStatus = status == filterStatus;
+                              if (filterIsPaid == true) {
+                                return coincideStatus && data['isPaid'] == true;
+                              }
+                              return coincideStatus;
                             }
+
 
                             return true;
                           }).toList();
@@ -442,146 +472,38 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                   ),
                                 ),
                               ),
-
-                            SizedBox(
-                              width: 300,
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                                child: _buildSearchField(),
-                              ),
-                            ),
-                            const SizedBox(height: 30),
-                            Wrap(
-                              spacing: 16,
-                              runSpacing: 16,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
                               children: [
-                                _buildStatCard("Registrados", countRegistrado, primary, () {
-                                  setState(() {
-                                    filterStatus = "registrado";
-                                    filterIsPaid = null;
-                                    mostrarSoloIncompletos = false;
-                                    mostrarRedencionesVencidas = false;
-                                    mostrarSeguimiento = false;
-                                    mostrarConSolicitudes = false;
-                                    filtrarPorExentos = false;
-
-
-                                  });
-                                }, isSelected: filterStatus == "registrado"),
-
-                                _buildStatCard("Usuarios Activados", countActivado, Colors.green, () {
-                                  setState(() {
-                                    filterStatus = "activado";
-                                    filterIsPaid = null;
-                                    mostrarSoloIncompletos = false;
-                                    mostrarRedencionesVencidas = false;
-                                    mostrarSeguimiento = false;
-                                    mostrarConSolicitudes = false;
-                                    filtrarPorExentos = false;
-
-
-                                  });
-                                }, isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento),
-
-                                _buildStatCard("Con seguimiento", countConSeguimiento, Colors.pinkAccent, () {
-                                  setState(() {
-                                    filterStatus = "activado";
-                                    mostrarSeguimiento = true;
-                                    mostrarSoloIncompletos = false;
-                                    mostrarRedencionesVencidas = false;
-                                    mostrarConSolicitudes = false;
-                                    filtrarPorExentos = false;
-                                  });
-                                }, isSelected: mostrarSeguimiento),
-
-                                _buildStatCard(
-                                  "Exentos",
-                                  countExentos,
-                                  Colors.black,
-                                      () {
-                                    setState(() {
-                                      filtrarPorExentos = true;
-                                      filterStatus = null;
-                                      mostrarSoloIncompletos = false;
-                                      mostrarRedencionesVencidas = false;
-                                      mostrarSeguimiento = false;
-                                      mostrarConSolicitudes = false;
-                                    });
-                                  },
-                                  isSelected: filtrarPorExentos,
+                              buildTotalUsuariosCard(docs.length),
+                                SizedBox(
+                                  width: 250,
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                    child: _buildSearchField(),
+                                  ),
                                 ),
 
-
-                                _buildStatCard("Con solicitudes", countUsuariosConSolicitudes, Colors.deepPurpleAccent, () {
-                                  setState(() {
-                                    mostrarConSolicitudes = true;
-                                    filterStatus = null;
-                                    mostrarSeguimiento = false;
-                                    mostrarSoloIncompletos = false;
-                                    mostrarRedencionesVencidas = false;
-                                    filtrarPorExentos = false;
-
-
-                                  });
-                                }, isSelected: mostrarConSolicitudes),
-
-                                _buildStatCard("Activos Incompletos", countActivadoIncompleto, Colors.brown.shade300, () {
-                                  setState(() {
-                                    filterStatus = "activado";
-                                    mostrarSoloIncompletos = true;
-                                    mostrarSeguimiento = false;
-                                    mostrarRedencionesVencidas = false;
-                                    mostrarConSolicitudes = false;
-                                    filtrarPorExentos = false;
-
-
-                                  });
-                                }, isSelected: filterStatus == "activado" && mostrarSoloIncompletos),
-
-                                _buildStatCard("Pendientes", countPendiente, Colors.orange, () {
-                                  setState(() {
-                                    filterStatus = "pendiente";
-                                    mostrarSoloIncompletos = false;
-                                    mostrarSeguimiento = false;
-                                    mostrarRedencionesVencidas = false;
-                                    mostrarConSolicitudes = false;
-                                    filtrarPorExentos = false;
-
-
-                                  });
-                                }, isSelected: filterStatus == "pendiente"),
-
-                                _buildStatCard("Bloqueados", countBloqueado, Colors.red, () {
-                                  setState(() {
-                                    filterStatus = "bloqueado";
-                                    mostrarSoloIncompletos = false;
-                                    mostrarSeguimiento = false;
-                                    mostrarRedencionesVencidas = false;
-                                    mostrarConSolicitudes = false;
-                                    filtrarPorExentos = false;
-
-
-                                  });
-                                }, isSelected: filterStatus == "bloqueado"),
-
-                                _buildStatCard("Redenciones vencidas", countRedencionesVencidas, Colors.blue, () {
-                                  setState(() {
-                                    mostrarRedencionesVencidas = true;
-                                    filterStatus = null;
-                                    mostrarSoloIncompletos = false;
-                                    mostrarSeguimiento = false;
-                                    mostrarConSolicitudes = false;
-                                    filtrarPorExentos = false;
-
-
-                                  });
-                                }, isSelected: mostrarRedencionesVencidas),
-
-                                _buildStatCard("Total Usuarios", countTotal, Colors.black87, null, isSelected: false),
-
-                                _buildUserTable(filteredDocs),
                               ],
                             ),
+
+                            const SizedBox(height: 30),
+                            const Divider(color: primary, height: 2),
+                            const SizedBox(height: 30),
+                            buildDashboardContent(
+                              filteredDocs,
+                              countRegistrado: countRegistrado,
+                              countActivado: countActivado,
+                              countSuscritos: countSuscritos,
+                              countPendiente: countPendiente,
+                              countBloqueado: countBloqueado,
+                              countRedencionesVencidas: countRedencionesVencidas,
+                              countActivadoIncompleto: countActivadoIncompleto,
+                              countConSeguimiento: countConSeguimiento,
+                              countExentos: countExentos,
+                              countUsuariosConSolicitudes: countUsuariosConSolicitudes,
+                            ),
+
                             const SizedBox(height: 30),
 
                           ],
@@ -597,6 +519,326 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
+
+  Widget buildDashboardContent(
+      List<QueryDocumentSnapshot> filteredDocs, {
+        required int countRegistrado,
+        required int countActivado,
+        required int countSuscritos,
+        required int countPendiente,
+        required int countBloqueado,
+        required int countRedencionesVencidas,
+        required int countActivadoIncompleto,
+        required int countConSeguimiento,
+        required int countExentos,
+        required int countUsuariosConSolicitudes,
+      }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        bool isWide = constraints.maxWidth >= 900;
+
+        if (!isWide) {
+          // 🔹 Móvil: filtros arriba
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFilterContainer(
+                countRegistrado,
+                countActivado,
+                countSuscritos,
+                countPendiente,
+                countBloqueado,
+                countRedencionesVencidas,
+                countActivadoIncompleto,
+                countConSeguimiento,
+                countExentos,
+                countUsuariosConSolicitudes,
+              ),
+              const SizedBox(height: 16),
+              _buildUserTable(filteredDocs),
+            ],
+          );
+        } else {
+          // 🟢 Escritorio: filtros siempre visibles
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 220),
+                child: _buildFilterContainer(
+                  countRegistrado,
+                  countActivado,
+                  countSuscritos,
+                  countPendiente,
+                  countBloqueado,
+                  countRedencionesVencidas,
+                  countActivadoIncompleto,
+                  countConSeguimiento,
+                  countExentos,
+                  countUsuariosConSolicitudes,
+                ),
+              ),
+              const SizedBox(width: 16),
+              // La tabla scrollea
+              Expanded(
+                child: SingleChildScrollView(
+                  child: _buildUserTable(filteredDocs),
+                ),
+              ),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+
+  Widget _buildFilterContainer(
+      int countRegistrado,
+      int countActivado,
+      int countSuscritos,
+      int countPendiente,
+      int countBloqueado,
+      int countRedencionesVencidas,
+      int countActivadoIncompleto,
+      int countConSeguimiento,
+      int countExentos,
+      int countUsuariosConSolicitudes,
+      ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          _buildStatRow(
+            "Registrados",
+            countRegistrado,
+            primary,
+                () { setState(() {
+              filterStatus = "registrado";
+              filterIsPaid = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterStatus == "registrado",
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Activados",
+            countActivado,
+            Colors.green,
+                () { setState(() {
+              filterStatus = "activado";
+              filterIsPaid = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento,
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Suscritos",
+            countSuscritos,
+            Colors.blue,
+                () { setState(() {
+              filterIsPaid = true;
+              filterStatus = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterIsPaid == true && filterStatus == null && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento && !mostrarConSolicitudes && !filtrarPorExentos,
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Seguimiento",
+            countConSeguimiento,
+            Colors.pink,
+                () { setState(() {
+              filterStatus = "activado";
+              mostrarSeguimiento = true;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: mostrarSeguimiento,
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Con solicitudes",
+            countUsuariosConSolicitudes,
+            Colors.deepPurpleAccent,
+                () { setState(() {
+              mostrarConSolicitudes = true;
+              filterStatus = null;
+              mostrarSeguimiento = false;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: mostrarConSolicitudes,
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Pendientes",
+            countPendiente,
+            Colors.orange,
+                () { setState(() {
+              filterStatus = "pendiente";
+              filterIsPaid = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterStatus == "pendiente",
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Bloqueados",
+            countBloqueado,
+            Colors.red,
+                () { setState(() {
+              filterStatus = "bloqueado";
+              filterIsPaid = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterStatus == "bloqueado",
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Redenciones vencidas",
+            countRedencionesVencidas,
+            Colors.purple,
+                () { setState(() {
+              mostrarRedencionesVencidas = true;
+              filterStatus = null;
+              filterIsPaid = null;
+              mostrarSoloIncompletos = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: mostrarRedencionesVencidas,
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Activos\nIncompletos",
+            countActivadoIncompleto,
+            Colors.brown,
+                () { setState(() {
+              filterStatus = "activado";
+              mostrarSoloIncompletos = true;
+              mostrarSeguimiento = false;
+              mostrarRedencionesVencidas = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterStatus == "activado" && mostrarSoloIncompletos,
+          ),
+          const SizedBox(height: 6),
+
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Exentos",
+            countExentos,
+            Colors.black,
+                () { setState(() {
+              filtrarPorExentos = true;
+              filterStatus = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+            }); },
+            isSelected: filtrarPorExentos,
+          ),
+          const SizedBox(height: 6),
+
+        ],
+      ),
+    );
+  }
+
+
+
+
+
+  Widget _buildStatRow(
+      String title,
+      int count,
+      Color color,
+      VoidCallback? onTap, {
+        bool isSelected = false,
+      }) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          border: Border.all(
+            color: isSelected ? color : Colors.grey.shade300,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          children: [
+            // Indicador de color
+            Container(
+              width: 14,
+              height: 14,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Título
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            // Contador
+            Text(
+              count.toString(),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
 
 
   Future<int> contarUsuariosConSolicitudes() async {
@@ -704,139 +946,139 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     );
   }
 
+  Widget buildTotalUsuariosCard(int totalUsuarios) {
+    // Formatear fecha actual con formato largo en español
+    final String fechaActual = "Hoy es ${DateFormat('d \'de\' MMMM \'de\' y', 'es_ES').format(DateTime.now())}";
+
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade400, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            fechaActual,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black54,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            totalUsuarios.toString(),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Usuarios Totales",
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
   String normalizar(String texto) {
     return removeDiacritics(texto.toLowerCase());
   }
 
   Widget _buildSearchField() {
-    return FutureBuilder<DocumentSnapshot>(
-      future: _firebaseFirestore.collection('admin').doc(FirebaseAuth.instance.currentUser?.uid ?? "").get(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) return const SizedBox(); // Mientras carga, no muestra nada
-
-        // 🔹 Obtener el rol del usuario autenticado
-        String userRole = snapshot.data!.exists && snapshot.data!.data() != null
-            ? snapshot.data!.get('rol').toString().toLowerCase()
-            : "";
-        List<String> rolesOperadores = ["operador 1", "operador 2", "operador 3"];
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 🔹 Barra de búsqueda normal (para todos los roles)
-            TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = normalizar(value);
-                });
-              },
-              decoration: InputDecoration(
-                labelText: "Buscar registros",
-                floatingLabelBehavior: FloatingLabelBehavior.always, // 🔹 Mantener visible
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: searchQuery.isNotEmpty
-                    ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() {
-                      searchQuery = "";
-                    });
-                  },
-                )
-                    : null,
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.grey, width: 2),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Colors.grey),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            // 🔥 Si NO es operador, mostrar el botón para buscar por admin asignado
-            if (!rolesOperadores.contains(userRole))
-              Align(
-                alignment: Alignment.centerRight,
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.filter_alt_outlined),
-                  label: const Text("Filtrar por Operadores"),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: _activarFiltroAdmin, // 🔥 Carga admins solo al presionar el botón
-                ),
-              ),
-
-
-            // 🔥 Si se activa el filtro de admin, mostrar la nueva barra de búsqueda
-            if (!rolesOperadores.contains(userRole) && mostrarFiltroAdmin)
-              Padding(
-                padding: const EdgeInsets.only(top: 10),
-                child: TextField(
-                  controller: _adminSearchController,
-                  onChanged: (value) {
-                    setState(() {
-                      searchAdminQuery = normalizar(value);
-                    });
-                  },
-                  decoration: InputDecoration(
-                    labelText: "Buscar por operador",
-                    floatingLabelBehavior: FloatingLabelBehavior.always,
-                    prefixIcon: const Icon(Icons.person_search),
-                    suffixIcon: searchAdminQuery.isNotEmpty
-                        ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        _adminSearchController.clear();
-                        setState(() {
-                          searchAdminQuery = "";
-                        });
-                      },
-                    )
-                        : null,
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.grey),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.grey, width: 2),
-                    ),
-                    errorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.grey),
-                    ),
-                    focusedErrorBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: Colors.grey),
-                    ),
-                  )
-                  ,
-                ),
-              ),
-          ],
-        );
-      },
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: Colors.grey.shade400, width: 1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) {
+          setState(() {
+            searchQuery = normalizar(value);
+          });
+        },
+        decoration: InputDecoration(
+          labelText: "Buscar registros",
+          floatingLabelBehavior: FloatingLabelBehavior.always,
+          prefixIcon: const Icon(Icons.search),
+          suffixIcon: searchQuery.isNotEmpty
+              ? IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: () {
+              _searchController.clear();
+              setState(() {
+                searchQuery = "";
+              });
+            },
+          )
+              : null,
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.grey, width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: const BorderSide(color: Colors.grey),
+          ),
+        ),
+      ),
     );
   }
 
-
   Widget _buildUserTable(List<QueryDocumentSnapshot> docs) {
+    // Si no hay registros, mostramos mensaje directamente
+    if (docs.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.inbox, size: 48, color: Colors.grey),
+              const SizedBox(height: 12),
+              Text(
+                "No hay registros que mostrar.",
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Si hay registros, mostramos la tabla normal
     String currentUserUid = FirebaseAuth.instance.currentUser?.uid ?? "";
 
     return FutureBuilder<String>(
@@ -860,6 +1102,29 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
             }
             return true;
           }).toList();
+        }
+
+        // Si después de filtrar quedó vacío, también mostramos mensaje
+        if (docs.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.inbox, size: 48, color: Colors.grey),
+                  const SizedBox(height: 12),
+                  Text(
+                    "No hay registros que mostrar.",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         docs.sort((a, b) {
@@ -895,7 +1160,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                     ),
                   ),
                   const Divider(color: Colors.grey, thickness: 1),
-                  _buildDataTable(registros, {}), // 👈 Ya no pasamos datos de porcentaje
+                  _buildDataTable(registros, {}),
                   const Divider(height: 30, thickness: 2, color: Colors.grey),
                 ],
               );
@@ -905,6 +1170,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       },
     );
   }
+
 
   Widget _buildDataTable(List<QueryDocumentSnapshot> registros, Map<String, Map<String, dynamic>> porcentajesPorDocId) {
     final int rowsPerPage = calcularRowsPerPage(registros.length);
