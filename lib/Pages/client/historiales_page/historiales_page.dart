@@ -1,12 +1,92 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../../commons/main_layaout.dart';
 import '../../../src/colors/colors.dart';
 
 class HistorialSolicitudesPage extends StatelessWidget {
-  const HistorialSolicitudesPage({super.key});
+  HistorialSolicitudesPage({super.key});
 
   void navegar(BuildContext context, String ruta) {
     Navigator.pushNamed(context, ruta);
+  }
+
+  // Lista de colecciones y rutas
+  final List<Map<String, dynamic>> _solicitudesConfig = [
+    {
+      "collection": "derechos_peticion_solicitados",
+      "title": "Derechos de\npetición",
+      "icon": Icons.description,
+      "route": "historial_solicitudes_derechos_peticion",
+    },
+    {
+      "collection": "tutelas_solicitados",
+      "title": "Acciones de\ntutela",
+      "icon": Icons.gavel,
+      "route": "historial_solicitudes_tutela",
+    },
+    {
+      "collection": "permiso_solicitados",
+      "title": "Permiso de\n72 horas",
+      "icon": Icons.schedule,
+      "route": "historial_solicitudes_permiso_72horas",
+    },
+    {
+      "collection": "domiciliaria_solicitados",
+      "title": "Prisión\ndomiciliaria",
+      "icon": Icons.home,
+      "route": "historial_solicitudes_prision_domiciliaria",
+    },
+    {
+      "collection": "condicional_solicitados",
+      "title": "Libertad\ncondicional",
+      "icon": Icons.lock_open,
+      "route": "historial_solicitudes_libertad_condicional",
+    },
+    {
+      "collection": "extincion_pena_solicitados",
+      "title": "Extinción de\nla pena",
+      "icon": Icons.assignment_turned_in,
+      "route": "historial_solicitudes_extincion_pena",
+    },
+    {
+      "collection": "trasladoProceso_solicitados",
+      "title": "Traslado de\nproceso",
+      "icon": Icons.swap_horiz,
+      "route": "historial_solicitudes_traslado_proceso",
+    },
+    {
+      "collection": "redenciones_solicitados",
+      "title": "Solicitud\nredenciones",
+      "icon": Icons.calculate_outlined,
+      "route": "historial_solicitudes_redenciones",
+    },
+    {
+      "collection": "acumulacion_solicitados",
+      "title": "Solicitud\nAcumulación",
+      "icon": Icons.join_left_sharp,
+      "route": "historial_solicitudes_acumulacion",
+    },
+  ];
+
+  Future<List<Map<String, dynamic>>> _obtenerSolicitudes(String userId) async {
+    final firestore = FirebaseFirestore.instance;
+    List<Map<String, dynamic>> resultado = [];
+
+    for (var config in _solicitudesConfig) {
+      final snapshot = await firestore
+          .collection(config["collection"])
+          .where('idUser', isEqualTo: userId)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        resultado.add(config);
+      }
+    }
+
+    return resultado;
   }
 
   @override
@@ -18,46 +98,62 @@ class HistorialSolicitudesPage extends StatelessWidget {
         ? 3
         : 2;
 
+
     return MainLayout(
       pageTitle: 'Historial de solicitudes',
-      content: SingleChildScrollView(
-        padding: const EdgeInsets.all(6.0),
-        child: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 600),
-            padding: EdgeInsets.symmetric(horizontal: screenWidth < 600 ? 6.0 : 10.0, vertical: 10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Selecciona el historial de solicitudes de servicios que has realizado:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                GridView.count(
-                  crossAxisCount: crossAxisCount,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    _buildCard(context, Icons.description, 'Derechos de\npetición', 'historial_solicitudes_derechos_peticion', blanco),
-                    _buildCard(context, Icons.gavel, 'Acciones de\ntutela', 'historial_solicitudes_tutela', blanco),
-                    _buildCard(context, Icons.schedule, 'Permiso de\n72 horas', 'historial_solicitudes_permiso_72horas', blanco),
-                    _buildCard(context, Icons.home, 'Prisión\ndomiciliaria', 'historial_solicitudes_prision_domiciliaria', blanco),
-                    _buildCard(context, Icons.lock_open, 'Libertad\ncondicional', 'historial_solicitudes_libertad_condicional', blanco),
-                    _buildCard(context, Icons.assignment_turned_in, 'Extinción de\nla pena', 'historial_solicitudes_extincion_pena', blanco),
-                    _buildCard(context, Icons.swap_horiz, 'Traslado de\nproceso', 'historial_solicitudes_traslado_proceso', blanco),
-                    _buildCard(context, Icons.calculate_outlined, 'Solicitud\nredenciones', 'historial_solicitudes_redenciones', blanco),
-                    _buildCard(context, Icons.join_left_sharp, 'Solicitud\nAcumulación', 'historial_solicitudes_acumulacion', blanco),
-                  ],
-                ),
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
+      content: FutureBuilder<List<Map<String, dynamic>>>(
+        future: Future.wait(
+          _solicitudesConfig.map((config) async {
+            final querySnapshot = await FirebaseFirestore.instance
+                .collection(config['collection'])
+                .where('idUser', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                .limit(1)
+                .get();
+
+            print('Consulta a colección ${config['collection']}: ${querySnapshot.docs.length} documentos encontrados');
+
+            return {
+              "config": config,
+              "hasData": querySnapshot.docs.isNotEmpty,
+            };
+          }),
         ),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final results = snapshot.data!;
+          final filteredConfigs = results.where((r) => r['hasData'] == true).toList();
+
+          print('Total de colecciones con datos: ${filteredConfigs.length}');
+
+          if (filteredConfigs.isEmpty) {
+            return const Center(
+              child: Text("No tienes solicitudes registradas."),
+            );
+          }
+
+          return GridView.count(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: filteredConfigs.map((result) {
+              final config = result['config'] as Map<String, dynamic>;
+              return _buildCard(
+                context,
+                config['icon'],
+                config['title'],
+                config['route'],
+                blanco,
+              );
+            }).toList(),
+          );
+        },
       ),
+
     );
   }
 
@@ -65,7 +161,7 @@ class HistorialSolicitudesPage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
 
-    final double iconSize = isMobile ? 24.0 : 32.0;
+    final double iconSize = isMobile ? 34.0 : 34.0;
     final double fontSize = isMobile ? 12.0 : 16.0;
     final double padding = isMobile ? 12.0 : 18.0;
     final double margin = isMobile ? 6.0 : 12.0;
@@ -90,7 +186,7 @@ class HistorialSolicitudesPage extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: iconSize, color: primary),
+              Icon(icon, size: iconSize, color: Colors.black54),
               const SizedBox(height: 10),
               Text(
                 titulo,
@@ -104,4 +200,3 @@ class HistorialSolicitudesPage extends StatelessWidget {
     );
   }
 }
-

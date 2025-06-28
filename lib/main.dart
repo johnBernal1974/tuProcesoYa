@@ -79,6 +79,7 @@ import 'Pages/client/otras_solicitudes/solicitud_redenciones.dart';
 import 'Pages/client/otras_solicitudes/solicitud_traslado_proceso.dart';
 import 'Pages/client/preguntas_frecuentes_page/preguntas_frecuentes_page.dart';
 import 'Pages/client/register/register.dart';
+import 'Pages/client/solicitar_page/solicitar_page.dart';
 import 'Pages/client/solicitud_exitosa_derecho_peticion_page/solicitud_exitosa_derecho_peticion_page.dart';
 import 'Pages/client/solicitud_exitosa_domiciliaria/solicitud_exitosa_domiciliaria.dart';
 import 'Pages/client/solicitud_exitosa_extincion_pena/solicitud_exitosa_extincion_pena.dart';
@@ -247,8 +248,9 @@ class MyApp extends StatelessWidget {
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
         'info_previa_72h_page': (context) => const RequisitosPermiso72hPage(),
-        'historiales_page': (context) => const HistorialSolicitudesPage(),
+        'historiales_page': (context) => HistorialSolicitudesPage(),
         'preguntas_frecuentes_page': (context) => const PreguntasFrecuentesPage(),
+        'solicitar_page': (context) => SolicitarServiciosPage(),
 
 
         //general

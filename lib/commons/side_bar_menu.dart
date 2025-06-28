@@ -734,18 +734,17 @@ class _SideBarState extends State<SideBar> {
       items.addAll([
         _buildDrawerTile(
             context, "Página principal", Icons.home_filled, 'home'),
-        _buildDrawerTile(context, "Tus datos", Icons.person_pin, 'mis_datos'),
-        _buildDrawerTile(context, "Solicitar derecho de petición", Icons.account_balance_outlined, 'derecho_peticion'),
-        _buildDrawerTile(context, "Solicitar acción de tutela", Icons.gavel, 'tutela'),
-        _buildDrawerTile(context, "Solicitar traslado de proceso", Icons.swap_horiz, 'solicitud_traslado_proceso_page'),
-        _buildDrawerTile(context, "Solicitar Redenciones", Icons.work_outline , 'solicitud_redenciones_page'),
-        _buildDrawerTile(context, "Solicitar Acumulacion de penas", Icons.calculate_outlined , 'solicitud_acumulacion_page'),
-        _buildDrawerTile(context, "Tus pagos", Icons.attach_money, 'mis_transacciones'),
+        const Divider(height: 1, color: primary),
+        _buildDrawerTile(context, "Solicitar Servicios", Icons.ads_click, 'solicitar_page'),
         _buildDrawerTile(context, "Historial de solicitudes", Icons.add_chart, 'historiales_page'),
+        const Divider(height: 5, color: primary),
+        _buildDrawerTile(context, "Tus datos", Icons.person_pin, 'mis_datos'),
+        _buildDrawerTile(context, "Tus pagos", Icons.attach_money, 'mis_transacciones'),
         _buildDrawerTile(context, "Tus redenciones", Icons.double_arrow_rounded, 'mis_redenciones'),
+        const Divider(height: 5, color: primary),
         // 🔥 Submenú "Información general"
         ExpansionTile(
-          initiallyExpanded:true,
+          initiallyExpanded:false,
           leading: const Icon(
               Icons.info_outline, color: Colors.black, size: 20),
           title: const Text("Información general",
@@ -774,7 +773,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(
             context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
             'buzon_sugerencias'),
-        _buildDrawerTile(context, "Preguntas frecuentes", Icons.double_arrow_rounded, 'preguntas_frecuentes_page'),
+        _buildDrawerTile(context, "Preguntas frecuentes", Icons.question_mark, 'preguntas_frecuentes_page'),
       ]);
     }
 
@@ -813,7 +812,7 @@ class _SideBarState extends State<SideBar> {
       leading: Stack(
         clipBehavior: Clip.none,
         children: [
-          Icon(icon, color: primary, size: 20),
+          Icon(icon, color: Colors.black54, size: 20),
           if (contador != null && contador > 0)
             Positioned(
               right: -10,
