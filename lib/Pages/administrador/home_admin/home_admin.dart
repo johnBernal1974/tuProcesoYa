@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
 import 'dart:html' as html;
 import '../../../src/colors/colors.dart';
+import '../../../widgets/ventana_whatsApp.dart';
 
 class HomeAdministradorPage extends StatefulWidget {
   const HomeAdministradorPage({super.key});
@@ -42,9 +43,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   late Future<Set<String>> _idsConSolicitudesFuture;
   bool filtrarPorExentos = false;
   String? _docIdSeleccionado;
-
-
-
 
 
   Color getColor(Map<String, dynamic> data) {
@@ -98,6 +96,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   }
 
 
+  /// OJO TOCA VALIDAR EN DONDE IBA ESTE CODIGO
   void _activarFiltroAdmin() async {
     if (!mostrarFiltroAdmin) { // Solo cargar si se está activando el filtro
       if (adminNamesMap.isEmpty) {
@@ -232,15 +231,15 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           return status == 'activado' && (data['requiere_actualizacion_datos'] == true);
                         }).length;
 
-                        final int countTotal = docs.where((doc) {
-                          final assignedTo = doc.get('assignedTo') ?? "";
-                          final status = doc.get('status').toString().toLowerCase();
-                          if (esOperador) {
-                            return (status == 'registrado' && (assignedTo.isEmpty || assignedTo == currentUserUid)) ||
-                                status == 'activado' || status == 'bloqueado';
-                          }
-                          return true;
-                        }).length;
+                        // final int countTotal = docs.where((doc) {
+                        //   final assignedTo = doc.get('assignedTo') ?? "";
+                        //   final status = doc.get('status').toString().toLowerCase();
+                        //   if (esOperador) {
+                        //     return (status == 'registrado' && (assignedTo.isEmpty || assignedTo == currentUserUid)) ||
+                        //         status == 'activado' || status == 'bloqueado';
+                        //   }
+                        //   return true;
+                        // }).length;
 
                         final int countRedencionesVencidas = docs.where((doc) {
                           final status = doc.get('status').toString().toLowerCase();
@@ -408,10 +407,12 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         children: [
                                           Row(
                                             children: [
-                                              Text("Versión actual: $_versionActual /" , style: const TextStyle(fontSize: 11)),
+                                              Text("Versión actual: $_versionActual /",
+                                                  style: const TextStyle(fontSize: 11)),
                                               const SizedBox(width: 10),
-                                              Text("Nueva versión: $_nuevaVersion", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-
+                                              Text("Nueva versión: $_nuevaVersion",
+                                                  style: const TextStyle(
+                                                      fontSize: 11, fontWeight: FontWeight.bold)),
                                             ],
                                           ),
                                           ElevatedButton(
@@ -429,21 +430,21 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                                     .doc(uid)
                                                     .update({
                                                   'version': _nuevaVersion,
-                                                  'fecha_actualizacion_version': FieldValue.serverTimestamp(),
+                                                  'fecha_actualizacion_version':
+                                                  FieldValue.serverTimestamp(),
                                                 });
 
                                                 setState(() {
                                                   _mostrarBanner = false;
                                                 });
 
-                                                // 📢 Envía el mensaje al ServiceWorker para que haga skipWaiting
-                                                html.window.navigator.serviceWorker?.controller?.postMessage('skipWaiting');
+                                                html.window.navigator.serviceWorker?.controller
+                                                    ?.postMessage('skipWaiting');
 
-                                                // ⏳ Espera brevemente antes de recargar
-                                                Future.delayed(const Duration(milliseconds: 200), () {
-                                                  html.window.location.reload();
-                                                });
-
+                                                Future.delayed(const Duration(milliseconds: 200),
+                                                        () {
+                                                      html.window.location.reload();
+                                                    });
                                               } else {
                                                 setState(() {
                                                   _cargandoActualizacion = false;
@@ -453,7 +454,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.deepPurple,
                                               foregroundColor: Colors.white,
-                                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                              padding: const EdgeInsets.symmetric(
+                                                  horizontal: 16, vertical: 10),
                                             ),
                                             child: _cargandoActualizacion
                                                 ? const SizedBox(
@@ -466,30 +468,81 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                           ),
                                         ],
                                       ),
-
                                       const SizedBox(height: 12),
                                     ],
                                   ),
                                 ),
                               ),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                              buildTotalUsuariosCard(docs.length),
-                                SizedBox(
-                                  width: 250,
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                                    child: _buildSearchField(),
-                                  ),
-                                ),
 
-                              ],
+                            // 🟢 Esta parte se queda para el panel de usuarios
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final isDesktop = constraints.maxWidth > 600;
+
+                                return StreamBuilder<QuerySnapshot>(
+                                  stream: FirebaseFirestore.instance
+                                      .collection('whatsapp_messages')
+                                      .orderBy('createdAt', descending: true)
+                                      .limit(1)
+                                      .snapshots(),
+                                  builder: (context, snapshotMensajes) {
+                                    if (!snapshotMensajes.hasData) {
+                                      return const Center(child: CircularProgressIndicator());
+                                    }
+
+                                    final mensajesDocs = snapshotMensajes.data!.docs;
+
+                                    final numeroCliente = mensajesDocs.isNotEmpty
+                                        ? (mensajesDocs.first.data() as Map<String, dynamic>)['conversationId'] ?? 'Sin número'
+                                        : 'Sin número';
+
+                                    if (isDesktop) {
+                                      // Escritorio: todo en fila
+                                      return Row(
+                                        mainAxisAlignment: MainAxisAlignment.start,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          buildTotalUsuariosCard(docs.length),
+                                          SizedBox(
+                                            width: 250,
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                              child: _buildSearchField(),
+                                            ),
+                                          ),
+                                          SizedBox(
+                                            width: 400,
+                                            child: WhatsAppChatSummary(
+                                              numeroCliente: numeroCliente,
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    } else {
+                                      // Móvil: todo en columna
+                                      return Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          buildTotalUsuariosCard(docs.length),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                            child: _buildSearchField(),
+                                          ),
+                                          WhatsAppChatSummary(
+                                            numeroCliente: numeroCliente,
+                                          ),
+                                        ],
+                                      );
+                                    }
+                                  },
+                                );
+                              },
                             ),
-
                             const SizedBox(height: 30),
                             const Divider(color: primary, height: 2),
                             const SizedBox(height: 30),
+
+                            // Tu contenido principal del dashboard
                             buildDashboardContent(
                               filteredDocs,
                               countRegistrado: countRegistrado,
@@ -505,7 +558,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                             ),
 
                             const SizedBox(height: 30),
-
                           ],
                         );
                       },

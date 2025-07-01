@@ -17,6 +17,8 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
 const WOMPI_INTEGRITY_SECRET = defineSecret("WOMPI_INTEGRITY_SECRET");
+const axios = require("axios");
+
 
 admin.initializeApp();
 
@@ -695,11 +697,144 @@ exports.leerCorreosZoho = onSchedule(
   }
 );
 
+const VERIFY_TOKEN = "miverificatuproceso";
+
+exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
+  // 1️⃣ Verificación del webhook
+  if (req.method === "GET") {
+    const mode = req.query["hub.mode"];
+    const token = req.query["hub.verify_token"];
+    const challenge = req.query["hub.challenge"];
+
+    if (mode && token) {
+      if (mode === "subscribe" && token === VERIFY_TOKEN) {
+        console.log("✅ Webhook verificado correctamente");
+        return res.status(200).send(challenge);
+      } else {
+        console.error("❌ Error de verificación.");
+        return res.sendStatus(403);
+      }
+    }
+  }
+
+  // 2️⃣ Procesar mensajes entrantes
+  if (req.method === "POST") {
+    try {
+      const body = req.body;
+
+      if (
+        body.object &&
+        body.entry &&
+        body.entry[0].changes &&
+        body.entry[0].changes[0].value.messages
+      ) {
+        const messageData = body.entry[0].changes[0].value.messages[0];
+        const from = messageData.from;
+        const id = messageData.id;
+
+        let text = "(sin contenido)";
+        let mediaType = null;
+        let mediaId = null;
+
+        if (messageData.text) {
+          text = messageData.text.body;
+        } else if (messageData.image) {
+          text = "(Imagen)";
+          mediaType = "image";
+          mediaId = messageData.image.id;
+        } else if (messageData.audio) {
+          text = "(Audio)";
+          mediaType = "audio";
+          mediaId = messageData.audio.id;
+        } else if (messageData.document) {
+          text = messageData.document.filename || "(Documento)";
+          mediaType = "document";
+          mediaId = messageData.document.id;
+        }
+
+        // 1️⃣ Guardar mensaje individual
+        await admin.firestore().collection("whatsapp_messages").add({
+          from: from,
+          conversationId: from,
+          text: text,
+          mediaType: mediaType,
+          mediaId: mediaId,
+          messageId: id,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          isRead: false,
+        });
+
+        // 2️⃣ Actualizar o crear resumen de conversación
+        await admin.firestore().collection("whatsapp_conversations").doc(from).set(
+          {
+            conversationId: from,
+            lastMessage: text,
+            lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+            hasUnread: true,
+          },
+          { merge: true }
+        );
+
+        console.log(`✅ Mensaje procesado de ${from}: ${text} (${mediaType || "texto"})`);
+      }
+
+      return res.sendStatus(200);
+    } catch (error) {
+      console.error("❌ Error procesando mensaje:", error);
+      return res.sendStatus(500);
+    }
+  }
+
+  // Si no es GET ni POST
+  return res.sendStatus(405);
+});
 
 
+const WHATSAPP_TOKEN = "EAAKuB3bxKBcBO1lujCAxLaLQJwKufuCJZCphJfEHu31fgqBpACBiYAEDl4emogXZANA6UVWNsZCLYbr0tZAZAeXZCmADrYKHsJULTftXZBCSHCywRxAfwIoTAbZBWkFP74WYZBO9eKaKF1BoFrzKgRZA2ZCqjpZA88MmKsrwWql5cpfZC4qztPtDgWxHVnJjK8ZBXVazWfCgZDZD";
 
+exports.getMediaFile = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
 
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send('');
+  }
 
+  const mediaId = req.query.mediaId;
+  if (!mediaId) {
+    return res.status(400).send("mediaId requerido");
+  }
 
+  try {
+    // 1. Obtener URL temporal
+    const meta = await axios.get(
+      `https://graph.facebook.com/v19.0/${mediaId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        },
+      }
+    );
+
+    const url = meta.data.url;
+    const mime = meta.data.mime_type;
+
+    // 2. Descargar el binario
+    const mediaRes = await axios.get(url, {
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+      },
+      responseType: 'arraybuffer',
+    });
+
+    // 3. Devolver el contenido binario
+    res.set('Content-Type', mime);
+    return res.status(200).send(Buffer.from(mediaRes.data, 'binary'));
+  } catch (err) {
+    console.error("Error:", err.response?.data || err);
+    return res.status(500).send("Error obteniendo media");
+  }
+});
 
 
