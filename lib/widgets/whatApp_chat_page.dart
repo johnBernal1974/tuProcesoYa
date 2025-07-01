@@ -1,12 +1,15 @@
 
-
 import 'dart:typed_data';
-
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:tuprocesoya/widgets/reproductor_audios_whatsApp.dart';
 import 'dart:convert';
 import '../src/colors/colors.dart';
+import 'dart:html' as html;
+
 
 class WhatsAppChatPage extends StatefulWidget {
   const WhatsAppChatPage({Key? key}) : super(key: key);
@@ -24,8 +27,9 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
   final Map<String, Uint8List> _imageCache = {};
-
-
+  final Map<String, Uint8List> _audioCache = {};
+  final Map<String, Uint8List> _documentCache = {};
+  final ValueNotifier<Map<String, dynamic>?> _mensajeRespondido = ValueNotifier(null);
 
 
   @override
@@ -183,11 +187,54 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                   subtitle: Row(
                                     children: [
                                       Expanded(
-                                        child: Text(
-                                          lastMessage,
-                                          style: const TextStyle(fontSize: 12, color: Colors.black87),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
+                                        child: Builder(
+                                          builder: (context) {
+                                            Widget content;
+
+                                            if (lastMessage == "(Imagen)") {
+                                              content = const Row(
+                                                children: [
+                                                  Icon(Icons.photo, size: 16, color: Colors.black54),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    "Foto",
+                                                    style: TextStyle(fontSize: 12, color: Colors.black87),
+                                                  ),
+                                                ],
+                                              );
+                                            } else if (lastMessage == "(Audio)") {
+                                              content = const Row(
+                                                children: [
+                                                  Icon(Icons.mic, size: 16, color: Colors.black54),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    "Audio",
+                                                    style: TextStyle(fontSize: 12, color: Colors.black87),
+                                                  ),
+                                                ],
+                                              );
+                                            } else if (lastMessage == "(Documento)") {
+                                              content = const Row(
+                                                children: [
+                                                  Icon(Icons.insert_drive_file, size: 16, color: Colors.black54),
+                                                  SizedBox(width: 4),
+                                                  Text(
+                                                    "Documento",
+                                                    style: TextStyle(fontSize: 12, color: Colors.black87),
+                                                  ),
+                                                ],
+                                              );
+                                            } else {
+                                              content = Text(
+                                                lastMessage,
+                                                style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              );
+                                            }
+
+                                            return content;
+                                          },
                                         ),
                                       ),
                                       if (isPaid != null)
@@ -370,6 +417,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                   itemBuilder: (context, index) {
                                     final doc = docs[index];
                                     final data = doc.data() as Map<String, dynamic>;
+                                    final fileName = data['fileName'] ?? 'Documento.pdf';
                                     final text = data['text'] ?? '';
                                     final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
                                     final from = data['from'] ?? '';
@@ -380,51 +428,135 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                     Widget content;
 
                                     if (mediaType == 'image' && mediaId != null) {
-                                      // Si ya está en cache
+                                      // ✅ Si ya está en cache, NO vuelvas a pedirlo
                                       if (_imageCache.containsKey(mediaId)) {
                                         final bytes = _imageCache[mediaId]!;
-
-                                        return _buildImageMessage(isAdmin, bytes);
+                                        return _buildImageMessage(
+                                          isAdmin,
+                                          bytes,
+                                          doc.id,
+                                          mediaId: mediaId,
+                                          from: data['from'],
+                                          createdAt: createdAt,
+                                        );
                                       }
 
-                                      // Si no está en cache, descargarla
+                                      // Si no, pídelo por HTTP
                                       return FutureBuilder<http.Response>(
                                         future: http.get(
                                           Uri.parse('https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getMediaFile?mediaId=$mediaId'),
                                         ),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState == ConnectionState.waiting) {
-                                            return const SizedBox(
-                                              width: 150,
-                                              height: 150,
-                                              child: Center(child: CircularProgressIndicator()),
+                                            return Align(
+                                              alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
+                                              child: _buildImagePlaceholder(),
                                             );
                                           }
 
                                           if (snapshot.hasError || snapshot.data == null || snapshot.data!.statusCode != 200) {
-                                            return const Text("Error cargando imagen");
+                                            return Align(
+                                              alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
+                                              child: _buildImagePlaceholder(),
+                                            );
                                           }
 
                                           final bytes = snapshot.data!.bodyBytes;
-
-                                          // Guardar en cache
                                           _imageCache[mediaId] = bytes;
 
-                                          return _buildImageMessage(isAdmin, bytes);
+                                          return _buildImageMessage(isAdmin, bytes, doc.id, mediaId: mediaId, from: data['from']);
                                         },
                                       );
                                     }
-                                    else if (mediaType == 'audio') {
-                                      content = const Text(
-                                        '🎵 Mensaje de audio recibido',
-                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                                    else if (mediaType == 'audio' && mediaId != null) {
+                                      if (_audioCache.containsKey(mediaId)) {
+                                        final bytes = _audioCache[mediaId]!;
+                                        return Align(
+                                          alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
+                                          child: Card(
+                                            surfaceTintColor: blanco,
+                                            elevation: 1.5,
+                                            color: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.circular(7),
+                                            ),
+                                            margin: const EdgeInsets.symmetric(vertical: 4),
+                                            child: Padding(
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                              child: Stack(
+                                                children: [
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(right: 50),
+                                                    child: AudioPlayerWeb(bytes: bytes),
+                                                  ),
+                                                  if (createdAt != null)
+                                                    Positioned(
+                                                      bottom: 0,
+                                                      right: 0,
+                                                      child: Text(
+                                                        '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}',
+                                                        style: const TextStyle(
+                                                          fontSize: 11,
+                                                          color: Colors.black87,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }
+
+                                      return FutureBuilder<http.Response>(
+                                        future: http.get(
+                                          Uri.parse('https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getMediaFile?mediaId=$mediaId'),
+                                        ),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return _buildAudioPlaceholder();
+                                          }
+
+                                          if (snapshot.hasError || snapshot.data == null || snapshot.data!.statusCode != 200) {
+                                            return _buildAudioPlaceholder();
+                                          }
+
+                                          final bytes = snapshot.data!.bodyBytes;
+                                          _audioCache[mediaId] = bytes;
+
+                                          return AudioPlayerWeb(bytes: bytes);
+                                        },
                                       );
-                                    } else if (mediaType == 'document') {
-                                      content = const Text(
-                                        '📄 Documento recibido',
-                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                                    }
+
+                                    else if (mediaType == 'document' && mediaId != null) {
+                                      if (_documentCache.containsKey(mediaId)) {
+                                        final bytes = _documentCache[mediaId]!;
+                                        return _buildDocumentCard(bytes, fileName, createdAt ?? DateTime.now());
+                                      }
+
+                                      return FutureBuilder<http.Response>(
+                                        future: http.get(
+                                          Uri.parse('https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getMediaFile?mediaId=$mediaId'),
+                                        ),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return _buildDocumentPlaceholder();
+                                          }
+
+                                          if (snapshot.hasError || snapshot.data == null || snapshot.data!.statusCode != 200) {
+                                            return _buildDocumentPlaceholder();
+                                          }
+
+                                          final bytes = snapshot.data!.bodyBytes;
+                                          _documentCache[mediaId] = bytes;
+
+                                          return _buildDocumentCard(bytes, "Documento.pdf", createdAt ?? DateTime.now());
+                                        },
                                       );
-                                    } else {
+                                    }
+
+                                    else {
                                       content = Text(
                                         text,
                                         style: const TextStyle(
@@ -481,37 +613,80 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                           ),
                           // 🔹 Caja de texto dentro de una Card
                           Padding(
-                            padding: const EdgeInsets.all(12), // margen alrededor de la card
-                            child: Card(
-                              color: blanco,
-                              surfaceTintColor: blanco,
-                              elevation: 3,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: TextField(
-                                        controller: _controller,
-                                        decoration: const InputDecoration(
-                                          hintText: 'Escribe un mensaje...',
-                                          border: InputBorder.none,
-                                        ),
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Mostrar la respuesta si hay
+                                ValueListenableBuilder<Map<String, dynamic>?>(
+                                  valueListenable: _mensajeRespondido,
+                                  builder: (context, respuesta, _) {
+                                    if (respuesta == null) return const SizedBox();
+                                    return Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        borderRadius: BorderRadius.circular(8),
                                       ),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.send, color: Colors.deepPurple),
-                                      onPressed: _sendMessage,
-                                    ),
-                                  ],
+                                      padding: const EdgeInsets.all(8),
+                                      margin: const EdgeInsets.only(bottom: 4),
+                                      child: Row(
+                                        children: [
+                                          if (respuesta['esImagen'])
+                                            const Icon(Icons.image, size: 20, color: Colors.black54)
+                                          else
+                                            const Icon(Icons.format_quote, size: 20, color: Colors.black54),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              respuesta['contenido'],
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.close, size: 20),
+                                            onPressed: () {
+                                              _mensajeRespondido.value = null;
+                                            },
+                                          )
+                                        ],
+                                      ),
+                                    );
+                                  },
                                 ),
-                              ),
+                                // Campo de texto
+                                Card(
+                                  color: blanco,
+                                  surfaceTintColor: blanco,
+                                  elevation: 3,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _controller,
+                                            decoration: const InputDecoration(
+                                              hintText: 'Escribe un mensaje...',
+                                              border: InputBorder.none,
+                                            ),
+                                          ),
+                                        ),
+                                        IconButton(
+                                          icon: const Icon(Icons.send, color: Colors.deepPurple),
+                                          onPressed: _sendMessage,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          )
-
+                          ),
                         ],
                       ),
                     );
@@ -524,7 +699,101 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
       ),
     );
   }
-  Widget _buildImageMessage(bool isAdmin, Uint8List bytes) {
+
+  Widget _buildDocumentCard(Uint8List bytes, String fileName, DateTime createdAt) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Card(
+        elevation: 1.5,
+        color: Colors.white,
+        surfaceTintColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: 280, // Máximo ancho
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              mainAxisSize: MainAxisSize.min, // 👈 Esto es clave
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Icono PDF
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade100,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
+                ),
+                const SizedBox(width: 10),
+                // Nombre y detalles
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fileName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        "PDF • ${(bytes.lengthInBytes / 1024).toStringAsFixed(1)} KB",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 5),
+                // Botón abrir
+                GestureDetector(
+                  onTap: () {
+                    final blob = html.Blob([bytes], 'application/pdf');
+                    final url = html.Url.createObjectUrlFromBlob(blob);
+                    html.window.open(url, "_blank");
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Icon(Icons.download, color: Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageMessage(
+      bool isAdmin,
+      Uint8List bytes,
+      String messageId, {
+        String? mediaId,
+        String? from,
+        DateTime? createdAt, // ⚠️ Asegúrate de que al llamar pases createdAt
+      }) {
     return Align(
       alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
@@ -545,7 +814,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
         },
         child: ConstrainedBox(
           constraints: const BoxConstraints(
-            maxWidth: 200,
+            maxWidth: 250,
           ),
           child: Card(
             elevation: 1.5,
@@ -554,12 +823,107 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
               borderRadius: BorderRadius.circular(8),
             ),
             margin: const EdgeInsets.symmetric(vertical: 4),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.memory(
-                bytes,
-                fit: BoxFit.cover,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // Imagen + menú
+                Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        bytes,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, size: 20, color: Colors.black87),
+                        onSelected: (value) async {
+                          if (value == 'borrar') {
+                            _borrarMensaje(messageId);
+                          } else if (value == 'responder') {
+                            _responderMensaje('Imagen', esImagen: true);
+                          } else if (value == 'guardar') {
+                            if (mediaId == null || from == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("No se puede guardar esta imagen (faltan datos)")),
+                              );
+                              return;
+                            }
+                            final response = await http.post(
+                              Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/guardarMediaFile"),
+                              headers: {"Content-Type": "application/json"},
+                              body: jsonEncode({"mediaId": mediaId, "from": from}),
+                            );
+
+                            if (response.statusCode == 200) {
+                              final json = jsonDecode(response.body);
+                              final publicUrl = json["url"];
+                              await FirebaseFirestore.instance
+                                  .collection("whatsapp_messages")
+                                  .doc(messageId)
+                                  .update({"publicUrl": publicUrl});
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Imagen guardada correctamente")),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Error guardando imagen")),
+                              );
+                            }
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
+                            value: 'borrar',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, size: 18, color: Colors.black87),
+                                SizedBox(width: 8),
+                                Text('Borrar'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'responder',
+                            child: Row(
+                              children: [
+                                Icon(Icons.reply, size: 18, color: Colors.black87),
+                                SizedBox(width: 8),
+                                Text('Responder'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'guardar',
+                            child: Row(
+                              children: [
+                                Icon(Icons.save_alt, size: 18, color: Colors.black87),
+                                SizedBox(width: 8),
+                                Text('Guardar en los docs del usuario'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (createdAt != null)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
+                    child: Text(
+                      "${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black,
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -567,20 +931,154 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
     );
   }
 
+  void _responderMensaje(String contenido, {bool esImagen = false}) {
+    _mensajeRespondido.value = {
+      'contenido': contenido,
+      'esImagen': esImagen,
+    };
+  }
+
+  void _borrarMensaje(String messageId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text('¿Borrar mensaje?'),
+        content: const Text('Esta acción eliminará la imagen de forma permanente.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple.shade50,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Borrar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    // Proceder a borrar
+    await FirebaseFirestore.instance
+        .collection('whatsapp_messages')
+        .where('messageId', isEqualTo: messageId)
+        .get()
+        .then((query) {
+      for (var doc in query.docs) {
+        doc.reference.delete();
+      }
+    });
+  }
+
 
   void _sendMessage() async {
-    if (selectedNumeroCliente == null) return;
+    final numero = selectedNumeroCliente.value?.trim();
+    if (numero == null || numero.isEmpty) return;
 
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
+    final respuesta = _mensajeRespondido.value;
+
+    // 1. Guardar en Firestore para que se vea en la interfaz
     await FirebaseFirestore.instance.collection('whatsapp_messages').add({
       'from': 'admin',
-      'conversationId': selectedNumeroCliente,
+      'conversationId': numero,
       'text': text,
       'createdAt': FieldValue.serverTimestamp(),
+      if (respuesta != null) 'replyTo': respuesta,
     });
 
+    print('DEBUG ENVÍO:');
+    print('TO: "$numero"');
+    print('TEXT: "$text"');
+
+
+    // 2. Llamar la Cloud Function para enviar el mensaje real
+    try {
+      await FirebaseFunctions.instance
+          .httpsCallable('sendWhatsAppMessage')
+          .call({
+        'to': numero,
+        'text': text,
+      });
+    } catch (e) {
+      debugPrint('Error enviando mensaje real: $e');
+    }
+
     _controller.clear();
+    _mensajeRespondido.value = null;
   }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      width: 150,
+      height: 150,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade400),
+      ),
+      alignment: Alignment.center,
+      child: const Text(
+        "Imagen\nno disponible",
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.black54,
+        ),
+      ),
+    );
+  }
+  Widget _buildAudioPlaceholder() {
+    return Container(
+      width: 200,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade400),
+      ),
+      alignment: Alignment.center,
+      child: const Text(
+        "Audio no disponible",
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.black54,
+        ),
+      ),
+    );
+  }
+  Widget _buildDocumentPlaceholder() {
+    return Container(
+      width: 220,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade400),
+      ),
+      alignment: Alignment.center,
+      child: const Text(
+        "Documento no disponible",
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.black54,
+        ),
+      ),
+    );
+  }
+
+
+
+
+
+
 }

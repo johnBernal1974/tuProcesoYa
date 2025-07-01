@@ -747,10 +747,12 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
           mediaType = "audio";
           mediaId = messageData.audio.id;
         } else if (messageData.document) {
-          text = messageData.document.filename || "(Documento)";
-          mediaType = "document";
-          mediaId = messageData.document.id;
-        }
+            text = "(Documento)"; // Deja el texto genérico para que en la lista se vea "Documento"
+            mediaType = "document";
+            mediaId = messageData.document.id;
+            var fileName = messageData.document.filename || "Documento.pdf";
+          }
+
 
         // 1️⃣ Guardar mensaje individual
         await admin.firestore().collection("whatsapp_messages").add({
@@ -759,6 +761,7 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
           text: text,
           mediaType: mediaType,
           mediaId: mediaId,
+          fileName: fileName || null, // Nuevo campo con el nombre del archivo
           messageId: id,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           isRead: false,
@@ -790,7 +793,7 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
 });
 
 
-const WHATSAPP_TOKEN = "EAAKuB3bxKBcBO1lujCAxLaLQJwKufuCJZCphJfEHu31fgqBpACBiYAEDl4emogXZANA6UVWNsZCLYbr0tZAZAeXZCmADrYKHsJULTftXZBCSHCywRxAfwIoTAbZBWkFP74WYZBO9eKaKF1BoFrzKgRZA2ZCqjpZA88MmKsrwWql5cpfZC4qztPtDgWxHVnJjK8ZBXVazWfCgZDZD";
+const WHATSAPP_TOKEN = "EAAKuB3bxKBcBO6S1aNy0CshUium4MeqKjbZC3lMZCZAzWWppF4ryTn2ua9qFG1eSWNISymzPqSiFAKuZCv9Lg6gZCu5gjBCKor4KXLAQ7akEHKNlGR2VX83vNlvKmYDeRv3TKPZCN2VmoRSum2ElCjJZAqTCiBBeHHXmSBQfTrvDc2UoxMUe6dvQK7d7aPkPZBQjsxnprpnXhKVKzF8i0TVNrFSY3BIGk3848OlHDqal2qbue91ZBEMZCkZCLn1TO9XiwZDZD";
 
 exports.getMediaFile = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -837,4 +840,112 @@ exports.getMediaFile = functions.https.onRequest(async (req, res) => {
   }
 });
 
+const WHATSAPP_PHONE_NUMBER_ID = "714441847889425";
 
+exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
+  const to = data.to;
+  const text = data.text;
+
+  // Log seguro de entrada
+  console.log("DATA RECIBIDO:", {to, text});
+
+  if (!to || !text) {
+    throw new functions.https.HttpsError("invalid-argument", "Número o texto faltante");
+  }
+
+  try {
+    const response = await axios.post(
+      `https://graph.facebook.com/v19.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
+      {
+        messaging_product: "whatsapp",
+        to: to,
+        type: "text",
+        text: {
+          body: text,
+        },
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    console.log("Mensaje enviado correctamente:", response.data);
+    return {success: true, data: response.data};
+
+  } catch (err) {
+    // NO intentes hacer stringify de todo el error
+    let errorMsg = "Error desconocido";
+
+    if (err.response && err.response.data) {
+      errorMsg = JSON.stringify(err.response.data);
+    } else if (err.message) {
+      errorMsg = err.message;
+    }
+
+    console.error("Error enviando mensaje:", errorMsg);
+    throw new functions.https.HttpsError("internal", errorMsg);
+  }
+});
+
+
+exports.guardarMediaFile = functions.https.onRequest(async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'POST');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send('');
+  }
+
+  const { mediaId, from } = req.body;
+
+  if (!mediaId || !from) {
+    return res.status(400).send("Parámetros requeridos: mediaId y from");
+  }
+
+  const bucket = admin.storage().bucket();
+  let mime;
+
+  const storagePrefix = `whatsapp_media/usuario_${from}/${mediaId}`;
+
+  try {
+    console.log(`🔍 Descargando mediaId=${mediaId} para guardar permanentemente`);
+
+    // 1. Obtener URL temporal
+    const meta = await axios.get(
+      `https://graph.facebook.com/v19.0/${mediaId}`,
+      { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } }
+    );
+
+    const url = meta.data.url;
+    mime = meta.data.mime_type;
+    const extension = mime.split('/')[1] || 'bin';
+    const filePath = `${storagePrefix}.${extension}`;
+
+    console.log(`📥 Descargando binario`);
+    const mediaRes = await axios.get(url, {
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+      responseType: 'arraybuffer',
+    });
+
+    console.log(`💾 Guardando en Storage: ${filePath}`);
+    const file = bucket.file(filePath);
+    await file.save(Buffer.from(mediaRes.data, 'binary'), {
+      metadata: { contentType: mime },
+    });
+
+    await file.makePublic();
+    const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filePath}`;
+
+    console.log(`✅ Archivo guardado correctamente`);
+
+    return res.status(200).json({ url: publicUrl });
+
+  } catch (err) {
+    console.error("❌ Error descargando media:", err.response?.data || err);
+    return res.status(500).send("Error guardando media");
+  }
+});
