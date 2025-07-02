@@ -792,9 +792,6 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
   return res.sendStatus(405);
 });
 
-
-
-
 exports.getMediaFile = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'GET');
@@ -815,7 +812,7 @@ exports.getMediaFile = functions.https.onRequest(async (req, res) => {
       `https://graph.facebook.com/v19.0/${mediaId}`,
       {
         headers: {
-          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
         },
       }
     );
@@ -826,7 +823,7 @@ exports.getMediaFile = functions.https.onRequest(async (req, res) => {
     // 2. Descargar el binario
     const mediaRes = await axios.get(url, {
       headers: {
-        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
       },
       responseType: 'arraybuffer',
     });
@@ -840,7 +837,7 @@ exports.getMediaFile = functions.https.onRequest(async (req, res) => {
   }
 });
 
-const ACCESS_TOKEN = "EAAKuB3bxKBcBOycKeqltLd6RlZCMzIl166HP9BPs6rd9aTkpGXEbHySAtNulYvGswIK7gCjroYPbV6i8zcDZARxiZBqtuzPxDr2pcFbLIDUpHWUZB5XYuyp7fnOWUHNvZBmWNrrvSjII5YBCZBZBeSVPzoEn0z4U9BKcAD4pijOH88nC9Dg9fCczmetUJzmDuvTeYqZBlE0M2xcGPkmr8LE1jbbg7ItiUtiFcymI6B9YS2a7R81jI8ltEsAWbLz2yRgcLwZDZD";
+const ACCESS_TOKEN = "EAAKuB3bxKBcBO5VrSejWjDZA99eNCge887GCeq5dW0uyYgN6M1FOHi26dKfw44nlT1QBPXlRT36AouSulJoyKqsfuJ7sr57XaKOJhqDhIVBh4ZCPFpJLYuZBxYdQnFb4FTt0mWVXI54hzVkZB4k7m3WPd75AitqN0wiDWf7hLpySSyaVGjljK5yC6zEVawxZAFEOsH8hH2GZAvX4n91ySVuw2dhRgmYOJb7IeYcKXut7tesN2TGvCFrr4n15J3yQZDZD";
 const PHONE_NUMBER_ID = "724376300739509";
 
 exports.sendActivationMessage = functions.https.onRequest(async (req, res) => {
@@ -975,7 +972,7 @@ exports.guardarMediaFile = functions.https.onRequest(async (req, res) => {
     // 1. Obtener URL temporal
     const meta = await axios.get(
       `https://graph.facebook.com/v19.0/${mediaId}`,
-      { headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` } }
+      { headers: { Authorization: `Bearer ${ACCESS_TOKEN}` } }
     );
 
     const url = meta.data.url;
@@ -985,7 +982,7 @@ exports.guardarMediaFile = functions.https.onRequest(async (req, res) => {
 
     console.log(`📥 Descargando binario`);
     const mediaRes = await axios.get(url, {
-      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+      headers: { Authorization: `Bearer ${ACCESS_TOKEN}` },
       responseType: 'arraybuffer',
     });
 
@@ -1007,3 +1004,65 @@ exports.guardarMediaFile = functions.https.onRequest(async (req, res) => {
     return res.status(500).send("Error guardando media");
   }
 });
+
+
+exports.sendWhatsAppMessage = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+
+  const { to, text } = req.body;
+
+  if (!to || !text) {
+    return res.status(400).json({ error: "Debe proporcionar 'to' y 'text'" });
+  }
+
+  const url = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
+
+  const body = {
+    messaging_product: "whatsapp",
+    to: to,
+    type: "text",
+    text: { body: text }
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ACCESS_TOKEN}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Error de la API:", result);
+      return res.status(500).json({
+        error: "Error al enviar el mensaje",
+        details: result
+      });
+    }
+
+    console.log(`✅ Mensaje enviado correctamente a ${to}: ${text}`);
+    return res.json({ success: true, result });
+
+  } catch (error) {
+    console.error("Error en la función:", error);
+    return res.status(500).json({
+      error: error.message || "Error desconocido"
+    });
+  }
+});
+

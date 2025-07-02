@@ -1,10 +1,16 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tuprocesoya/commons/side_bar_menu.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
 import '../widgets/tabla_tarifas.dart';
+import '../widgets/whatApp_chat_page.dart';
+import '../widgets/whatsapp_state.dart';
+import '../widgets/whtasApp_floting_button.dart';
 import 'admin_provider.dart'; // Importamos la clase AdminProvider
+import 'dart:html' as html;
+
 
 class MainLayout extends StatefulWidget {
   final Widget content;
@@ -21,6 +27,7 @@ class _MainLayoutState extends State<MainLayout> {
   final AdminProvider _adminProvider = AdminProvider(); // Instancia única
   bool _isAdmin = false;
   bool _isLoadingAdminCheck = true;
+  String? _ultimaConversacionId;
 
   @override
   void initState() {
@@ -136,35 +143,126 @@ class _MainLayoutState extends State<MainLayout> {
 
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: Flex(
-              direction: Axis.horizontal,
-              children: [
-                // if (isDesktop && !isTablet)
-                //   const SizedBox(
-                //     width: 300,
-                //     child: SideBar(),
-                //   ),
-                Expanded(
-                  child: Container(
-                    constraints: BoxConstraints(
-                      maxWidth: isDesktop ? 1200 : double.infinity,
+          Column(
+            children: [
+              Expanded(
+                child: Flex(
+                  direction: Axis.horizontal,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        constraints: BoxConstraints(
+                          maxWidth: isDesktop ? 1200 : double.infinity,
+                        ),
+                        margin: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Align(
+                          alignment: Alignment.topCenter,
+                          child: widget.content,
+                        ),
+                      ),
                     ),
-                    margin: EdgeInsets.symmetric(horizontal: isTablet ? 40 : 20),
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Align(
-                      alignment: Alignment.topCenter,
-                      child: widget.content,
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          if (_isAdmin)
+            Align(
+              alignment: Alignment.bottomRight,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('whatsapp_conversations')
+                      .orderBy('lastMessageAt', descending: true)
+                      .limit(1)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return WhatsAppChatFloatingButton(
+                        acudienteNombre: "",
+                        isPaid: false,
+                        numeroCliente: "",
+                        hasUnread: false,
+                        onTap: () {},
+                      );
+                    }
+
+                    final doc = snapshot.data!.docs.first;
+                    final conversationId = doc['conversationId'] ?? '';
+                    final hasUnread = doc['hasUnread'] == true;
+
+                    // 🔔 Revisa si es una conversación nueva
+                    if (_ultimaConversacionId == null) {
+                      _ultimaConversacionId = doc.id;
+                    } else if (_ultimaConversacionId != doc.id) {
+                      _ultimaConversacionId = doc.id;
+                      _playNotificationSound(); // ✅ Aquí reproducimos el sonido
+                    }
+
+                    return FutureBuilder<QuerySnapshot>(
+                      future: FirebaseFirestore.instance
+                          .collection('Ppl')
+                          .where('celularWhatsapp',
+                          isEqualTo: conversationId.startsWith('57')
+                              ? conversationId.substring(2)
+                              : conversationId)
+                          .limit(1)
+                          .get(),
+                      builder: (context, userSnapshot) {
+                        if (userSnapshot.connectionState == ConnectionState.waiting) {
+                          return const SizedBox();
+                        }
+
+                        if (!userSnapshot.hasData || userSnapshot.data!.docs.isEmpty) {
+                          return WhatsAppChatFloatingButton(
+                            acudienteNombre: "",
+                            isPaid: false,
+                            numeroCliente: "",
+                            hasUnread: hasUnread,
+                            onTap: () {},
+                          );
+                        }
+
+                        final userData = userSnapshot.data!.docs.first;
+                        final acudienteNombre =
+                        "${userData['nombre_acudiente'] ?? ''} ${userData['apellido_acudiente'] ?? ''}".trim();
+                        final isPaid = userData['isPaid'] == true;
+
+                        return WhatsAppChatFloatingButton(
+                          acudienteNombre: acudienteNombre,
+                          isPaid: isPaid,
+                          numeroCliente: conversationId.startsWith("57")
+                              ? conversationId
+                              : "57$conversationId",
+                          hasUnread: hasUnread,
+                          onTap: () {
+                            selectedNumeroCliente.value = conversationId.startsWith("57")
+                                ? conversationId
+                                : "57$conversationId";
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const WhatsAppChatPage(),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
         ],
       ),
     );
+  }
+  void _playNotificationSound() {
+    final audio = html.AudioElement('sounds/notifica_whatsapp.mp3');
+    audio.play();
   }
 }

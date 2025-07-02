@@ -4745,6 +4745,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     print("Documento Firestore a usar: $docId");
 
     try {
+      // Mostrar el loader
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -4762,16 +4763,61 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         },
         body: jsonEncode({
           "to": numeroFormateado,
-          "docId": docId, // 🔹 Aquí le pasas el ID del documento Firestore
+          "docId": docId,
         }),
       );
 
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(); // Cerrar el loader
 
       if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Mensaje enviado correctamente')),
-        );
+        // Mostrar el AlertDialog de éxito
+        if(context.mounted){
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (context) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                backgroundColor: Colors.white,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/icono_whatsapp.png',
+                      width: 48,
+                      height: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'El mensaje de activación por WhatsApp fue enviado exitosamente.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cerrar', style: TextStyle(color: blanco)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        }
       } else {
         print('Error: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
@@ -4789,7 +4835,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       );
     }
   }
-
 }
 
 
