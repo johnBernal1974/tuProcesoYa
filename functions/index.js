@@ -793,7 +793,7 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
 });
 
 
-const WHATSAPP_TOKEN = "EAAKuB3bxKBcBO6S1aNy0CshUium4MeqKjbZC3lMZCZAzWWppF4ryTn2ua9qFG1eSWNISymzPqSiFAKuZCv9Lg6gZCu5gjBCKor4KXLAQ7akEHKNlGR2VX83vNlvKmYDeRv3TKPZCN2VmoRSum2ElCjJZAqTCiBBeHHXmSBQfTrvDc2UoxMUe6dvQK7d7aPkPZBQjsxnprpnXhKVKzF8i0TVNrFSY3BIGk3848OlHDqal2qbue91ZBEMZCkZCLn1TO9XiwZDZD";
+
 
 exports.getMediaFile = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -840,56 +840,114 @@ exports.getMediaFile = functions.https.onRequest(async (req, res) => {
   }
 });
 
-const WHATSAPP_PHONE_NUMBER_ID = "714441847889425";
+const ACCESS_TOKEN = "EAAKuB3bxKBcBOycKeqltLd6RlZCMzIl166HP9BPs6rd9aTkpGXEbHySAtNulYvGswIK7gCjroYPbV6i8zcDZARxiZBqtuzPxDr2pcFbLIDUpHWUZB5XYuyp7fnOWUHNvZBmWNrrvSjII5YBCZBZBeSVPzoEn0z4U9BKcAD4pijOH88nC9Dg9fCczmetUJzmDuvTeYqZBlE0M2xcGPkmr8LE1jbbg7ItiUtiFcymI6B9YS2a7R81jI8ltEsAWbLz2yRgcLwZDZD";
+const PHONE_NUMBER_ID = "724376300739509";
 
-exports.sendWhatsAppMessage = functions.https.onCall(async (data, context) => {
-  const to = data.to;
-  const text = data.text;
+exports.sendActivationMessage = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  // Log seguro de entrada
-  console.log("DATA RECIBIDO:", {to, text});
-
-  if (!to || !text) {
-    throw new functions.https.HttpsError("invalid-argument", "Número o texto faltante");
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
   }
+
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+
+  const { to, docId } = req.body;
+
+  if (!to || !docId) {
+    return res.status(400).json({ error: "Debe proporcionar 'to' y 'docId'" });
+  }
+
+  // 1️⃣ Obtener datos de Firestore
+  let acudienteNombre = "";
+  let pplNombre = "";
 
   try {
-    const response = await axios.post(
-      `https://graph.facebook.com/v19.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`,
-      {
-        messaging_product: "whatsapp",
-        to: to,
-        type: "text",
-        text: {
-          body: text,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const docRef = admin.firestore().collection("Ppl").doc(docId);
+    const docSnap = await docRef.get();
 
-    console.log("Mensaje enviado correctamente:", response.data);
-    return {success: true, data: response.data};
-
-  } catch (err) {
-    // NO intentes hacer stringify de todo el error
-    let errorMsg = "Error desconocido";
-
-    if (err.response && err.response.data) {
-      errorMsg = JSON.stringify(err.response.data);
-    } else if (err.message) {
-      errorMsg = err.message;
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Documento no encontrado en Firestore" });
     }
 
-    console.error("Error enviando mensaje:", errorMsg);
-    throw new functions.https.HttpsError("internal", errorMsg);
+    const data = docSnap.data();
+    acudienteNombre = data.nombre_acudiente || "";
+    pplNombre = data.nombre_ppl || "";
+
+  } catch (err) {
+    console.error("Error leyendo Firestore:", err);
+    return res.status(500).json({ error: "Error leyendo Firestore" });
+  }
+
+  // 2️⃣ Construir body
+  const body = {
+    messaging_product: "whatsapp",
+    to: to,
+    type: "template",
+    template: {
+      name: "usuario_activado",
+      language: { code: "es_CO" },
+      components: [
+        {
+          type: "header",
+          parameters: [
+            {
+              type: "image",
+              image: {
+                link: "https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635"
+              }
+            }
+          ]
+        },
+        {
+          type: "body",
+          parameters: [
+            {
+              type: "text",
+              text: acudienteNombre
+            },
+            {
+              type: "text",
+              text: pplNombre
+            }
+          ]
+        }
+      ]
+    }
+  };
+
+  const url = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ACCESS_TOKEN}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Error de la API:", result);
+      return res.status(500).json({ error: "Error al enviar el mensaje", details: result });
+    }
+
+    console.log("Mensaje enviado correctamente:", result);
+    return res.json({ success: true, result });
+
+  } catch (error) {
+    console.error("Error en la función:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
-
 
 exports.guardarMediaFile = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');

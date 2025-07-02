@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:tuprocesoya/widgets/reproductor_audios_whatsApp.dart';
+import 'package:tuprocesoya/widgets/whatsapp_state.dart';
 import 'dart:convert';
 import '../src/colors/colors.dart';
 import 'dart:html' as html;
@@ -23,7 +24,6 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
   final ScrollController _scrollController = ScrollController();
 
   Map<String, String> _pplNombres = {};
-  final ValueNotifier<String?> selectedNumeroCliente = ValueNotifier<String?>(null);
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = "";
   final Map<String, Uint8List> _imageCache = {};
@@ -163,13 +163,13 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                               "${createdAt.day.toString().padLeft(2, '0')}/"
                                                   "${createdAt.month.toString().padLeft(2, '0')}/"
                                                   "${createdAt.year} "
-                                                  "${createdAt.hour.toString().padLeft(2, '0')}:"
-                                                  "${createdAt.minute.toString().padLeft(2, '0')}",
+                                                  "${formatTimeAMPM(createdAt)}",
                                               style: const TextStyle(
                                                 fontSize: 11,
                                                 color: Colors.black87,
                                               ),
                                             ),
+
                                             if (hasUnread)
                                               Container(
                                                 margin: const EdgeInsets.only(top: 4),
@@ -412,7 +412,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
 
                                 return ListView.builder(
                                   controller: _scrollController,
-                                  padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                                  padding: const EdgeInsets.fromLTRB(50, 15, 50, 80),
                                   itemCount: docs.length,
                                   itemBuilder: (context, index) {
                                     final doc = docs[index];
@@ -494,7 +494,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                                       bottom: 0,
                                                       right: 0,
                                                       child: Text(
-                                                        '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}',
+                                                        formatTimeAMPM(createdAt),
                                                         style: const TextStyle(
                                                           fontSize: 11,
                                                           color: Colors.black87,
@@ -532,7 +532,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                     else if (mediaType == 'document' && mediaId != null) {
                                       if (_documentCache.containsKey(mediaId)) {
                                         final bytes = _documentCache[mediaId]!;
-                                        return _buildDocumentCard(bytes, fileName, createdAt ?? DateTime.now());
+                                        return _buildDocumentCard(bytes, text, createdAt ?? DateTime.now());
                                       }
 
                                       return FutureBuilder<http.Response>(
@@ -551,7 +551,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                           final bytes = snapshot.data!.bodyBytes;
                                           _documentCache[mediaId] = bytes;
 
-                                          return _buildDocumentCard(bytes, "Documento.pdf", createdAt ?? DateTime.now());
+                                          return _buildDocumentCard(bytes, fileName, createdAt ?? DateTime.now());
                                         },
                                       );
                                     }
@@ -575,7 +575,8 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                       child: Card(
                                         surfaceTintColor: blanco,
                                         elevation: 1.5,
-                                        color: Colors.white,
+                                        color: isAdmin ? const Color(0xFFFFF3E0)
+                                            : Colors.white,
                                         shape: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(7),
                                         ),
@@ -594,7 +595,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                                   bottom: 0,
                                                   right: 0,
                                                   child: Text(
-                                                    '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}',
+                                                    formatTimeAMPM(createdAt),
                                                     style: const TextStyle(
                                                       fontSize: 11,
                                                       color: Colors.black87,
@@ -664,7 +665,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                     borderRadius: BorderRadius.circular(16),
                                   ),
                                   child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
                                     child: Row(
                                       children: [
                                         Expanded(
@@ -756,7 +757,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}",
+                        formatTimeAMPM(createdAt),
                         style: const TextStyle(
                           fontSize: 11,
                           color: Colors.black54,
@@ -818,7 +819,8 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
           ),
           child: Card(
             elevation: 1.5,
-            color: Colors.white,
+            color: isAdmin ? const Color(0xFFFBC02D)
+                : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -916,7 +918,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                   Padding(
                     padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
                     child: Text(
-                      "${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}",
+                      formatTimeAMPM(createdAt),
                       style: const TextStyle(
                         fontSize: 12,
                         color: Colors.black,
@@ -1077,8 +1079,11 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
   }
 
 
-
-
-
+  String formatTimeAMPM(DateTime dateTime) {
+    final hour = dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour;
+    final minute = dateTime.minute.toString().padLeft(2, '0');
+    final suffix = dateTime.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $suffix';
+  }
 
 }

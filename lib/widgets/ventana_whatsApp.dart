@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/widgets/whatApp_chat_page.dart';
+import 'package:tuprocesoya/widgets/whatsapp_state.dart';
 
 class WhatsAppChatSummary extends StatelessWidget {
   final String numeroCliente;
@@ -61,13 +62,15 @@ class WhatsAppChatSummary extends StatelessWidget {
 
         return InkWell(
           onTap: () {
+            selectedNumeroCliente.value = numeroCliente;
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => WhatsAppChatPage(),
+                builder: (_) => const WhatsAppChatPage(),
               ),
             );
           },
+
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(

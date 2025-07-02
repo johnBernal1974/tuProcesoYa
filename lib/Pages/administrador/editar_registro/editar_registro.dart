@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +29,8 @@ import '../../../widgets/ingresar_juzgado_ep.dart';
 import '../../../widgets/tabla_vista_estadias_reclusion.dart';
 import '../../seguimiento_solicitudes_page.dart';
 import '../home_admin/home_admin.dart';
+import 'package:http/http.dart' as http;
+
 
 
 class EditarRegistroPage extends StatefulWidget {
@@ -4695,7 +4700,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 child: InkWell(
-                  onTap: () => enviarMensajeWhatsApp(celularWhatsapp, docId),
+                  onTap: () => enviarMensajeWhatsAppApi(celularWhatsapp, docId),
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -4717,13 +4722,76 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 ),
               ),
-            ),
+             ),
         ],
       ),
     );
   }
 
+  Future<void> enviarMensajeWhatsAppApi(String numero, String docId) async {
+    if (numero.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El número de WhatsApp no está disponible')),
+      );
+      return;
+    }
+
+    String numeroFormateado = numero.trim();
+    if (!numeroFormateado.startsWith("57")) {
+      numeroFormateado = "57$numeroFormateado";
+    }
+
+    print("Número a enviar: $numeroFormateado");
+    print("Documento Firestore a usar: $docId");
+
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      final response = await http.post(
+        Uri.parse(
+          "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendActivationMessage",
+        ),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "to": numeroFormateado,
+          "docId": docId, // 🔹 Aquí le pasas el ID del documento Firestore
+        }),
+      );
+
+      Navigator.of(context).pop();
+
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Mensaje enviado correctamente')),
+        );
+      } else {
+        print('Error: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error enviando mensaje (Código ${response.statusCode}): ${response.body}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error enviando mensaje: $e')),
+      );
+    }
+  }
+
 }
+
 
 class MostrarTiempoBeneficioCard extends StatelessWidget {
   final String idPpl;
