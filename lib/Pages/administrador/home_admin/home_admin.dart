@@ -44,7 +44,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   bool filtrarPorExentos = false;
   String? _docIdSeleccionado;
 
-
   Color getColor(Map<String, dynamic> data) {
     final estado = data['status']?.toString().toLowerCase() ?? '';
 
@@ -479,62 +478,23 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               builder: (context, constraints) {
                                 final isDesktop = constraints.maxWidth > 600;
 
-                                return StreamBuilder<QuerySnapshot>(
-                                  stream: FirebaseFirestore.instance
-                                      .collection('whatsapp_messages')
-                                      .orderBy('createdAt', descending: true)
-                                      .limit(1)
-                                      .snapshots(),
-                                  builder: (context, snapshotMensajes) {
-                                    if (!snapshotMensajes.hasData) {
-                                      return const Center(child: CircularProgressIndicator());
-                                    }
-
-                                    final mensajesDocs = snapshotMensajes.data!.docs;
-
-                                    final numeroCliente = mensajesDocs.isNotEmpty
-                                        ? (mensajesDocs.first.data() as Map<String, dynamic>)['conversationId'] ?? 'Sin número'
-                                        : 'Sin número';
-
-                                    if (isDesktop) {
-                                      // Escritorio: todo en fila
-                                      return Row(
-                                        mainAxisAlignment: MainAxisAlignment.start,
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          buildTotalUsuariosCard(docs.length),
-                                          SizedBox(
-                                            width: 250,
-                                            child: Padding(
-                                              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                                              child: _buildSearchField(),
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: 400,
-                                            child: WhatsAppChatSummary(
-                                              numeroCliente: numeroCliente,
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    } else {
-                                      // Móvil: todo en columna
-                                      return Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          buildTotalUsuariosCard(docs.length),
-                                          Padding(
-                                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                                            child: _buildSearchField(),
-                                          ),
-                                          WhatsAppChatSummary(
-                                            numeroCliente: numeroCliente,
-                                          ),
-                                        ],
-                                      );
-                                    }
-                                  },
+                                return Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    buildTotalUsuariosCard(docs.length),
+                                    SizedBox(
+                                      width: 250,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                        child: _buildSearchField(),
+                                      ),
+                                    ),
+                                    const SizedBox(
+                                      width: 400,
+                                      child: WhatsAppChatWrapper()
+                                    ),
+                                  ],
                                 );
                               },
                             ),
@@ -1844,5 +1804,47 @@ class _TablaDataSource extends DataTableSource {
   }
 
 }
+
+class WhatsAppChatWrapper extends StatefulWidget {
+  const WhatsAppChatWrapper({Key? key}) : super(key: key);
+
+  @override
+  State<WhatsAppChatWrapper> createState() => _WhatsAppChatWrapperState();
+}
+
+class _WhatsAppChatWrapperState extends State<WhatsAppChatWrapper> {
+  String? _numeroCliente;
+
+  @override
+  void initState() {
+    super.initState();
+
+    FirebaseFirestore.instance
+        .collection('whatsapp_messages')
+        .orderBy('createdAt', descending: true)
+        .limit(1)
+        .snapshots()
+        .listen((snapshotMensajes) {
+      if (snapshotMensajes.docs.isNotEmpty) {
+        final numero = snapshotMensajes.docs.first['conversationId']?.toString() ?? 'Sin número';
+        setState(() {
+          _numeroCliente = numero;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_numeroCliente == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return WhatsAppChatSummary(
+      numeroCliente: _numeroCliente!,
+    );
+  }
+}
+
 
 
