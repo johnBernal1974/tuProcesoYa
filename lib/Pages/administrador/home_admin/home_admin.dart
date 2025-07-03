@@ -482,7 +482,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    buildTotalUsuariosCard(docs.length),
+                                    TotalUsuariosCard(totalUsuarios: docs.length),
                                     SizedBox(
                                       width: 250,
                                       child: Padding(
@@ -554,18 +554,25 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildFilterContainer(
-                countRegistrado,
-                countActivado,
-                countSuscritos,
-                countPendiente,
-                countBloqueado,
-                countRedencionesVencidas,
-                countActivadoIncompleto,
-                countConSeguimiento,
-                countExentos,
-                countUsuariosConSolicitudes,
+              FilterContainer(
+                countRegistrado: countRegistrado,
+                countActivado: countActivado,
+                countSuscritos: countSuscritos,
+                countPendiente: countPendiente,
+                countBloqueado: countBloqueado,
+                countRedencionesVencidas: countRedencionesVencidas,
+                countActivadoIncompleto: countActivadoIncompleto,
+                countConSeguimiento: countConSeguimiento,
+                countExentos: countExentos,
+                countUsuariosConSolicitudes: countUsuariosConSolicitudes,
+                selectedFilter: filterStatus,
+                onFilterSelected: (filtro) {
+                  setState(() {
+                    filterStatus = filtro;
+                  });
+                },
               ),
+
               const SizedBox(height: 16),
               _buildUserTable(filteredDocs),
             ],
@@ -1845,6 +1852,138 @@ class _WhatsAppChatWrapperState extends State<WhatsAppChatWrapper> {
     );
   }
 }
+
+class TotalUsuariosCard extends StatelessWidget {
+  final int totalUsuarios;
+
+  const TotalUsuariosCard({Key? key, required this.totalUsuarios}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final String fechaActual = "Hoy es ${DateFormat('d \'de\' MMMM \'de\' y', 'es_ES').format(DateTime.now())}";
+
+    return Container(
+      width: 180,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade400, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            fechaActual,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.black54,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            totalUsuarios.toString(),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            "Usuarios Totales",
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.black87,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class FilterContainer extends StatelessWidget {
+  final int countRegistrado;
+  final int countActivado;
+  final int countSuscritos;
+  final int countPendiente;
+  final int countBloqueado;
+  final int countRedencionesVencidas;
+  final int countActivadoIncompleto;
+  final int countConSeguimiento;
+  final int countExentos;
+  final int countUsuariosConSolicitudes;
+  final void Function(String filtro) onFilterSelected;
+  final String? selectedFilter;
+
+  const FilterContainer({
+    Key? key,
+    required this.countRegistrado,
+    required this.countActivado,
+    required this.countSuscritos,
+    required this.countPendiente,
+    required this.countBloqueado,
+    required this.countRedencionesVencidas,
+    required this.countActivadoIncompleto,
+    required this.countConSeguimiento,
+    required this.countExentos,
+    required this.countUsuariosConSolicitudes,
+    required this.onFilterSelected,
+    this.selectedFilter,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // Aquí puedes reusar tu _buildStatRow si lo haces estático o copiar su contenido
+    // Ejemplo (simplificado):
+    return Column(
+      children: [
+        _buildStatRow("Registrados", countRegistrado, Colors.blue, () => onFilterSelected("registrado")),
+        // ... lo mismo con el resto
+      ],
+    );
+  }
+
+  Widget _buildStatRow(
+      String title,
+      int count,
+      Color color,
+      VoidCallback onTap,
+      ) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: Colors.grey.shade300),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Row(
+          children: [
+            Container(width: 10, height: 10, color: color),
+            const SizedBox(width: 8),
+            Text(title),
+            const Spacer(),
+            Text(count.toString()),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
 
 
 
