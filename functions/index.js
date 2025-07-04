@@ -732,9 +732,15 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
         const from = messageData.from;
         const id = messageData.id;
 
+        // 🟢 Capturar perfil si viene
+        const contactProfile = body.entry[0].changes[0].value.contacts?.[0]?.profile;
+        const profilePicUrl = contactProfile?.profile_pic_url || null;
+        const profileName = contactProfile?.name || null;
+
         let text = "(sin contenido)";
         let mediaType = null;
         let mediaId = null;
+        let fileName = null;
 
         if (messageData.text) {
           text = messageData.text.body;
@@ -747,12 +753,11 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
           mediaType = "audio";
           mediaId = messageData.audio.id;
         } else if (messageData.document) {
-            text = "(Documento)"; // Deja el texto genérico para que en la lista se vea "Documento"
-            mediaType = "document";
-            mediaId = messageData.document.id;
-            var fileName = messageData.document.filename || "Documento.pdf";
-          }
-
+          text = "(Documento)";
+          mediaType = "document";
+          mediaId = messageData.document.id;
+          fileName = messageData.document.filename || "Documento.pdf";
+        }
 
         // 1️⃣ Guardar mensaje individual
         await admin.firestore().collection("whatsapp_messages").add({
@@ -761,19 +766,21 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
           text: text,
           mediaType: mediaType,
           mediaId: mediaId,
-          fileName: fileName || null, // Nuevo campo con el nombre del archivo
+          fileName: fileName,
           messageId: id,
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           isRead: false,
         });
 
-        // 2️⃣ Actualizar o crear resumen de conversación
+        // 2️⃣ Actualizar o crear resumen de conversación con foto y nombre
         await admin.firestore().collection("whatsapp_conversations").doc(from).set(
           {
             conversationId: from,
             lastMessage: text,
             lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
             hasUnread: true,
+            profilePicUrl: profilePicUrl,
+            profileName: profileName,
           },
           { merge: true }
         );
@@ -791,6 +798,7 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
   // Si no es GET ni POST
   return res.sendStatus(405);
 });
+
 
 exports.getMediaFile = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
@@ -837,7 +845,7 @@ exports.getMediaFile = functions.https.onRequest(async (req, res) => {
   }
 });
 
-const ACCESS_TOKEN = "EAAKuB3bxKBcBO5VrSejWjDZA99eNCge887GCeq5dW0uyYgN6M1FOHi26dKfw44nlT1QBPXlRT36AouSulJoyKqsfuJ7sr57XaKOJhqDhIVBh4ZCPFpJLYuZBxYdQnFb4FTt0mWVXI54hzVkZB4k7m3WPd75AitqN0wiDWf7hLpySSyaVGjljK5yC6zEVawxZAFEOsH8hH2GZAvX4n91ySVuw2dhRgmYOJb7IeYcKXut7tesN2TGvCFrr4n15J3yQZDZD";
+const ACCESS_TOKEN = "EAAKuB3bxKBcBOxiZBRGZAZCHTE6OVxxbDywdbrIQb9KIYnPS3kAu0XIjxbNBD59B2YZAd2QeXn8QZAldHMoFA0sdFFCWcM4BfqlA019owk5dZBJeLTenkVNjvXdQFa1mxZBled7vL1yKGS2Plu8o3OJPeZCODAoNc5uf9Q0onDb6QWMZCIVvOUOWQKdcDSXrFE5ZAL8AZDZD";
 const PHONE_NUMBER_ID = "724376300739509";
 
 exports.sendActivationMessage = functions.https.onRequest(async (req, res) => {
@@ -1004,7 +1012,6 @@ exports.guardarMediaFile = functions.https.onRequest(async (req, res) => {
     return res.status(500).send("Error guardando media");
   }
 });
-
 
 exports.sendWhatsAppMessage = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");

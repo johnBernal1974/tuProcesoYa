@@ -67,15 +67,15 @@ class _WhatsAppChatFloatingButtonState extends State<WhatsAppChatFloatingButton>
   }
 
   void _handleTap() {
+    widget.onTap();
+
     if (_showInfo) {
-      // Si estaba expandido, colapsa
       setState(() {
         _showInfo = false;
       });
     }
-    // Siempre ejecutar onTap
-    widget.onTap();
   }
+
 
   @override
   Widget build(BuildContext context) {

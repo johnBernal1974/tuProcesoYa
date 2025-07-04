@@ -30,6 +30,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
   final Map<String, Uint8List> _audioCache = {};
   final Map<String, Uint8List> _documentCache = {};
   final ValueNotifier<Map<String, dynamic>?> _mensajeRespondido = ValueNotifier(null);
+  bool _enviando = false;
 
 
   @override
@@ -204,6 +205,14 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                     if (docs.isEmpty) {
                       return const Center(child: Text("No hay mensajes"));
                     }
+
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (_scrollController.hasClients) {
+                        _scrollController.jumpTo(
+                          _scrollController.position.maxScrollExtent,
+                        );
+                      }
+                    });
 
                     return ListView.builder(
                       controller: _scrollController,
@@ -565,8 +574,17 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                             selectedTileColor: Colors.grey.shade100,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                             leading: CircleAvatar(
-                              backgroundColor: Colors.green.shade50,
-                              child: const Icon(Icons.person, color: Colors.green),
+                              backgroundColor: snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                                  ? (isPaid == true ? Colors.green.shade50 : Colors.red.shade50)
+                                  : Colors.grey.shade300,
+                              child: Icon(
+                                snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                                    ? (isPaid == true ? Icons.verified_user_rounded : Icons.mood_bad)
+                                    : Icons.new_releases,
+                                color: snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                                    ? (isPaid == true ? Colors.green : Colors.red)
+                                    : Colors.grey,
+                              ),
                             ),
                             title: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -702,8 +720,6 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
       ),
     );
   }
-
-
 
   Widget _buildDocumentCard(Uint8List bytes, String fileName, DateTime createdAt) {
     return Align(

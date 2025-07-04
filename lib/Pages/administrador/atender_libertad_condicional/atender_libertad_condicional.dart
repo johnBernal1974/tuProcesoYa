@@ -1025,6 +1025,18 @@ class _AtenderLibertadCondicionalPageState extends State<AtenderLibertadCondicio
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
           const SizedBox(height: 20),
+          SelectorCorreoManualFlexible(
+            entidadSeleccionada: entidad,
+            onCorreoValidado: (correo, entidad) {
+              setState(() {
+                correoSeleccionado = correo;
+                nombreCorreoSeleccionado = "Manual";
+                this.entidad = entidad;
+              });
+            },
+          ),
+          const SizedBox(height: 20),
+
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

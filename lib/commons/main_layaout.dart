@@ -29,6 +29,7 @@ class _MainLayoutState extends State<MainLayout> {
   bool _isLoadingAdminCheck = true;
   String? _ultimaConversacionId;
 
+
   @override
   void initState() {
     super.initState();
@@ -218,36 +219,48 @@ class _MainLayoutState extends State<MainLayout> {
                         }
 
                         if (!userSnapshot.hasData || userSnapshot.data!.docs.isEmpty) {
-                          return WhatsAppChatFloatingButton(
-                            acudienteNombre: "",
-                            isPaid: false,
-                            numeroCliente: "",
-                            hasUnread: hasUnread,
-                            onTap: () {},
+                          return Builder(
+                            builder: (buttonContext) {
+                              return WhatsAppChatFloatingButton(
+                                acudienteNombre: "",
+                                isPaid: false,
+                                numeroCliente: "",
+                                hasUnread: hasUnread,
+                                onTap: () {
+                                  Navigator.of(buttonContext).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const WhatsAppChatPage(),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
                           );
                         }
-
                         final userData = userSnapshot.data!.docs.first;
                         final acudienteNombre =
                         "${userData['nombre_acudiente'] ?? ''} ${userData['apellido_acudiente'] ?? ''}".trim();
                         final isPaid = userData['isPaid'] == true;
 
-                        return WhatsAppChatFloatingButton(
-                          acudienteNombre: acudienteNombre,
-                          isPaid: isPaid,
-                          numeroCliente: conversationId.startsWith("57")
-                              ? conversationId
-                              : "57$conversationId",
-                          hasUnread: hasUnread,
-                          onTap: () {
-                            selectedNumeroCliente.value = conversationId.startsWith("57")
-                                ? conversationId
-                                : "57$conversationId";
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const WhatsAppChatPage(),
-                              ),
+                        return Builder(
+                          builder: (buttonContext) {
+                            return WhatsAppChatFloatingButton(
+                              acudienteNombre: acudienteNombre,
+                              isPaid: isPaid,
+                              numeroCliente: conversationId.startsWith("57")
+                                  ? conversationId
+                                  : "57$conversationId",
+                              hasUnread: hasUnread,
+                              onTap: () {
+                                selectedNumeroCliente.value = conversationId.startsWith("57")
+                                    ? conversationId
+                                    : "57$conversationId";
+                                Navigator.of(buttonContext).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const WhatsAppChatPage(),
+                                  ),
+                                );
+                              },
                             );
                           },
                         );

@@ -44,6 +44,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   bool filtrarPorExentos = false;
   String? _docIdSeleccionado;
 
+
+
   Color getColor(Map<String, dynamic> data) {
     final estado = data['status']?.toString().toLowerCase() ?? '';
 
@@ -490,12 +492,14 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         child: _buildSearchField(),
                                       ),
                                     ),
-                                    const SizedBox(
-                                      width: 400,
-                                      child: WhatsAppChatWrapper()
-                                    ),
+                                    if (constraints.maxWidth >= 800)
+                                      const SizedBox(
+                                        width: 400,
+                                        child: WhatsAppChatWrapper(),
+                                      ),
                                   ],
                                 );
+
                               },
                             ),
                             const SizedBox(height: 30),
@@ -1944,15 +1948,31 @@ class FilterContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Aquí puedes reusar tu _buildStatRow si lo haces estático o copiar su contenido
-    // Ejemplo (simplificado):
     return Column(
       children: [
         _buildStatRow("Registrados", countRegistrado, Colors.blue, () => onFilterSelected("registrado")),
-        // ... lo mismo con el resto
+        const SizedBox(height: 6),
+        _buildStatRow("Activados", countActivado, Colors.green, () => onFilterSelected("activado")),
+        const SizedBox(height: 6),
+        _buildStatRow("Suscritos", countSuscritos, Colors.deepPurple, () => onFilterSelected("suscritos")),
+        const SizedBox(height: 6),
+        _buildStatRow("Pendientes", countPendiente, Colors.orange, () => onFilterSelected("pendiente")),
+        const SizedBox(height: 6),
+        _buildStatRow("Bloqueados", countBloqueado, Colors.red, () => onFilterSelected("bloqueado")),
+        const SizedBox(height: 6),
+        _buildStatRow("Redenciones vencidas", countRedencionesVencidas, Colors.purple, () => onFilterSelected("redenciones")),
+        const SizedBox(height: 6),
+        _buildStatRow("Activos Incompletos", countActivadoIncompleto, Colors.brown, () => onFilterSelected("incompletos")),
+        const SizedBox(height: 6),
+        _buildStatRow("Seguimiento", countConSeguimiento, Colors.pink, () => onFilterSelected("seguimiento")),
+        const SizedBox(height: 6),
+        _buildStatRow("Exentos", countExentos, Colors.black, () => onFilterSelected("exentos")),
+        const SizedBox(height: 6),
+        _buildStatRow("Con solicitudes", countUsuariosConSolicitudes, Colors.deepPurpleAccent, () => onFilterSelected("solicitudes")),
       ],
     );
   }
+
 
   Widget _buildStatRow(
       String title,

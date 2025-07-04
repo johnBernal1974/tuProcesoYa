@@ -2346,39 +2346,38 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
           if (context.mounted) {
             Navigator.of(context).pop(); // Cerrar loading
 
-            if (urlApp != null) {
-              final enviar = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: blanco,
-                  title: const Text("¿Enviar Notificación?"),
-                  content: const Text("¿Deseas notificar al usuario del envio del correo por WhatsApp?"),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text("No"),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text("Sí, enviar"),
-                    ),
-                  ],
-                ),
-              );
+            final enviar = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                backgroundColor: blanco,
+                title: const Text("¿Enviar Notificación?"),
+                content: const Text("¿Deseas notificar al usuario del envío del correo por WhatsApp?"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text("No"),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text("Sí, enviar"),
+                  ),
+                ],
+              ),
+            );
 
-              if (enviar == true) {
-                final celulartWhatsApp = "+57${userData!.celularWhatsapp}";
-                final mensaje = Uri.encodeComponent(
-                    "Hola *${userData!.nombreAcudiente}*,\n\n"
-                        "Hemos enviado tu solicitud de prisón domiciliaria número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                        "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
-                        "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes prisión domiciliaria. Allí podrás ver el correo enviado:\n$urlApp\n\n"
-                        "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
-                );
-                final link = "https://wa.me/$celulartWhatsApp?text=$mensaje";
-                await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
-              }
+            if (enviar == true) {
+              final celularWhatsApp = "+57${userData!.celularWhatsapp}";
+              final mensaje = Uri.encodeComponent(
+                  "Hola *${userData!.nombreAcudiente}*,\n\n"
+                      "Hemos enviado tu solicitud de prisión domiciliaria número *$numeroSeguimiento* a la autoridad competente.\n\n"
+                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder.\n\n"
+                      "Puedes consultar la solicitud en la app:\n$urlApp\n\n"
+                      "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
+              );
+              final link = "https://wa.me/$celularWhatsApp?text=$mensaje";
+              await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
             }
+
             if (context.mounted) {
               showDialog(
                 context: context,
@@ -2388,77 +2387,185 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
                     width: MediaQuery.of(context).size.width * 0.8,
                     child: SeleccionarCorreoCentroReclusion(
                       idUser: widget.idUser,
-                        onEnviarCorreo: (correoDestino) async {
-                          BuildContext? dialogContext;
+                      onEnviarCorreo: (correoDestino) async {
+                        BuildContext? dialogContext;
 
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (ctx) {
-                              dialogContext = ctx;
-                              return const AlertDialog(
-                                backgroundColor: blanco,
-                                title: Text("Enviando..."),
-                                content: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text("Por favor espera mientras se envía el correo."),
-                                    SizedBox(height: 20),
-                                    CircularProgressIndicator(),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
-
-                          bool envioExitoso = false;
-
-                          try {
-                            print("📤 Enviando correo a $correoDestino...");
-                            correoSeleccionado = correoDestino;
-                            await enviarCorreoResend(
-                              asuntoPersonalizado: "Copia enviada al centro de reclusión - ${widget.numeroSeguimiento}",
-                              prefacioHtml: """
-    <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
-    <hr>
-  """,
-                            );
-                            print("✅ Correo enviado correctamente");
-                            envioExitoso = true;
-                          } catch (e) {
-                            print("❌ Error al enviar: $e");
-                            if (context.mounted) {
-                              Navigator.of(dialogContext!).pop(); // Cierra "Enviando..."
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
-                              );
-                            }
-                          }
-
-                          if (envioExitoso && context.mounted) {
-                            Navigator.of(dialogContext!).pop(); // Cierra el alert "Enviando..."
-
-                            // 🔔 Mostrar éxito
-                            await showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                backgroundColor: blanco,
-                                title: const Text("✅ Envío exitoso"),
-                                content: const Text("El correo fue enviado correctamente al centro de reclusión."),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(),
-                                    child: const Text("Aceptar"),
-                                  ),
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) {
+                            dialogContext = ctx;
+                            return const AlertDialog(
+                              backgroundColor: blanco,
+                              title: Text("Enviando..."),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text("Por favor espera mientras se envía el correo."),
+                                  SizedBox(height: 20),
+                                  CircularProgressIndicator(),
                                 ],
                               ),
                             );
+                          },
+                        );
 
-                            // 🔄 Navegar al historial
-                            Navigator.pushReplacementNamed(context, 'historial_solicitudes_prision_domiciliaria_admin');
+                        bool envioExitoso = false;
+
+                        try {
+                          correoSeleccionado = correoDestino;
+                          await enviarCorreoResend(
+                            asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
+                            prefacioHtml: """
+<p><strong>📌 Nota:</strong> Esta es una copia informativa del correo enviado a la autoridad competente.</p>
+<hr>
+""",
+                          );
+                          envioExitoso = true;
+                        } catch (e) {
+                          if (context.mounted) {
+                            Navigator.of(dialogContext!).pop();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                            );
                           }
                         }
 
+                        if (envioExitoso && context.mounted) {
+                          Navigator.of(dialogContext!).pop();
+
+                          await showDialog(
+                            context: context,
+                            builder: (_) => AlertDialog(
+                              backgroundColor: blanco,
+                              title: const Text("✅ Envío exitoso"),
+                              content: const Text("El correo fue enviado correctamente al centro de reclusión."),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text("Aceptar"),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          // ✅ MOSTRAR DIALOGO DE ENVÍO A REPARTO
+                          if (context.mounted) {
+                            String? nombreCiudadSeleccionada;
+                            await showDialog(
+                              context: context,
+                              builder: (context) {
+                                String? correoManual;
+                                String? entidadSeleccionada = userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas';
+                                return AlertDialog(
+                                  backgroundColor: blanco,
+                                  title: const Text("¿Enviar copia a reparto?"),
+                                  content: UnconstrainedBox(
+                                    constrainedAxis: Axis.horizontal,
+                                    child: ConstrainedBox(
+                                      constraints: BoxConstraints(
+                                        maxWidth: MediaQuery.of(context).size.width * 0.9,
+                                      ),
+                                      child: SelectorCorreoManualFlexible(
+                                        entidadSeleccionada: entidadSeleccionada,
+                                        onCorreoValidado: (correo, entidad) {
+                                          correoManual = correo;
+                                          entidadSeleccionada = entidad;
+                                        },
+                                        onCiudadNombreSeleccionada: (nombre) {
+                                          nombreCiudadSeleccionada = nombre;
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: const Text("Omitir"),
+                                    ),
+                                    TextButton(
+                                      onPressed: () async {
+                                        if (correoManual != null && correoManual!.isNotEmpty) {
+                                          BuildContext? dialogContext;
+                                          showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (ctx) {
+                                              dialogContext = ctx;
+                                              return const AlertDialog(
+                                                backgroundColor: blanco,
+                                                title: Text("Enviando..."),
+                                                content: Column(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text("Por favor espera mientras se envía el correo."),
+                                                    SizedBox(height: 20),
+                                                    CircularProgressIndicator(),
+                                                  ],
+                                                ),
+                                              );
+                                            },
+                                          );
+
+                                          try {
+                                            correoSeleccionado = correoManual;
+                                            await enviarCorreoResend(
+                                              asuntoPersonalizado: "Solicitud prisión domiciliaria (copia) - $numeroSeguimiento",
+                                              prefacioHtml: """
+<p><strong>Entidad de reparto:</strong> ${nombreCiudadSeleccionada ?? ''}</p>
+<hr>
+""",
+                                            );
+
+                                            if (context.mounted) {
+                                              Navigator.of(dialogContext!).pop();
+                                              await showDialog(
+                                                context: context,
+                                                builder: (_) => AlertDialog(
+                                                  backgroundColor: blanco,
+                                                  title: const Text("✅ Envío exitoso"),
+                                                  content: const Text("El correo fue enviado correctamente al correo de reparto."),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context).pop();
+                                                        Navigator.pushReplacementNamed(
+                                                          context,
+                                                          'historial_solicitudes_prision_domiciliaria_admin',
+                                                        );
+                                                      },
+                                                      child: const Text("Aceptar"),
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }
+                                          } catch (e) {
+                                            if (context.mounted) {
+                                              Navigator.of(dialogContext!).pop();
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+                                              );
+                                            }
+                                          }
+                                        } else {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text("Debe ingresar un correo válido antes de enviar."),
+                                              backgroundColor: Colors.orange,
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      child: const Text("Enviar"),
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          }
+                        }
+                      },
                     ),
                   ),
                 ),
@@ -2470,6 +2577,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
       child: const Text("Enviar por correo"),
     );
   }
+
 
   Future<void> subirHtmlCorreoADocumentoDomiciliaria({
     required String idDocumento,
