@@ -50,6 +50,7 @@ class _HomePageState extends State<HomePage> {
   String? _nuevaVersion;
 
 
+
   @override
   void initState() {
     super.initState();
@@ -372,6 +373,13 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTrialCard(BuildContext context) {
+    final NumberFormat currencyFormat = NumberFormat.currency(
+      locale: 'es_CO',
+      symbol: '\$',
+      decimalDigits: 0,
+      customPattern: '\u00A4#,##0', // Sin espacio entre el símbolo y el número
+    );
+    final String formattedValue = currencyFormat.format(_subscriptionValue);
     return SizedBox(
       child: Card(
         surfaceTintColor: blanco,
@@ -405,37 +413,44 @@ class _HomePageState extends State<HomePage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
-              Text.rich(
-                TextSpan(
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: gris,
-                    height: 1.3,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Tienes ${_diasRestantesPrueba * 24} horas para explorar totalmente gratis todas las funcionalidades y conocer lo que Tu Proceso Ya puede ofrecerte.",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black87,
+                      height: 1.3,
+                    ),
+                    textAlign: TextAlign.justify,
                   ),
-                  children: [
-                    const TextSpan(text: "Tienes "),
-                    TextSpan(
-                      text: "${_diasRestantesPrueba * 24} horas",
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                  const SizedBox(height: 8),
+                  const Text(
+                    "Pasado este tiempo perderás el acceso a la plataforma.",
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.redAccent,
+                      height: 1.3,
                     ),
-                    const TextSpan(text: " para conocer todo lo que "),
-                    const TextSpan(
-                      text: "Tu Proceso Ya ",
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+                    textAlign: TextAlign.justify,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "Juntos logramos más. Activa tu suscripción ahora mismo por tan solo $formattedValue y mantén el respaldo que necesitas.",
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                      height: 1.3,
                     ),
-                    const TextSpan(text: "puede ofrecerte. "),
-                    const TextSpan(
-                      text: "\n\nPasado este tiempo perderás el acceso a la plataforma.\n\n",
-                      style: TextStyle(color: Colors.redAccent),
-                    ),
-                    const TextSpan(
-                      text: "Juntos logramos más. Activa tu suscripción ahora mismo y mantén el respaldo que necesitas.",
-                      style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black87),
-                    ),
-                  ],
-                ),
-                textAlign: TextAlign.center,
+                    textAlign: TextAlign.justify,
+                  )
+
+
+                ],
               ),
 
               const SizedBox(height: 15),
@@ -521,7 +536,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   Future<void> _checkSubscriptionStatus() async {
     final user = FirebaseAuth.instance.currentUser;

@@ -701,8 +701,6 @@ class _LoginPageState extends State<LoginPage> {
     return RegExp(r'^\d{10}$').hasMatch(celular);
   }
 
-
-
   @override
   void dispose() {
     _timer?.cancel();

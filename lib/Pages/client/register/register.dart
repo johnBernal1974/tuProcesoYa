@@ -42,6 +42,8 @@ class _RegistroPageState extends State<RegistroPage> {
   List<Map<String, Object>> centrosReclusionTodos = [];
   late Future<bool> _centrosFuture;
   RecaptchaVerifier? _recaptchaVerifier;
+  String? uidAutenticado;
+
 
 
 
@@ -1726,6 +1728,8 @@ class _RegistroPageState extends State<RegistroPage> {
     try {
       // Verifica el código ingresado
       await _confirmationResult!.confirm(codigo);
+      uidAutenticado = FirebaseAuth.instance.currentUser!.uid;
+
 
       if (kDebugMode) {
         print("✅ Código verificado correctamente");
