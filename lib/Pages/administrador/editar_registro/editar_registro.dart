@@ -148,6 +148,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   int mesesCondena = 0;
   int diasCondena = 0;
 
+  String? _statusActual;
+  bool? _isNotificatedActivated;
+
+
 
 
   /// opciones de documento de identidad
@@ -211,6 +215,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _asignarDocumento(); // Bloquea el documento al abrirlo
     _adminProvider.loadAdminData(); // 🔥 Cargar info del admin
     calcularTotalRedenciones(widget.doc.id); // 🔥 Llama la función aquí
+    _statusActual = widget.doc["status"]?.toString();
+    _isNotificatedActivated = widget.doc["isNotificatedActivated"] == true;
   }
 
   Future<void> _cargarTiempoDePrueba() async {
@@ -681,37 +687,67 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                     return Column(children: mensajes);
                   },
                 ),
-                Wrap(
-                  alignment: WrapAlignment.spaceEvenly,
-                  spacing: 12,
-                  runSpacing: 12,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    if (widget.doc["status"] != "bloqueado") ...[
-                      botonGuardar(),
-                      bloquearUsuario(),
-
-                      if (widget.doc["isNotificatedActivated"] == false)
-                        botonEnviarWhatsappDesdeImagen(widget.doc["celularWhatsapp"], widget.doc.id)
-                      else ...[
-                        estadoNotificacionWidget(
-                          widget.doc["isNotificatedActivated"],
-                          widget.doc["celularWhatsapp"],
-                          widget.doc.id,
-                        ),
-
-                        const SizedBox(height: 20),
-                      ],
-                    ] else
-                      FutureBuilder<bool>(
-                        future: _adminPuedeDesbloquear(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) return const SizedBox();
-                          return snapshot.data == true ? desbloquearUsuario() : const SizedBox();
-                        },
+                    // 🔹 Tarjeta de Estado y Notificación
+                    Card(
+                      color: Colors.white,
+                      surfaceTintColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Colors.grey),
                       ),
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Estado del usuario (activa, bloqueado, registrado)
+                            estadoUsuarioWidget(widget.doc["status"]),
+                            const SizedBox(height: 12),
+                            // Estado de notificación
+                            estadoNotificacionWidget(
+                              widget.doc["isNotificatedActivated"],
+                              widget.doc["celularWhatsapp"],
+                              widget.doc.id,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    Wrap(
+                      alignment: WrapAlignment.spaceEvenly,
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: [
+                        if (widget.doc["status"] != "bloqueado") ...[
+                          botonGuardar(),
+                          bloquearUsuario(),
+                          if (_statusActual == "activado" &&
+                              (_isNotificatedActivated == false ||
+                                  _isNotificatedActivated == null))
+                            botonEnviarWhatsappDesdeImagen(
+                              widget.doc["celularWhatsapp"],
+                              widget.doc.id,
+                            ),
+                        ] else
+                          FutureBuilder<bool>(
+                            future: _adminPuedeDesbloquear(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) return const SizedBox();
+                              return snapshot.data == true
+                                  ? desbloquearUsuario()
+                                  : const SizedBox();
+                            },
+                          ),
+                      ],
+                    ),
                   ],
                 )
-
               ],
             ),
 
@@ -794,7 +830,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   }
 
 
-
   Widget botonEnviarWhatsappDesdeImagen(String celular, String docId) {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
@@ -803,16 +838,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
       onPressed: () async {
-        await enviarMensajeWhatsApp(celular, docId);
-
-        // 🔄 Actualizar el nodo en Firestore después del envío
-        try {
-          await FirebaseFirestore.instance.collection('Ppl').doc(docId).update({
-            'isNotificatedActivated': true,
-          });
-        } catch (e) {
-          print('Error actualizando isNotificatedActivated: $e');
-        }
+        await enviarMensajeWhatsAppApi(celular, docId);
       },
       icon: Image.asset(
         'assets/images/icono_whatsapp.png',
@@ -1210,16 +1236,47 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       ElevatedButton.icon(
                         onPressed: widget.doc["status"] == "bloqueado"
                             ? null
-                            : () {
-                          _notificarAlUsuario(
+                            : () async {
+                          // 🔹 Mostrar confirmación
+                          final confirmarEnvio = await showDialog<bool>(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: blanco,
+                              title: const Text("Confirmar envío"),
+                              content: const Text(
+                                "¿Deseas enviar la notificación de nueva redención al acudiente por WhatsApp?",
+                              ),
+                              actions: [
+                                TextButton(
+                                  child: const Text("Cancelar"),
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.deepPurple,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  child: const Text("Enviar"),
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                ),
+                              ],
+                            ),
+                          );
+
+                          // 🔹 Si canceló, no hacer nada
+                          if (confirmarEnvio != true) return;
+
+                          // 🔹 Si confirmó, llamar tu función de envío
+                          await _notificarRedencion(
                             widget.doc["nombre_acudiente"],
                             widget.doc["nombre_ppl"],
                             widget.doc["apellido_ppl"],
                             widget.doc["celularWhatsapp"],
+                            widget.doc.id,
                           );
                         },
                         icon: const Icon(Icons.notifications_active_outlined),
-                        label: const Text("Notificar al usuario"),
+                        label: const Text("Notificar redención"),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.deepPurple,
                           foregroundColor: Colors.white,
@@ -1227,7 +1284,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                         ),
                       ),
-
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -1336,26 +1392,114 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  void _notificarAlUsuario(String nombreAcudiente, String nombrePpl, String apellidoPpl, String celular) async {
-    final mensaje = Uri.encodeComponent(
-        "Hola *$nombreAcudiente*,\n\nHay un cambio en el proceso de $nombrePpl $apellidoPpl. La autoridad competente le ha concedido una nueva redención de penas. Los días redimidos ya fueron cargados a la aplicación.\n\n"
+  Future<void> _notificarRedencion(
+      String nombreAcudiente,
+      String nombrePpl,
+      String apellidoPpl,
+      String celular,
+      String docId,
+      ) async {
+    if (celular.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El número de WhatsApp no está disponible')),
+      );
+      return;
+    }
 
-        "Ingresa a tu aplicación dando click acá:\nhttps://www.tuprocesoya.com\n\n\n"
-            "Puedes revisar esta información ingresando al menú / Tus redenciones.\n\n Es un placer para nosotros contar con tu confianza\n\nTu equipo de *TU PROCESO YA*"
+    String numeroFormateado = celular.trim();
+    if (!numeroFormateado.startsWith("57")) {
+      numeroFormateado = "57$numeroFormateado";
+    }
+
+    // Mostrar loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
 
-    final url = Uri.parse("https://wa.me/$celular?text=$mensaje");
+    try {
+      final response = await http.post(
+        Uri.parse(
+          "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendNewRedencionMessage",
+        ),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "to": numeroFormateado,
+          "docId": docId,
+        }),
+      );
 
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
+      Navigator.of(context).pop(); // Cerrar loader
+
+      if (response.statusCode == 200) {
+        // Alert de éxito
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: true,
+            builder: (context) {
+              return AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                backgroundColor: Colors.white,
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Image.asset(
+                      'assets/images/icono_whatsapp.png',
+                      width: 48,
+                      height: 48,
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'La notificación de redención fue enviada exitosamente.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cerrar', style: TextStyle(color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        }
+      } else {
+        print('Error: ${response.body}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error enviando mensaje (Código ${response.statusCode}): ${response.body}',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Cerrar loader si hay error
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No se pudo abrir WhatsApp.")),
+        SnackBar(content: Text('Error enviando mensaje: $e')),
       );
     }
   }
-
-
 
   Widget iconoRevision(DateTime? ultimaActualizacion) {
     if (ultimaActualizacion == null) {
@@ -2163,8 +2307,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ],
     );
   }
-
-
 
   Widget seleccionarJuzgadoEjecucionPenas() {
     if (!_mostrarDropdownJuzgadoEjecucion &&
@@ -3815,6 +3957,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
 
               await widget.doc.reference.update(datosActualizados);
+
+              setState(() {
+                _statusActual = nuevoStatus;
+              });
+
               if (!centroValidado) {
                 await widget.doc.reference
                     .collection('correos_centro_reclusion')
@@ -3901,53 +4048,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 );
 
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
-                );
-              }
-
-              if (nuevoStatus == "activado") {
-                if (context.mounted) {
-                  final docId = widget.doc.id;
-                  final docRef = FirebaseFirestore.instance.collection('Ppl').doc(docId);
-                  final docSnapshot = await docRef.get();
-                  final isNotificated = docSnapshot['isNotificatedActivated'] ?? false;
-
-                  if (isNotificated) {
-                    // Ya fue notificado, no mostramos el diálogo
-                    await validarYEnviarMensaje(); // puedes omitir esta línea si no quieres reintentos
-                  } else {
-                    // Mostrar el AlertDialog solo si aún no ha sido notificado
-                    if(context.mounted){
-                      final confirmarEnvio = await showDialog<bool>(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: blanco,
-                          title: const Text("Enviar mensaje de activación"),
-                          content: const Text("¿Deseas enviar el mensaje por WhatsApp al acudiente para informarle que el usuario ha sido activado?"),
-                          actions: [
-                            TextButton(
-                              child: const Text("Cancelar"),
-                              onPressed: () => Navigator.of(context).pop(false),
-                            ),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: primary,
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: () => Navigator.of(context).pop(true),
-                              child: const Text("Enviar"),
-                            ),
-                          ],
-                        ),
-                      );
-                      if (confirmarEnvio == true) {
-                        await validarYEnviarMensaje();
-                      }
-                    }
-                  }
-                }
+                // Navigator.pushReplacement(
+                //   context,
+                //   MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
+                // );
               }
             } catch (error) {
               if (context.mounted) {
@@ -4627,103 +4731,86 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     if (status == "activado") {
       color = Colors.green;
       icono = Icons.check_circle;
-      mensaje = "El usuario ya está activado";
+      mensaje = "Cuenta\nActivada";
     } else if (status == "bloqueado") {
       color = Colors.red;
       icono = Icons.lock;
-      mensaje = "Este usuario se encuentra bloqueado";
-    }
-    else {
+      mensaje = "Cuenta\nBloqueada";
+    } else {
       color = Colors.blue;
-      icono = Icons.error;
-      mensaje = "El usuario aún no está activado";
+      icono = Icons.error_outline;
+      mensaje = "Activación\nPendiente";
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        Icon(icono, color: color, size: 20),
-        const SizedBox(width: 8), // Espacio entre icono y texto
-        Text(
-          mensaje,
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.bold,
-            fontSize: 14,
-          ),
+    return Card(
+      color: Colors.white,
+      surfaceTintColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: Colors.grey),
+      ),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icono,
+              color: color,
+              size: 30, // Mismo tamaño que notificación
+            ),
+            const SizedBox(height: 8),
+            Text(
+              mensaje,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget estadoNotificacionWidget(bool isNotificatedActivated, String celularWhatsapp, String docId) {
-    Color color = isNotificatedActivated ? Colors.green : Colors.red;
-    IconData icono = isNotificatedActivated ? Icons.notifications_active_outlined : Icons.error;
-    String mensaje = isNotificatedActivated
-        ? "Ya se notificó al usuario de la activación de la cuenta"
-        : "El usuario aún no ha sido notificado de la activación";
+  Widget estadoNotificacionWidget(
+      bool isNotificatedActivated, String celularWhatsapp, String docId) {
+    Color iconColor = isNotificatedActivated ? Colors.green : Colors.red;
+    String mensaje = isNotificatedActivated ? "Activación\nnotificada" : "Activación\nsin notificar";
 
-    return Container(
-      decoration: BoxDecoration(
+    return Card(
+      color: Colors.white,
+      surfaceTintColor: Colors.white,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey, width: 1),
+        side: const BorderSide(color: Colors.grey),
       ),
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          estadoUsuarioWidget(widget.doc["status"]),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(icono, color: color, size: 20),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  mensaje,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 2,
-                ),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.notifications_active_outlined,
+              color: iconColor,
+              size: 30, // Ícono grande
+            ),
+            const SizedBox(height: 8),
+            Text(
+              mensaje,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (isNotificatedActivated)
-            Center(
-              child: Card(
-                surfaceTintColor: blanco,
-                elevation: 2,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                child: InkWell(
-                  onTap: () => enviarMensajeWhatsAppApi(celularWhatsapp, docId),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "Notificar nuevamente de la activación?",
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 8),
-                        Image.asset(
-                          "assets/images/icono_whatsapp.png",
-                          height: 40,
-                          width: 40,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-             ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -4770,8 +4857,21 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       Navigator.of(context).pop(); // Cerrar el loader
 
       if (response.statusCode == 200) {
+        // 🔄 Actualizar Firestore
+        try {
+          await FirebaseFirestore.instance.collection('Ppl').doc(docId).update({
+            'isNotificatedActivated': true,
+          });
+
+          setState(() {
+            _isNotificatedActivated = true;
+          });
+        } catch (e) {
+          print('Error actualizando isNotificatedActivated: $e');
+        }
+
         // Mostrar el AlertDialog de éxito
-        if(context.mounted){
+        if (context.mounted) {
           showDialog(
             context: context,
             barrierDismissible: true,
@@ -4808,17 +4908,24 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: () => Navigator.of(context).pop(),
-                        child: const Text('Cerrar', style: TextStyle(color: blanco)),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const HomeAdministradorPage()),
+                                (route) => false,
+                          );
+                        },
+                        child: const Text('Cerrar', style: TextStyle(color: Colors.white)),
                       ),
-                    ),
+                    )
                   ],
                 ),
               );
             },
           );
         }
-      } else {
+      }
+      else {
         print('Error: ${response.body}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

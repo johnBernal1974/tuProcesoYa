@@ -954,6 +954,102 @@ exports.sendActivationMessage = functions.https.onRequest(async (req, res) => {
   }
 });
 
+exports.sendNewRedencionMessage = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+
+  const { to, docId } = req.body;
+
+  if (!to || !docId) {
+    return res.status(400).json({ error: "Debe proporcionar 'to' y 'docId'" });
+  }
+
+  // 🔹 1️⃣ Leer datos de Firestore
+  let acudienteNombre = "";
+  let pplNombre = "";
+
+  try {
+    const docRef = admin.firestore().collection("Ppl").doc(docId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Documento no encontrado en Firestore" });
+    }
+
+    const data = docSnap.data();
+    acudienteNombre = data.nombre_acudiente || "";
+    pplNombre = data.nombre_ppl || "";
+
+  } catch (err) {
+    console.error("Error leyendo Firestore:", err);
+    return res.status(500).json({ error: "Error leyendo Firestore" });
+  }
+
+  // 🔹 2️⃣ Construir el body del mensaje
+  const body = {
+    messaging_product: "whatsapp",
+    to: to,
+    type: "template",
+    template: {
+      name: "nueva_redencion", // 👈 Nombre exacto de tu plantilla
+      language: { code: "es_CO" },
+      components: [
+        {
+          type: "body",
+          parameters: [
+            {
+              type: "text",
+              text: acudienteNombre
+            },
+            {
+              type: "text",
+              text: pplNombre
+            }
+          ]
+        }
+      ]
+    }
+  };
+
+  const url = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ACCESS_TOKEN}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Error de la API:", result);
+      return res.status(500).json({ error: "Error al enviar el mensaje", details: result });
+    }
+
+    console.log("Mensaje de redención enviado correctamente:", result);
+    return res.json({ success: true, result });
+
+  } catch (error) {
+    console.error("Error en la función:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+
 exports.guardarMediaFile = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');
   res.set('Access-Control-Allow-Methods', 'POST');
