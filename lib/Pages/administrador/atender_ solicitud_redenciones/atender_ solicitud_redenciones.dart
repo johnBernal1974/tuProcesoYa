@@ -19,7 +19,9 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
+import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_redenciones_admin/historial_solicitudes_redenciones_admin.dart';
 import 'atender_ solicitud_redenciones_controller.dart';
@@ -1094,7 +1096,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({String? asuntoPersonalizado, String? prefacioHtml}) async {
+  Future<void> enviarCorreoResend({required String correoDestino,String? asuntoPersonalizado, String? prefacioHtml}) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -1138,7 +1140,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     }
 
     final body = jsonEncode({
-      "to": correoSeleccionado,
+      "to": correoDestino,
       "cc": correosCC,
       "subject": asuntoCorreo,
       "html": mensajeHtml,
@@ -1178,6 +1180,8 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     }
   }
 
+  ///Aca Inicia el cambio
+  ///
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1187,11 +1191,11 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
         foregroundColor: Colors.black,
       ),
       onPressed: () async {
-        if (correoSeleccionado!.isEmpty) {
+        if (correoSeleccionado == null || correoSeleccionado!.isEmpty) {
           await showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              backgroundColor: blanco,
+              backgroundColor: Colors.white,
               title: const Text("Aviso"),
               content: const Text("No se ha seleccionado un correo electrónico."),
               actions: [
@@ -1205,169 +1209,258 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           return;
         }
 
-        final confirmacion = await showDialog<bool>(
+        // Crear la instancia
+        final envioCorreoManager = EnvioCorreoManager();
+
+        // Llamar al método
+        await envioCorreoManager.enviarCorreoCompleto(
           context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: blanco,
-            title: const Text("Confirmación"),
-            content: Text("Se enviará el correo a:\n$correoSeleccionado"),
-            actions: [
-              TextButton(
-                child: const Text("Cancelar"),
-                onPressed: () => Navigator.of(context).pop(false),
-              ),
-              TextButton(
-                child: const Text("Enviar"),
-                onPressed: () => Navigator.of(context).pop(true),
-              ),
-            ],
-          ),
+          correoDestinoPrincipal: correoSeleccionado!,
+          html: redenciones.generarTextoHtml(),
+          numeroSeguimiento: redenciones.numeroSeguimiento,
+          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+          celularWhatsapp: userData?.celularWhatsapp,
+          rutaHistorial: 'historial_solicitudes_redenciones_admin',
+          nombreServicio: "Cómputo de Redención",
+          idDocumentoPpl: widget.idUser,
+          enviarCorreoResend: ({
+            required String correoDestino,
+            String? asuntoPersonalizado,
+            String? prefacioHtml,
+          }) async {
+            await enviarCorreoResend(
+              correoDestino: correoDestino,
+              asuntoPersonalizado: asuntoPersonalizado,
+              prefacioHtml: prefacioHtml,
+            );
+          },
+          subirHtml: () async {
+            await subirHtmlCorreoADocumentoSolicitudRedenciones(
+              idDocumento: widget.idDocumento,
+              htmlContent: redenciones.generarTextoHtml(),
+            );
+          },
+          buildSelectorCorreoCentroReclusion: ({
+            required Function(String correo, String nombreCentro) onEnviarCorreo,
+            required Function() onOmitir,
+          }) {
+            return SeleccionarCorreoCentroReclusionV2(
+              idUser: widget.idUser,
+              onEnviarCorreo: onEnviarCorreo,
+              onOmitir: onOmitir,
+            );
+          },
+          buildSelectorCorreoReparto: ({
+            required Function(String correo, String entidad) onCorreoValidado,
+            required Function(String nombreCiudad) onCiudadNombreSeleccionada,
+            required Function(String correo, String entidad) onEnviarCorreoManual,
+            required Function() onOmitir,
+          }) {
+            return SelectorCorreoManualFlexible(
+              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+              onCorreoValidado: onCorreoValidado,
+              onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
+              onEnviarCorreoManual: onEnviarCorreoManual,
+              onOmitir: () {
+                Navigator.of(context).pop();
+              },
+            );
+          },
         );
-
-        if (confirmacion ?? false) {
-          if (context.mounted) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => const AlertDialog(
-                backgroundColor: blanco,
-                title: Text("Enviando correo..."),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text("Espere mientras se envía el correo."),
-                    SizedBox(height: 20),
-                    CircularProgressIndicator(),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          await enviarCorreoResend();
-          final html = redenciones.generarTextoHtml();
-          await subirHtmlCorreoADocumentoSolicitudRedenciones(
-            idDocumento: widget.idDocumento,
-            htmlContent: html,
-          );
-
-          const urlApp = "https://www.tuprocesoya.com";
-          final numeroSeguimiento = redenciones.numeroSeguimiento;
-
-          if (context.mounted) {
-            Navigator.of(context).pop(); // Cerrar loading
-
-            final enviar = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: blanco,
-                title: const Text("¿Enviar Notificación?"),
-                content: const Text("¿Deseas notificar al usuario del envío del correo por WhatsApp?"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text("No"),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text("Sí, enviar"),
-                  ),
-                ],
-              ),
-            );
-
-            if (enviar == true) {
-              final celulartWhatsApp = "+57${userData!.celularWhatsapp}";
-              final mensaje = Uri.encodeComponent(
-                  "Hola *${userData!.nombreAcudiente}*,\n\n"
-                      "Hemos enviado tu solicitud de redenciones número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder.\n\n"
-                      "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes redenciones. Allí podrás ver el correo enviado:\n$urlApp\n\n"
-                      "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
-              );
-              final link = "https://wa.me/$celulartWhatsApp?text=$mensaje";
-              await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
-            }
-            if(context.mounted){
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text("Envío de copia al centro penitenciario"),
-                  content: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    child: SeleccionarCorreoCentroReclusion(
-                      idUser: widget.idUser,
-                      onEnviarCorreo: (correoDestino) async {
-                        BuildContext? dialogContext;
-
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (ctx) {
-                            dialogContext = ctx;
-                            return const AlertDialog(
-                              backgroundColor: blanco,
-                              title: Text("Enviando..."),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text("Por favor espera mientras se envía el correo."),
-                                  SizedBox(height: 20),
-                                  CircularProgressIndicator(),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-
-                        try {
-                          correoSeleccionado = correoDestino;
-                          await enviarCorreoResend(
-                            asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
-                            prefacioHtml: """
-                          <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
-                          <hr>
-                        """,
-                          );
-
-                          if (context.mounted) {
-                            Navigator.of(dialogContext!).pop();
-                            await showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                backgroundColor: blanco,
-                                title: const Text("✅ Envío exitoso"),
-                                content: const Text("El correo fue enviado correctamente al centro de reclusión."),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(),
-                                    child: const Text("Aceptar"),
-                                  ),
-                                ],
-                              ),
-                            );
-                            Navigator.pushReplacementNamed(context, 'historial_solicitudes_redenciones_admin');
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            Navigator.of(dialogContext!).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              );
-            }
-          }
-        }
       },
       child: const Text("Enviar por correo"),
     );
   }
+
+  // Widget botonEnviarCorreo() {
+  //   return ElevatedButton(
+  //     style: ElevatedButton.styleFrom(
+  //       side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+  //       backgroundColor: Colors.white,
+  //       foregroundColor: Colors.black,
+  //     ),
+  //     onPressed: () async {
+  //       if (correoSeleccionado!.isEmpty) {
+  //         await showDialog(
+  //           context: context,
+  //           builder: (context) => AlertDialog(
+  //             backgroundColor: blanco,
+  //             title: const Text("Aviso"),
+  //             content: const Text("No se ha seleccionado un correo electrónico."),
+  //             actions: [
+  //               TextButton(
+  //                 child: const Text("OK"),
+  //                 onPressed: () => Navigator.of(context).pop(),
+  //               ),
+  //             ],
+  //           ),
+  //         );
+  //         return;
+  //       }
+  //
+  //       final confirmacion = await showDialog<bool>(
+  //         context: context,
+  //         builder: (context) => AlertDialog(
+  //           backgroundColor: blanco,
+  //           title: const Text("Confirmación"),
+  //           content: Text("Se enviará el correo a:\n$correoSeleccionado"),
+  //           actions: [
+  //             TextButton(
+  //               child: const Text("Cancelar"),
+  //               onPressed: () => Navigator.of(context).pop(false),
+  //             ),
+  //             TextButton(
+  //               child: const Text("Enviar"),
+  //               onPressed: () => Navigator.of(context).pop(true),
+  //             ),
+  //           ],
+  //         ),
+  //       );
+  //
+  //       if (confirmacion ?? false) {
+  //         if (context.mounted) {
+  //           showDialog(
+  //             context: context,
+  //             barrierDismissible: false,
+  //             builder: (context) => const AlertDialog(
+  //               backgroundColor: blanco,
+  //               title: Text("Enviando correo..."),
+  //               content: Column(
+  //                 mainAxisSize: MainAxisSize.min,
+  //                 children: [
+  //                   Text("Espere mientras se envía el correo."),
+  //                   SizedBox(height: 20),
+  //                   CircularProgressIndicator(),
+  //                 ],
+  //               ),
+  //             ),
+  //           );
+  //         }
+  //
+  //         await enviarCorreoResend();
+  //         final html = redenciones.generarTextoHtml();
+  //         await subirHtmlCorreoADocumentoSolicitudRedenciones(
+  //           idDocumento: widget.idDocumento,
+  //           htmlContent: html,
+  //         );
+  //
+  //         const urlApp = "https://www.tuprocesoya.com";
+  //         final numeroSeguimiento = redenciones.numeroSeguimiento;
+  //
+  //         if (context.mounted) {
+  //           Navigator.of(context).pop(); // Cerrar loading
+  //
+  //           final enviar = await showDialog<bool>(
+  //             context: context,
+  //             builder: (context) => AlertDialog(
+  //               backgroundColor: blanco,
+  //               title: const Text("¿Enviar Notificación?"),
+  //               content: const Text("¿Deseas notificar al usuario del envío del correo por WhatsApp?"),
+  //               actions: [
+  //                 TextButton(
+  //                   onPressed: () => Navigator.of(context).pop(false),
+  //                   child: const Text("No"),
+  //                 ),
+  //                 TextButton(
+  //                   onPressed: () => Navigator.of(context).pop(true),
+  //                   child: const Text("Sí, enviar"),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //
+  //           if (enviar == true) {
+  //             final celulartWhatsApp = "+57${userData!.celularWhatsapp}";
+  //             final mensaje = Uri.encodeComponent(
+  //                 "Hola *${userData!.nombreAcudiente}*,\n\n"
+  //                     "Hemos enviado tu solicitud de redenciones número *$numeroSeguimiento* a la autoridad competente.\n\n"
+  //                     "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder.\n\n"
+  //                     "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes redenciones. Allí podrás ver el correo enviado:\n$urlApp\n\n"
+  //                     "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
+  //             );
+  //             final link = "https://wa.me/$celulartWhatsApp?text=$mensaje";
+  //             await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
+  //           }
+  //           if(context.mounted){
+  //             showDialog(
+  //               context: context,
+  //               builder: (context) => AlertDialog(
+  //                 title: const Text("Envío de copia al centro penitenciario"),
+  //                 content: SizedBox(
+  //                   width: MediaQuery.of(context).size.width * 0.8,
+  //                   child: SeleccionarCorreoCentroReclusion(
+  //                     idUser: widget.idUser,
+  //                     onEnviarCorreo: (correoDestino) async {
+  //                       BuildContext? dialogContext;
+  //
+  //                       showDialog(
+  //                         context: context,
+  //                         barrierDismissible: false,
+  //                         builder: (ctx) {
+  //                           dialogContext = ctx;
+  //                           return const AlertDialog(
+  //                             backgroundColor: blanco,
+  //                             title: Text("Enviando..."),
+  //                             content: Column(
+  //                               mainAxisSize: MainAxisSize.min,
+  //                               children: [
+  //                                 Text("Por favor espera mientras se envía el correo."),
+  //                                 SizedBox(height: 20),
+  //                                 CircularProgressIndicator(),
+  //                               ],
+  //                             ),
+  //                           );
+  //                         },
+  //                       );
+  //
+  //                       try {
+  //                         correoSeleccionado = correoDestino;
+  //                         await enviarCorreoResend(
+  //                           asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
+  //                           prefacioHtml: """
+  //                         <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
+  //                         <hr>
+  //                       """,
+  //                         );
+  //
+  //                         if (context.mounted) {
+  //                           Navigator.of(dialogContext!).pop();
+  //                           await showDialog(
+  //                             context: context,
+  //                             builder: (_) => AlertDialog(
+  //                               backgroundColor: blanco,
+  //                               title: const Text("✅ Envío exitoso"),
+  //                               content: const Text("El correo fue enviado correctamente al centro de reclusión."),
+  //                               actions: [
+  //                                 TextButton(
+  //                                   onPressed: () => Navigator.of(context).pop(),
+  //                                   child: const Text("Aceptar"),
+  //                                 ),
+  //                               ],
+  //                             ),
+  //                           );
+  //                           Navigator.pushReplacementNamed(context, 'historial_solicitudes_redenciones_admin');
+  //                         }
+  //                       } catch (e) {
+  //                         if (context.mounted) {
+  //                           Navigator.of(dialogContext!).pop();
+  //                           ScaffoldMessenger.of(context).showSnackBar(
+  //                             SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
+  //                           );
+  //                         }
+  //                       }
+  //                     },
+  //                   ),
+  //                 ),
+  //               ),
+  //             );
+  //           }
+  //         }
+  //       }
+  //     },
+  //     child: const Text("Enviar por correo"),
+  //   );
+  // }
 
 
 
