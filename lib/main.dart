@@ -58,6 +58,7 @@ import 'Pages/bloqueado_page/bloqueado.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
+import 'Pages/client/historial_solicitudes_apelacion/historial_solicitudes_apelacion.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 import 'Pages/client/historial_solicitudes_extincion_pena/historial_solicitudes_extincion_pena.dart';
 import 'Pages/client/historial_solicitudes_libertad_condicional/historial_solicitudes_libertad_condicional.dart';
@@ -75,6 +76,7 @@ import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
 import 'Pages/client/otras_solicitudes/solicitud_acumulacion.dart';
+import 'Pages/client/otras_solicitudes/solicitud_apelacion.dart';
 import 'Pages/client/otras_solicitudes/solicitud_redenciones.dart';
 import 'Pages/client/otras_solicitudes/solicitud_traslado_proceso.dart';
 import 'Pages/client/preguntas_frecuentes_page/preguntas_frecuentes_page.dart';
@@ -92,6 +94,7 @@ import 'Pages/client/solicitudes_beneficios/solicitud_libertad_condicional.dart'
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
 import 'Pages/configuraciones/configuraciones.dart';
+import 'Pages/detalle_de_correo_page/detalle_correo_apelacion.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_condicional.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_domiciliaria.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_extincion_pena.dart';
@@ -230,6 +233,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_traslado_proceso': (context) => const HistorialSolicitudesTrasladoProcesoPage(),
         'historial_solicitudes_redenciones': (context) => const HistorialSolicitudesRedencionesPage(),
         'historial_solicitudes_acumulacion': (context) => const HistorialSolicitudesAcumulacionPage(),
+        'historial_solicitudes_apelacion': (context) => const HistorialSolicitudesApelacionPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
@@ -245,6 +249,7 @@ class MyApp extends StatelessWidget {
         'solicitud_traslado_proceso_page': (context) => const SolicitudTrasladoProcesoPage(),
         'solicitud_redenciones_page': (context) => const SolicitudRedencionPage(),
         'solicitud_acumulacion_page': (context) => const SolicitudAcumulacionPenasPage(),
+        'solicitud_apelacion_page': (context) => const SolicitudApelacionPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
         'info_previa_72h_page': (context) => const RequisitosPermiso72hPage(),
@@ -736,7 +741,15 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
-
+          else if (settings.name == 'detalle_correo_apelacion') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoApelacionPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
           else if (settings.name == '/checkout_wompi') {
             final args = settings.arguments as Map<String, dynamic>;
 

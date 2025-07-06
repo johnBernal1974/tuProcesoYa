@@ -36,7 +36,13 @@ class SolicitarServiciosPage extends StatelessWidget {
       "icon": Icons.join_left_sharp,
       "route": "solicitud_acumulacion_page",
     },
+    {
+      "title": "Solicitud de apelación",
+      "icon": Icons.rate_review, // Puedes cambiar el ícono si prefieres otro
+      "route": "solicitud_apelacion_page",
+    },
   ];
+
 
   @override
   Widget build(BuildContext context) {

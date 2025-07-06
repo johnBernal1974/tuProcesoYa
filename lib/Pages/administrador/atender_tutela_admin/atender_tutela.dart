@@ -821,6 +821,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
   /// 🎉 Nuevo Widget (Columna extra en PC, o debajo en móvil)
   Widget _buildExtraWidget() {
     bool estaEnReclusion = userData?.situacion?.toLowerCase() == "en reclusión";
+    String? situacion = userData?.situacion;
 
     if (userData == null) {
       return const Center(child: CircularProgressIndicator()); // 🔹 Muestra un loader mientras `userData` se carga
@@ -847,21 +848,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
                 style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
               ),
             ),
-          const SizedBox(height: 10),
-          if (userData!.situacion == "En Prisión domiciliaria" ||
-              userData!.situacion == "En libertad condicional")
-          Column(
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text("Lugar donde se esta cumpliendo el beneficio", style: TextStyle( fontSize: 12, color: Colors.black87)),
-              Text('${userData?.direccion}, ${userData?.municipio ?? "Sin info"}, '
-                  '${userData?.departamento}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)
-              ),
-              const Divider(color: primary, height: 1,)
-            ],
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 20),
           const Text("Datos generales del PPL", style: TextStyle(
               fontWeight: FontWeight.w900, fontSize: 24
           ),),
@@ -891,18 +878,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             ],
           ),
           const SizedBox(height: 15),
-          // if (estaEnReclusion) ...[
-          //   const Divider(color: primary),
-          //   const SizedBox(height: 10),
-          //   const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //   Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-          //   const SizedBox(height: 10),
-          //   const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //   correoConBoton('Principal', correosCentro['correo_principal']),
-          //   correoConBoton('Director', correosCentro['correo_direccion']),
-          //   correoConBoton('Jurídica', correosCentro['correo_juridica']),
-          //   correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-          // ],
 
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
@@ -925,16 +900,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
           ),
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
-          SelectorCorreoManualFlexible(
-            entidadSeleccionada: entidad, // ← tu variable ya existente
-            onCorreoValidado: (correo, entidad) {
-              setState(() {
-                correoSeleccionado = correo;
-                nombreCorreoSeleccionado = "Manual";
-                this.entidad = entidad;
-              });
-            },
-          ),
+          const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -969,29 +935,29 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
               ),
             ],
           ),
-          // if(userData!.situacion == "En Reclusión")
-          //   Column(
-          //     children: [
-          //       Row(
-          //         children: [
-          //           const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //           Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          //         ],
-          //       ),
-          //       Row(
-          //         children: [
-          //           const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //           Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          //         ],
-          //       ),
-          //       Row(
-          //         children: [
-          //           const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //           Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          //         ],
-          //       ),
-          //     ],
-          //   ),
+          if(userData!.situacion == "En Reclusión")
+            Column(
+              children: [
+                Row(
+                  children: [
+                    const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ],
+            ),
           const SizedBox(height: 15),
           const Text("Datos del Acudiente", style: TextStyle(
               fontWeight: FontWeight.w900,
@@ -1028,12 +994,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
               Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
-          // Row(
-          //   children: [
-          //     const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //     Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          //   ],
-          // ),
           const SizedBox(height: 15),
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.idUser),
@@ -1043,35 +1003,171 @@ class _AtenderDerechoPeticionPageState extends State<AtenderTutelaPage> {
             },
           ),
           const SizedBox(height: 20),
-          Column(
-            children: [
-              if(userData!.situacion == "En Reclusión")
-                _buildBenefitCard(
-                  title: 'Permiso Administrativo de 72 horas',
-                  condition: porcentajeEjecutado >= 33.33,
-                  remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                ),
-              if(userData!.situacion == "En Reclusión")
-                _buildBenefitCard(
-                  title: 'Prisión Domiciliaria',
-                  condition: porcentajeEjecutado >= 50,
-                  remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                ),
-              if(userData!.situacion == "En Reclusión" || userData!.situacion == "En Prisión domiciliaria")
-                _buildBenefitCard(
-                  title: 'Libertad Condicional',
-                  condition: porcentajeEjecutado >= 60,
-                  remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                ),
-              _buildBenefitCard(
-                title: 'Extinción de la Pena',
-                condition: porcentajeEjecutado >= 100,
-                remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
-            ],
+
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final esPantallaAncha = constraints.maxWidth > 700; // Ajusta el ancho según necesidad
+
+              if (esPantallaAncha) {
+                // ✅ En PC: todas en una fila
+                return Card(
+                  color: Colors.white,
+                  surfaceTintColor: blanco,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        if (situacion == "En Reclusión") ...[
+                          _buildBenefitMinimalSection(
+                            titulo: "72 Horas",
+                            condition: porcentajeEjecutado >= 33.33,
+                            remainingTime: _calcularDias(33),
+                          ),
+                          const SizedBox(width: 16),
+                          _buildBenefitMinimalSection(
+                            titulo: "Domiciliaria",
+                            condition: porcentajeEjecutado >= 50,
+                            remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                          ),
+                          const SizedBox(width: 16),
+                        ],
+                        _buildBenefitMinimalSection(
+                          titulo: "Condicional",
+                          condition: porcentajeEjecutado >= 60,
+                          remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                        ),
+                        const SizedBox(width: 16),
+                        _buildBenefitMinimalSection(
+                          titulo: "Extinción",
+                          condition: porcentajeEjecutado >= 100,
+                          remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              } else {
+                // ✅ En móvil: dos columnas como antes
+                return Card(
+                  color: Colors.white,
+                  surfaceTintColor: blanco,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Primera columna
+                        Expanded(
+                          child: Column(
+                            children: [
+                              if (situacion == "En Reclusión")
+                                _buildBenefitMinimalSection(
+                                  titulo: "72 Horas",
+                                  condition: porcentajeEjecutado >= 33.33,
+                                  remainingTime: _calcularDias(33),
+                                ),
+                              _buildBenefitMinimalSection(
+                                titulo: "Condicional",
+                                condition: porcentajeEjecutado >= 60,
+                                remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Segunda columna
+                        Expanded(
+                          child: Column(
+                            children: [
+                              if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
+                                if (situacion == "En Reclusión")
+                                  _buildBenefitMinimalSection(
+                                    titulo: "Domiciliaria",
+                                    condition: porcentajeEjecutado >= 50,
+                                    remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                                  ),
+                              _buildBenefitMinimalSection(
+                                titulo: "Extinción",
+                                condition: porcentajeEjecutado >= 100,
+                                remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 50),
         ],
+      ),
+    );
+  }
+
+  int _calcularDias(int metaPorcentaje) {
+    final diferencia = porcentajeEjecutado - metaPorcentaje;
+    return (diferencia.abs() / 100 * tiempoCondena * 30).round();
+  }
+
+  Widget _buildBenefitMinimalSection({
+    required String titulo,
+    required bool condition,
+    required int remainingTime,
+  }) {
+    return Card(
+      color: Colors.white,
+      surfaceTintColor: blanco,
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: condition ? Colors.green.shade700 : Colors.red.shade700, // Borde dinámico
+          width: 2.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              titulo,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              condition
+                  ? "Hace $remainingTime días"
+                  : "Faltan $remainingTime días",
+              style: TextStyle(
+                color: condition ? Colors.green.shade700 : Colors.red.shade700,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

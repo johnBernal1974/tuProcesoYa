@@ -68,6 +68,12 @@ class HistorialSolicitudesPage extends StatelessWidget {
       "icon": Icons.join_left_sharp,
       "route": "historial_solicitudes_acumulacion",
     },
+    {
+      "collection": "apelacion_solicitados",
+      "title": "Solicitud\nde apelación",
+      "icon": Icons.rate_review,
+      "route": "historial_solicitudes_apelacion",
+    },
   ];
 
   Future<List<Map<String, dynamic>>> _obtenerSolicitudes(String userId) async {

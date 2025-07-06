@@ -17,6 +17,9 @@ const { onSchedule } = require("firebase-functions/v2/scheduler");
 
 const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
 const WOMPI_INTEGRITY_SECRET = defineSecret("WOMPI_INTEGRITY_SECRET");
+const WOMPI_PUBLIC_KEY_SANDBOX = defineSecret("WOMPI_PUBLIC_KEY_SANDBOX");
+const WOMPI_INTEGRITY_SECRET_SANDBOX = defineSecret("WOMPI_INTEGRITY_SECRET_SANDBOX");
+
 const axios = require("axios");
 
 
@@ -172,7 +175,7 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
       await userRef.update({ isPaid: true });
     }
 
-    if (["recarga", "peticion", "condicional", "domiciliaria", "tutela", "permiso", "extincion", "traslado", "redenciones", "acumulacion"].includes(tipoTransaccion) && status === "APPROVED") {
+    if (["recarga", "peticion", "condicional", "domiciliaria", "tutela", "permiso", "extincion", "traslado", "redenciones", "acumulacion", "apelacion"].includes(tipoTransaccion) && status === "APPROVED") {
       await userRef.update({ saldo: nuevoSaldo });
     }
 
@@ -185,7 +188,7 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
 
 exports.wompiCheckoutUrl = onRequest({
   cors: true,
-  secrets: ["WOMPI_PUBLIC_KEY", "WOMPI_INTEGRITY_SECRET"],
+  secrets: ["WOMPI_PUBLIC_KEY", "WOMPI_INTEGRITY_SECRET", "WOMPI_PUBLIC_KEY_SANDBOX", "WOMPI_INTEGRITY_SECRET_SANDBOX"],
 }, async (req, res) => {
   try {
     console.log("📥 Headers:", req.headers);
@@ -207,13 +210,38 @@ exports.wompiCheckoutUrl = onRequest({
       return res.status(400).json({ error: "El monto debe ser un número entero en centavos" });
     }
 
-    if (!WOMPI_PUBLIC_KEY.value() || !WOMPI_INTEGRITY_SECRET.value()) {
+    const moneda = "COP";
+
+    // 🚩 Extraer el userId de la referencia (ej: "apelacion_userId_uuid")
+    const referenceParts = referencia.split("_");
+    let userId = referenceParts.length >= 2 ? referenceParts[1] : null;
+
+    console.log("✅ userId detectado:", userId);
+
+    // 🚩 Validar que las variables existan
+    if (
+      !WOMPI_PUBLIC_KEY.value() ||
+      !WOMPI_INTEGRITY_SECRET.value() ||
+      !WOMPI_PUBLIC_KEY_SANDBOX.value() ||
+      !WOMPI_INTEGRITY_SECRET_SANDBOX.value()
+    ) {
       return res.status(500).json({ error: "Variables de entorno no configuradas" });
     }
 
-    const moneda = "COP";
-    const publicKey = WOMPI_PUBLIC_KEY.value().replace(/"/g, "");
-    const cadena = `${referencia}${monto}${moneda}${WOMPI_INTEGRITY_SECRET.value()}`;
+    let publicKey;
+    let integritySecret;
+
+    // 🚩 Verifica si es un userId específico que quieres enviar a sandbox
+    if (userId === "KT9nShnvD0PztXyoZx6VB3aLtDi1") {
+      console.log("🚧 Usando credenciales SANDBOX para este usuario");
+      publicKey = WOMPI_PUBLIC_KEY_SANDBOX.value().replace(/"/g, "");
+      integritySecret = WOMPI_INTEGRITY_SECRET_SANDBOX.value();
+    } else {
+      publicKey = WOMPI_PUBLIC_KEY.value().replace(/"/g, "");
+      integritySecret = WOMPI_INTEGRITY_SECRET.value();
+    }
+
+    const cadena = `${referencia}${monto}${moneda}${integritySecret}`;
     const firma = crypto.createHash("sha256").update(cadena).digest("hex");
 
     const queryParams = new URLSearchParams({
@@ -234,6 +262,7 @@ exports.wompiCheckoutUrl = onRequest({
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
+
 
 const pdf = require("html-pdf-node");
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:tuprocesoya/commons/wompi/pago_exitoso_apelacion.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_extiocion_pena.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_apelacion.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 // Importa todas las páginas de éxito y reintento...
@@ -188,6 +190,15 @@ class _WompiWebViewState extends State<WompiWebView> {
             widget.onTransaccionAprobada?.call();
           },
         );
+      case 'apelacion':
+        return PagoExitosoApelacionPage(
+          montoPagado: monto,
+          transaccionId: id,
+          fecha: fecha,
+          onContinuar: () async {
+            widget.onTransaccionAprobada?.call();
+          },
+        );
       default:
         return const Scaffold(
           body: Center(
@@ -265,6 +276,12 @@ class _WompiWebViewState extends State<WompiWebView> {
 
       case 'acumulacion':
         return ReintentoPagoAcumulacionPenasPage(
+          referencia: widget.referencia,
+          valor: widget.valorDerecho,
+          onTransaccionAprobada: widget.onTransaccionAprobada,
+        );
+      case 'apelacion':
+        return ReintentoPagoApelacionPage(
           referencia: widget.referencia,
           valor: widget.valorDerecho,
           onTransaccionAprobada: widget.onTransaccionAprobada,
