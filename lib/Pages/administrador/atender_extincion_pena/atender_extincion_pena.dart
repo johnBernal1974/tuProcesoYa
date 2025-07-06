@@ -19,7 +19,9 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
+import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
+import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
 import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
@@ -683,6 +685,7 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
   /// 🎉 Nuevo Widget (Columna extra en PC, o debajo en móvil)
   Widget _buildExtraWidget() {
     bool estaEnReclusion = userData?.situacion?.toLowerCase() == "en reclusión";
+    String? situacion = userData?.situacion;
 
     if (userData == null) {
       return const Center(child: CircularProgressIndicator()); // 🔹 Muestra un loader mientras `userData` se carga
@@ -761,18 +764,6 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
           ),
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
-          const SizedBox(height: 20),
-          SelectorCorreoManualFlexible(
-            entidadSeleccionada: entidad, // ← tu variable ya existente
-            onCorreoValidado: (correo, entidad) {
-              setState(() {
-                correoSeleccionado = correo;
-                nombreCorreoSeleccionado = "Manual";
-                this.entidad = entidad;
-              });
-            },
-          ),
-
           const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,20 +852,12 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
               Text(userData!.celular, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
-
           Row(
             children: [
               const Text('WhatsApp:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
               Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
-
-          // Row(
-          //   children: [
-          //     const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-          //     Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-          //   ],
-          // ),
           const SizedBox(height: 15),
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.idUser),
@@ -884,35 +867,171 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
             },
           ),
           const SizedBox(height: 20),
-          Column(
-            children: [
-              if(userData!.situacion == "En Reclusión")
-                _buildBenefitCard(
-                  title: 'Permiso Administrativo de 72 horas',
-                  condition: porcentajeEjecutado >= 33.33,
-                  remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                ),
-              if(userData!.situacion == "En Reclusión")
-                _buildBenefitCard(
-                  title: 'Prisión Domiciliaria',
-                  condition: porcentajeEjecutado >= 50,
-                  remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                ),
-              if(userData!.situacion == "En Reclusión" || userData!.situacion == "En Prisión domiciliaria")
-                _buildBenefitCard(
-                  title: 'Libertad Condicional',
-                  condition: porcentajeEjecutado >= 60,
-                  remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                ),
-              _buildBenefitCard(
-                title: 'Extinción de la Pena',
-                condition: porcentajeEjecutado >= 100,
-                remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
-            ],
+
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final esPantallaAncha = constraints.maxWidth > 700; // Ajusta el ancho según necesidad
+
+              if (esPantallaAncha) {
+                // ✅ En PC: todas en una fila
+                return Card(
+                  color: Colors.white,
+                  surfaceTintColor: blanco,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        if (situacion == "En Reclusión") ...[
+                          _buildBenefitMinimalSection(
+                            titulo: "72 Horas",
+                            condition: porcentajeEjecutado >= 33.33,
+                            remainingTime: _calcularDias(33),
+                          ),
+                          const SizedBox(width: 16),
+                          _buildBenefitMinimalSection(
+                            titulo: "Domiciliaria",
+                            condition: porcentajeEjecutado >= 50,
+                            remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                          ),
+                          const SizedBox(width: 16),
+                        ],
+                        _buildBenefitMinimalSection(
+                          titulo: "Condicional",
+                          condition: porcentajeEjecutado >= 60,
+                          remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                        ),
+                        const SizedBox(width: 16),
+                        _buildBenefitMinimalSection(
+                          titulo: "Extinción",
+                          condition: porcentajeEjecutado >= 100,
+                          remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              } else {
+                // ✅ En móvil: dos columnas como antes
+                return Card(
+                  color: Colors.white,
+                  surfaceTintColor: blanco,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  elevation: 2,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Primera columna
+                        Expanded(
+                          child: Column(
+                            children: [
+                              if (situacion == "En Reclusión")
+                                _buildBenefitMinimalSection(
+                                  titulo: "72 Horas",
+                                  condition: porcentajeEjecutado >= 33.33,
+                                  remainingTime: _calcularDias(33),
+                                ),
+                              _buildBenefitMinimalSection(
+                                titulo: "Condicional",
+                                condition: porcentajeEjecutado >= 60,
+                                remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        // Segunda columna
+                        Expanded(
+                          child: Column(
+                            children: [
+                              if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
+                                if (situacion == "En Reclusión")
+                                  _buildBenefitMinimalSection(
+                                    titulo: "Domiciliaria",
+                                    condition: porcentajeEjecutado >= 50,
+                                    remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                                  ),
+                              _buildBenefitMinimalSection(
+                                titulo: "Extinción",
+                                condition: porcentajeEjecutado >= 100,
+                                remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+            },
           ),
           const SizedBox(height: 50),
         ],
+      ),
+    );
+  }
+
+  int _calcularDias(int metaPorcentaje) {
+    final diferencia = porcentajeEjecutado - metaPorcentaje;
+    return (diferencia.abs() / 100 * tiempoCondena * 30).round();
+  }
+
+  Widget _buildBenefitMinimalSection({
+    required String titulo,
+    required bool condition,
+    required int remainingTime,
+  }) {
+    return Card(
+      color: Colors.white,
+      surfaceTintColor: blanco,
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: condition ? Colors.green.shade700 : Colors.red.shade700, // Borde dinámico
+          width: 2.5,
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              titulo,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+                color: Colors.black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              condition
+                  ? "Hace $remainingTime días"
+                  : "Faltan $remainingTime días",
+              style: TextStyle(
+                color: condition ? Colors.green.shade700 : Colors.red.shade700,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1316,64 +1435,6 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     );
   }
 
-  Widget _buildBenefitCard({required String title, required bool condition, required int remainingTime}) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        side: BorderSide(color: condition ? Colors.green : Colors.red, width: 1),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      elevation: 3,
-      color: condition ? Colors.green : Colors.red.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Row(
-          children: [
-            Icon(
-              condition ? Icons.notifications : Icons.access_time, // Cambia a reloj si la tarjeta es roja
-              color: condition ? Colors.white : Colors.black, // Negro si la tarjeta es roja
-              size: 24,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: condition
-                          ? 'Se ha completado el tiempo establecido para acceder al beneficio de '
-                          : 'Aún no se puede acceder a ',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: condition ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    TextSpan(
-                      text: title, // Texto en negrilla
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold, // Negrilla
-                        color: condition ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    if (!condition) // Solo agregar este texto si la condición es falsa
-                      TextSpan(
-                        text: '. Faltan $remainingTime días para completar el tiempo establecido.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: condition ? Colors.white : Colors.black,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-
   // corregido full
   Future<void> cargarSinopsis(String docId) async {
     try {
@@ -1686,7 +1747,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({String? asuntoPersonalizado, String? prefacioHtml}) async {
+  Future<void> enviarCorreoResend({required String correoDestino, String? asuntoPersonalizado, String? prefacioHtml}) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -1738,7 +1799,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     }
 
     final body = jsonEncode({
-      "to": correoSeleccionado,
+      "to": correoDestino,
       "cc": correosCC,
       "subject": asuntoCorreo,
       "html": mensajeHtml,
@@ -1785,11 +1846,11 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
         foregroundColor: Colors.black,
       ),
       onPressed: () async {
-        if (correoSeleccionado!.isEmpty) {
+        if (correoSeleccionado == null || correoSeleccionado!.isEmpty) {
           await showDialog(
             context: context,
             builder: (context) => AlertDialog(
-              backgroundColor: blanco,
+              backgroundColor: Colors.white,
               title: const Text("Aviso"),
               content: const Text("No se ha seleccionado un correo electrónico."),
               actions: [
@@ -1803,170 +1864,64 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
           return;
         }
 
-        final confirmacion = await showDialog<bool>(
+        // Crear la instancia
+        final envioCorreoManager = EnvioCorreoManager();
+
+        // Llamar al método
+        await envioCorreoManager.enviarCorreoCompleto(
           context: context,
-          builder: (context) => AlertDialog(
-            backgroundColor: blanco,
-            title: const Text("Confirmación"),
-            content: Text("Se enviará el correo a:\n$correoSeleccionado"),
-            actions: [
-              TextButton(
-                child: const Text("Cancelar"),
-                onPressed: () => Navigator.of(context).pop(false),
-              ),
-              TextButton(
-                child: const Text("Enviar"),
-                onPressed: () => Navigator.of(context).pop(true),
-              ),
-            ],
-          ),
+          correoDestinoPrincipal: correoSeleccionado!,
+          html: extincionPena.generarTextoHtml(),
+          numeroSeguimiento: extincionPena.numeroSeguimiento,
+          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+          celularWhatsapp: userData?.celularWhatsapp,
+          rutaHistorial: 'historial_solicitudes_extincion_pena_admin',
+          nombreServicio: "Extinción de la Pena",
+          idDocumentoPpl: widget.idUser,
+          enviarCorreoResend: ({
+            required String correoDestino,
+            String? asuntoPersonalizado,
+            String? prefacioHtml,
+          }) async {
+            await enviarCorreoResend(
+              correoDestino: correoDestino,
+              asuntoPersonalizado: asuntoPersonalizado,
+              prefacioHtml: prefacioHtml,
+            );
+          },
+          subirHtml: () async {
+            await subirHtmlCorreoADocumentoExtincionPena(
+              idDocumento: widget.idDocumento,
+              htmlContent: extincionPena.generarTextoHtml(),
+            );
+          },
+          buildSelectorCorreoCentroReclusion: ({
+            required Function(String correo, String nombreCentro) onEnviarCorreo,
+            required Function() onOmitir,
+          }) {
+            return SeleccionarCorreoCentroReclusionV2(
+              idUser: widget.idUser,
+              onEnviarCorreo: onEnviarCorreo,
+              onOmitir: onOmitir,
+            );
+          },
+          buildSelectorCorreoReparto: ({
+            required Function(String correo, String entidad) onCorreoValidado,
+            required Function(String nombreCiudad) onCiudadNombreSeleccionada,
+            required Function(String correo, String entidad) onEnviarCorreoManual,
+            required Function() onOmitir,
+          }) {
+            return SelectorCorreoManualFlexible(
+              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+              onCorreoValidado: onCorreoValidado,
+              onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
+              onEnviarCorreoManual: onEnviarCorreoManual,
+              onOmitir: () {
+                Navigator.of(context).pop();
+              },
+            );
+          },
         );
-
-        if (confirmacion ?? false) {
-          setState(() {
-            sinopsis = _sinopsisController.text.trim();
-            consideraciones = _consideracionesController.text.trim();
-            fundamentosDeDerecho = _fundamentosDerechoController.text.trim();
-            pretenciones = _pretencionesController.text.trim();
-          });
-
-          if (context.mounted) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => const AlertDialog(
-                backgroundColor: blanco,
-                title: Text("Enviando correo..."),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text("Espere mientras se envía el correo."),
-                    SizedBox(height: 20),
-                    CircularProgressIndicator(),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          await enviarCorreoResend();
-          final html = extincionPena.generarTextoHtml();
-          await subirHtmlCorreoADocumentoExtincionPena(
-            idDocumento: widget.idDocumento,
-            htmlContent: html,
-          );
-
-          const urlApp = "https://www.tuprocesoya.com";
-          final numeroSeguimiento = extincionPena.numeroSeguimiento;
-
-          if (context.mounted) {
-            Navigator.of(context).pop(); // cerrar loading
-
-            final enviar = await showDialog<bool>(
-              context: context,
-              builder: (context) => AlertDialog(
-                backgroundColor: blanco,
-                title: const Text("¿Enviar Notificación?"),
-                content: const Text("¿Deseas notificar al usuario del envío del correo por WhatsApp?"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: const Text("No"),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: const Text("Sí, enviar"),
-                  ),
-                ],
-              ),
-            );
-
-            if (enviar == true) {
-              final celulartWhatsApp = "+57${userData!.celularWhatsapp}";
-              final mensaje = Uri.encodeComponent(
-                  "Hola *${userData!.nombreAcudiente}*,\n\n"
-                      "Hemos enviado tu solicitud de extinción de la pena número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                      "Recuerda que la entidad tiene un tiempo aproximado de 20 días hábiles para responder.\n\n"
-                      "Ingresa a la aplicación / menú / Historiales / Tus Solicitudes extinción de la pena.\n$urlApp\n\n"
-                      "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
-              );
-              final link = "https://wa.me/$celulartWhatsApp?text=$mensaje";
-              await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
-            }
-            if(context.mounted){
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text("Envío de copia al centro penitenciario"),
-                  content: SizedBox(
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    child: SeleccionarCorreoCentroReclusion(
-                      idUser: widget.idUser,
-                      onEnviarCorreo: (correoDestino) async {
-                        BuildContext? dialogContext;
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (ctx) {
-                            dialogContext = ctx;
-                            return const AlertDialog(
-                              backgroundColor: blanco,
-                              title: Text("Enviando..."),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text("Por favor espera mientras se envía el correo."),
-                                  SizedBox(height: 20),
-                                  CircularProgressIndicator(),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-
-                        try {
-                          correoSeleccionado = correoDestino;
-                          await enviarCorreoResend(
-                            asuntoPersonalizado: "Copia enviada al centro de reclusión - $numeroSeguimiento",
-                            prefacioHtml: """
-                          <p><strong>📌 Nota:</strong> Esta es una copia informativa del correo previamente enviado a la autoridad competente.</p>
-                          <hr>
-                        """,
-                          );
-                          if (context.mounted) {
-                            Navigator.of(dialogContext!).pop();
-                            await showDialog(
-                              context: context,
-                              builder: (_) => AlertDialog(
-                                backgroundColor: blanco,
-                                title: const Text("✅ Envío exitoso"),
-                                content: const Text("El correo fue enviado correctamente al centro de reclusión."),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.of(context).pop(),
-                                    child: const Text("Aceptar"),
-                                  ),
-                                ],
-                              ),
-                            );
-                            Navigator.pushReplacementNamed(context, 'historial_solicitudes_extincion_pena_admin');
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            Navigator.of(dialogContext!).pop();
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text("Error al reenviar: $e"), backgroundColor: Colors.red),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ),
-                ),
-              );
-            }
-          }
-        }
       },
       child: const Text("Enviar por correo"),
     );
