@@ -55,6 +55,7 @@ class _HomePageState extends State<HomePage> {
   int? _valorConDescuento;
 
 
+
   @override
   void initState() {
     super.initState();
@@ -399,6 +400,7 @@ class _HomePageState extends State<HomePage> {
     return SizedBox(
       child: Card(
         surfaceTintColor: blanco,
+        shadowColor: blanco,
         elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -411,19 +413,10 @@ class _HomePageState extends State<HomePage> {
             children: [
               const SizedBox(height: 10),
               const Text(
-                "¡Felicidades!",
+                "Tu cuenta ha sido activada exitosamente.",
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
-                  color: primary,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const Text(
-                "Tu cuenta ha sido activada exitosamente.",
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
                   color: Colors.black87,
                 ),
                 textAlign: TextAlign.center,
@@ -443,26 +436,62 @@ class _HomePageState extends State<HomePage> {
                     textAlign: TextAlign.justify,
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    "Pasado este tiempo perderás el acceso a la plataforma.",
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.redAccent,
-                      height: 1.3,
+                  // const Text(
+                  //   "Pasado este tiempo perderás el acceso a la plataforma.",
+                  //   style: TextStyle(
+                  //     fontSize: 12,
+                  //     fontWeight: FontWeight.w500,
+                  //     color: Colors.redAccent,
+                  //     height: 1.3,
+                  //   ),
+                  //   textAlign: TextAlign.justify,
+                  // ),
+                  // const SizedBox(height: 8),
+                  if (_tieneDescuento) ...[
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.green.shade200),
+                      ),
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/regalo.png',
+                            width: 32,
+                            height: 32,
+                          ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Text(
+                              "¡Tienes un 20% de descuento especial en tu suscripción!",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    textAlign: TextAlign.justify,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "Juntos logramos más. Activa tu suscripción ahora mismo por tan solo $formattedValue y mantén el respaldo que necesitas.",
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black87,
-                      height: 1.3,
+                  ],
+                  Align(
+                    alignment: Alignment.center, // 👈 centra horizontalmente
+                    child: Text(
+                      _tieneDescuento
+                          ? "Haz el pago ahora mismo y mantén el respaldo que necesitas."
+                          : "Activa tu suscripción ahora mismo por tan solo $formattedValue y mantén el respaldo que necesitas.",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                        height: 1.3,
+                      ),
+                      textAlign: TextAlign.center, // 👈 también importante para centrar el contenido del texto
                     ),
-                    textAlign: TextAlign.justify,
                   )
                 ],
               ),
@@ -522,6 +551,7 @@ class _HomePageState extends State<HomePage> {
                         await showDialog(
                           context: context,
                           builder: (_) => AlertDialog(
+                            backgroundColor: blanco,
                             title: const Text("¡Felicidades!", style: TextStyle(fontWeight: FontWeight.bold)),
                             content: CardDescuento(valorDescuento: descuento),
                             actions: [
@@ -561,7 +591,7 @@ class _HomePageState extends State<HomePage> {
                                     ),
                                   );
                                 },
-                                child: const Text("Continuar"),
+                                child: const Text("Continuar", style: TextStyle(color: blanco)),
                               ),
                             ],
                           ),
@@ -794,7 +824,7 @@ class _HomePageState extends State<HomePage> {
         if (_descuentoCargado && _tieneDescuento) ...[
           const SizedBox(height: 20),
           Card(
-            color: Colors.green.shade50,
+            color: blanco,
             margin: const EdgeInsets.symmetric(horizontal: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -873,6 +903,10 @@ class _HomePageState extends State<HomePage> {
                 user.uid,
                 valorSuscripcionOriginal,
               );
+              setState(() {
+                _valorConDescuento = valorSuscripcion;
+                _tieneDescuento = tieneDescuento;
+              });
 
               if (context.mounted) {
                 if (tieneDescuento) {

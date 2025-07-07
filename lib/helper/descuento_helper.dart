@@ -3,6 +3,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../src/colors/colors.dart';
+
 class DescuentoHelper {
   /// Verifica si el usuario tiene derecho a descuento por referido
   static Future<bool> tieneDescuento(String uid) async {
@@ -34,7 +36,7 @@ class CardDescuento extends StatelessWidget {
     final formatter = NumberFormat("#,###", "es_CO");
 
     return Card(
-      color: Colors.green.shade50,
+      color: blanco,
       elevation: 4,
       margin: const EdgeInsets.symmetric(vertical: 10),
       shape: RoundedRectangleBorder(

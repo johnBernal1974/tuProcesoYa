@@ -62,14 +62,14 @@ class _SideBarState extends State<SideBar> {
     final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(
         userId).get();
     if (userDoc.exists) {
-      final Timestamp? fechaRegistro = userDoc.data()?['fechaRegistro'];
+      final Timestamp? fechaActivacion = userDoc.data()?['fechaActivacion'];
       _isPaid.value = userDoc.data()?['isPaid'] ?? false;
-      await _validateTrialPeriod(fechaRegistro);
+      await _validateTrialPeriod(fechaActivacion);
     }
   }
 
-  Future<void> _validateTrialPeriod(Timestamp? fechaRegistro) async {
-    if (fechaRegistro == null) return;
+  Future<void> _validateTrialPeriod(Timestamp? fechaActivacion) async {
+    if (fechaActivacion == null) return;
 
     try {
       final configSnapshot = await FirebaseFirestore.instance
@@ -81,10 +81,10 @@ class _SideBarState extends State<SideBar> {
 
       final int tiempoDePrueba = configData?['tiempoDePrueba'] ?? 7;
 
-      final DateTime fechaRegistroDT = fechaRegistro.toDate();
+      final DateTime fechaActivacionDT = fechaActivacion.toDate();
       final DateTime fechaActual = DateTime.now();
       final int diasTranscurridos =
-          fechaActual.difference(fechaRegistroDT).inDays;
+          fechaActual.difference(fechaActivacionDT).inDays;
 
       setState(() {
         _isTrial = diasTranscurridos < tiempoDePrueba;
