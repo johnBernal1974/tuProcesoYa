@@ -31,6 +31,7 @@ class _SideBarState extends State<SideBar> {
   int solicitudesTutelas = 0;
   int solicitudesPeticion = 0;
   int solicitudesAcumulacion = 0;
+  int solicitudesApelacion = 0;
 
 
 
@@ -49,6 +50,7 @@ class _SideBarState extends State<SideBar> {
     _fetchTutelalicitados();
     _fetchExtincionlicitados();
     _fetchAcumulacionlicitados();
+    _fetchApelacionSolicitados();
   }
 
   Future<void> _loadData() async {
@@ -140,8 +142,6 @@ class _SideBarState extends State<SideBar> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -220,6 +220,7 @@ class _SideBarState extends State<SideBar> {
       });
     }
   }
+
   Future<void> _fetchCondicionaleSolicitados() async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('condicional_solicitados')
@@ -291,6 +292,7 @@ class _SideBarState extends State<SideBar> {
       });
     }
   }
+
   Future<void> _fetchAcumulacionlicitados() async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('acumulacion_solicitados')
@@ -299,6 +301,18 @@ class _SideBarState extends State<SideBar> {
     if (mounted) {
       setState(() {
         solicitudesAcumulacion = querySnapshot.docs.length;
+      });
+    }
+  }
+
+  Future<void> _fetchApelacionSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('apelacion_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesApelacion = querySnapshot.docs.length;
       });
     }
   }
@@ -333,7 +347,7 @@ class _SideBarState extends State<SideBar> {
           _buildDrawerTile(context, "Configuraciones", Icons.settings,
               'configuraciones'),
           ExpansionTile(
-            initiallyExpanded: true,
+            initiallyExpanded: false,
             leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
             title: const Text(
               "Historial de solicitudes",
@@ -440,6 +454,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_acumulacion_admin',
                   showBadge: solicitudesAcumulacion > 0,
                   contador: solicitudesAcumulacion,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Apelación",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_apelacion_admin',
+                  showBadge: solicitudesApelacion > 0,
+                  contador: solicitudesApelacion,
                 ),
               ),
             ],
@@ -581,6 +607,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_acumulacion_admin',
                   showBadge: solicitudesAcumulacion > 0,
                   contador: solicitudesAcumulacion,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Apelación",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_apelacion_admin',
+                  showBadge: solicitudesApelacion > 0,
+                  contador: solicitudesApelacion,
                 ),
               ),
             ],

@@ -34,7 +34,7 @@ class _DelitosAutocompleteWidgetState extends State<DelitosAutocompleteWidget> {
         "Sedición"
       ],
       "Delitos contra la vida y la integridad personal": [
-        "Aborto", "Feminicidio", "Homicidio", "Homicidio agravado", "Inducción al suicidio", "Lesiones personales", "Omisión de socorro", "Tentativa de homicidio",
+        "Aborto", "Feminicidio", "Homicidio", "Homicidio agravado", "Homicidio en concurso homogéneo",  "Inducción al suicidio", "Lesiones personales", "Omisión de socorro", "Tentativa de homicidio",
         "Tentativa de femenicidio",
       ],
       "Delitos contra personas y bienes protegidos por el DIH": [
