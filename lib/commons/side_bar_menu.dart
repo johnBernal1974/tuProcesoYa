@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuprocesoya/commons/wompi/checkout_page.dart';
 import '../../providers/auth_provider.dart';
+import '../Pages/client/mis_referidos/mis_referidos.dart';
 import '../src/colors/colors.dart';
 import 'admin_provider.dart';
 
@@ -148,39 +149,51 @@ class _SideBarState extends State<SideBar> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    List<Widget> drawerItems = _buildDrawerItems(context, _isAdmin, rol);
+    return FutureBuilder<bool>(
+      future: esReferidor(), // 👈 verificamos si es referidor
+      builder: (context, snapshot) {
+        final esReferidorActual = snapshot.data ?? false;
 
-    return Container(
-      decoration: const BoxDecoration(
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black38, // Sombra suave
-            offset: Offset(2, 0),   // A la derecha
-            blurRadius: 6,          // Difuminado
-          ),
-        ],
-      ),
-      child: Drawer(
-        elevation: 0, // Elevation en 0 ya que usamos BoxShadow
-        child: Container(
-          color: Colors.white,
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const SizedBox(height: 40),
-              _buildDrawerHeader(_isAdmin),
-              const Divider(height: 1, color: grisMedio),
-              ...drawerItems,
-              const Divider(height: 1, color: Colors.white70),
-              _buildLogoutTile(context),
-              const SizedBox(height: 20),
+        final drawerItems = _buildDrawerItems(
+          context,
+          _isAdmin,
+          rol,
+          esReferidor: esReferidorActual,
+        );
+
+        return Container(
+          decoration: const BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black38,
+                offset: Offset(2, 0),
+                blurRadius: 6,
+              ),
             ],
           ),
-        ),
-      ),
+          child: Drawer(
+            elevation: 0,
+            child: Container(
+              color: Colors.white,
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  const SizedBox(height: 40),
+                  _buildDrawerHeader(_isAdmin),
+                  const Divider(height: 1, color: grisMedio),
+                  ...drawerItems,
+                  const Divider(height: 1, color: Colors.white70),
+                  _buildLogoutTile(context),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
-
   }
+
 
 
   Future<void> _fetchPendingSuggestions() async {
@@ -331,12 +344,15 @@ class _SideBarState extends State<SideBar> {
     );
   }
 
-  List<Widget> _buildDrawerItems(BuildContext context, bool? isAdmin,
-      String? rol) {
+  List<Widget> _buildDrawerItems(
+      BuildContext context,
+      bool? isAdmin,
+      String? rol, {
+        bool esReferidor = false, // 👈 Esto permite que sea opcional
+      }) {
     List<Widget> items = [
       const SizedBox(height: 50),
     ];
-
     if (isAdmin == true) {
       // Para administradores, se muestran diferentes opciones según su rol.
       if (rol == "masterFull") {
@@ -780,6 +796,7 @@ class _SideBarState extends State<SideBar> {
         _buildDrawerTile(context, "Tus pagos", Icons.attach_money, 'mis_transacciones'),
         _buildDrawerTile(context, "Tus redenciones", Icons.double_arrow_rounded, 'mis_redenciones'),
         const Divider(height: 5, color: primary),
+
         // 🔥 Submenú "Información general"
         ExpansionTile(
           initiallyExpanded:false,
@@ -812,6 +829,34 @@ class _SideBarState extends State<SideBar> {
             context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
             'buzon_sugerencias'),
         _buildDrawerTile(context, "Preguntas frecuentes", Icons.question_mark, 'preguntas_frecuentes_page'),
+
+        const Divider(height: 5, color: primary),
+        if (esReferidor)
+          ListTile(
+            leading: const Icon(Icons.group, color: Colors.black54, size: 20),
+            title: const Text(
+              "Mis referidos",
+              style: TextStyle(color: Colors.black, fontSize: 13),
+            ),
+            onTap: () async {
+              final referidorId = await obtenerIdReferidorDesdeIdUser();
+              if (referidorId != null) {
+                if (context.mounted) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => MisReferidosPage(referidorId: referidorId),
+                    ),
+                  );
+                }
+              } else {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("No se encontraron referidos.")),
+                  );
+                }
+              }
+            },
+          ),
       ]);
     }
 
@@ -897,6 +942,23 @@ class _SideBarState extends State<SideBar> {
 
   }
 
+  Future<bool> esReferidor() async {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      print("UID es null");
+      return false;
+    }
+
+    final query = await FirebaseFirestore.instance
+        .collection('referidores')
+        .where('idUser', isEqualTo: userId)
+        .limit(1)
+        .get();
+
+    print("Referidor encontrado: ${query.docs.isNotEmpty}");
+    return query.docs.isNotEmpty;
+  }
+
 
   void _showPaymentDialog(BuildContext context) {
     showDialog(
@@ -967,6 +1029,24 @@ class _SideBarState extends State<SideBar> {
       },
     );
   }
+
+  Future<String?> obtenerIdReferidorDesdeIdUser() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return null;
+
+    final query = await FirebaseFirestore.instance
+        .collection('referidores')
+        .where('idUser', isEqualTo: uid)
+        .limit(1)
+        .get();
+
+    if (query.docs.isEmpty) {
+      return null; // No es referidor
+    }
+
+    return query.docs.first.id; // El ID del documento referidor
+  }
+
 
   Widget _buildLogoutTile(BuildContext context) {
     return DrawerListTitle(

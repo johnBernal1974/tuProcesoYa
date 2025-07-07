@@ -76,6 +76,7 @@ import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_libe
 import 'Pages/client/info_previa_solicitud_beneficios/info_previa_solicitud_prision_domiciliaria.dart';
 import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
+import 'Pages/client/mis_referidos/mis_referidos.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
 import 'Pages/client/otras_solicitudes/solicitud_acumulacion.dart';
 import 'Pages/client/otras_solicitudes/solicitud_apelacion.dart';
@@ -259,8 +260,10 @@ class MyApp extends StatelessWidget {
         'historiales_page': (context) => HistorialSolicitudesPage(),
         'preguntas_frecuentes_page': (context) => const PreguntasFrecuentesPage(),
         'solicitar_page': (context) => SolicitarServiciosPage(),
-
-
+        'misReferidos': (context) {
+          final referidorId = ModalRoute.of(context)!.settings.arguments as String;
+          return MisReferidosPage(referidorId: referidorId);
+        },
         //general
         'login': (context) => const LoginPage(),
         'splash': (context) => SplashPage(),
