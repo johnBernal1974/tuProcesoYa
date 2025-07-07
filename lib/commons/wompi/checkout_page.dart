@@ -87,7 +87,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (user == null || _subscriptionValue == null) return;
 
     String referencia = "suscripcion_${user.uid}_${_uuid.v4()}";
-    int centavos = _subscriptionValue! * 100;
+    int centavos = widget.valor * 100;
+    print("✅ El valor recibido es: ${widget.valor}");
+
 
     await PagoHelper.iniciarFlujoPago(
       context: context,
@@ -141,6 +143,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   @override
   Widget build(BuildContext context) {
+    print("💡 Valor recibido en CheckoutPage: ${widget.valor}");
     // Si es un pago por algún servicio específico
     final tiposPagos = {
       'peticion': 'Derecho de petición',
@@ -254,7 +257,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   child: Column(
                     children: [
                       const Text("Valor de la suscripción", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54, fontSize: 11)),
-                      Text("\$${_formatter.format(_subscriptionValue)}", style: const TextStyle(fontSize: 22, color: negro)),
+                      Text("\$${_formatter.format(widget.valor)}", style: const TextStyle(fontSize: 22, color: negro)),
                     ],
                   ),
                 )

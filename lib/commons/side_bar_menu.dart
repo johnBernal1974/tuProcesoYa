@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuprocesoya/commons/wompi/checkout_page.dart';
 import '../../providers/auth_provider.dart';
@@ -964,71 +965,176 @@ class _SideBarState extends State<SideBar> {
     showDialog(
       context: context,
       builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          backgroundColor: blanco,
-          title: const Text("Acceso restringido"),
-          content: const Text(
-            "Para acceder a esta sección, debes pagar la suscripción.",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(dialogContext).pop(); // ✅ Usa el context del diálogo
-              },
-              child: const Text("Cancelar"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.of(dialogContext).pop(); // ✅ Cierra el diálogo
+        return FutureBuilder(
+          future: _obtenerDatosSuscripcion(),
+          builder: (context, AsyncSnapshot<Map<String, dynamic>> snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-                final configSnapshot = await FirebaseFirestore.instance
-                    .collection('configuraciones')
-                    .limit(1)
-                    .get();
+            final datos = snapshot.data!;
+            final int valorOriginal = datos['valorOriginal'];
+            final int valorConDescuento = datos['valorConDescuento'];
+            final bool tieneDescuento = datos['tieneDescuento'];
+            final int valorDescuento = valorOriginal - valorConDescuento;
 
-                final int valorSuscripcion =
-                (configSnapshot.docs.first.data()['valor_subscripcion'] ?? 0).toInt();
+            final formatter = NumberFormat("#,###", "es_CO");
 
-                final user = FirebaseAuth.instance.currentUser;
-                if (user == null || !context.mounted) return;
-
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CheckoutPage(
-                      tipoPago: 'suscripcion',
-                      valor: valorSuscripcion,
-                      onTransaccionAprobada: () async {
-                        await FirebaseFirestore.instance
-                            .collection("Ppl")
-                            .doc(user.uid)
-                            .update({
-                          "isPaid": true,
-                          "fechaSuscripcion": FieldValue.serverTimestamp(),
-                        });
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("¡Suscripción activada con éxito!"),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-
-                        // ✅ Actualiza el estado del menú para mostrar contenido desbloqueado
-                        _isPaid.value = true;
-                        if (mounted) setState(() {});
-                      },
-                    ),
+            return AlertDialog(
+              backgroundColor: blanco,
+              title: const Text("Acceso restringido"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Para acceder a esta sección, debes pagar la suscripción.",
+                    style: TextStyle(fontSize: 14),
                   ),
-                );
-              },
-              child: const Text("Realizar pago"),
-            ),
-          ],
+                  const SizedBox(height: 12),
+
+                  Text(
+                    "Valor original: \$${formatter.format(valorOriginal)}",
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (tieneDescuento) ...[
+                    Card(
+                      color: Colors.green.shade50,
+                      elevation: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(color: Colors.green.shade200),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          children: [
+                            Image.asset(
+                              'assets/images/regalo.png',
+                              width: 40,
+                              height: 40,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                "¡Tienes un 20% de descuento en tu suscripción!\n\nAhorrarás \$${formatter.format(valorDescuento)} en este pago.",
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "Valor a pagar con descuento: \$${formatter.format(valorConDescuento)}",
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: const Text("Cancelar"),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                  onPressed: () async {
+                    Navigator.of(dialogContext).pop();
+
+                    final user = FirebaseAuth.instance.currentUser;
+                    if (user == null || !context.mounted) return;
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => CheckoutPage(
+                          tipoPago: 'suscripcion',
+                          valor: valorConDescuento,
+                          onTransaccionAprobada: () async {
+                            await FirebaseFirestore.instance
+                                .collection("Ppl")
+                                .doc(user.uid)
+                                .update({
+                              "isPaid": true,
+                              "fechaSuscripcion": FieldValue.serverTimestamp(),
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("¡Suscripción activada con éxito!"),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+
+                            _isPaid.value = true;
+                            if (mounted) setState(() {});
+                          },
+                        ),
+                      ),
+                    );
+                  },
+                  child: const Text("Realizar pago", style: TextStyle(color: blanco)),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
+
+  Future<Map<String, dynamic>> _obtenerDatosSuscripcion() async {
+    final configSnapshot = await FirebaseFirestore.instance
+        .collection('configuraciones')
+        .limit(1)
+        .get();
+
+    final int valorOriginal =
+    (configSnapshot.docs.first.data()['valor_subscripcion'] ?? 0).toInt();
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return {
+        'valorOriginal': valorOriginal,
+        'valorConDescuento': valorOriginal,
+        'tieneDescuento': false,
+      };
+    }
+
+    // ✅ Verifica si tiene descuento por referido
+    final doc = await FirebaseFirestore.instance.collection("Ppl").doc(user.uid).get();
+    bool tieneDescuento = false;
+
+    if (doc.exists && doc.data()?["referidoPor"] == "355") {
+      tieneDescuento = true;
+    }
+
+    // ✅ Aplica 20% de descuento si tieneDescuento
+    int valorConDescuento = valorOriginal;
+    if (tieneDescuento) {
+      valorConDescuento = (valorOriginal * 0.8).round(); // 20% de descuento
+    }
+
+    return {
+      'valorOriginal': valorOriginal,
+      'valorConDescuento': valorConDescuento,
+      'tieneDescuento': tieneDescuento,
+    };
+  }
+
+
 
   Future<String?> obtenerIdReferidorDesdeIdUser() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
@@ -1101,6 +1207,49 @@ class _SideBarState extends State<SideBar> {
       title: Text(
         title,
         style: const TextStyle(color: negro, fontSize: 13),
+      ),
+    );
+  }
+}
+
+class CardDescuento extends StatelessWidget {
+  final int valorDescuento;
+
+  const CardDescuento({super.key, required this.valorDescuento});
+
+  @override
+  Widget build(BuildContext context) {
+    final formatter = NumberFormat("#,###", "es_CO");
+
+    return Card(
+      color: Colors.green.shade50,
+      elevation: 4,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(color: Colors.green.shade200),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Image.asset(
+              'assets/images/regalo.png',
+              width: 50,
+              height: 50,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                "Tienes un 20% de descuento en tu suscripción.\n\nAhorrarás \$${formatter.format(valorDescuento)} en este pago.",
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

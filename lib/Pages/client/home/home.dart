@@ -7,6 +7,7 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
+import '../../../helper/descuento_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/ppl_provider.dart';
@@ -48,7 +49,10 @@ class _HomePageState extends State<HomePage> {
   int _tiempoDePrueba = 7; // valor por defecto si no está en Firebase
   String? _versionActual;
   String? _nuevaVersion;
-
+  bool _tieneDescuento = false;
+  bool _descuentoCargado = false;
+  int? _valorSuscripcionOriginal;
+  int? _valorConDescuento;
 
 
   @override
@@ -67,10 +71,12 @@ class _HomePageState extends State<HomePage> {
     if (config.docs.isNotEmpty) {
       setState(() {
         _subscriptionValue = config.docs.first.data()['valor_subscripcion'];
-        _tiempoDePrueba = config.docs.first.data()['tiempoDePrueba'] ?? 7; // 🔥 Aquí traemos el tiempo real
+        _valorSuscripcionOriginal = _subscriptionValue; //
+        _tiempoDePrueba = config.docs.first.data()['tiempoDePrueba'] ?? 7;
       });
     }
   }
+
 
   Future<void> _loadUid() async {
     final user = _myAuthProvider.getUser();
@@ -95,15 +101,25 @@ class _HomePageState extends State<HomePage> {
         final configDoc = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
         int tiempoDePrueba = configDoc.docs.first.data()['tiempoDePrueba'] ?? 7;
 
+        // Aquí validas si tiene descuento
+        _tieneDescuento = await DescuentoHelper.tieneDescuento(_uid);
+        _descuentoCargado = true;
+
+        // 🌟 Si tiene descuento, calculas y guardas el valor con descuento
+        if (_tieneDescuento) {
+          final int valorOriginal = configDoc.docs.first.data()['valor_subscripcion'];
+          final int valorDescuento = await DescuentoHelper.obtenerValorConDescuento(_uid, valorOriginal);
+          _valorConDescuento = valorDescuento;
+        }
+
         setState(() {
           _isTrial = diasPasados < tiempoDePrueba;
           _diasRestantesPrueba = tiempoDePrueba - diasPasados;
-          _isLoading = false; // 🔥 Ya puedes construir la pantalla
+          _isLoading = false;
         });
       }
     }
   }
-
 
 
   Future<double> calcularTotalRedenciones(String pplId) async {
@@ -448,8 +464,6 @@ class _HomePageState extends State<HomePage> {
                     ),
                     textAlign: TextAlign.justify,
                   )
-
-
                 ],
               ),
 
@@ -478,6 +492,7 @@ class _HomePageState extends State<HomePage> {
                   }
 
                   try {
+                    // Cargar configuración
                     final snapshot = await FirebaseFirestore.instance
                         .collection("configuraciones")
                         .limit(1)
@@ -487,34 +502,98 @@ class _HomePageState extends State<HomePage> {
                       throw Exception("No se encontró el valor de la suscripción.");
                     }
 
-                    final int valorSuscripcion = snapshot.docs.first["valor_subscripcion"];
+                    // Valor original
+                    final int valorSuscripcionOriginal = snapshot.docs.first["valor_subscripcion"];
+
+                    // Verificar si tiene descuento
+                    final bool tieneDescuento = await DescuentoHelper.tieneDescuento(user.uid);
+                    print(">>> Tiene descuento: $tieneDescuento");
+                    final int valorSuscripcion = await DescuentoHelper.obtenerValorConDescuento(user.uid, valorSuscripcionOriginal);
+                    setState(() {
+                      _valorConDescuento = valorSuscripcion;
+                    });
+
 
                     if (context.mounted) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CheckoutPage(
-                            tipoPago: 'suscripcion',
-                            valor: valorSuscripcion,
-                            onTransaccionAprobada: () async {
-                              await FirebaseFirestore.instance
-                                  .collection("Ppl")
-                                  .doc(user.uid)
-                                  .update({
-                                "isPaid": true,
-                                "fechaSuscripcion": FieldValue.serverTimestamp(),
-                              });
+                      if (tieneDescuento) {
+                        final int descuento = valorSuscripcionOriginal - valorSuscripcion;
 
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("¡Suscripción activada con éxito!"),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-                            },
+                        // Mostrar diálogo con la tarjeta de descuento
+                        await showDialog(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text("¡Felicidades!", style: TextStyle(fontWeight: FontWeight.bold)),
+                            content: CardDescuento(valorDescuento: descuento),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text("Cancelar"),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                                onPressed: () {
+                                  Navigator.pop(context); // Cerrar el diálogo
+
+                                  // Ir al CheckoutPage
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => CheckoutPage(
+                                        tipoPago: 'suscripcion',
+                                        valor: valorSuscripcion,
+                                        onTransaccionAprobada: () async {
+                                          await FirebaseFirestore.instance
+                                              .collection("Ppl")
+                                              .doc(user.uid)
+                                              .update({
+                                            "isPaid": true,
+                                            "fechaSuscripcion": FieldValue.serverTimestamp(),
+                                          });
+
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            const SnackBar(
+                                              content: Text("¡Suscripción activada con éxito!"),
+                                              backgroundColor: Colors.green,
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: const Text("Continuar"),
+                              ),
+                            ],
                           ),
-                        ),
-                      );
+                        );
+                      } else {
+                        // Si no tiene descuento, ir directo
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CheckoutPage(
+                              tipoPago: 'suscripcion',
+                              valor: valorSuscripcion,
+                              onTransaccionAprobada: () async {
+                                await FirebaseFirestore.instance
+                                    .collection("Ppl")
+                                    .doc(user.uid)
+                                    .update({
+                                  "isPaid": true,
+                                  "fechaSuscripcion": FieldValue.serverTimestamp(),
+                                });
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("¡Suscripción activada con éxito!"),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        );
+                      }
                     }
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -529,7 +608,7 @@ class _HomePageState extends State<HomePage> {
                   'Pagar suscripción',
                   style: TextStyle(color: blanco),
                 ),
-              ),
+              )
             ],
           ),
         ),
@@ -709,7 +788,48 @@ class _HomePageState extends State<HomePage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: primary, height: 1.1),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 20),
+
+        buildValorOriginalText(),
+
+        if (_descuentoCargado && _tieneDescuento) ...[
+          const SizedBox(height: 20),
+          Card(
+            color: Colors.green.shade50,
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: BorderSide(color: Colors.green.shade200),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Image.asset(
+                    'assets/images/regalo.png',
+                    width: 40,
+                    height: 40,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      "¡Tienes un 20% de descuento en tu suscripción! Aprovecha esta oportunidad.",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          if (_valorConDescuento != null) ...[
+            buildValorConDescuentoText(_valorConDescuento!),
+            const SizedBox(height: 20),
+          ],
+        ],
         const Text(
           'Accede a una experiencia completa y exclusiva en nuestra plataforma. Desbloquea todos los beneficios y servicios que tenemos para ti.',
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87, height: 1.1),
@@ -721,43 +841,190 @@ class _HomePageState extends State<HomePage> {
             backgroundColor: primary,
           ),
           onPressed: () async {
-            final result = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => CheckoutPage(
-                  tipoPago: 'suscripcion',
-                  valor: _subscriptionValue ?? 0,
-                  onTransaccionAprobada: () async {
-                    final user = FirebaseAuth.instance.currentUser;
+            final user = FirebaseAuth.instance.currentUser;
 
-                    if (user != null) {
-                      await FirebaseFirestore.instance
-                          .collection("Ppl")
-                          .doc(user.uid)
-                          .update({
-                        "isPaid": true,
-                        "fechaSuscripcion": FieldValue.serverTimestamp(),
-                      });
-                    }
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("¡Suscripción activada con éxito!"),
-                        duration: Duration(seconds: 2),
-                        backgroundColor: Colors.green,
-                      ),
-                    );
-
-                    // Refrescar estado si deseas que desaparezca el contenido de "no suscrito"
-                    setState(() {});
-                  },
+            if (user == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
+                  backgroundColor: Colors.red,
                 ),
-              ),
-            );
+              );
+              return;
+            }
+
+            try {
+              // Cargar configuración
+              final snapshot = await FirebaseFirestore.instance
+                  .collection("configuraciones")
+                  .limit(1)
+                  .get();
+
+              if (snapshot.docs.isEmpty || snapshot.docs.first.data()["valor_subscripcion"] == null) {
+                throw Exception("No se encontró el valor de la suscripción.");
+              }
+
+              // Valor original
+              final int valorSuscripcionOriginal = snapshot.docs.first["valor_subscripcion"];
+
+              // Verificar si tiene descuento
+              final bool tieneDescuento = await DescuentoHelper.tieneDescuento(user.uid);
+              final int valorSuscripcion = await DescuentoHelper.obtenerValorConDescuento(
+                user.uid,
+                valorSuscripcionOriginal,
+              );
+
+              if (context.mounted) {
+                if (tieneDescuento) {
+                  final int descuento = valorSuscripcionOriginal - valorSuscripcion;
+
+                  await showDialog(
+                    context: context,
+                    builder: (_) => AlertDialog(
+                      backgroundColor: blanco,
+                      title: const Text(
+                        "¡Felicidades!",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      content: CardDescuento(valorDescuento: descuento),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text("Cancelar"),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                          onPressed: () {
+                            Navigator.pop(context); // Cerrar el diálogo
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CheckoutPage(
+                                  tipoPago: 'suscripcion',
+                                  valor: valorSuscripcion,
+                                  onTransaccionAprobada: () async {
+                                    await FirebaseFirestore.instance
+                                        .collection("Ppl")
+                                        .doc(user.uid)
+                                        .update({
+                                      "isPaid": true,
+                                      "fechaSuscripcion": FieldValue.serverTimestamp(),
+                                    });
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text("¡Suscripción activada con éxito!"),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+
+                                    // Refrescar estado
+                                    setState(() {});
+                                  },
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text("Continuar", style: TextStyle(color: blanco)),
+                        ),
+                      ],
+                    ),
+                  );
+                } else {
+                  // Si no tiene descuento, ir directo
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CheckoutPage(
+                        tipoPago: 'suscripcion',
+                        valor: valorSuscripcion,
+                        onTransaccionAprobada: () async {
+                          await FirebaseFirestore.instance
+                              .collection("Ppl")
+                              .doc(user.uid)
+                              .update({
+                            "isPaid": true,
+                            "fechaSuscripcion": FieldValue.serverTimestamp(),
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("¡Suscripción activada con éxito!"),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+
+                          setState(() {});
+                        },
+                      ),
+                    ),
+                  );
+                }
+              }
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("No se pudo obtener el valor de la suscripción."),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
           },
           child: const Text('Realizar pago', style: TextStyle(color: blanco)),
-        ),
+        )
       ],
+    );
+  }
+
+  final formatter = NumberFormat.currency(
+    locale: 'es_CO',
+    symbol: '\$',
+    decimalDigits: 0,
+    customPattern: '\u00A4#,##0',
+  );
+
+  Widget buildValorOriginalText() {
+    // Si aún no se cargó, muestra un texto de espera
+    if (_valorSuscripcionOriginal == null) {
+      return const Text(
+        "Cargando valor de suscripción...",
+        style: TextStyle(fontSize: 14, color: Colors.grey),
+      );
+    }
+
+    final formatter = NumberFormat.currency(
+      locale: 'es_CO',
+      symbol: '\$',
+      decimalDigits: 0,
+      customPattern: '\u00A4#,##0',
+    );
+
+    return Text(
+      "Valor original: ${formatter.format(_valorSuscripcionOriginal)}",
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  Widget buildValorConDescuentoText(int valorConDescuento) {
+    final formatter = NumberFormat.currency(
+      locale: 'es_CO',
+      symbol: '\$',
+      decimalDigits: 0,
+      customPattern: '\u00A4#,##0',
+    );
+
+    return Text(
+      "Valor a pagar: ${formatter.format(valorConDescuento)}",
+      style: const TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w900,
+        color: Colors.black,
+      ),
     );
   }
 
