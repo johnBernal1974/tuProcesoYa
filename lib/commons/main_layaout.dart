@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:tuprocesoya/commons/side_bar_menu.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
+import '../widgets/agenda_listener.dart';
 import '../widgets/tabla_tarifas.dart';
 import '../widgets/whatApp_chat_page.dart';
 import '../widgets/whatsapp_state.dart';
@@ -34,6 +35,8 @@ class _MainLayoutState extends State<MainLayout> {
   void initState() {
     super.initState();
     _checkIfUserIsAdmin();
+    // 🔔 Inicia el escuchador de agenda
+    AgendaListener().iniciar(context);
   }
 
   Future<void> _checkIfUserIsAdmin() async {

@@ -17,18 +17,12 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
   List<Map<String, dynamic>> _actividadesDelDia = [];
   List<int> _diasConNotas = [];
   int? _diaSeleccionado;
-  Key _calendarioKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
     _cargarActividades();
     _cargarDiasConNotas();
-    FirebaseFirestore.instance.collection('agenda').get().then((snapshot) {
-      for (var doc in snapshot.docs) {
-        print("📄 ${doc.id} => ${doc.data()}");
-      }
-    });
   }
 
   Future<void> _cargarActividades({DateTime? fecha}) async {
@@ -300,6 +294,8 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
 
                                 final act = sortedActividades[index];
                                 final fecha = (act['fecha'] as Timestamp).toDate();
+                                final ahora = DateTime.now();
+                                final diferencia = fecha.difference(ahora);
                                 final programador = act['programadoPor'] ?? 'Desconocido';
 
                                 final estado = act['estado'] ?? 'Pendiente';
@@ -308,19 +304,46 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
                                     ? (act['fechaGestion'] as Timestamp).toDate()
                                     : null;
 
-// 🟩 Color dinámico según estado
-                                Color colorFondo;
-                                switch (estado) {
-                                  case 'Atendida':
-                                    colorFondo = Colors.green.shade100;
-                                    break;
-                                  case 'Cerrada':
-                                    colorFondo = Colors.grey.shade300;
-                                    break;
-                                  case 'Pendiente':
-                                  default:
-                                    colorFondo = Colors.yellow.shade100;
+                                final bool esPendiente = estado == 'Pendiente';
+                                final bool mostrarIconoFaltando1Hora = esPendiente && diferencia.inMinutes >= 0 && diferencia.inMinutes <= 60;
+                                final bool mostrarIconoVencida = esPendiente && diferencia.inMinutes < 0;
+                                final bool esAhoraMismo = esPendiente && diferencia.inMinutes >= -1 && diferencia.inMinutes <= 1;
+
+                                // ⏰ Alerta emergente si es ahora
+                                if (esAhoraMismo) {
+                                  Future.microtask(() {
+                                    if (context.mounted) {
+                                      showDialog(
+                                        context: context,
+                                        builder: (_) => AlertDialog(
+                                          backgroundColor: blanco,
+                                          title: const Text("⏰ ¡Alerta de actividad!"),
+                                          content: Text("Debes atender ahora la actividad:\n\n${act['comentario']}"),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () => Navigator.pop(context),
+                                              child: const Text("Entendido"),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }
+                                  });
                                 }
+
+                                // 🟩 Color dinámico según estado y tiempo
+                                Color colorFondo;
+                                if (estado == 'Atendida') {
+                                  colorFondo = Colors.green.shade100;
+                                } else if (estado == 'Cerrada') {
+                                  colorFondo = Colors.grey.shade300;
+                                } else if (estado == 'Pendiente' && diferencia.inMinutes < 0) {
+                                  // Si ya pasó la hora y sigue pendiente → rojo
+                                  colorFondo = Colors.red.shade100;
+                                } else {
+                                  colorFondo = Colors.yellow.shade100;
+                                }
+
 
                                 return Container(
                                   margin: const EdgeInsets.only(bottom: 8),
@@ -336,7 +359,28 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
                                     title: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text("🕒 ${DateFormat('h:mm a', 'es').format(fecha)}", style: const TextStyle(fontSize: 12)),
+                                        Row(
+                                          children: [
+                                            Text(
+                                              "🕒 ${DateFormat('h:mm a', 'es').format(fecha)}",
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: mostrarIconoVencida ? Colors.red : Colors.black87,
+                                                fontWeight: mostrarIconoVencida ? FontWeight.bold : FontWeight.normal,
+                                              ),
+                                            ),
+                                            if (mostrarIconoFaltando1Hora)
+                                              const Padding(
+                                                padding: EdgeInsets.only(left: 4),
+                                                child: Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 16),
+                                              ),
+                                            if (mostrarIconoVencida)
+                                              const Padding(
+                                                padding: EdgeInsets.only(left: 4),
+                                                child: Icon(Icons.error_outline, color: Colors.red, size: 16),
+                                              ),
+                                          ],
+                                        ),
                                         Text(act['comentario'], style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
                                       ],
                                     ),
@@ -384,7 +428,6 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
                                             final ahora = Timestamp.now();
                                             final gestor = AdminProvider().adminFullName ?? 'Administrador';
 
-                                            // 🔄 Actualiza Firestore
                                             await FirebaseFirestore.instance
                                                 .collection('agenda')
                                                 .doc(act['id'])
@@ -394,17 +437,14 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
                                               'fechaGestion': ahora,
                                             });
 
-                                            // ✅ Recarga toda la lista para actualizar la vista
-                                            Navigator.pop(context); // 🔴 Cierra el modal viejo
+                                            Navigator.pop(context);
                                             await _cargarActividades(
                                               fecha: DateTime(_fechaActual.year, _fechaActual.month, _diaSeleccionado ?? DateTime.now().day),
                                             );
-                                            Future.delayed(Duration(milliseconds: 200), () {
-                                              _mostrarActividadesDelDia(); // 🟢 Abre uno nuevo con la info actualizada
+                                            Future.delayed(const Duration(milliseconds: 200), () {
+                                              _mostrarActividadesDelDia();
                                             });
-
                                           },
-
                                           itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
                                             const PopupMenuItem<String>(value: 'Pendiente', child: Text('🟡 Pendiente')),
                                             const PopupMenuItem<String>(value: 'Atendida', child: Text('🟢 Atendida')),
@@ -421,9 +461,7 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
                         ],
                       ),
                     ),
-
                     const SizedBox(width: 24),
-
                     // 🟪 COLUMNA DERECHA
                     Expanded(
                       flex: 2,

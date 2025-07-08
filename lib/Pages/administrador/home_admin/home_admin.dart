@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:diacritic/diacritic.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
 import 'dart:html' as html;
 import '../../../src/colors/colors.dart';
+import '../../../widgets/agenda_listener.dart';
 import '../../../widgets/agenda_viewer.dart';
 import '../../../widgets/ventana_whatsApp.dart';
 
@@ -126,7 +129,25 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     _cargarTiempoDePrueba();
     _escucharCambiosDeVersion();
     _idsConSolicitudesFuture = _obtenerIdsConSolicitudes();
+    AgendaListener().configurarAbrirCalendario(_abrirDialogoCalendario);
+    AgendaListener().iniciar(context);
   }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  void _abrirDialogoCalendario() {
+    showDialog(
+      context: context,
+      builder: (_) => const AlertDialog(
+        title: Text("Agenda de actividades"),
+        content: AgendaViewerCompact(), // Usa tu widget real aquí
+      ),
+    );
+  }
+
 
   Future<Set<String>> _obtenerIdsConSolicitudes() async {
     final snapshot = await FirebaseFirestore.instance.collection('solicitudes_usuario').get();
@@ -137,6 +158,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         .cast<String>()
         .toSet();
   }
+
+  Set<String> _alertasMostradas = {};
+
 
 
   void _escucharCambiosDeVersion() {
@@ -815,9 +839,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   }
 
 
-
-
-
   Widget _buildStatRow(
       String title,
       int count,
@@ -873,10 +894,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
-
-
-
-  Future<int> contarUsuariosConSolicitudes() async {
+olicitudes() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('solicitudes_usuario')
         .get();
@@ -932,53 +950,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       debugPrint("❌ Error al cargar los admins: $e");
       setState(() => isLoadingAdmins = false);
     }
-  }
-
-
-  // Widget para construir tarjetas de estadísticas con efecto de selección
-  Widget _buildStatCard(String title, int count, Color color, VoidCallback? onTap, {bool isSelected = false}) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        width: 150,
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(8),
-          border: isSelected
-              ? Border.all(color: Colors.white, width: 3) // 🔹 Borde blanco si está seleccionada
-              : null,
-          boxShadow: isSelected
-              ? [ // 🔹 Sombra más fuerte si está seleccionada
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ]
-              : [ // 🔹 Sombra normal si NO está seleccionada
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white, height: 1.1),
-              textAlign: TextAlign.center,
-            ),
-            Text(
-              count.toString(),
-              style: const TextStyle(fontSize: 16, color: Colors.white),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget buildTotalUsuariosCard(int totalUsuarios) {
