@@ -18,6 +18,7 @@ import '../../../models/ppl.dart';
 import '../../../providers/ppl_provider.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/actualizar_nodo_30%.dart';
+import '../../../widgets/agregar_agenda.dart';
 import '../../../widgets/card_comuncar_con_el_usuario.dart';
 import '../../../widgets/card_gestionar_descuento.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
@@ -3425,16 +3426,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   Widget bloquearUsuario() {
     return SizedBox(
-      width: 200,
+      width: 220,
       child: Align(
         alignment: Alignment.centerLeft,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          ),
-          onPressed: () async {
+        child: GestureDetector(
+          onTap: () async {
             bool confirmacion = await _mostrarConfirmacionBloqueo();
             if (!confirmacion) return;
 
@@ -3460,7 +3456,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 'fecha': DateTime.now().toString(),
               });
 
-              if(context.mounted){
+              if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Usuario bloqueado con éxito.'),
@@ -3469,6 +3465,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 );
               }
+
               Future.delayed(const Duration(seconds: 1), () {
                 Navigator.pushReplacement(
                   context,
@@ -3476,7 +3473,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 );
               });
             } catch (error) {
-              if(context.mounted){
+              if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error al bloquear el usuario: $error'),
@@ -3487,11 +3484,28 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               }
             }
           },
-          child: const Text('Bloquear Usuario', style: TextStyle(fontSize: 12),),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.red,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Text(
+                'BLOQUEAR USUARIO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
+
 
   /// 🔹 Función para mostrar la confirmación antes de bloquear al usuario
   Future<bool> _mostrarConfirmacionBloqueo() async {
@@ -3737,13 +3751,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       width: 180,
       child: Align(
         alignment: Alignment.center,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            foregroundColor: Colors.white,
-            backgroundColor: primary,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          ),
-          onPressed: () async {
+        child: GestureDetector(
+          onTap: () async {
             bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
             if (!confirmar) return;
 
@@ -3758,18 +3767,18 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             if (situacion == 'En Reclusión' && !centroValidado && _centroController.text.trim().isEmpty) {
               if (context.mounted) {
                 await showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: Colors.white,
-                    title: const Text("Centro de reclusión requerido"),
-                    content: const Text("Debes validar el centro de reclusión antes de guardar."),
-                    actions: [
-                      TextButton(
-                        child: const Text("Cerrar"),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: Colors.white,
+                  title: const Text("Centro de reclusión requerido"),
+                  content: const Text("Debes validar el centro de reclusión antes de guardar."),
+                  actions: [
+                    TextButton(
+                      child: const Text("Cerrar"),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
                 );
               }
               return; // 🚫 Se detiene aquí el proceso
@@ -4090,27 +4099,44 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             } catch (error) {
               if (context.mounted) {
                 await showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: Colors.white,
-                    title: const Text("Centro de reclusión requerido"),
-                    content: const Text("Debes validar el centro de reclusión antes de guardar."),
-                    actions: [
-                      TextButton(
-                        child: const Text("Cerrar"),
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                    ],
-                  ),
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: Colors.white,
+                  title: const Text("Centro de reclusión requerido"),
+                  content: const Text("Debes validar el centro de reclusión antes de guardar."),
+                  actions: [
+                    TextButton(
+                      child: const Text("Cerrar"),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
                 );
               }
             }
           },
-          child: const Text('Guardar Cambios'),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.green,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Text(
+                'GUARDAR',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+          ),
         ),
       ),
     );
   }
+
 
   Future<Map<String, dynamic>> _mostrarDialogoComentarioObligatorio(
       BuildContext context,
@@ -4188,36 +4214,55 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             }
 
             return AlertDialog(
-              backgroundColor: blanco,
-              title: const Text("Comentario obligatorio para seguimiento de activación"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text("Por favor, deja un comentario de seguimiento para esta activación."),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: comentarioController,
-                    maxLines: 4,
-                    onChanged: (_) => setState(() {}),
-                    decoration: const InputDecoration(
-                      hintText: "Escribe el comentario aquí",
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey),
+              backgroundColor: blanco, // 🎨 Fondo gris claro
+              title: const Text(
+                "Comentario obligatorio para seguimiento de Usuario Activado",
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              content: SingleChildScrollView( // Para evitar desbordamientos
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Card(
+                      color: Colors.white,
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            const Text("Por favor, deja un comentario de seguimiento."),
+                            const SizedBox(height: 12),
+                            TextField(
+                              controller: comentarioController,
+                              maxLines: 4,
+                              onChanged: (_) => setState(() {}),
+                              decoration: const InputDecoration(
+                                hintText: "Escribe el comentario aquí",
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey, width: 2),
+                                ),
+                                border: OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            CheckboxListTile(
+                              title: const Text("Marcar este caso para seguimiento periódico"),
+                              value: requiereSeguimiento,
+                              onChanged: (value) => setState(() => requiereSeguimiento = value ?? false),
+                              controlAffinity: ListTileControlAffinity.leading,
+                            ),
+                          ],
+                        ),
                       ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 2),
-                      ),
-                      border: OutlineInputBorder(),
                     ),
-                  ),
-                  const SizedBox(height: 12),
-                  CheckboxListTile(
-                    title: const Text("Marcar este caso para seguimiento periódico"),
-                    value: requiereSeguimiento,
-                    onChanged: (value) => setState(() => requiereSeguimiento = value ?? false),
-                    controlAffinity: ListTileControlAffinity.leading,
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    const AgregarAgendaSimple(), // Ya es una Card blanca, según tu captura
+                  ],
+                ),
               ),
               actions: [
                 ElevatedButton(
@@ -4232,6 +4277,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
               ],
             );
+
           },
         );
       },
