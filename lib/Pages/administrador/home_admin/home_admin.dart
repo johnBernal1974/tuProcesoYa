@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
 import 'dart:html' as html;
 import '../../../src/colors/colors.dart';
+import '../../../widgets/agenda_viewer.dart';
 import '../../../widgets/ventana_whatsApp.dart';
 
 class HomeAdministradorPage extends StatefulWidget {
@@ -481,10 +482,12 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 final isDesktop = constraints.maxWidth > 600;
 
                                 return Row(
-                                  mainAxisAlignment: MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Tarjeta total de usuarios
                                     TotalUsuariosCard(totalUsuarios: docs.length),
+
+                                    // Campo de búsqueda
                                     SizedBox(
                                       width: 250,
                                       child: Padding(
@@ -492,16 +495,25 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         child: _buildSearchField(),
                                       ),
                                     ),
+
+                                    // Chat de WhatsApp (solo en pantallas grandes)
                                     if (constraints.maxWidth >= 800)
                                       const SizedBox(
                                         width: 400,
                                         child: WhatsAppChatWrapper(),
                                       ),
+
+                                    // Agendador (solo si hay suficiente espacio)
+                                    if (constraints.maxWidth >= 1200)
+                                      const SizedBox(
+                                        width: 400,
+                                        child: AgendaViewerCompact(),
+                                      ),
                                   ],
                                 );
-
                               },
                             ),
+
                             const SizedBox(height: 30),
                             const Divider(color: primary, height: 2),
                             const SizedBox(height: 30),
