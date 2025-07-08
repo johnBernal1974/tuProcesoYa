@@ -973,6 +973,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     final data = widget.doc.data() as Map<String, dynamic>;
     final descuento = data.containsKey('descuento') ? data['descuento'] as Map<String, dynamic>? : null;
     final referidoPor = data.containsKey('referidoPor') ? data['referidoPor'] : null;
+    final bool esReferido = referidoPor != null && referidoPor.toString().trim().isNotEmpty;
+
 
     return Container(
       decoration: BoxDecoration(
@@ -992,13 +994,30 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 20),
+            if (esReferido)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  '¡Usuario referido!',
+                  style: TextStyle(
+                    color: Colors.green.shade700,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 24,
+                  ),
+                ),
+              ),
+
 
             // ✅ Mostrar el botón solo si no fue referido por "355"
-            if (FirebaseAuth.instance.currentUser != null && referidoPor != "355")
+            if (FirebaseAuth.instance.currentUser != null &&
+                referidoPor != "355" &&
+                data['status'] == "activado" &&
+                data['isPaid'] == false)
               CardGestionarDescuento(
-                uidUsuario: data['id'],
+                uidUsuario: FirebaseAuth.instance.currentUser!.uid,
                 uidAdmin: descuento?['otorgadoPor'],
               ),
+
 
             const SizedBox(height: 20),
 
