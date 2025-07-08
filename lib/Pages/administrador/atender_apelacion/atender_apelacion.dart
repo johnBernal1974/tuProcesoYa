@@ -2185,7 +2185,7 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "apelacion/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+      final filePath = "apelaciones/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");

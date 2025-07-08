@@ -784,7 +784,7 @@ class _HistorialSolicitudesApelacionAdminPageState extends State<HistorialSolici
   String obtenerRutaSegunStatus(String status) {
     switch (status) {
       case "Enviado":
-        return 'solicitudes_acumulacion_enviadas_por_correo';
+        return 'solicitudes_apelacion_enviadas_por_correo';
       default:
         return 'atender_apelacion_page';
     }
