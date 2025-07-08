@@ -53,6 +53,8 @@ class _HomePageState extends State<HomePage> {
   bool _descuentoCargado = false;
   int? _valorSuscripcionOriginal;
   int? _valorConDescuento;
+  int? _porcentajeDescuentoPersonalizado;
+
 
 
 
@@ -65,6 +67,7 @@ class _HomePageState extends State<HomePage> {
     _calculoCondenaController = CalculoCondenaController(PplProvider()); // 🔥 Instanciar el controlador
     _loadUid();
     _checkSubscriptionStatus();
+    _cargarDescuentoInicial();
   }
 
   Future<void> _cargarValorSuscripcion() async {
@@ -782,145 +785,167 @@ class _HomePageState extends State<HomePage> {
 
   /// Contenido si el usuario **no ha pagado**
   Widget _buildUnpaidContent() {
-    return Column(
-      children: [
-        Text(
-          "${_ppl?.nombrePpl ?? ""} ${_ppl?.apellidoPpl ?? ""}",
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 5),
-        Text(
-          "NUI: ${_ppl?.nui ?? "No disponible"}     TD: ${_ppl?.td ?? "No disponible"}",
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return const SizedBox();
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('Ppl').doc(uid).snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || !snapshot.data!.exists) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final data = snapshot.data!.data() as Map<String, dynamic>;
+        final referidoPor = data['referidoPor'];
+        final descuento = data['descuento'] as Map<String, dynamic>?;
+
+        final bool tieneDescuentoReferido = referidoPor == '355';
+        final int? porcentajePersonalizado = descuento?['porcentaje'];
+        final bool aplicaDescuentoPersonalizado = porcentajePersonalizado != null;
+        final bool aplicaCualquierDescuento = aplicaDescuentoPersonalizado || tieneDescuentoReferido;
+
+        final int valorOriginal = _valorSuscripcionOriginal ?? 20000;
+        final int valorFinal = aplicaDescuentoPersonalizado
+            ? (valorOriginal * (1 - (porcentajePersonalizado! / 100))).round()
+            : tieneDescuentoReferido
+            ? (valorOriginal * 0.8).round()
+            : valorOriginal;
+        final int ahorro = valorOriginal - valorFinal;
+
+        return Column(
           children: [
-            _buildCondenaCard('Tiempo de\nCondena\ntranscurrida', 0, 0, oculto: true),
-            const SizedBox(width: 10),
-            _buildCondenaCard('Tiempo de\nCondena\nrestante', 0, 0, oculto: true),
-          ],
-        ),
-         Row(
-           mainAxisAlignment: MainAxisAlignment.center,
-           children: [
-             _buildPorcentajeCard(0, oculto: true),
-             const SizedBox(width: 10),
-             _buildBeneficioCard("Beneficios adquiridos por tiempo", "0 días", oculto: true),
-           ],
-         ),
-        const SizedBox(height: 50),
-        const Text(
-          '¡Has el pago de la suscripción!',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: primary, height: 1.1),
-          textAlign: TextAlign.center,
-        ),
-
-        buildValorOriginalText(),
-
-        if (_descuentoCargado && _tieneDescuento) ...[
-          const SizedBox(height: 20),
-          Card(
-            color: blanco,
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-              side: BorderSide(color: Colors.green.shade200),
+            Text(
+              "${_ppl?.nombrePpl ?? ""} ${_ppl?.apellidoPpl ?? ""}",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+              textAlign: TextAlign.center,
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/regalo.png',
-                    width: 40,
-                    height: 40,
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      "¡Tienes un 20% de descuento en tu suscripción! Aprovecha esta oportunidad.",
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.black87,
+            const SizedBox(height: 5),
+            Text(
+              "NUI: ${_ppl?.nui ?? "No disponible"}     TD: ${_ppl?.td ?? "No disponible"}",
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildCondenaCard('Tiempo de\nCondena\ntranscurrida', 0, 0, oculto: true),
+                const SizedBox(width: 10),
+                _buildCondenaCard('Tiempo de\nCondena\nrestante', 0, 0, oculto: true),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildPorcentajeCard(0, oculto: true),
+                const SizedBox(width: 10),
+                _buildBeneficioCard("Beneficios adquiridos por tiempo", "0 días", oculto: true),
+              ],
+            ),
+            const SizedBox(height: 50),
+            const Text(
+              '¡Haz el pago de la suscripción!',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: primary, height: 1.1),
+              textAlign: TextAlign.center,
+            ),
+            buildValorOriginalText(),
+
+            if (aplicaDescuentoPersonalizado || tieneDescuentoReferido) ...[
+              const SizedBox(height: 20),
+              Card(
+                color: blanco,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: Colors.orange.shade300),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/regalo.png',
+                        width: 40,
+                        height: 40,
                       ),
-                    ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          aplicaDescuentoPersonalizado
+                              ? "¡Tienes un $porcentajePersonalizado% de descuento en tu suscripción!\n\n"
+                              "Ahorrarás \$${NumberFormat("#,###", "es_CO").format(ahorro)} en este pago."
+                              : "¡Tienes un 20% de descuento por referido!\n\n"
+                              "Ahorrarás \$${NumberFormat("#,###", "es_CO").format(ahorro)} en este pago.",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              buildValorConDescuentoText(valorFinal),
+            ],
+
+            /// Esta parte SIEMPRE se muestra
+            const SizedBox(height: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'Accede a una experiencia completa y exclusiva en nuestra plataforma. '
+                    'Desbloquea todos los beneficios y servicios que tenemos para ti.',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                  height: 1.3,
+                ),
+                textAlign: TextAlign.center,
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          if (_valorConDescuento != null) ...[
-            buildValorConDescuentoText(_valorConDescuento!),
-            const SizedBox(height: 20),
-          ],
-        ],
-        const Text(
-          'Accede a una experiencia completa y exclusiva en nuestra plataforma. Desbloquea todos los beneficios y servicios que tenemos para ti.',
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87, height: 1.1),
-          textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 40),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: primary,
-          ),
-          onPressed: () async {
-            final user = FirebaseAuth.instance.currentUser;
+            const SizedBox(height: 40),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primary,
+              ),
+              onPressed: () async {
+                final user = FirebaseAuth.instance.currentUser;
+                if (user == null) return;
 
-            if (user == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
-                  backgroundColor: Colors.red,
-                ),
-              );
-              return;
-            }
-
-            try {
-              // Cargar configuración
-              final snapshot = await FirebaseFirestore.instance
-                  .collection("configuraciones")
-                  .limit(1)
-                  .get();
-
-              if (snapshot.docs.isEmpty || snapshot.docs.first.data()["valor_subscripcion"] == null) {
-                throw Exception("No se encontró el valor de la suscripción.");
-              }
-
-              // Valor original
-              final int valorSuscripcionOriginal = snapshot.docs.first["valor_subscripcion"];
-
-              // Verificar si tiene descuento
-              final bool tieneDescuento = await DescuentoHelper.tieneDescuento(user.uid);
-              final int valorSuscripcion = await DescuentoHelper.obtenerValorConDescuento(
-                user.uid,
-                valorSuscripcionOriginal,
-              );
-              setState(() {
-                _valorConDescuento = valorSuscripcion;
-                _tieneDescuento = tieneDescuento;
-              });
-
-              if (context.mounted) {
-                if (tieneDescuento) {
-                  final int descuento = valorSuscripcionOriginal - valorSuscripcion;
-
+                if (aplicaCualquierDescuento) {
                   await showDialog(
                     context: context,
                     builder: (_) => AlertDialog(
                       backgroundColor: blanco,
-                      title: const Text(
-                        "¡Felicidades!",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      title: const Text("¡Felicidades!", style: TextStyle(fontWeight: FontWeight.bold)),
+                      content: Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/regalo.png',
+                            width: 40,
+                            height: 40,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              aplicaDescuentoPersonalizado
+                                  ? "¡Tienes un $porcentajePersonalizado% de descuento en tu suscripción!\n\n"
+                                  "Ahorrarás \$${NumberFormat("#,###", "es_CO").format(ahorro)} en este pago."
+                                  : "¡Tienes un 20% de descuento por referido!\n\n"
+                                  "Ahorrarás \$${NumberFormat("#,###", "es_CO").format(ahorro)} en este pago.",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      content: CardDescuento(valorDescuento: descuento),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(context),
@@ -929,14 +954,13 @@ class _HomePageState extends State<HomePage> {
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
                           onPressed: () {
-                            Navigator.pop(context); // Cerrar el diálogo
-
+                            Navigator.pop(context);
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => CheckoutPage(
                                   tipoPago: 'suscripcion',
-                                  valor: valorSuscripcion,
+                                  valor: valorFinal,
                                   onTransaccionAprobada: () async {
                                     await FirebaseFirestore.instance
                                         .collection("Ppl")
@@ -952,9 +976,6 @@ class _HomePageState extends State<HomePage> {
                                         backgroundColor: Colors.green,
                                       ),
                                     );
-
-                                    // Refrescar estado
-                                    setState(() {});
                                   },
                                 ),
                               ),
@@ -966,13 +987,12 @@ class _HomePageState extends State<HomePage> {
                     ),
                   );
                 } else {
-                  // Si no tiene descuento, ir directo
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => CheckoutPage(
                         tipoPago: 'suscripcion',
-                        valor: valorSuscripcion,
+                        valor: valorFinal,
                         onTransaccionAprobada: () async {
                           await FirebaseFirestore.instance
                               .collection("Ppl")
@@ -988,28 +1008,163 @@ class _HomePageState extends State<HomePage> {
                               backgroundColor: Colors.green,
                             ),
                           );
-
-                          setState(() {});
                         },
                       ),
                     ),
                   );
                 }
-              }
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text("No se pudo obtener el valor de la suscripción."),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
-          child: const Text('Realizar pago', style: TextStyle(color: blanco)),
-        )
-      ],
+              },
+              child: const Text('Realizar pago', style: TextStyle(color: blanco)),
+            ),
+            const SizedBox(height: 50),
+          ],
+        );
+      },
     );
   }
+
+  Future<void> _cargarDescuentoInicial() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection("configuraciones")
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty || snapshot.docs.first.data()["valor_subscripcion"] == null) return;
+
+      final int valorOriginal = snapshot.docs.first["valor_subscripcion"];
+      final bool tieneDescuento = await DescuentoHelper.tieneDescuento(user.uid);
+      final int valorFinal = await DescuentoHelper.obtenerValorConDescuento(user.uid, valorOriginal);
+      final Map<String, dynamic>? descuentoPersonalizado = await DescuentoHelper.obtenerDescuentoPersonalizado(user.uid);
+      final int? porcentajePersonalizado = descuentoPersonalizado?['porcentaje'] as int?;
+
+      setState(() {
+        _valorSuscripcionOriginal = valorOriginal;
+        _valorConDescuento = valorFinal;
+        _tieneDescuento = tieneDescuento;
+        _porcentajeDescuentoPersonalizado = porcentajePersonalizado;
+        _descuentoCargado = true;
+      });
+    } catch (e) {
+      debugPrint("Error al cargar descuento inicial: $e");
+    }
+  }
+
+
+  Future<void> _iniciarProcesoPago() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Tu sesión ha expirado. Inicia sesión nuevamente."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection("configuraciones")
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty || snapshot.docs.first.data()["valor_subscripcion"] == null) {
+        throw Exception("No se encontró el valor de la suscripción.");
+      }
+
+      final int valorOriginal = snapshot.docs.first["valor_subscripcion"];
+      final bool tieneDescuento = await DescuentoHelper.tieneDescuento(user.uid);
+      final int valorFinal = await DescuentoHelper.obtenerValorConDescuento(user.uid, valorOriginal);
+      final Map<String, dynamic>? descuentoPersonalizado = await DescuentoHelper.obtenerDescuentoPersonalizado(user.uid);
+      final int? porcentajePersonalizado = descuentoPersonalizado?['porcentaje'] as int?;
+
+      setState(() {
+        _valorConDescuento = valorFinal;
+        _tieneDescuento = tieneDescuento;
+        _porcentajeDescuentoPersonalizado = porcentajePersonalizado;
+        _valorSuscripcionOriginal = valorOriginal;
+      });
+
+      if (!context.mounted) return;
+
+      if (tieneDescuento) {
+        await _mostrarDialogoDescuento(valorOriginal - valorFinal);
+      } else {
+        _redirigirAlCheckout(valorFinal);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("No se pudo obtener el valor de la suscripción."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _mostrarDialogoDescuento(int descuento) async {
+    await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("¡Felicidades!", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: CardDescuento(valorDescuento: descuento),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancelar"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+            onPressed: () {
+              Navigator.pop(context);
+              _redirigirAlCheckout(_valorConDescuento!);
+            },
+            child: const Text("Continuar", style: TextStyle(color: blanco)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _redirigirAlCheckout(int valor) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CheckoutPage(
+          tipoPago: 'suscripcion',
+          valor: valor,
+          onTransaccionAprobada: () async {
+            final user = FirebaseAuth.instance.currentUser;
+            if (user != null) {
+              await FirebaseFirestore.instance
+                  .collection("Ppl")
+                  .doc(user.uid)
+                  .update({
+                "isPaid": true,
+                "fechaSuscripcion": FieldValue.serverTimestamp(),
+              });
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text("¡Suscripción activada con éxito!"),
+                  backgroundColor: Colors.green,
+                ),
+              );
+
+              setState(() {});
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+
 
   final formatter = NumberFormat.currency(
     locale: 'es_CO',

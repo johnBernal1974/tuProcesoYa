@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -20,6 +19,7 @@ import '../../../providers/ppl_provider.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/actualizar_nodo_30%.dart';
 import '../../../widgets/card_comuncar_con_el_usuario.dart';
+import '../../../widgets/card_gestionar_descuento.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/estado_de_pago.dart';
 import '../../../widgets/exento.dart';
@@ -30,7 +30,6 @@ import '../../../widgets/tabla_vista_estadias_reclusion.dart';
 import '../../seguimiento_solicitudes_page.dart';
 import '../home_admin/home_admin.dart';
 import 'package:http/http.dart' as http;
-
 
 
 class EditarRegistroPage extends StatefulWidget {
@@ -468,7 +467,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 ),
               ),
-
               // Widget de resumen de solicitudes
               Container(
                 padding: const EdgeInsets.all(12),
@@ -972,13 +970,17 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   /// 🔹 Widgets adicionales (Historial y acciones)
   Widget _buildExtraWidget() {
+    final data = widget.doc.data() as Map<String, dynamic>;
+    final descuento = data.containsKey('descuento') ? data['descuento'] as Map<String, dynamic>? : null;
+    final referidoPor = data.containsKey('referidoPor') ? data['referidoPor'] : null;
+
     return Container(
       decoration: BoxDecoration(
         color: blanco,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1), // Color suave
-            offset: const Offset(-4, 0), // Desplazamiento hacia la izquierda
+            color: Colors.black.withOpacity(0.1),
+            offset: const Offset(-4, 0),
             blurRadius: 8,
             spreadRadius: 2,
           ),
@@ -989,22 +991,35 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (widget.doc["situacion"] == "En Prisión domiciliaria" ||
-                widget.doc["situacion"] == "En libertad condicional")
+            const SizedBox(height: 20),
+
+            // ✅ Mostrar el botón solo si no fue referido por "355"
+            if (FirebaseAuth.instance.currentUser != null && referidoPor != "355")
+              CardGestionarDescuento(
+                uidUsuario: data['id'],
+                uidAdmin: descuento?['otorgadoPor'],
+              ),
+
+            const SizedBox(height: 20),
+
+            if (data["situacion"] == "En Prisión domiciliaria" ||
+                data["situacion"] == "En libertad condicional")
               infoPplNoRecluido(),
+
             const SizedBox(height: 20),
             EditarExclusionWidget(
-              pplId: widget.doc['id'],
-              exentoInicial: widget.doc['exento'] ?? false,
+              pplId: data['id'],
+              exentoInicial: data['exento'] ?? false,
             ),
             const SizedBox(height: 20),
             EditarBeneficiosWidget(
-              pplId: widget.doc["id"],
+              pplId: data["id"],
               beneficiosAdquiridosInicial: ppl.beneficiosAdquiridos,
-              beneficiosNegadosInicial: ppl.beneficiosNegados, // 🔥 Añadir esta línea
+              beneficiosNegadosInicial: ppl.beneficiosNegados,
             ),
             agregarRedenciones(),
             const SizedBox(height: 20),
+
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
@@ -1025,19 +1040,19 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ],
               ),
             ),
-      
+
             const SizedBox(height: 50),
             WhatsAppCardWidget(
-              celularWhatsApp: widget.doc['celularWhatsapp'] ?? '',
+              celularWhatsApp: data['celularWhatsapp'] ?? '',
               docId: widget.doc.id,
             ),
             const SizedBox(height: 50),
-      
           ],
         ),
       ),
     );
   }
+
 
   //para seleccionar fecha redenciones
   /// 🔥 Mostrar un DatePicker para seleccionar la fecha de redención

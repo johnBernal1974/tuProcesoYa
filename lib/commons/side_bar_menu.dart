@@ -977,6 +977,8 @@ class _SideBarState extends State<SideBar> {
             final int valorConDescuento = datos['valorConDescuento'];
             final bool tieneDescuento = datos['tieneDescuento'];
             final int valorDescuento = valorOriginal - valorConDescuento;
+            final int? porcentajeDescuentoPersonalizado = datos['porcentajeDescuentoPersonalizado'];
+            final bool esPorReferido = datos['esPorReferido'];
 
             final formatter = NumberFormat("#,###", "es_CO");
 
@@ -1000,13 +1002,14 @@ class _SideBarState extends State<SideBar> {
                   const SizedBox(height: 12),
 
                   if (tieneDescuento) ...[
+                    const SizedBox(height: 12),
                     Card(
-                      color: Colors.green.shade50,
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: blanco,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(color: Colors.green.shade200),
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(
+                          color: esPorReferido ? Colors.green.shade300 : Colors.orange.shade300,
+                        ),
                       ),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
@@ -1020,10 +1023,15 @@ class _SideBarState extends State<SideBar> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                "¡Tienes un 20% de descuento en tu suscripción!\n\nAhorrarás \$${formatter.format(valorDescuento)} en este pago.",
+                                porcentajeDescuentoPersonalizado != null
+                                    ? "¡Tienes un $porcentajeDescuentoPersonalizado% de descuento en tu suscripción!\n\n"
+                                    "Ahorrarás \$${formatter.format(valorDescuento)} en este pago."
+                                    : "¡Tienes un 20% de descuento por referido!\n\n"
+                                    "Ahorrarás \$${formatter.format(valorDescuento)} en este pago.",
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
                                 ),
                               ),
                             ),
@@ -1041,6 +1049,7 @@ class _SideBarState extends State<SideBar> {
                       ),
                     ),
                   ],
+
                 ],
               ),
               actions: [
@@ -1110,31 +1119,37 @@ class _SideBarState extends State<SideBar> {
         'valorOriginal': valorOriginal,
         'valorConDescuento': valorOriginal,
         'tieneDescuento': false,
+        'porcentajeDescuentoPersonalizado': null,
       };
     }
 
-    // ✅ Verifica si tiene descuento por referido
     final doc = await FirebaseFirestore.instance.collection("Ppl").doc(user.uid).get();
-    bool tieneDescuento = false;
+    bool tieneDescuentoReferido = false;
+    int? porcentajeDescuentoPersonalizado;
 
-    if (doc.exists && doc.data()?["referidoPor"] == "355") {
-      tieneDescuento = true;
+    if (doc.exists) {
+      final data = doc.data()!;
+      tieneDescuentoReferido = data["referidoPor"] == "355";
+      porcentajeDescuentoPersonalizado = (data["descuento"] as Map?)?["porcentaje"];
     }
 
-    // ✅ Aplica 20% de descuento si tieneDescuento
+    final bool tieneDescuento = tieneDescuentoReferido || porcentajeDescuentoPersonalizado != null;
+
     int valorConDescuento = valorOriginal;
-    if (tieneDescuento) {
-      valorConDescuento = (valorOriginal * 0.8).round(); // 20% de descuento
+    if (porcentajeDescuentoPersonalizado != null) {
+      valorConDescuento = (valorOriginal * (1 - (porcentajeDescuentoPersonalizado / 100))).round();
+    } else if (tieneDescuentoReferido) {
+      valorConDescuento = (valorOriginal * 0.8).round();
     }
 
     return {
       'valorOriginal': valorOriginal,
       'valorConDescuento': valorConDescuento,
       'tieneDescuento': tieneDescuento,
+      'porcentajeDescuentoPersonalizado': porcentajeDescuentoPersonalizado,
+      'esPorReferido': tieneDescuentoReferido,
     };
   }
-
-
 
   Future<String?> obtenerIdReferidorDesdeIdUser() async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
