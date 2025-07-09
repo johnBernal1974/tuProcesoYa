@@ -1,15 +1,18 @@
 
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:tuprocesoya/widgets/reproductor_audios_whatsApp.dart';
 import 'package:tuprocesoya/widgets/whatsapp_state.dart';
-import 'dart:convert';
 import '../src/colors/colors.dart';
 import 'dart:html' as html;
+
 
 
 class WhatsAppChatPage extends StatefulWidget {
@@ -119,6 +122,9 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
           nombrePpl = "${d['nombre_ppl'] ?? ''} ${d['apellido_ppl'] ?? ''}".trim();
           isPaid = d['isPaid'] == true;
         }
+
+        bool estaRegistrado = snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty;
+
 
         return Container(
           color: Colors.brown.shade50,
@@ -230,6 +236,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                         final isAdmin = from == 'admin';
                         final mediaType = data.containsKey('mediaType') ? data['mediaType'] : null;
                         final mediaId = data.containsKey('mediaId') ? data['mediaId'] : null;
+
 
                         Widget content;
 
@@ -362,17 +369,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                           );
                         }
                         else {
-                          content = Text(
-                            text,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              height: 1.1,
-                            ),
-                            textHeightBehavior: const TextHeightBehavior(
-                              applyHeightToFirstAscent: false,
-                              applyHeightToLastDescent: true,
-                            ),
-                          );
+                          content = _buildMensaje(data);
                         }
 
                         return Align(
@@ -461,7 +458,8 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                         );
                       },
                     ),
-                    // Campo de texto
+
+                    // Campo de texto con saltos de línea
                     Card(
                       color: blanco,
                       surfaceTintColor: blanco,
@@ -473,9 +471,71 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                         padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
                         child: Row(
                           children: [
+
+                            IconButton(
+                              icon: const Icon(Icons.attach_file),
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  builder: (context) {
+                                    return SafeArea(
+                                      child: Wrap(
+                                        children: [
+                                          ListTile(
+                                            leading: const Icon(Icons.image),
+                                            title: const Text("Imagen"),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              final numero = selectedNumeroCliente.value;
+                                              if (numero != null) {
+                                                adjuntarYEnviar(tipo: 'image', numeroDestino: numero);
+                                              }
+                                            },
+                                          ),
+                                          ListTile(
+                                            leading: const Icon(Icons.insert_drive_file),
+                                            title: const Text("Documento (PDF, Word)"),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              final numero = selectedNumeroCliente.value;
+                                              if (numero != null) {
+                                                adjuntarYEnviar(tipo: 'document', numeroDestino: numero);
+                                              }
+                                            },
+                                          ),
+                                          // ListTile(
+                                          //   leading: const Icon(Icons.audiotrack),
+                                          //   title: const Text("Audio (MP3)"),
+                                          //   onTap: () {
+                                          //     Navigator.pop(context);
+                                          //     if (selectedNumeroCliente.value != null) {
+                                          //       adjuntarYEnviar(tipo: 'audio', numeroDestino: selectedNumeroCliente.value!);
+                                          //     }
+                                          //   },
+                                          // ),
+                                          // ListTile(
+                                          //   leading: const Icon(Icons.videocam),
+                                          //   title: const Text("Video (MP4)"),
+                                          //   onTap: () {
+                                          //     Navigator.pop(context);
+                                          //     if (selectedNumeroCliente.value != null) {
+                                          //       adjuntarYEnviar(tipo: 'video', numeroDestino: selectedNumeroCliente.value!);
+                                          //     }
+                                          //   },
+                                          // ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                             Expanded(
                               child: TextField(
                                 controller: _controller,
+                                maxLines: null,
+                                keyboardType: TextInputType.multiline,
+                                textInputAction: TextInputAction.newline,
                                 decoration: const InputDecoration(
                                   hintText: 'Escribe un mensaje...',
                                   border: InputBorder.none,
@@ -490,9 +550,184 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                         ),
                       ),
                     ),
+
+                    const SizedBox(height: 8),
+
+                    // 👇 BLOQUE QUE AGREGA EL SALUDO PERSONALIZADO
+                    Builder(
+                      builder: (context) {
+                        final String numeroNormalizado = numero.startsWith('57') ? numero.substring(2) : numero;
+                        final String? nombreCompleto = _pplNombres[numeroNormalizado];
+                        final String primerNombre = nombreCompleto?.split(' ').first ?? '';
+
+                        return SizedBox(
+                          height: 100,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: [
+                              _buildQuickMessageCard(
+                                Icons.waving_hand,
+                                "Bienvenida/o",
+                                primerNombre.isNotEmpty
+                                    ? "Hola $primerNombre, nos alegra poder atenderte. ¿En qué te podemos ayudar hoy?"
+                                    : "Hola, nos alegra poder atenderte. ¿En qué te podemos ayudar hoy?",
+                              ),
+
+                              if (!estaRegistrado)
+                              _buildQuickMessageCard(
+                                Icons.lightbulb,
+                                "Explicación servicio",
+                                """
+👋 ¡Hola! Bienvenid@ a *Tu Proceso Ya*.
+
+🟣 Nuestra plataforma es completamente *auto gestionable*, lo que significa que puedes hacer todo el proceso desde tu celular o computador, *sin necesidad de conocimientos técnicos ni jurídicos*.
+
+🛠️ Desde aquí puedes solicitar fácilmente:
+✅ Derechos de petición  
+✅ Tutelas  
+✅ Permisos de 72 horas  
+✅ Prisión domiciliaria  
+✅ Libertad condicional  
+✅ Extinción de la pena  
+✅ Redenciones  
+✅ Traslado de procesos  
+✅ Acumulaciones de pena, entre otros.
+
+👥 Al crear tu usuario, te guiamos paso a paso.  
+🧭 Te damos todas las herramientas para que puedas convertirte en *la defensora o defensor de los derechos de tu familiar*.
+
+🕒 El proceso de registro solo toma *unos minutos*.
+
+🎁 Al activar tu usuario, tendrás *24 horas de prueba GRATIS* para:
+
+🔍 Consultar los datos actualizados de la persona privada de la libertad  
+📈 Ver qué beneficios puede solicitar  
+📅 Saber cuánto tiempo le falta para cada beneficio  
+📄 Conocer los documentos necesarios para cada trámite
+
+💡 Es supremamente fácil y está diseñado para acompañarte en todo el proceso.
+""",
+                              ),
+
+                              if (!estaRegistrado)
+                              _buildQuickMessageCard(
+                                Icons.app_registration,
+                                "Como Registrarse",
+                                """
+📝 *El proceso de registro es muy fácil*.
+
+Solo ingresa al siguiente enlace, crea tu usuario y en un máximo de *72 horas* activaremos tu servicio:
+
+👉 www.tuprocesoya.com
+""",
+                              ),
+
+                              if (!estaRegistrado)
+                              _buildQuickMessageCard(
+                                Icons.info_outline,
+                                "Necesario registrarse",
+                                """
+ℹ️ Para poder orientarte y guiarte correctamente, es *indispensable que estés registrad@ en la plataforma*.
+
+🧾 El registro nos permite acceder a los datos necesarios para darte una orientación clara y precisa, según el caso de tu familiar.
+
+📝 Si aún no te has registrado, puedes hacerlo en pocos minutos aquí:  
+👉 www.tuprocesoya.com
+""",
+                              ),
+
+                              if (estaRegistrado && isPaid )
+                              _buildQuickMessageCard(
+                                Icons.handshake,
+                                "Acompañamiento",
+                                """
+Con todo gusto. Recuerda que con *Tu Proceso YA*, cuentas ahora con un equipo. Ya no estás sol@ en esta situación tan difícil.
+
+Cuenta con nosotros.
+""",
+                              ),
+
+                              if (estaRegistrado && isPaid )
+                              _buildQuickMessageCard(
+                                Icons.hourglass_top,
+                                "Espera",
+                                """
+Dame un momento, vamos a revisar tu caso con detenimiento y en breve te comparto la información.
+
+Gracias por tu paciencia.
+""",
+
+
+                              ),
+                              if (estaRegistrado && isPaid )
+                                _buildQuickMessageCard(
+                                    Icons.share,
+                                    "Compartir Link",
+                                    """
+Puedes ingresar a la app en:
+https://www.tuprocesoya.com
+"""),
+                              if (estaRegistrado && !isPaid)
+                                _buildQuickMessageCard(
+                                  Icons.lock_outline,
+                                  "Sin Pago suscripción",
+                                  """
+Gracias por haber creado tu usuario en *Tu Proceso YA*.  
+🔍 Hemos notado que aún no has activado tu suscripción.
+
+🙌 Para poder atender todas tus preguntas y brindarte una orientación completa y adecuada, es necesario contar con la suscripción activa.
+
+💡 Al activarla podrás:
+✅ Consultar la información actualizada de tu familiar  
+✅ Ver qué beneficios puede solicitar  
+✅ Iniciar trámites directamente desde la plataforma  
+✅ Recibir acompañamiento oportuno en cada paso
+
+🎯 Tu apoyo es fundamental. Al activar tu cuenta estarás más cerca de tu familiar, ayudándole justo cuando más lo necesita.
+
+📲 Puedes hacerlo en pocos minutos desde la aplicación.
+
+❓ *Si necesitas ayuda para hacer el pago, escríbenos y con gusto te orientamos.* 💜
+""",
+                                ),
+
+                              if (estaRegistrado && !isPaid)
+                                _buildQuickMessageCard(
+                                  Icons.discount,
+                                  "¡Descuento exclusivo!",
+                                  """
+🎉 *¡Aprovecha esta oportunidad por tiempo limitado!*  
+Sabemos lo importante que es apoyar a tu familiar en este momento, por eso queremos ayudarte con un *20% de descuento* si activas tu cuenta en las próximas *2 horas*.
+
+🔓 Al activar tu suscripción podrás:
+✅ Ver toda la información actualizada de tu familiar  
+✅ Iniciar trámites de manera sencilla desde la plataforma  
+✅ Saber si tiene derecho a beneficios y cuánto tiempo le falta  
+✅ Recibir acompañamiento oportuno en cada paso
+
+💳 Puedes pagar fácilmente desde cualquier lugar por:  
+👉 Nequi  
+👉 Daviplata  
+👉 PSE  
+👉 Tarjeta de crédito o débito
+
+🌐 Solo ingresa aquí para activar con descuento:  
+👉 *www.tuprocesoya.com*
+
+💬 ¿Quieres que te generemos el descuento para que puedas ingresar de inmediato?
+
+*Es ahora o nunca.* 💜
+""",
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
+
             ],
           ),
         );
@@ -500,6 +735,64 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
     );
   }
 
+  Widget _buildMensaje(Map<String, dynamic> mensaje) {
+    final contenido = mensaje['contenido'];
+    final esImagen = mensaje['esImagen'] == true;
+    final esArchivo = mensaje['esArchivo'] == true;
+    final fileName = mensaje['fileName'] ?? 'Archivo';
+
+    if (esImagen) {
+      return Image.network(contenido, width: 200, height: 200, fit: BoxFit.cover);
+    } else if (esArchivo) {
+      return InkWell(
+        onTap: () => html.window.open(contenido, '_blank'),
+        child: Row(
+          children: [
+            const Icon(Icons.insert_drive_file),
+            const SizedBox(width: 8),
+            Text(fileName, style: const TextStyle(decoration: TextDecoration.underline)),
+          ],
+        ),
+      );
+    } else {
+      return Text(mensaje['text'] ?? '');
+    }
+  }
+
+
+
+  Widget _buildQuickMessageCard(IconData icono, String titulo, String texto) {
+    return GestureDetector(
+      onTap: () {
+        _controller.text += (_controller.text.isNotEmpty ? '\n' : '') + texto;
+        _controller.selection = TextSelection.fromPosition(
+          TextPosition(offset: _controller.text.length),
+        );
+      },
+      child: Container(
+        width: 90,
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.deepPurple.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.deepPurple.shade200),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icono, size: 30, color: Colors.deepPurple),
+            const SizedBox(height: 6),
+            Text(
+              titulo,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildListaConversaciones(bool esPequena) {
     return Container(
@@ -567,6 +860,8 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                             final apellidoAcudiente = d['apellido_acudiente'] ?? '';
                             displayName = "$nombreAcudiente $apellidoAcudiente";
                             isPaid = d['isPaid'] == true;
+                            bool estaRegistrado = snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty;
+
                           }
 
                           return ListTile(
@@ -1111,13 +1406,86 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
     return MediaQuery.of(context).size.width < 700;
   }
 
-
-
   String formatTimeAMPM(DateTime dateTime) {
     final hour = dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour;
     final minute = dateTime.minute.toString().padLeft(2, '0');
     final suffix = dateTime.hour >= 12 ? 'PM' : 'AM';
     return '$hour:$minute $suffix';
+  }
+
+
+  Future<void> adjuntarYEnviar({
+    required String tipo, // 'image' o 'document'
+    required String numeroDestino,
+  }) async {
+    // 1. Seleccionar archivo
+    FilePickerResult? result;
+    if (tipo == 'image') {
+      result = await FilePicker.platform.pickFiles(type: FileType.image);
+    } else {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'doc', 'docx'],
+      );
+    }
+
+    if (result == null || result.files.single.bytes == null) return;
+
+    final bytes = result.files.single.bytes!;
+    final fileName = result.files.single.name;
+    final mimeType = _getMimeType(tipo);
+
+    // 2. Subir a Firebase Storage
+    final storageRef = FirebaseStorage.instance.ref().child('whatsapp_files/$fileName');
+    await storageRef.putData(bytes);
+    final fileUrl = await storageRef.getDownloadURL();
+
+    // 3. Llamar a la función Cloud que sube y envía por WhatsApp
+    final uri = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/uploadAndSendWhatsAppMedia");
+
+    final response = await http.post(
+      uri,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        "fileUrl": fileUrl,
+        "mimeType": mimeType,
+        "to": numeroDestino,
+        "caption": fileName,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      print("✅ Archivo enviado correctamente por WhatsApp");
+    } else {
+      print("❌ Error al enviar archivo: ${response.body}");
+    }
+
+    // 4. Guardar en Firestore para mostrar en el chat
+    await FirebaseFirestore.instance.collection('whatsapp_messages').add({
+      'from': 'admin',
+      'conversationId': numeroDestino,
+      'createdAt': FieldValue.serverTimestamp(),
+      'esImagen': tipo == 'image',
+      'esArchivo': tipo == 'document',
+      'fileName': fileName,
+      'contenido': fileUrl,
+    });
+  }
+
+
+  String _getMimeType(String tipo) {
+    switch (tipo) {
+      case 'image':
+        return 'image/jpeg';
+      case 'document':
+        return 'application/pdf'; // podrías variarlo por extensión
+      case 'audio':
+        return 'audio/mpeg'; // o audio/mp3
+      case 'video':
+        return 'video/mp4';
+      default:
+        return 'application/octet-stream';
+    }
   }
 
 }

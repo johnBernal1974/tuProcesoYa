@@ -1821,12 +1821,16 @@ class _WhatsAppChatWrapperState extends State<WhatsAppChatWrapper> {
         .listen((snapshotMensajes) {
       if (snapshotMensajes.docs.isNotEmpty) {
         final numero = snapshotMensajes.docs.first['conversationId']?.toString() ?? 'Sin número';
+
+        if (!mounted) return; // ✅ PREVENIR ERROR
+
         setState(() {
           _numeroCliente = numero;
         });
       }
     });
   }
+
 
   @override
   Widget build(BuildContext context) {

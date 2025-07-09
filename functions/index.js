@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
-const cors = require("cors");
+//const cors = require("cors");
 const express = require("express");
 const crypto = require("crypto");
 const { defineSecret } = require("firebase-functions/params");
@@ -19,8 +19,11 @@ const WOMPI_PUBLIC_KEY = defineSecret("WOMPI_PUBLIC_KEY");
 const WOMPI_INTEGRITY_SECRET = defineSecret("WOMPI_INTEGRITY_SECRET");
 const WOMPI_PUBLIC_KEY_SANDBOX = defineSecret("WOMPI_PUBLIC_KEY_SANDBOX");
 const WOMPI_INTEGRITY_SECRET_SANDBOX = defineSecret("WOMPI_INTEGRITY_SECRET_SANDBOX");
-
+const FormData = require('form-data');
 const axios = require("axios");
+//Se coloco para probar el enviod e imagens en whatsapp
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+const cors = require("cors")({ origin: true });
 
 
 admin.initializeApp();
@@ -1306,3 +1309,79 @@ exports.sendWhatsAppMessage = functions.https.onRequest(async (req, res) => {
   }
 });
 
+exports.uploadAndSendWhatsAppMedia = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    if (req.method === "OPTIONS") {
+      return res.status(204).send("");
+    }
+
+    const { fileUrl, mimeType, to, caption } = req.body;
+
+    if (!fileUrl || !mimeType || !to) {
+      return res.status(400).json({
+        error: "Faltan parámetros: fileUrl, mimeType y to son obligatorios.",
+      });
+    }
+
+    try {
+      // 1. Descargar el archivo desde Firebase Storage
+      const response = await axios.get(fileUrl, { responseType: "stream" });
+
+      // 2. Crear FormData con el archivo
+      const form = new FormData();
+      form.append("file", response.data, {
+        filename: "archivo",
+        contentType: mimeType,
+      });
+      form.append("type", mimeType);
+      form.append("messaging_product", "whatsapp");
+
+      // 3. Subir a Meta (WhatsApp)
+      const uploadRes = await axios.post(
+        `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/media`,
+        form,
+        {
+          headers: {
+            ...form.getHeaders(),
+            Authorization: `Bearer ${ACCESS_TOKEN}`,
+          },
+        }
+      );
+
+      const mediaId = uploadRes.data.id;
+      const tipo = mimeType.startsWith("image") ? "image" : "document";
+
+      // 4. Enviar mensaje con el media ID
+      const sendRes = await axios.post(
+        `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`,
+        {
+          messaging_product: "whatsapp",
+          to,
+          type: tipo,
+          [tipo]: {
+            id: mediaId,
+            caption: caption || (tipo === "image" ? "📷 Imagen" : "📄 Documento"),
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${ACCESS_TOKEN}`,
+          },
+        }
+      );
+
+      return res.status(200).json({
+        success: true,
+        mediaId,
+        response: sendRes.data,
+      });
+    } catch (err) {
+      console.error("❌ Error:", err.response?.data || err.message);
+      return res.status(500).json({
+        error: "Error general",
+        details: err.response?.data || err.message,
+      });
+    }
+  });
+});
