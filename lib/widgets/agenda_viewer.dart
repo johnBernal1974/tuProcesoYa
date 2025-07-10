@@ -72,194 +72,20 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
     });
   }
 
-  void _mostrarCalendarioMensual() {
-    showDialog(
-      context: context,
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setStateDialog) {
-            DateTime fechaDialog = _fechaActual;
-            _cargarDiasConNotasForDate(fechaDialog);
-
-
-            return AlertDialog(
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.white,
-              title: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // IconButton(
-                  //   icon: const Icon(Icons.chevron_left),
-                  //   onPressed: () async {
-                  //     final nuevaFecha = DateTime(_fechaActual.year, _fechaActual.month - 1);
-                  //     setState(() {
-                  //       _fechaActual = nuevaFecha;
-                  //       _diaSeleccionado = null;
-                  //     });
-                  //     await _cargarDiasConNotasForDate(nuevaFecha); // ✅ fuerza recarga
-                  //     setStateDialog(() {}); // 🔄 vuelve a construir el diálogo
-                  //   },
-                  // ),
-                  Text("📅 ${DateFormat('MMMM yyyy', 'es').format(_fechaActual)}"),
-                  //
-                  // IconButton(
-                  //   icon: const Icon(Icons.chevron_right),
-                  //   onPressed: () async {
-                  //     final nuevaFecha = DateTime(_fechaActual.year, _fechaActual.month + 1);
-                  //     setState(() {
-                  //       _fechaActual = nuevaFecha;
-                  //       _diaSeleccionado = null;
-                  //     });
-                  //     await _cargarDiasConNotasForDate(nuevaFecha); // ✅ fuerza recarga
-                  //     setStateDialog(() {}); // 🔄 vuelve a construir el diálogo
-                  //   },
-                  // ),
-                ],
-              ),
-              content: Container(
-                width: 350,
-                height: 300,
-                color: Colors.white,
-                child: GridView.builder(
-                  key: ValueKey('${_fechaActual.year}-${_fechaActual.month}'),
-                  itemCount: () {
-                    final primerDiaDelMes = DateTime(_fechaActual.year, _fechaActual.month, 1);
-                    final offset = primerDiaDelMes.weekday == 7 ? 0 : primerDiaDelMes.weekday; // Lunes = 1
-                    final totalDias = DateUtils.getDaysInMonth(_fechaActual.year, _fechaActual.month);
-                    return totalDias + offset;
-                  }(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 7,
-                    crossAxisSpacing: 6,
-                    mainAxisSpacing: 6,
-                  ),
-                  itemBuilder: (_, index) {
-                    final primerDiaDelMes = DateTime(_fechaActual.year, _fechaActual.month, 1);
-                    final offset = (primerDiaDelMes.weekday + 6) % 7; // lunes = 0
-
-                    if (index < offset) {
-                      return const SizedBox(); // Celdas vacías al inicio
-                    }
-
-                    final dia = index - offset + 1;
-                    final tieneNota = _diasConNotas.contains(dia);
-                    final esHoy = DateTime.now().day == dia &&
-                        DateTime.now().month == _fechaActual.month &&
-                        DateTime.now().year == _fechaActual.year;
-                    final esSeleccionado = _diaSeleccionado == dia;
-
-                    return GestureDetector(
-                      onTap: () async {
-                        setState(() {
-                          _diaSeleccionado = dia;
-                        });
-
-                        await _cargarActividades(
-                          fecha: DateTime(_fechaActual.year, _fechaActual.month, dia),
-                        );
-
-                        Navigator.pop(context);
-                        _mostrarActividadesDelDia();
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: esSeleccionado
-                              ? Colors.green.shade100
-                              : esHoy
-                              ? Colors.deepPurple.shade100
-                              : Colors.white,
-                          border: Border.all(
-                            color: tieneNota ? Colors.deepPurple : Colors.grey.shade300,
-                          ),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text(
-                          tieneNota ? '•$dia' : '$dia',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: tieneNota ? FontWeight.bold : FontWeight.normal,
-                            color: tieneNota ? Colors.deepPurple : Colors.black87,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              actions: [
-                Padding(
-                  padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
-                  child: Text(
-                    "📌 Mostrando: ${DateFormat('d \'de\' MMMM \'de\' yyyy', 'es').format(
-                      DateTime(_fechaActual.year, _fechaActual.month, _diaSeleccionado ?? DateTime.now().day),
-                    )}",
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ),
-                TextButton(
-                  child: const Text("Cerrar"),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    setState(() {
-                      _fechaActual = DateTime.now();
-                      _diaSeleccionado = _fechaActual.day;
-                    });
-                    _cargarActividades();
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Future<void> _cargarDiasConNotasForDate(DateTime fecha) async {
-    final inicioMes = DateTime(fecha.year, fecha.month, 1);
-    final finMes = DateTime(fecha.year, fecha.month + 1, 0, 23, 59, 59);
-
-    final snapshot = await FirebaseFirestore.instance
-        .collection('agenda')
-        .where('fecha', isGreaterThanOrEqualTo: Timestamp.fromDate(inicioMes))
-        .where('fecha', isLessThanOrEqualTo: Timestamp.fromDate(finMes))
-        .get();
-
-    final dias = <int>{};
-
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      if (data['fecha'] != null && data['fecha'] is Timestamp) {
-        final fecha = (data['fecha'] as Timestamp).toDate();
-        dias.add(fecha.day);
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        _diasConNotas = dias.toList(); // ✅ Cambio importante: convertir a lista
-      });
-    }
-  }
-
   void _mostrarActividadesDelDia() {
     final TextEditingController nuevoComentarioController = TextEditingController();
     DateTime? nuevaFecha;
-    TimeOfDay? nuevaHora;
+    //TimeOfDay? nuevaHora;
 
     showDialog(
       context: context,
       builder: (_) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            final totalDias = DateUtils.getDaysInMonth(_fechaActual.year, _fechaActual.month);
-            final fechaFormateada = DateFormat('EEEE d MMMM yyyy', 'es').format(_fechaActual);
-
+            _diaSeleccionado ??= DateTime.now().day;
+            //final totalDias = DateUtils.getDaysInMonth(_fechaActual.year, _fechaActual.month);
+            final fechaSeleccionada = DateTime(_fechaActual.year, _fechaActual.month, _diaSeleccionado!);
+            final fechaFormateada = DateFormat('EEEE d MMMM yyyy', 'es').format(fechaSeleccionada);
             return AlertDialog(
               backgroundColor: Colors.white,
               surfaceTintColor: Colors.white,
@@ -330,7 +156,6 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
                                     }
                                   });
                                 }
-
                                 // 🟩 Color dinámico según estado y tiempo
                                 Color colorFondo;
                                 if (estado == 'Atendida') {
@@ -474,30 +299,43 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // IconButton(
-                              //   icon: const Icon(Icons.chevron_left),
-                              //   onPressed: () {
-                              //     setState(() {
-                              //       _fechaActual = DateTime(_fechaActual.year, _fechaActual.month - 1);
-                              //     });
-                              //     setStateDialog(() {});
-                              //     _cargarDiasConNotas();
-                              //   },
-                              // ),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_left),
+                                onPressed: () async {
+                                  final nuevaFecha = DateTime(_fechaActual.year, _fechaActual.month - 1);
+                                  setState(() {
+                                    _fechaActual = nuevaFecha;
+                                    _diaSeleccionado = 1; // ✅ Selecciona el primer día del mes
+                                  });
+
+                                  await _cargarDiasConNotas();
+                                  await _cargarActividades(fecha: DateTime(nuevaFecha.year, nuevaFecha.month, 1));
+
+                                  setStateDialog(() {});
+                                },
+
+
+                              ),
                               Text(
                                 DateFormat('MMMM yyyy', 'es').format(_fechaActual),
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
-                              // IconButton(
-                              //   icon: const Icon(Icons.chevron_right),
-                              //   onPressed: () {
-                              //     setState(() {
-                              //       _fechaActual = DateTime(_fechaActual.year, _fechaActual.month + 1);
-                              //     });
-                              //     setStateDialog(() {});
-                              //     _cargarDiasConNotas();
-                              //   },
-                              // ),
+                              IconButton(
+                                icon: const Icon(Icons.chevron_right),
+                                onPressed: () async {
+                                  final nuevaFecha = DateTime(_fechaActual.year, _fechaActual.month + 1);
+                                  setState(() {
+                                    _fechaActual = nuevaFecha;
+                                    _diaSeleccionado = 1; // ✅ Selecciona el primer día del nuevo mes
+                                  });
+
+                                  await _cargarDiasConNotas();
+                                  await _cargarActividades(fecha: DateTime(nuevaFecha.year, nuevaFecha.month, 1));
+
+                                  setStateDialog(() {});
+                                },
+
+                              ),
                             ],
                           ),
 
@@ -690,15 +528,43 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.pop(context),
+                  onPressed: () {
+                    setState(() {
+                      _fechaActual = DateTime.now();
+                      _diaSeleccionado = DateTime.now().day;
+                    });
+                    Navigator.pop(context);
+                    _cargarActividades(); // Opcional, si quieres actualizar actividades del día actual
+                  },
                   child: const Text("Cerrar"),
                 ),
+
               ],
             );
           },
         );
       },
     );
+  }
+
+  Future<void> _cargarDiasConNotasForDate(DateTime fecha) async {
+    final inicioMes = DateTime(fecha.year, fecha.month, 1);
+    final finMes = DateTime(fecha.year, fecha.month + 1, 0);
+
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('agenda')
+        .where('fecha', isGreaterThanOrEqualTo: inicioMes)
+        .where('fecha', isLessThanOrEqualTo: finMes)
+        .get();
+
+    final diasConNotas = querySnapshot.docs.map((doc) {
+      final fecha = (doc['fecha'] as Timestamp).toDate();
+      return fecha.day;
+    }).toSet().toList(); // ✅ Convierte el Set en Lista
+
+    setState(() {
+      _diasConNotas = diasConNotas;
+    });
   }
 
 
@@ -714,8 +580,14 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
     )
         : "";
 
+    final fechaSeleccionada = DateTime(
+      _fechaActual.year,
+      _fechaActual.month,
+      _diaSeleccionado ?? DateTime.now().day,
+    );
+
     return InkWell(
-      onTap: _mostrarCalendarioMensual,
+      onTap: _mostrarActividadesDelDia,
       borderRadius: BorderRadius.circular(12),
       child: Card(
         elevation: 2,
@@ -729,7 +601,7 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "📅 ${DateFormat('d MMM yyyy', 'es').format(_fechaActual)}",
+                "📅 ${DateFormat('d MMM yyyy', 'es').format(fechaSeleccionada)}",
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               if (primeraHora.isNotEmpty) ...[
@@ -752,6 +624,7 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
       ),
     );
   }
+
 
 
   void _mostrarReagendadorComentario({

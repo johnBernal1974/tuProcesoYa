@@ -1,4 +1,5 @@
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cloud_functions/cloud_functions.dart';
@@ -12,7 +13,6 @@ import 'package:tuprocesoya/widgets/reproductor_audios_whatsApp.dart';
 import 'package:tuprocesoya/widgets/whatsapp_state.dart';
 import '../src/colors/colors.dart';
 import 'dart:html' as html;
-
 
 
 class WhatsAppChatPage extends StatefulWidget {
@@ -34,12 +34,37 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
   final Map<String, Uint8List> _documentCache = {};
   final ValueNotifier<Map<String, dynamic>?> _mensajeRespondido = ValueNotifier(null);
   bool _enviando = false;
+  bool tieneServicioSolicitado = false;
+  Set<String> _usuariosConSolicitudes = {};
+  bool _cargandoSolicitudes = true;
+
+
 
 
   @override
   void initState() {
     super.initState();
     _cargarNombresPpl();
+    _cargarSolicitudes();
+
+  }
+
+  void _cargarSolicitudes() async {
+    final ids = await _obtenerIdsConSolicitudes();
+    setState(() {
+      _usuariosConSolicitudes = ids;
+      _cargandoSolicitudes = false;
+    });
+  }
+
+  Future<Set<String>> _obtenerIdsConSolicitudes() async {
+    final snapshot = await FirebaseFirestore.instance.collection('solicitudes_usuario').get();
+
+    return snapshot.docs
+        .map((s) => s['idUser']?.toString())
+        .where((id) => id != null)
+        .cast<String>()
+        .toSet();
   }
 
 
@@ -103,6 +128,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
     );
   }
 
+
   Widget _buildChatConversacion(String numero, bool esPequena) {
     return FutureBuilder<QuerySnapshot>(
       future: FirebaseFirestore.instance
@@ -115,23 +141,26 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
         String nombreAcudiente = "Sin registro";
         String nombrePpl = "";
         bool isPaid = false;
+        String idUsuario = "";
 
         if (snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty) {
           final d = snapshotPpl.data!.docs.first;
+          idUsuario = d.id;
           nombreAcudiente = "${d['nombre_acudiente'] ?? ''} ${d['apellido_acudiente'] ?? ''}".trim();
           nombrePpl = "${d['nombre_ppl'] ?? ''} ${d['apellido_ppl'] ?? ''}".trim();
           isPaid = d['isPaid'] == true;
         }
 
         bool estaRegistrado = snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty;
+        final tieneServicioSolicitado = _usuariosConSolicitudes.contains(idUsuario);
 
 
         return Container(
-          color: Colors.brown.shade50,
+          color: blancoCards,
           padding: esPequena ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 12),
           child: Column(
             children: [
-              // 🔹 Barra superior con info del usuario
+              // 🔹 Barra superior con info del usuario ///***nuevo cambio
               Card(
                 color: blanco,
                 surfaceTintColor: blanco,
@@ -143,6 +172,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CircleAvatar(
                         backgroundColor: Colors.green.shade50,
@@ -187,6 +217,66 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                           ],
                         ),
                       ),
+
+                      // 🔹 Tarjeta morada si tiene solicitudes (sin onTap)
+                      if (tieneServicioSolicitado)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          child: Card(
+                            elevation: 0,
+                            color: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              side: const BorderSide(color: Colors.deepPurple, width: 1),
+                            ),
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.assignment, color: Colors.deepPurple),
+                                  SizedBox(width: 6),
+                                  Text(
+                                    'Tiene solicitudes',
+                                    style: TextStyle(fontSize: 16, color: Colors.deepPurple),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                      // 🔹 Tarjeta blanca si está registrado (con navegación)
+                      if (estaRegistrado)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 12),
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.pushNamed(
+                                context,
+                                'editar_registro_admin',
+                                arguments: idUsuario,
+                              );
+                            },
+                            child: Card(
+                              color: Colors.deepPurple,
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              child: const Padding(
+                                padding: EdgeInsets.all(8.0),
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.person_search, color: Colors.white),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Ver perfil',
+                                      style: TextStyle(fontSize: 16, color: Colors.white),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -758,8 +848,6 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
       return Text(mensaje['text'] ?? '');
     }
   }
-
-
 
   Widget _buildQuickMessageCard(IconData icono, String titulo, String texto) {
     return GestureDetector(
@@ -1487,5 +1575,4 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
         return 'application/octet-stream';
     }
   }
-
 }

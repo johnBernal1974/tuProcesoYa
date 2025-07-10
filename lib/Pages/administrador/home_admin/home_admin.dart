@@ -1212,8 +1212,11 @@ olicitudes() async {
                 _docIdSeleccionado = doc.id;
               });
 
-              await Navigator.pushNamed(context, 'editar_registro_admin', arguments: doc);
-
+              await Navigator.pushNamed(
+                context,
+                'editar_registro_admin',
+                arguments: doc.id,
+              );
               // Cuando regresas, el mismo doc seguirá seleccionado gracias al fondo
               setState(() {}); // Refresca la tabla por si algo cambió
             },
@@ -1821,16 +1824,12 @@ class _WhatsAppChatWrapperState extends State<WhatsAppChatWrapper> {
         .listen((snapshotMensajes) {
       if (snapshotMensajes.docs.isNotEmpty) {
         final numero = snapshotMensajes.docs.first['conversationId']?.toString() ?? 'Sin número';
-
-        if (!mounted) return; // ✅ PREVENIR ERROR
-
         setState(() {
           _numeroCliente = numero;
         });
       }
     });
   }
-
 
   @override
   Widget build(BuildContext context) {

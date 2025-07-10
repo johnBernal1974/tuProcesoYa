@@ -187,14 +187,38 @@ class MyApp extends StatelessWidget {
         'editar_registro_admin': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
 
-          if (args is DocumentSnapshot) {
-            return EditarRegistroPage(doc: args);
+          if (args is String) {
+            return FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('Ppl').doc(args).get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Scaffold(
+                    backgroundColor: blanco,
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                if (!snapshot.hasData || !snapshot.data!.exists) {
+                  return const Scaffold(
+                    backgroundColor: blanco,
+                    body: Center(
+                      child: Text(
+                        '❌ No se encontró el usuario.',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  );
+                }
+
+                return EditarRegistroPage(doc: snapshot.data!);
+              },
+            );
           } else {
             return const Scaffold(
               backgroundColor: blanco,
               body: Center(
                 child: Text(
-                  '❌ Error: No se proporcionó el documento necesario.',
+                  '❌ Error: No se proporcionó el ID del usuario.',
                   style: TextStyle(color: Colors.red),
                 ),
               ),
