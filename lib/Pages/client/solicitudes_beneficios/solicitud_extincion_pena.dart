@@ -163,24 +163,26 @@ class _SolicitudExtincionPenaPageState extends State<SolicitudExtincionPenaPage>
   Future<void> enviarSolicitudExtincionPena(double valorExtincion) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     if (!context.mounted) return;
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        backgroundColor: blancoCards,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 10),
-            Text("Enviando solicitud..."),
-          ],
+    // ✅ Descontar saldo antes de continuar
+    await descontarSaldo(valorExtincion);
+    if(context.mounted){
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          backgroundColor: blancoCards,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text("Enviando solicitud..."),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;

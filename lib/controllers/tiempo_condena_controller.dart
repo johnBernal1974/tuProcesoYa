@@ -11,6 +11,7 @@ class CalculoCondenaController with ChangeNotifier {
   int? diasRestanteExactos;
   int? mesesEjecutado;
   int? diasEjecutadoExactos;
+  int? tiempoCondena; // Tiempo total de condena en meses
   double? porcentajeEjecutado;
 
   double _totalDiasRedimidos = 0.0;
@@ -52,6 +53,8 @@ class CalculoCondenaController with ChangeNotifier {
 
       // 🔹 Total de días de condena
       final totalDiasCondena = (_mesesCondena! * 30) + _diasCondena!;
+      tiempoCondena = totalDiasCondena ~/ 30;
+
 
       // 🔹 Días efectivos de reclusión
       final diasEjecutados = await calcularDiasEfectivosDesdeEstadias(id, fechaCaptura);
@@ -68,12 +71,22 @@ class CalculoCondenaController with ChangeNotifier {
       diasComputados = totalComputado % 30;
 
       // 🔹 Tiempo restante
-      final diasRestantes = totalDiasCondena - totalComputado;
-      mesesRestante = diasRestantes ~/ 30;
-      diasRestanteExactos = diasRestantes % 30;
+      var diasRestantes = totalDiasCondena - totalComputado;
+      if (diasRestantes <= 0) {
+        // ✅ Ya cumplió o superó la condena
+        diasRestantes = 0;
+        mesesRestante = 0;
+        diasRestanteExactos = 0;
+        porcentajeEjecutado = 100.0;
+      } else {
+        mesesRestante = diasRestantes ~/ 30;
+        diasRestanteExactos = diasRestantes % 30;
+        porcentajeEjecutado = (totalComputado / totalDiasCondena) * 100;
+      }
 
-      // 🔹 Porcentaje cumplido
-      porcentajeEjecutado = (totalComputado / totalDiasCondena) * 100;
+      if (porcentajeEjecutado! > 100) {
+        porcentajeEjecutado = 100.0;
+      }
 
       notifyListeners();
       debugPrint("✅ Tiempo calculado con éxito");
@@ -81,6 +94,7 @@ class CalculoCondenaController with ChangeNotifier {
       debugPrint("🔹 Redenciones: ${_totalDiasRedimidos.toInt()} días");
       debugPrint("🔹 Total computado: $mesesComputados meses y $diasComputados días");
       debugPrint("🔹 Porcentaje: ${porcentajeEjecutado?.toStringAsFixed(2)}%");
+      debugPrint("🔹 Dias restantes: $diasRestantes");
     } catch (e) {
       debugPrint("❌ Error en calcularTiempo: $e");
     }
@@ -126,33 +140,68 @@ class CalculoCondenaController with ChangeNotifier {
           .get();
 
       if (snapshot.docs.isEmpty) {
-        // Si no hay estadías, usar solo la fecha captura si existe
         if (fechaCaptura == null) return 0;
         return DateTime.now().difference(fechaCaptura).inDays;
       }
 
-      // 🔹 1) Recolectar todos los tipos presentes
+      // 🔹 Tipos presentes
       final tiposPresentes = snapshot.docs
           .map((doc) => doc.data()['tipo'] as String)
           .toSet();
 
-      // 🔹 2) Determinar qué tipos suman
+      // 🔹 Ordenar estadías por ingreso
+      final listaEstadiasOrdenadas = snapshot.docs
+          .map((doc) => doc.data())
+          .toList()
+        ..sort((a, b) {
+          final ingresoA = (a['fecha_ingreso'] as Timestamp).toDate();
+          final ingresoB = (b['fecha_ingreso'] as Timestamp).toDate();
+          return ingresoA.compareTo(ingresoB);
+        });
+
+      // 🔹 Detectar revocatorias según las reglas
+      bool excluirDomiciliaria = false;
+      bool excluirCondicional = false;
+
+      for (int i = 0; i < listaEstadiasOrdenadas.length - 2; i++) {
+        final tipo1 = listaEstadiasOrdenadas[i]['tipo'];
+        final tipo2 = listaEstadiasOrdenadas[i + 1]['tipo'];
+        final tipo3 = listaEstadiasOrdenadas[i + 2]['tipo'];
+
+        if (tipo1 == 'Reclusión' && tipo2 == 'Domiciliaria' && tipo3 == 'Reclusión') {
+          excluirDomiciliaria = true;
+        }
+
+        if (tipo1 == 'Reclusión' && tipo2 == 'Condicional' && tipo3 == 'Reclusión') {
+          excluirCondicional = true;
+        }
+
+        if (i <= listaEstadiasOrdenadas.length - 4) {
+          final tipo4 = listaEstadiasOrdenadas[i + 3]['tipo'];
+          if (tipo1 == 'Reclusión' &&
+              tipo2 == 'Domiciliaria' &&
+              tipo3 == 'Condicional' &&
+              tipo4 == 'Reclusión') {
+            excluirDomiciliaria = false; // ✅ SE INCLUYE
+            excluirCondicional = true;   // ❌ SE EXCLUYE
+          }
+        }
+      }
+
+      // 🔹 Definir tipos a sumar
       Set<String> tiposQueSuman = {};
-      if (tiposPresentes.contains('Reclusión') && tiposPresentes.contains('Domiciliaria') && tiposPresentes.contains('Condicional')) {
-        tiposQueSuman.addAll(['Reclusión', 'Domiciliaria', 'Condicional']);
-      } else if (tiposPresentes.contains('Reclusión') && tiposPresentes.contains('Domiciliaria')) {
-        tiposQueSuman.addAll(['Reclusión', 'Domiciliaria']);
-      } else if (tiposPresentes.contains('Domiciliaria') && tiposPresentes.contains('Condicional')) {
-        tiposQueSuman.addAll(['Domiciliaria', 'Condicional']);
-      } else if (tiposPresentes.contains('Reclusión')) {
+
+      if (tiposPresentes.contains('Reclusión')) {
         tiposQueSuman.add('Reclusión');
-      } else if (tiposPresentes.contains('Domiciliaria')) {
+      }
+      if (tiposPresentes.contains('Domiciliaria') && !excluirDomiciliaria) {
         tiposQueSuman.add('Domiciliaria');
-      } else if (tiposPresentes.contains('Condicional')) {
+      }
+      if (tiposPresentes.contains('Condicional') && !excluirCondicional) {
         tiposQueSuman.add('Condicional');
       }
 
-      // 🔹 3) Calcular días efectivos
+      // 🔹 Calcular días efectivos
       int totalDiasEfectivos = 0;
       final hoy = DateTime.now();
 
@@ -164,17 +213,16 @@ class CalculoCondenaController with ChangeNotifier {
           final salida = data['fecha_salida'] != null
               ? (data['fecha_salida'] as Timestamp).toDate()
               : hoy;
-
           totalDiasEfectivos += salida.difference(ingreso).inDays;
         }
       }
 
-      debugPrint(
-          "✅ Total días efectivos para PPL $pplId (tipos sumados: $tiposQueSuman): $totalDiasEfectivos");
+      debugPrint("✅ Total días efectivos para PPL $pplId (tipos sumados: $tiposQueSuman): $totalDiasEfectivos");
       return totalDiasEfectivos;
     } catch (e) {
       debugPrint("❌ Error calculando días efectivos: $e");
       return 0;
     }
   }
+
 }

@@ -6,7 +6,6 @@ import '../../../commons/wompi/checkout_page.dart';
 import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/selector_centro_reclusion.dart';
-import '../solicitud_exitosa_extincion_pena/solicitud_exitosa_extincion_pena.dart';
 import '../solucitud_exitosa_traslado_proceso/solucitud_exitosa_traslado_proceso.dart';
 
 class SolicitudTrasladoProcesoPage extends StatefulWidget {
@@ -315,14 +314,8 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
     final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
 
     if (saldo >= valorTrasladoProceso) {
-      // 💰 Tiene saldo suficiente: descontar y enviar
-      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
-        'saldo': saldo - valorTrasladoProceso,
-      });
-
-      await enviarSolicitudTrasladoProceso(valorTrasladoProceso);
+      await enviarSolicitudTrasladoProceso(valorTrasladoProceso); // ✅ sin descuento aquí
     } else {
-      // ❌ No tiene saldo suficiente: mostrar opción de pago
       if (!context.mounted) return;
 
       showDialog(
@@ -343,7 +336,7 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
                       tipoPago: 'traslado',
                       valor: valorTrasladoProceso.toInt(),
                       onTransaccionAprobada: () async {
-                        await enviarSolicitudTrasladoProceso(valorTrasladoProceso);
+                        await enviarSolicitudTrasladoProceso(valorTrasladoProceso); // ✅ se ejecuta después del pago
                       },
                     ),
                   ),
@@ -357,27 +350,32 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
     }
   }
 
+
   Future<void> enviarSolicitudTrasladoProceso(double valorTrasladoProceso) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     if (!context.mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        backgroundColor: blancoCards,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 10),
-            Text("Enviando solicitud..."),
-          ],
+    // ✅ Descontar antes de continuar
+    await descontarSaldo(valorTrasladoProceso);
+
+    if(context.mounted){
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          backgroundColor: blancoCards,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text("Enviando solicitud..."),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -418,8 +416,6 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
         origen: "trasladoProceso_solicitados",
         fecha: Timestamp.now(),
       );
-
-     //await descontarSaldo(valorTrasladoProceso);
 
       if (context.mounted) {
         Navigator.pop(context);

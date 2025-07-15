@@ -599,9 +599,6 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
     ) ?? false;
   }
 
-  Future<void> enviarSolicitud() async {
-    await verificarSaldoYEnviarSolicitud();
-  }
 
   void eliminarArchivoHijo(PlatformFile file) {
     setState(() {
@@ -916,13 +913,8 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
 
 
   Future<void> verificarSaldoYEnviarSolicitud() async {
-    final configSnapshot = await FirebaseFirestore.instance
-        .collection('configuraciones')
-        .limit(1)
-        .get();
-
-    final double valorPermiso72h =
-    (configSnapshot.docs.first.data()['valor_72h'] ?? 0).toDouble();
+    final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
+    final double valorPermiso72h = (configSnapshot.docs.first.data()['valor_72h'] ?? 0).toDouble();
 
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null || !context.mounted) return;
@@ -931,15 +923,9 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
     final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
 
     if (saldo >= valorPermiso72h) {
-      // 💰 Usuario tiene saldo suficiente: descontar y continuar
-      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
-        'saldo': saldo - valorPermiso72h,
-      });
-
-      await enviarSolicitudPermiso72horas(valorPermiso72h);
+      await enviarSolicitudPermiso72horas(valorPermiso72h); // ✅ Ya no descuentas aquí
     } else {
-      // ❌ No tiene saldo suficiente: mostrar opción de pago
-      if(context.mounted){
+      if (context.mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -947,10 +933,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
             title: const Text("Pago requerido"),
             content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancelar"),
-              ),
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -961,7 +944,7 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
                         tipoPago: 'permiso',
                         valor: valorPermiso72h.toInt(),
                         onTransaccionAprobada: () async {
-                          await enviarSolicitudPermiso72horas(valorPermiso72h);
+                          await enviarSolicitudPermiso72horas(valorPermiso72h); // ✅ Descuento se hace ahí
                         },
                       ),
                     ),
@@ -977,27 +960,29 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
   }
 
 
-
   Future<void> enviarSolicitudPermiso72horas(double valor72horas) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     if (!context.mounted) return;
+    // ✅ Descontar antes de hacer nada
+    await descontarSaldo(valor72horas);
 
-    bool confirmarEnvio = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Confirmar envío"),
-        content: const Text("Ya puedes enviar tu solicitud de Permiso de 72 horas"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar")),
-        ],
-      ),
-    );
+    if(context.mounted){
+      bool confirmarEnvio = await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Confirmar envío"),
+          content: const Text("Ya puedes enviar tu solicitud de Permiso de 72 horas"),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar")),
+          ],
+        ),
+      );
 
-    if (!confirmarEnvio) return;
+      if (!confirmarEnvio) return;
+    }
 
     if (context.mounted) {
       showDialog(
@@ -1082,10 +1067,6 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
         origen: "permiso_solicitados",
         fecha: Timestamp.now(),
       );
-
-      await descontarSaldo(valor72horas);
-
-
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
@@ -1133,6 +1114,11 @@ class _SolicitudPermiso72HorasPageState extends State<SolicitudPermiso72HorasPag
       }
     }
   }
+
+  Future<void> enviarSolicitud() async {
+    await verificarSaldoYEnviarSolicitud();
+  }
+
 
   Widget formularioHijos(){
     return Column(

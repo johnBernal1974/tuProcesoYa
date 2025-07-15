@@ -782,15 +782,9 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
 
     if (saldo >= valorCondicional) {
-      // 💰 Tiene saldo suficiente: descontar y continuar con el envío
-      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
-        'saldo': saldo - valorCondicional,
-      });
-
-      await enviarSolicitudLibertadCondicional(valorCondicional);
+      await enviarSolicitudLibertadCondicional(valorCondicional); // ✅ No descuenta aquí
     } else {
-      // ❌ Saldo insuficiente: mostrar opción de pago
-      if(context.mounted){
+      if (context.mounted) {
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
@@ -798,10 +792,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
             title: const Text("Pago requerido"),
             content: const Text("Para enviar esta solicitud debes realizar el pago del servicio."),
             actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("Cancelar"),
-              ),
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancelar")),
               TextButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -812,7 +803,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                         tipoPago: 'condicional',
                         valor: valorCondicional.toInt(),
                         onTransaccionAprobada: () async {
-                          await enviarSolicitudLibertadCondicional(valorCondicional);
+                          await enviarSolicitudLibertadCondicional(valorCondicional); // ✅ Aquí sí descuenta
                         },
                       ),
                     ),
@@ -825,80 +816,6 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         );
       }
     }
-  }
-
-  Future<bool> validarCampos() async {
-    if (_direccionController.text.trim().isEmpty ||
-        departamentoSeleccionado == null ||
-        municipioSeleccionado == null ||
-        archivoRecibo == null ||
-        archivoDeclaracion == null ||
-        archivoCedulaResponsable == null ||
-        _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
-        _nombreResponsableController.text.trim().isEmpty ||
-        _cedulaResponsableController.text.trim().isEmpty ||
-        _celularResponsableController.text.trim().isEmpty ||
-        parentescoSeleccionado == null || parentescoSeleccionado!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor, completa todos los campos y sube los documentos requeridos."),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-
-    final celular = _celularResponsableController.text.trim();
-    if (celular.length != 10 || !RegExp(r'^\d+$').hasMatch(celular)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("El número de celular debe tener exactamente 10 dígitos."),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-
-    final cedula = _cedulaResponsableController.text.trim();
-    if (cedula.length < 7 || cedula.length > 10 || !RegExp(r'^\d+$').hasMatch(cedula)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("La cédula debe tener entre 7 y 10 dígitos."),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return false;
-    }
-
-    if (tieneHijosConvivientes) {
-      if (hijos.isEmpty || archivosHijos.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Por favor, agrega los datos de los hijos y sube sus documentos."),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return false;
-      }
-
-      for (var hijo in hijos) {
-        final nombre = hijo['nombre']?.trim() ?? '';
-        final edadStr = hijo['edad'] ?? '0';
-        final edad = int.tryParse(edadStr) ?? 0;
-
-        if (nombre.isEmpty || edad <= 0 || edad >= 18) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Verifica que cada hijo tenga nombre y una edad válida menor de 18 años."),
-              backgroundColor: Colors.red,
-            ),
-          );
-          return false;
-        }
-      }
-    }
-
-    return true; // ✅ Todo validado bien
   }
 
 
@@ -936,23 +853,25 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
   Future<void> enviarSolicitudLibertadCondicional(double valorCondicional) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
     if (!context.mounted) return;
 
-    bool confirmarEnvio = await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Confirmar envío"),
-        content: const Text("Ya puedes enviar tu solicitud de Libertad condicional"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar")),
-        ],
-      ),
-    );
-
-    if (!confirmarEnvio) return;
+    // ✅ Descontar primero
+    await descontarSaldo(valorCondicional);
+    if(context.mounted){
+      bool confirmarEnvio = await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Confirmar envío"),
+          content: const Text("Ya puedes enviar tu solicitud de Libertad condicional"),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
+            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Enviar")),
+          ],
+        ),
+      );
+      if (!confirmarEnvio) return;
+    }
 
     if (context.mounted) {
       showDialog(
@@ -1037,8 +956,6 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         fecha: Timestamp.now(),
       );
 
-      //await descontarSaldo(valorCondicional);
-
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
@@ -1088,6 +1005,80 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         debugPrint('⚠️ Saldo insuficiente, no se pudo descontar');
       }
     }
+  }
+
+  Future<bool> validarCampos() async {
+    if (_direccionController.text.trim().isEmpty ||
+        departamentoSeleccionado == null ||
+        municipioSeleccionado == null ||
+        archivoRecibo == null ||
+        archivoDeclaracion == null ||
+        archivoCedulaResponsable == null ||
+        _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
+        _nombreResponsableController.text.trim().isEmpty ||
+        _cedulaResponsableController.text.trim().isEmpty ||
+        _celularResponsableController.text.trim().isEmpty ||
+        parentescoSeleccionado == null || parentescoSeleccionado!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Por favor, completa todos los campos y sube los documentos requeridos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    final celular = _celularResponsableController.text.trim();
+    if (celular.length != 10 || !RegExp(r'^\d+$').hasMatch(celular)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("El número de celular debe tener exactamente 10 dígitos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    final cedula = _cedulaResponsableController.text.trim();
+    if (cedula.length < 7 || cedula.length > 10 || !RegExp(r'^\d+$').hasMatch(cedula)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("La cédula debe tener entre 7 y 10 dígitos."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return false;
+    }
+
+    if (tieneHijosConvivientes) {
+      if (hijos.isEmpty || archivosHijos.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor, agrega los datos de los hijos y sube sus documentos."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false;
+      }
+
+      for (var hijo in hijos) {
+        final nombre = hijo['nombre']?.trim() ?? '';
+        final edadStr = hijo['edad'] ?? '0';
+        final edad = int.tryParse(edadStr) ?? 0;
+
+        if (nombre.isEmpty || edad <= 0 || edad >= 18) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Verifica que cada hijo tenga nombre y una edad válida menor de 18 años."),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return false;
+        }
+      }
+    }
+
+    return true; // ✅ Todo validado bien
   }
 
   Widget formularioHijos(){

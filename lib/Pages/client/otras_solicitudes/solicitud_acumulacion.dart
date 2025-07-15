@@ -176,6 +176,9 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
       final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
       final apellidoPpl = (data?['apellido_ppl'] ?? '').toString();
 
+      // ✅ Descontar saldo ANTES de guardar la solicitud
+      await descontarSaldo(valor);
+
       // ✅ Crear documento principal
       await firestore.collection('acumulacion_solicitados').doc(docId).set({
         'id': docId,
@@ -197,9 +200,6 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
         origen: "acumulacion_solicitados",
         fecha: Timestamp.now(),
       );
-
-      // ✅ Descontar saldo
-      await descontarSaldo(valor);
 
       // ✅ Redirigir a pantalla de éxito
       if (context.mounted) {
@@ -227,6 +227,7 @@ class _SolicitudAcumulacionPenasPageState extends State<SolicitudAcumulacionPena
       }
     }
   }
+
 
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;

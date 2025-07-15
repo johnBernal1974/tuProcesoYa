@@ -74,7 +74,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     final dias = int.tryParse(_diasCondenaController.text) ?? 0;
     return meses + (dias / 30);
   }
-  int tiempoCondena =0;
+
 
   ///Mapas de opciones traidas de firestore
   List<Map<String, dynamic>> regionales = [];
@@ -112,7 +112,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
 
   /// variables para calcular el tiempo de condena
-  final CalculoCondenaController _calculoCondenaController = CalculoCondenaController(PplProvider());
+  late CalculoCondenaController _calculoCondenaController;
+  int tiempoCondena =0;
   int diasEjecutado = 0;
   int mesesEjecutado = 0;
   int diasEjecutadoExactos = 0;
@@ -162,8 +163,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     super.initState();
     _pplProvider = PplProvider();
     adminFullName = AdminProvider().adminFullName ?? "Desconocido";
+    _calculoCondenaController = CalculoCondenaController(_pplProvider);
     _initCalculoCondena();
-      calcularTiempo(widget.doc.id);
     _initFormFields();
     _centroController = TextEditingController();
     cargarCiudades();
@@ -507,7 +508,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
               ),
             ),
           ],
-          ///boton para seguimiento de activados
+
           LayoutBuilder(
             builder: (context, constraints) {
               bool esPantallaAncha = constraints.maxWidth > 600; // Puedes ajustar el ancho si deseas
@@ -756,76 +757,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  int _calcularDias(int metaPorcentaje) {
-    final diferencia = porcentajeEjecutado - metaPorcentaje;
-    return (diferencia.abs() / 100 * tiempoCondena * 30).round();
-  }
-
-  Future<int> calcularDiasEfectivos(String pplId) async {
-    final estadiasSnapshot = await FirebaseFirestore.instance
-        .collection('Ppl')
-        .doc(pplId)
-        .collection('estadias')
-        .get();
-
-    int diasEfectivos = 0;
-
-    if (estadiasSnapshot.docs.isEmpty) {
-      print('⚠️ No hay estadías registradas.');
-      return 0;
-    }
-
-    // ✅ Identificamos qué tipos existen
-    final tiposPresentes = estadiasSnapshot.docs
-        .map((doc) => (doc.data()['tipo'] as String).trim().toLowerCase())
-        .toSet();
-
-    print('ℹ️ Tipos presentes: $tiposPresentes');
-
-    // ✅ Determinamos qué tipos suman
-    final Set<String> tiposQueSuman = {};
-
-    if (tiposPresentes.contains('reclusión') &&
-        tiposPresentes.contains('domiciliaria') &&
-        tiposPresentes.contains('condicional')) {
-      tiposQueSuman.addAll(['reclusión', 'domiciliaria', 'condicional']);
-    } else if (tiposPresentes.contains('reclusión') &&
-        tiposPresentes.contains('domiciliaria')) {
-      tiposQueSuman.addAll(['reclusión', 'domiciliaria']);
-    } else if (tiposPresentes.contains('reclusión') &&
-        tiposPresentes.length == 1) {
-      tiposQueSuman.add('reclusión');
-    } else if (tiposPresentes.contains('domiciliaria') &&
-        tiposPresentes.contains('condicional') &&
-        !tiposPresentes.contains('reclusión')) {
-      tiposQueSuman.addAll(['domiciliaria', 'condicional']);
-    } else if (tiposPresentes.contains('domiciliaria') &&
-        tiposPresentes.length == 1) {
-      tiposQueSuman.add('domiciliaria');
-    } else if (tiposPresentes.contains('condicional') &&
-        tiposPresentes.length == 1) {
-      tiposQueSuman.add('condicional');
-    }
-
-    print('✅ Tipos que suman: $tiposQueSuman');
-
-    // ✅ Calculamos días efectivos
-    for (final doc in estadiasSnapshot.docs) {
-      final data = doc.data();
-      final tipo = (data['tipo'] as String).trim().toLowerCase();
-      if (tiposQueSuman.contains(tipo)) {
-        final fechaIngreso = (data['fecha_ingreso'] as Timestamp).toDate();
-        final fechaSalida = data['fecha_salida'] != null
-            ? (data['fecha_salida'] as Timestamp).toDate()
-            : DateTime.now();
-        final diff = fechaSalida.difference(fechaIngreso).inDays;
-        diasEfectivos += diff;
-        print('➡️ Sumar $diff días por tipo $tipo (${fechaIngreso} a ${fechaSalida})');
-      }
-    }
-
-    print('🎯 Total días efectivos: $diasEfectivos');
-    return diasEfectivos;
+  int _calcularDias(double porcentajeMeta) {
+    final diasMeta = (porcentajeMeta / 100 * tiempoCondena * 30).ceil();
+    final diasActuales = (_calculoCondenaController.mesesComputados ?? 0) * 30 +
+        (_calculoCondenaController.diasComputados ?? 0);
+    return diasMeta - diasActuales;
   }
 
 
@@ -848,46 +784,39 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+
+
   Widget _buildBenefitMinimalSection({
     required String titulo,
     required bool condition,
     required int remainingTime,
   }) {
+    final esPositivo = condition;
+    final texto = esPositivo
+        ? "Hace ${remainingTime.abs()} días"
+        : "Faltan ${remainingTime.abs()} días";
+
+    final color = esPositivo ? Colors.green : Colors.red;
+
     return Card(
-      color: Colors.white,
-      surfaceTintColor: blanco,
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: condition ? Colors.green.shade700 : Colors.red.shade700, // Borde dinámico
-          width: 2.5,
-        ),
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: color),
       ),
+      color: Colors.white,
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               titulo,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: Colors.black,
-              ),
+              style: TextStyle(fontWeight: FontWeight.bold, color: color),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
-              condition
-                  ? "Hace $remainingTime días"
-                  : "Faltan $remainingTime días",
-              style: TextStyle(
-                color: condition ? Colors.green.shade700 : Colors.red.shade700,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
+              texto,
+              style: TextStyle(color: color, fontWeight: FontWeight.w500),
             ),
           ],
         ),
@@ -903,45 +832,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     if (screenWidth < 900) return baseSize * 0.95; // Para tablets
     return baseSize; // Para pantallas grandes
   }
-
-
-  Future<void> calcularTiempo(String id) async {
-    final pplData = await _pplProvider.getById(id);
-    if (pplData == null) return;
-
-    final status = pplData.status ?? '';
-    final fechaCaptura = pplData.fechaCaptura;
-    final meses = pplData.mesesCondena ?? 0;
-    final dias = pplData.diasCondena ?? 0;
-
-    // 🔐 Validación inicial
-    if (status == 'pendiente' || fechaCaptura == null || (meses <= 0 && dias <= 0)) {
-      setState(() {
-        tiempoCondena = 0;
-        porcentajeEjecutado = 0.0;
-      });
-      return;
-    }
-
-    final totalDiasCondena = (meses * 30) + dias;
-    if (totalDiasCondena <= 0) return;
-
-    // ✅ NUEVO: Obtener los días efectivos según las estadías y las condiciones
-    final diasEfectivos = await calcularDiasEfectivos(id); // <- método que tú implementaste
-
-    // ✅ Calcular el porcentaje de cumplimiento
-    final porcentaje = (diasEfectivos / totalDiasCondena) * 100;
-
-    setState(() {
-      tiempoCondena = totalDiasCondena ~/ 30;
-      porcentajeEjecutado = porcentaje.clamp(0.0, 100.0); // Limitar entre 0 y 100
-    });
-
-    debugPrint(
-        "✅ Porcentaje ejecutado (ajustado): ${porcentajeEjecutado.toStringAsFixed(2)}%"
-    );
-  }
-
 
   Widget _mensajeAdvertencia(String texto) {
     return Container(
@@ -966,8 +856,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
-
 
   /// 🔹 Widgets adicionales (Historial y acciones)
   Widget _buildExtraWidget() {
@@ -2913,33 +2801,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   void _initCalculoCondena() async {
     try {
-      final mesesCondena = widget.doc['meses_condena'] ?? 0;
-      final diasCondena = widget.doc['dias_condena'] ?? 0;
-
-      // 🔐 Salir si no hay datos suficientes
-      if ((mesesCondena <= 0) && (diasCondena <= 0)) {
-        debugPrint(
-            "⚠️ Sin datos de condena (meses/días), no se ejecuta el cálculo.");
-        setState(() {
-          mesesRestante = 0;
-          diasRestanteExactos = 0;
-          mesesEjecutado = 0;
-          diasEjecutadoExactos = 0;
-          porcentajeEjecutado = 0.0;
-        });
-        return; // 🚀 Salir sin seguir
-      }
-
-      final fechaCapturaRaw = widget.doc.get('fecha_captura');
-      DateTime? fechaCaptura = _convertirFecha(fechaCapturaRaw);
-
-      if (fechaCaptura == null) {
-        debugPrint("❌ Error: No se pudo convertir la fecha de captura");
-        return;
-      }
-
-      debugPrint("📌 Fecha de captura: $fechaCaptura");
-
       await _calculoCondenaController.calcularTiempo(widget.doc.id);
 
       setState(() {
@@ -2948,12 +2809,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         mesesEjecutado = _calculoCondenaController.mesesEjecutado ?? 0;
         diasEjecutadoExactos = _calculoCondenaController.diasEjecutadoExactos ?? 0;
         porcentajeEjecutado = _calculoCondenaController.porcentajeEjecutado ?? 0.0;
+        tiempoCondena = _calculoCondenaController.tiempoCondena ?? 0;
+
       });
 
-      debugPrint(
-          "✅ Cálculo actualizado: Meses ejecutados=$mesesEjecutado, Días ejecutados=$diasEjecutadoExactos, Porcentaje ejecutado=${porcentajeEjecutado.toStringAsFixed(1)}%"
-      );
-
+      debugPrint("✅ Cálculo actualizado (desde controller): Meses ejecutados=$mesesEjecutado, Días ejecutados=$diasEjecutadoExactos, Porcentaje ejecutado=${porcentajeEjecutado.toStringAsFixed(1)}%");
     } catch (e) {
       debugPrint("❌ Error en _initCalculoCondena: $e");
     }
@@ -3069,48 +2929,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
-
-  // Widget fechaCapturaPpl() {
-  //   return TextFormField(
-  //     controller: _fechaDeCapturaController,
-  //     readOnly: true, // Evita que el usuario escriba manualmente
-  //     decoration: InputDecoration(
-  //       labelText: 'Fecha de captura (YYYY-MM-DD)',
-  //       border: OutlineInputBorder(
-  //         borderRadius: BorderRadius.circular(10),
-  //         borderSide: const BorderSide(color: Colors.grey, width: 1),
-  //       ),
-  //       enabledBorder: OutlineInputBorder(
-  //         borderRadius: BorderRadius.circular(10),
-  //         borderSide: const BorderSide(color: Colors.grey, width: 1),
-  //       ),
-  //       focusedBorder: OutlineInputBorder(
-  //         borderRadius: BorderRadius.circular(10),
-  //         borderSide: const BorderSide(color: Colors.grey, width: 2),
-  //       ),
-  //       // 👇 Agrega estas 2 líneas para quitar el borde rojo de error
-  //       errorBorder: OutlineInputBorder(
-  //         borderRadius: BorderRadius.circular(10),
-  //         borderSide: const BorderSide(color: Colors.grey, width: 1),
-  //       ),
-  //       focusedErrorBorder: OutlineInputBorder(
-  //         borderRadius: BorderRadius.circular(10),
-  //         borderSide: const BorderSide(color: Colors.grey, width: 2),
-  //       ),
-  //       suffixIcon: IconButton(
-  //         icon: const Icon(Icons.calendar_today, color: Colors.deepPurple),
-  //         onPressed: () => _seleccionarFechaCaptura(context),
-  //       ),
-  //     ),
-  //
-  //     validator: (value) {
-  //       if (value == null || value.isEmpty) {
-  //         return 'Por favor ingrese la fecha de captura';
-  //       }
-  //       return null;
-  //     },
-  //   );
-  // }
 
   // Método auxiliar para formatear números con dos dígitos
   String _formatDosDigitos(int n) => n.toString().padLeft(2, '0');

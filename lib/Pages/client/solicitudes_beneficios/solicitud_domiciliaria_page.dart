@@ -998,6 +998,7 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
                         tipoPago: 'domiciliaria',
                         valor: valorDomiciliaria.toInt(),
                         onTransaccionAprobada: () async {
+                          await descontarSaldo(valorDomiciliaria);
                           await enviarSolicitudPrisionDomiciliaria(valorDomiciliaria);
                         },
                       ),
@@ -1172,7 +1173,6 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
       }
     }
   }
-
 
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;

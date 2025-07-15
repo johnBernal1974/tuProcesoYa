@@ -212,11 +212,7 @@ class _SolicitudApelacionPageState extends State<SolicitudApelacionPage> {
     final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
 
     if (saldo >= valor) {
-      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
-        'saldo': saldo - valor,
-      });
-
-      await enviarSolicitudApelacion(valor);
+      await enviarSolicitudApelacion(valor); // ✅ SIN descontar aquí
     } else {
       if (!context.mounted) return;
 
@@ -238,7 +234,7 @@ class _SolicitudApelacionPageState extends State<SolicitudApelacionPage> {
                       tipoPago: 'apelacion',
                       valor: valor.toInt(),
                       onTransaccionAprobada: () async {
-                        await enviarSolicitudApelacion(valor);
+                        await enviarSolicitudApelacion(valor); // ✅ También aquí
                       },
                     ),
                   ),
@@ -251,6 +247,7 @@ class _SolicitudApelacionPageState extends State<SolicitudApelacionPage> {
       );
     }
   }
+
 
   Future<void> enviarSolicitudApelacion(double valor) async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -273,6 +270,9 @@ class _SolicitudApelacionPageState extends State<SolicitudApelacionPage> {
     );
 
     try {
+      // ✅ Descontar primero
+      await descontarSaldo(valor);
+
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       final String docId = docIdSolicitud ??= firestore.collection('apelacion_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
@@ -303,8 +303,6 @@ class _SolicitudApelacionPageState extends State<SolicitudApelacionPage> {
         fecha: Timestamp.now(),
       );
 
-      await descontarSaldo(valor);
-
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
@@ -330,6 +328,7 @@ class _SolicitudApelacionPageState extends State<SolicitudApelacionPage> {
       }
     }
   }
+
 
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;

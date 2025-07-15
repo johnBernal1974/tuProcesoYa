@@ -114,13 +114,8 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
     final double saldo = (userDoc.data()?['saldo'] ?? 0).toDouble();
 
     if (saldo >= valorRedenciones) {
-      // 💰 Tiene saldo suficiente, descuéntalo y envía
-      await FirebaseFirestore.instance.collection('Ppl').doc(uid).update({
-        'saldo': saldo - valorRedenciones,
-      });
-      await enviarSolicitudRedencion(valorRedenciones);
+      await enviarSolicitudRedencion(valorRedenciones); // ✅ Ya no descontamos aquí
     } else {
-      // ❌ No tiene saldo suficiente, mostrar diálogo para pagar
       if (!context.mounted) return;
       showDialog(
         context: context,
@@ -140,7 +135,7 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
                       tipoPago: 'redenciones',
                       valor: valorRedenciones.toInt(),
                       onTransaccionAprobada: () async {
-                        await enviarSolicitudRedencion(valorRedenciones);
+                        await enviarSolicitudRedencion(valorRedenciones); // ✅ Se ejecuta con saldo actualizado
                       },
                     ),
                   ),
@@ -154,33 +149,36 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
     }
   }
 
-
   Future<void> enviarSolicitudRedencion(double valor) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null || !context.mounted) return;
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        backgroundColor: blancoCards,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 10),
-            Text("Enviando solicitud..."),
-          ],
+    // ✅ Descontar antes de continuar
+    await descontarSaldo(valor);
+
+    if(context.mounted){
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          backgroundColor: blancoCards,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 10),
+              Text("Enviando solicitud..."),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     try {
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       String docId = firestore.collection('redenciones_solicitados').doc().id;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
 
-      // 🔍 Obtener nombre y apellido del PPL
       final pplDoc = await firestore.collection('Ppl').doc(user.uid).get();
       final data = pplDoc.data();
       final nombrePpl = (data?['nombre_ppl'] ?? '').toString();
@@ -194,7 +192,6 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
         'status': 'Solicitado',
       });
 
-      // 👉 Guardar resumen
       await ResumenSolicitudesService.guardarResumen(
         idUser: user.uid,
         nombrePpl: '$nombrePpl $apellidoPpl',
@@ -205,6 +202,7 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
         origen: "redenciones_solicitados",
         fecha: Timestamp.now(),
       );
+
       if (context.mounted) {
         Navigator.pop(context);
         Navigator.pushReplacement(
@@ -235,6 +233,7 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
       }
     }
   }
+
 
   Future<void> descontarSaldo(double valor) async {
     final user = FirebaseAuth.instance.currentUser;
