@@ -38,8 +38,6 @@ class SolicitudRedencionesTemplate {
   });
 
   String generarTextoHtml() {
-
-
     final buffer = StringBuffer();
 
     buffer.writeln("""
@@ -59,22 +57,22 @@ class SolicitudRedencionesTemplate {
 
       <span style="font-size: 16px;"><b>I. CONSIDERACIONES</b></span><br><br>
 
-Me permito acudir ante su despacho con el fin de solicitar el cómputo y abono de redención de pena a mi favor, conforme a lo dispuesto a la Ley 65 de 1993. Dicha redención se fundamenta en las actividades laborales, educativas o de enseñanza que he venido desarrollando en el establecimiento penitenciario, las cuales son susceptibles de reconocimiento para efectos de redención, 
+      Me permito acudir ante su despacho con el fin de solicitar el cómputo y abono de redención de pena a mi favor, conforme a lo dispuesto por la Ley 65 de 1993 y las disposiciones vigentes, incluyendo la Ley 2466 de 2025. Dicha redención se fundamenta en las actividades laborales, educativas o de enseñanza que he venido desarrollando en el establecimiento penitenciario, las cuales son susceptibles de reconocimiento para efectos de redención. <br><br>
 
-solicito respetuosamente que ese despacho oficie a dicha entidad para que se sirva certificar formalmente las actividades adelantadas, el tiempo acumulado y los días redimidos que corresponda reconocer, con el fin de que el juzgado pueda realizar el respectivo cómputo y abono al total de la pena privativa de la libertad impuesta.<br><br>
-
-
+      Solicito respetuosamente que ese despacho oficie a la entidad competente para que certifique formalmente las actividades adelantadas, el tiempo acumulado y los días redimidos que proceda reconocer, con el fin de que el juzgado pueda realizar el respectivo cómputo y abono al total de la pena privativa de la libertad impuesta.<br><br>
 
       <span style="font-size: 16px;"><b>II. FUNDAMENTOS DE DERECHO</b></span><br><br>
 
-     Conforme a lo dispuesto en los artículos 82, 97, 98 y 101 de la Ley 65 de 1993, las personas privadas de la libertad tienen derecho a la redención de su pena mediante su participación en actividades laborales, educativas o de enseñanza. Este beneficio penitenciario opera como un mecanismo de resocialización progresiva dentro del sistema, y está sujeto al cumplimiento de las condiciones, requisitos y proporciones establecidas en la normativa vigente. Así, las labores y estudios realizados en el establecimiento penitenciario pueden ser reconocidos para reducir el tiempo de la pena privativa de la libertad, previa certificación por parte de la autoridad competente y valoración judicial.<br><br>
+      Conforme a lo dispuesto en los artículos 82, 97, 98 y 101 de la Ley 65 de 1993, las personas privadas de la libertad tienen derecho a la redención de su pena mediante su participación en actividades laborales, educativas o de enseñanza. Este beneficio opera como un mecanismo de resocialización progresiva dentro del sistema penitenciario y está sujeto al cumplimiento de los requisitos legales y certificaciones institucionales.<br><br>
+
+      En virtud del <b>Artículo 19 de la Ley 2466 de 2025</b> —incluida en la reciente Reforma Laboral—, se amplió el alcance de este beneficio, estableciendo que por cada <b>tres (3) días de trabajo o estudio</b> se podrá redimir <b>dos (2) días de pena</b>. Esta disposición reconoce expresamente el valor resocializador de dichas actividades y fortalece su aplicación dentro del régimen penitenciario colombiano.<br><br>
+
+      Adicionalmente, esta norma reconoce dichas actividades como <b>experiencia laboral válida</b>, siempre que sean debidamente certificadas por el Instituto Nacional Penitenciario y Carcelario (INPEC) o la autoridad penitenciaria competente, contribuyendo así a la futura reintegración social y laboral del PPL.<br><br>
 
       <span style="font-size: 16px;"><b>III. PRETENSIONES</b></span><br><br>
 
       <b>PRIMERO:</b> Que se ordene a la autoridad del establecimiento penitenciario y carcelario emitir la documentación completa para el respectivo trámite.<br><br>
       <b>SEGUNDO:</b> Que se abonen los días que resulten procedentes al tiempo de la pena impuesta.<br><br><br><br>
-
-      
 
       Por favor compulsar copias de notificaciones a la siguiente dirección electrónica:<br>
       $emailAlternativo<br>
@@ -102,4 +100,5 @@ solicito respetuosamente que ese despacho oficie a dicha entidad para que se sir
 
     return buffer.toString();
   }
+
 }
