@@ -222,7 +222,9 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                       if (tieneServicioSolicitado)
                         Padding(
                           padding: const EdgeInsets.only(left: 12),
-                          child: Card(
+                          child: MediaQuery.of(context).size.width < 600
+                              ? const Icon(Icons.assignment, color: Colors.deepPurple)
+                              : Card(
                             elevation: 0,
                             color: Colors.white,
                             shape: RoundedRectangleBorder(
@@ -257,7 +259,9 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                 arguments: idUsuario,
                               );
                             },
-                            child: Card(
+                            child: MediaQuery.of(context).size.width < 600
+                                ? const Icon(Icons.person_search, color: Colors.deepPurple)
+                                : Card(
                               color: Colors.deepPurple,
                               elevation: 2,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

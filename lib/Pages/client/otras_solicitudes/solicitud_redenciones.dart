@@ -19,6 +19,8 @@ class SolicitudRedencionPage extends StatefulWidget {
 class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
   @override
   Widget build(BuildContext context) {
+    const TextStyle textoNormal = TextStyle(fontSize: 14, height: 1.5, color: Colors.black);
+    const TextStyle textoNegrilla = TextStyle(fontSize: 14, height: 1.5, fontWeight: FontWeight.bold, color: Colors.black);
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -39,32 +41,101 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
+
                 const Text(
-                  'La redención de pena es un derecho contemplado en el artículo 141 de la Ley 65 de 1993 (Código Penitenciario y Carcelario de Colombia), el cual establece que las personas privadas de la libertad pueden redimir parte de su condena a través del trabajo, el estudio o la enseñanza durante el tiempo de reclusión.',
+                  'La redención de pena es un mecanismo legal que permite a las personas privadas de la libertad (PPL) reducir su condena a través del trabajo, el estudio o la enseñanza durante su tiempo de reclusión.',
                   textAlign: TextAlign.justify,
+                  style: textoNormal,
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'De acuerdo con esta norma, por cada **dos días de trabajo o estudio**, la persona tiene derecho a que se le redima **un día de pena**. Esta redención no es automática: debe ser solicitada, sustentada y posteriormente aprobada por la autoridad competente, previa verificación del cumplimiento efectivo de las actividades desarrolladas.',
+
+                RichText(
                   textAlign: TextAlign.justify,
+                  text: const TextSpan(
+                    style: textoNormal,
+                    children: [
+                      TextSpan(text: 'Gracias al '),
+                      TextSpan(text: 'Artículo 19 de la Ley 2466 de 2025', style: textoNegrilla),
+                      TextSpan(text: ', que hace parte de la reciente Reforma Laboral en Colombia, este beneficio fue ampliado: por cada '),
+                      TextSpan(text: 'tres (3) días de trabajo o estudio', style: textoNegrilla),
+                      TextSpan(text: ', se podrá redimir '),
+                      TextSpan(text: 'dos (2) días de pena', style: textoNegrilla),
+                      TextSpan(text: '. Este nuevo esquema fortalece el reconocimiento del esfuerzo realizado por las personas en proceso de resocialización.'),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  'Esta solicitud será enviada a la autoridad penitenciaria y judicial correspondiente para su estudio, validación y eventual aprobación, conforme a los requisitos legales. Recuerda que la redención también puede influir positivamente en el acceso a beneficios como permisos de 72 horas, prisión domiciliaria o libertad condicional.',
+
+                RichText(
                   textAlign: TextAlign.justify,
+                  text: const TextSpan(
+                    style: textoNormal,
+                    children: [
+                      TextSpan(text: 'Además, esta norma reconoce legalmente estas actividades como '),
+                      TextSpan(text: 'experiencia laboral válida', style: textoNegrilla),
+                      TextSpan(text: ', siempre que sean certificadas por el INPEC o las autoridades penitenciarias competentes. Esto abre nuevas puertas para la reintegración social y laboral una vez cumplida la condena.'),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 10),
-                const Text(
-                  '📌 Fundamento legal:\n• Artículo 141, Ley 65 de 1993\n• Artículo 147, Ley 65 de 1993\n• Jurisprudencia de la Corte Suprema de Justicia (Radicación No. 39257, entre otras)',
+
+                RichText(
                   textAlign: TextAlign.justify,
+                  text: const TextSpan(
+                    style: textoNormal,
+                    children: [
+                      TextSpan(text: '⚠️ '),
+                      TextSpan(text: 'Importante: ', style: textoNegrilla),
+                      TextSpan(text: 'La redención '),
+                      TextSpan(text: 'no es automática', style: textoNegrilla),
+                      TextSpan(text: '. Debe ser solicitada, sustentada con evidencias del trabajo o estudio realizado, y será evaluada por la autoridad correspondiente antes de ser aprobada.'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                const Text('📌 Fundamento legal actualizado:', style: textoNegrilla),
+                const SizedBox(height: 6),
+                const Text(
+                  '• Artículo 19, Ley 2466 de 2025 (Reforma Laboral)\n'
+                      '• Artículo 141, Ley 65 de 1993 (Código Penitenciario y Carcelario)\n'
+                      '• Artículo 147, Ley 65 de 1993\n'
+                      '• Jurisprudencia de la Corte Suprema de Justicia (Rad. No. 39257)',
+                  textAlign: TextAlign.justify,
+                  style: textoNormal,
+                ),
+                const SizedBox(height: 20),
+
+                const Divider(height: 1, color: gris),
+                const SizedBox(height: 20),
+
+                const Text('Importancia de la redención de penas', style: TextStyle(color: negro, fontWeight: FontWeight.w900, fontSize: 18)),
+                const SizedBox(height: 20),
+
+                const Text(
+                  'La redención de la pena mediante el trabajo, el estudio o la enseñanza constituye un eje fundamental del proceso de resocialización de las personas privadas de la libertad, '
+                      'tal como lo establece el régimen penitenciario colombiano. Su acreditación y reconocimiento no solo representan una reducción efectiva del tiempo de '
+                      'condena, sino que también inciden directamente en la elegibilidad para acceder a beneficios administrativos y judiciales tales como el permiso de 72 horas, la '
+                      'prisión domiciliaria y la libertad condicional.\n\n'
+                      'La ausencia o insuficiencia de actividades redimibles certificadas puede convertirse en un obstáculo para la obtención o aprobación de dichos beneficios, dado que las autoridades competentes evalúan el grado de participación en programas de resocialización como criterio determinante de progreso, disciplina y voluntad de reintegración social.',
+                  textAlign: TextAlign.justify,
+                  style: textoNormal,
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
+                const Divider(height: 1, color: gris),
+                const SizedBox(height: 20),
+
+                const Text('Solicitar redención de penas', style: TextStyle(color: negro, fontWeight: FontWeight.w900, fontSize: 18)),
+                const SizedBox(height: 20),
+
                 const Text(
-                  'Esta solicitud será enviada a la autoridad competente para el respectivo cómputo.',
+                  'Esta solicitud será enviada a la autoridad penitenciaria y judicial correspondiente para su estudio, validación y eventual aprobación, conforme a los requisitos legales vigentes.',
                   textAlign: TextAlign.justify,
+                  style: textoNormal,
                 ),
                 const SizedBox(height: 40),
+
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primary,
@@ -78,7 +149,10 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
                         title: const Text('Confirmar envío'),
                         content: const Text('¿Estás seguro de que deseas enviar esta solicitud de redención?'),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancelar'),
+                          ),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(backgroundColor: primary),
                             onPressed: () => Navigator.pop(context, true),
@@ -92,9 +166,9 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
                       await verificarSaldoYEnviarSolicitud();
                     }
                   },
-                  child: const Text('Solicitar redención', style: TextStyle(color: Colors.white, fontSize: 16)),
+                  child: const Text('Solicitar ahora', style: TextStyle(color: Colors.white, fontSize: 16)),
                 ),
-                const SizedBox(height: 50)
+                const SizedBox(height: 50),
               ],
             ),
           ),
