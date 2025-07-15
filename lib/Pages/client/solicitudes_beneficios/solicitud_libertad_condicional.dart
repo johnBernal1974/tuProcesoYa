@@ -55,6 +55,9 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
   bool tieneHijosConvivientes = false;
 
+  bool enviarSinDocumentos = false;
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -91,6 +94,52 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
+                CheckboxListTile(
+                  value: enviarSinDocumentos,
+                  onChanged: (value) {
+                    setState(() {
+                      enviarSinDocumentos = value ?? false;
+
+                      // ✅ Si se desmarca, limpiamos los archivos
+                      if (!enviarSinDocumentos) {
+                        limpiarArchivosSiEsNecesario();
+                      }
+                    });
+                  },
+                  title: const Text(
+                    'Subir solicitud sin documentos',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                if (enviarSinDocumentos)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 12, right: 12, top: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Has seleccionado enviar la solicitud sin documentos.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Selecciona esta opción únicamente si ya enviaste previamente una solicitud similar y los documentos ya están en poder del despacho.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SizedBox(height: 24),
+
                 const Text('1. Dirección exacta del domicilio donde estará el PPL:', style: TextStyle(
                     fontWeight: FontWeight.bold
                 ),),
@@ -120,74 +169,78 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
-                const Text(
-                  '2. Sube un recibo de servicios públicos de dicho domicilio:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => pickSingleFile('recibo'),
-                  child: Row(
-                    children: [
-                      Icon(
-                        archivoRecibo != null ? Icons.check_circle : Icons.upload_file,
-                        color: archivoRecibo != null ? Colors.green : Colors.deepPurple,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          archivoRecibo ?? 'Subir archivo',
-                          style: TextStyle(
-                            color: archivoRecibo != null ? Colors.black : Colors.deepPurple,
-                            decoration: archivoRecibo != null ? TextDecoration.none : TextDecoration.underline,
+                if (!enviarSinDocumentos) ...[
+                  const Text(
+                    '2. Sube un recibo de servicios públicos de dicho domicilio:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => pickSingleFile('recibo'),
+                    child: Row(
+                      children: [
+                        Icon(
+                          archivoRecibo != null ? Icons.check_circle : Icons.upload_file,
+                          color: archivoRecibo != null ? Colors.green : Colors.deepPurple,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            archivoRecibo ?? 'Subir archivo',
+                            style: TextStyle(
+                              color: archivoRecibo != null ? Colors.black : Colors.deepPurple,
+                              decoration: archivoRecibo != null ? TextDecoration.none : TextDecoration.underline,
+                            ),
                           ),
                         ),
-                      ),
-                      if (archivoRecibo != null)
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                          onPressed: () => eliminarArchivo('recibo'),
-                        ),
-                    ],
+                        if (archivoRecibo != null)
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                            onPressed: () => eliminarArchivo('recibo'),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                const Divider(color: negroLetras, height: 1),
-                const SizedBox(height: 24),
-                const Text(
-                    '3. Sube la declaración extra juicio para la solicitud de libertad condicional:', style: TextStyle(
-                    fontWeight: FontWeight.bold
-                )),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => pickSingleFile('declaracion'),
-                  child: Row(
-                    children: [
-                      Icon(
-                        archivoDeclaracion != null ? Icons.check_circle : Icons.upload_file,
-                        color: archivoDeclaracion != null ? Colors.green : Colors.deepPurple,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          archivoDeclaracion ?? 'Subir archivo',
-                          style: TextStyle(
-                            color: archivoDeclaracion != null ? Colors.black : Colors.deepPurple,
-                            decoration: archivoDeclaracion != null ? TextDecoration.none : TextDecoration.underline,
+                  const SizedBox(height: 24),
+                  const Divider(color: negroLetras, height: 1),
+                  const SizedBox(height: 24),
+                ],
+                if (!enviarSinDocumentos) ...[
+                  const Text(
+                    '3. Sube la declaración extra juicio para la solicitud de libertad condicional:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => pickSingleFile('declaracion'),
+                    child: Row(
+                      children: [
+                        Icon(
+                          archivoDeclaracion != null ? Icons.check_circle : Icons.upload_file,
+                          color: archivoDeclaracion != null ? Colors.green : Colors.deepPurple,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            archivoDeclaracion ?? 'Subir archivo',
+                            style: TextStyle(
+                              color: archivoDeclaracion != null ? Colors.black : Colors.deepPurple,
+                              decoration: archivoDeclaracion != null ? TextDecoration.none : TextDecoration.underline,
+                            ),
                           ),
                         ),
-                      ),
-                      if (archivoDeclaracion != null)
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                          onPressed: () => eliminarArchivo('declaracion'),
-                        ),
-                    ],
+                        if (archivoDeclaracion != null)
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                            onPressed: () => eliminarArchivo('declaracion'),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                const Divider(color: negroLetras, height: 1),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                  const Divider(color: negroLetras, height: 1),
+                  const SizedBox(height: 24),
+                ],
                 const Text('4. Datos de la persona responsable del PPL en el domicilio:' , style: TextStyle(
                     fontWeight: FontWeight.bold
                 )),
@@ -309,40 +362,42 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
                 const SizedBox(height: 24),
-                const Text(
-                  '6. Sube la fotocopia de la cédula de la persona responsable:',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () => pickSingleFile('cedula_responsable'),
-                  child: Row(
-                    children: [
-                      Icon(
-                        archivoCedulaResponsable != null ? Icons.check_circle : Icons.upload_file,
-                        color: archivoCedulaResponsable != null ? Colors.green : Colors.deepPurple,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          archivoCedulaResponsable ?? 'Subir archivo',
-                          style: TextStyle(
-                            color: archivoCedulaResponsable != null ? Colors.black : Colors.deepPurple,
-                            decoration: archivoCedulaResponsable != null ? TextDecoration.none : TextDecoration.underline,
+                if (!enviarSinDocumentos) ...[
+                  const Text(
+                    '6. Sube la fotocopia de la cédula de la persona responsable:',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () => pickSingleFile('cedula_responsable'),
+                    child: Row(
+                      children: [
+                        Icon(
+                          archivoCedulaResponsable != null ? Icons.check_circle : Icons.upload_file,
+                          color: archivoCedulaResponsable != null ? Colors.green : Colors.deepPurple,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            archivoCedulaResponsable ?? 'Subir archivo',
+                            style: TextStyle(
+                              color: archivoCedulaResponsable != null ? Colors.black : Colors.deepPurple,
+                              decoration: archivoCedulaResponsable != null ? TextDecoration.none : TextDecoration.underline,
+                            ),
                           ),
                         ),
-                      ),
-                      if (archivoCedulaResponsable != null)
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                          onPressed: () => eliminarArchivo('cedula_responsable'),
-                        ),
-                    ],
+                        if (archivoCedulaResponsable != null)
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                            onPressed: () => eliminarArchivo('cedula_responsable'),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                const Divider(color: negroLetras, height: 1),
-                const SizedBox(height: 24),
+                  const SizedBox(height: 24),
+                  const Divider(color: negroLetras, height: 1),
+                  const SizedBox(height: 24),
+                ],
                 ingresarReparacionVictima(),
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
@@ -366,67 +421,62 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                   const SizedBox(height: 24),
                   const Divider(color: negroLetras, height: 1),
                   const SizedBox(height: 24),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      formularioHijos(),
-                      const SizedBox(height: 24),
-                      const Divider(color: negroLetras, height: 1),
-                      const SizedBox(height: 24),
-                      const Text(
-                        '10. Adjuntar los documentos de identidad de los hijos',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      GestureDetector(
-                        onTap: pickMultipleFilesHijos,
-                        child: const Row(
-                          children: [
-                            Icon(Icons.upload_file, color: Colors.deepPurple),
-                            SizedBox(width: 8),
-                            Text(
-                              'Subir archivos de los hijos',
-                              style: TextStyle(
-                                decoration: TextDecoration.underline,
-                                color: Colors.deepPurple,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
+                  // 👉 Este se mantiene
+                  formularioHijos(),
 
-                      // ✅ Lista de archivos seleccionados
-                      if (archivosHijos.isNotEmpty)
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: archivosHijos.map((file) {
-                            return Row(
-                              children: [
-                                const Icon(Icons.check_circle, color: Colors.green, size: 18),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    file.name,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black,
-                                      decoration: TextDecoration.none,
-                                    ),
+                  // 👉 Este bloque solo si NO se marcó enviar sin documentos
+                  if (!enviarSinDocumentos) ...[
+                    const Text(
+                      '10. Adjuntar los documentos de identidad de los hijos',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: pickMultipleFilesHijos,
+                      child: const Row(
+                        children: [
+                          Icon(Icons.upload_file, color: Colors.deepPurple),
+                          SizedBox(width: 8),
+                          Text(
+                            'Subir archivos de los hijos',
+                            style: TextStyle(
+                              decoration: TextDecoration.underline,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (archivosHijos.isNotEmpty)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: archivosHijos.map((file) {
+                          return Row(
+                            children: [
+                              const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  file.name,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black,
+                                    decoration: TextDecoration.none,
                                   ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.close, size: 18, color: Colors.red),
-                                  tooltip: "Eliminar archivo",
-                                  onPressed: () => eliminarArchivoHijo(file),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                    ],
-                  ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.close, size: 18, color: Colors.red),
+                                tooltip: "Eliminar archivo",
+                                onPressed: () => eliminarArchivoHijo(file),
+                              ),
+                            ],
+                          );
+                        }).toList(),
+                      ),
+                  ],
                 ],
                 const SizedBox(height: 24),
                 const Divider(color: negroLetras, height: 1),
@@ -437,13 +487,45 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
                   ),
                   onPressed: () async {
                     final validado = await validarCampos();
-                    if (validado) {
-                      final confirmado = await mostrarConfirmacionEnvio(context);
-                      if (confirmado) {
-                        await enviarSolicitud();
+                    if (!validado) return;
+
+                    // 🚨 Mostrar advertencia si se quiere enviar sin documentos
+                    if (enviarSinDocumentos) {
+                      if(context.mounted){
+                        final continuar = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            backgroundColor: blanco,
+                            title: const Text("Enviar sin documentos"),
+                            content: const Text(
+                              "Estás enviando la solicitud sin adjuntar los documentos requeridos. "
+                                  "Solo debes usar esta opción si ya enviaste una solicitud similar anteriormente "
+                                  "y los documentos ya reposan en el despacho.\n\n¿Deseas continuar?",
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text("Cancelar"),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: primary),
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: const Text("Continuar", style: TextStyle(color: blanco)),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (continuar != true) return;
                       }
                     }
+
+                    final confirmado = await mostrarConfirmacionEnvio(context);
+                    if (confirmado) {
+                      await enviarSolicitud();
+                    }
                   },
+
                   child: const Text(
                     'Enviar solicitud',
                     style: TextStyle(color: blanco),
@@ -604,9 +686,11 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     if (_direccionController.text.trim().isEmpty ||
         departamentoSeleccionado == null ||
         municipioSeleccionado == null ||
-        archivoRecibo == null ||
-        archivoDeclaracion == null ||
-        archivoCedulaResponsable == null ||
+        (!enviarSinDocumentos && (
+            archivoRecibo == null ||
+                archivoDeclaracion == null ||
+                archivoCedulaResponsable == null
+        )) ||
         _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
@@ -647,10 +731,20 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
     // 🔹 Validar hijos si aplica
     if (tieneHijosConvivientes) {
-      if (hijos.isEmpty || archivosHijos.isEmpty) {
+      if (hijos.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Por favor, agrega los datos de los hijos y sube sus documentos."),
+            content: Text("Por favor, agrega los datos de los hijos."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      if (!enviarSinDocumentos && archivosHijos.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor, sube los documentos de identidad de los hijos."),
             backgroundColor: Colors.red,
           ),
         );
@@ -677,6 +771,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     await verificarSaldoYEnviarSolicitud();
   }
 
+
   final List<Map<String, String>> _opcionesReparacion = [
     {
       'clave': 'reparado',
@@ -694,6 +789,24 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
 
 
   String? _opcionReparacionSeleccionada;
+
+  void limpiarArchivosSiEsNecesario() {
+    setState(() {
+      archivoRecibo = null;
+      archivoDeclaracion = null;
+      archivoCedulaResponsable = null;
+      archivoInsolvencia = null;
+
+      urlArchivoRecibo = null;
+      urlArchivoDeclaracion = null;
+      urlArchivoCedulaResponsable = null;
+      urlArchivoInsolvencia = null;
+
+      archivosHijos.clear();
+      urlsArchivosHijos.clear();
+    });
+  }
+
 
   Widget ingresarReparacionVictima() {
     return Column(
@@ -723,8 +836,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         }).toList(),
 
 
-        if (_opcionReparacionSeleccionada ==
-            "insolvencia")
+        if (_opcionReparacionSeleccionada == "insolvencia" && !enviarSinDocumentos)
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -892,10 +1004,8 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     }
 
     try {
-      if (docIdSolicitud == null) {
-        throw Exception("❌ Error: No se ha generado un ID de solicitud. Asegúrate de haber subido al menos un archivo.");
-      }
-
+      // ✅ Generar docId si aún no existe
+      docIdSolicitud ??= FirebaseFirestore.instance.collection('condicional_solicitados').doc().id;
       FirebaseFirestore firestore = FirebaseFirestore.instance;
       final String docId = docIdSolicitud!;
       String numeroSeguimiento = (Random().nextInt(900000000) + 100000000).toString();
@@ -943,6 +1053,7 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
         if (tieneHijosConvivientes) 'hijos': hijos,
         if (tieneHijosConvivientes) 'documentos_hijos': urlsArchivosHijos,
         'reparacion': _opcionReparacionSeleccionada,
+        'enviadoSinDocumentos': enviarSinDocumentos, // ✅ aquí está
       });
 
       await ResumenSolicitudesService.guardarResumen(
@@ -1011,9 +1122,10 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     if (_direccionController.text.trim().isEmpty ||
         departamentoSeleccionado == null ||
         municipioSeleccionado == null ||
-        archivoRecibo == null ||
-        archivoDeclaracion == null ||
-        archivoCedulaResponsable == null ||
+        (!enviarSinDocumentos &&
+            (archivoRecibo == null ||
+                archivoDeclaracion == null ||
+                archivoCedulaResponsable == null)) ||
         _opcionReparacionSeleccionada == null || _opcionReparacionSeleccionada!.isEmpty ||
         _nombreResponsableController.text.trim().isEmpty ||
         _cedulaResponsableController.text.trim().isEmpty ||
@@ -1051,14 +1163,24 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
     }
 
     if (tieneHijosConvivientes) {
-      if (hijos.isEmpty || archivosHijos.isEmpty) {
+      if (hijos.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Por favor, agrega los datos de los hijos y sube sus documentos."),
+            content: Text("Por favor, agrega los datos de los hijos."),
             backgroundColor: Colors.red,
           ),
         );
-        return false;
+        return false; // o return; según el método
+      }
+
+      if (!enviarSinDocumentos && archivosHijos.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor, sube los documentos de identidad de los hijos."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return false; // o return;
       }
 
       for (var hijo in hijos) {
@@ -1073,13 +1195,15 @@ class _SolicitudLibertadCondicionalPageState extends State<SolicitudLibertadCond
               backgroundColor: Colors.red,
             ),
           );
-          return false;
+          return false; // o return;
         }
       }
     }
 
+
     return true; // ✅ Todo validado bien
   }
+
 
   Widget formularioHijos(){
     return Column(

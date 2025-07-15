@@ -63,11 +63,13 @@ class SolicitudRedencionesTemplate {
 
       <span style="font-size: 16px;"><b>II. FUNDAMENTOS DE DERECHO</b></span><br><br>
 
-      Conforme a lo dispuesto en los artículos 82, 97, 98 y 101 de la Ley 65 de 1993, las personas privadas de la libertad tienen derecho a la redención de su pena mediante su participación en actividades laborales, educativas o de enseñanza. Este beneficio opera como un mecanismo de resocialización progresiva dentro del sistema penitenciario y está sujeto al cumplimiento de los requisitos legales y certificaciones institucionales.<br><br>
+Conforme a lo dispuesto en los artículos 82, 97, 98 y 101 de la Ley 65 de 1993, las personas privadas de la libertad tienen derecho a la redención de su pena mediante su participación en actividades laborales, educativas o de enseñanza. Este beneficio opera como un mecanismo de resocialización progresiva dentro del sistema penitenciario y está sujeto al cumplimiento de los requisitos legales y certificaciones institucionales.<br><br>
 
-      En virtud del <b>Artículo 19 de la Ley 2466 de 2025</b> —incluida en la reciente Reforma Laboral—, se amplió el alcance de este beneficio, estableciendo que por cada <b>tres (3) días de trabajo o estudio</b> se podrá redimir <b>dos (2) días de pena</b>. Esta disposición reconoce expresamente el valor resocializador de dichas actividades y fortalece su aplicación dentro del régimen penitenciario colombiano.<br><br>
+En virtud del <b>Artículo 19 de la Ley 2466 de 2025</b> —incluida en la reciente Reforma Laboral—, se amplió el alcance de este beneficio, estableciendo que por cada <b>tres (3) días de trabajo o estudio</b> se podrá redimir <b>dos (2) días de pena</b>. Esta disposición reconoce expresamente el valor resocializador de dichas actividades y fortalece su aplicación dentro del régimen penitenciario colombiano.<br><br>
 
-      Adicionalmente, esta norma reconoce dichas actividades como <b>experiencia laboral válida</b>, siempre que sean debidamente certificadas por el Instituto Nacional Penitenciario y Carcelario (INPEC) o la autoridad penitenciaria competente, contribuyendo así a la futura reintegración social y laboral del PPL.<br><br>
+Adicionalmente, esta norma reconoce dichas actividades como <b>experiencia laboral válida</b>, siempre que sean debidamente certificadas por el Instituto Nacional Penitenciario y Carcelario (INPEC) o la autoridad penitenciaria competente, contribuyendo así a la futura reintegración social y laboral del PPL.<br><br>
+
+Así mismo, en aplicación del <b>principio de favorabilidad penal</b> consagrado en el artículo 29 de la Constitución Política de Colombia, solicito que dicha disposición legal más benigna sea aplicada en mi caso, dado que reduce proporcionalmente el tiempo de la pena mediante el reconocimiento del esfuerzo personal realizado en mi proceso de resocialización.<br><br>
 
       <span style="font-size: 16px;"><b>III. PRETENSIONES</b></span><br><br>
 

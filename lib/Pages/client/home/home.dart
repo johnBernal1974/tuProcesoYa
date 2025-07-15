@@ -1350,8 +1350,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
-
   // para idPaid true
   Widget _buildBeneficioFila(
       String titulo,
