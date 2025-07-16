@@ -1535,7 +1535,7 @@ Honorable Juez, respetuosamente me permito solicitar la concesión del beneficio
 
 Durante el tiempo que he permanecido en prisión domiciliaria, he mantenido un comportamiento ejemplar, cumpliendo con las condiciones impuestas, y participando activamente en mi proceso de resocialización y fortalecimiento familiar.
 
-A la fecha, he cumplido $mesesEjecutados meses y $diasRestantes días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. En consecuencia, he superado el 60% o tres quintas (3/5) partes de la pena impuesta, requisito legal para solicitar el beneficio de libertad condicional.
+A la fecha, he cumplido $mesesEjecutados meses y $diasRestantes días de la condena, incluyendo el tiempo efectivo de reclusión y las redenciones obtenidas conforme a la ley. Con la aplicación del <b>Artículo 19 de la Ley 2466 de 2025</b>, se ha logrado avanzar de manera sustancial en el cómputo total de la pena, superando ampliamente el mínimo requerido para acceder al beneficio, y quedando muy cerca del cumplimiento total.
 
 De ser concedido el beneficio, residiré en el domicilio ubicado en $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable, y quien ha asumido el compromiso de acompañarme y garantizar que cumpla con todas las condiciones que se me impongan.$textoHijos
 
@@ -1545,12 +1545,11 @@ Esta solicitud representa para mí una oportunidad de inmenso valor para consoli
 
     // 🔹 Texto para reclusión
     return """
-    
 Honorable Juez.
-    
+
 Respetuosamente me permito solicitar que me sea reconocido y redimido el tiempo que se encuentra pendiente a mi favor, correspondiente a las actividades de trabajo, estudio o enseñanza que he desarrollado durante mi permanencia en el centro de reclusión.
 
-A la fecha, he cumplido un total de $mesesEjecutados meses y $diasRestantes días de la pena impuesta, incluyendo el tiempo redimido que ya ha sido debidamente reconocido. Adicionalmente, una vez sea reconocido el tiempo de redención que aún se encuentra pendiente de validación, se completaría ampliamente el sesenta por ciento (60%) de la condena, es decir, las tres quintas (3/5) partes exigidas por el artículo 64 del Código Penal para acceder al beneficio de libertad condicional.
+A la fecha, he cumplido un total de $mesesEjecutados meses y $diasRestantes días de la pena impuesta, incluyendo el tiempo redimido que ya ha sido debidamente reconocido. Con la aplicación del <b>Artículo 19 de la Ley 2466 de 2025</b>, que establece la fórmula tres por dos (3x2) para redención, el cómputo total de pena ejecutada se incrementa significativamente, permitiendo superar ampliamente el sesenta por ciento (60%) exigido por la ley y quedando muy cerca del cumplimiento total.
 
 En virtud de lo anterior, y conforme a los principios de legalidad y resocialización, solicito de manera respetuosa que me sea concedido el beneficio de libertad condicional, al considerar que cumplo con los requisitos establecidos en la normativa penal vigente. Esta solicitud se fundamenta en el avance efectivo del cumplimiento de la pena, así como en mi conducta, actitud frente al proceso de resocialización y compromiso con la reintegración social.
 
@@ -1568,25 +1567,31 @@ Comprendo la importancia de las decisiones que se toman en estos procesos y agra
 
 
 
-
   String generarTextoPretencionesDesdeDatos(String situacion) {
     if (situacion == "En Prisión domiciliaria") {
       return """
-PRIMERO: Que se reconozca que actualmente me encuentro cumpliendo mi condena bajo el beneficio de prisión domiciliaria, y se evalúe la procedencia de concederme la libertad condicional conforme a la normatividad vigente.
+PRIMERO: Que se reconozca que actualmente me encuentro cumpliendo mi condena bajo el beneficio de prisión domiciliaria, y que dicha situación refleja un proceso de resocialización anticipada, disciplina y arraigo familiar.
 
-SEGUNDO: Otorgar el beneficio de libertad condicional, conforme al artículo 64 de la Ley 65 de 1993, teniendo en cuenta el cumplimiento de los requisitos exigidos, incluyendo el tiempo purgado, la buena conducta y el entorno familiar de arraigo.
+SEGUNDO: Que se autorice, conforme al artículo 19 de la Ley 2466 de 2025, el cómputo y aplicación de la redención de pena bajo la fórmula tres por dos (3x2), de acuerdo con los certificados laborales, educativos o de enseñanza debidamente emitidos por la autoridad penitenciaria.
+
+TERCERO: Que se aplique el principio de favorabilidad penal consagrado en el artículo 29 de la Constitución Política, para la adopción inmediata de la normativa más beneficiosa contenida en la Ley 2466 de 2025, conforme al parágrafo segundo de su artículo 19, al artículo 6º del Código Penal y al artículo 38 numeral 7º de la Ley 906 de 2004.
+
+CUARTO: Que, en virtud del cumplimiento de los requisitos establecidos en el artículo 64 de la Ley 65 de 1993 y del Código de Procedimiento Penal, se conceda el beneficio de libertad condicional.
 """;
     }
 
     // Caso por defecto: En Reclusión
     return """
-PRIMERO: Que se tenga en cuenta la redención de pena que ya ha sido obtenida por el suscrito mediante actividades desarrolladas dentro del establecimiento penitenciario, y que se autorice, por parte del despacho, la verificación, validación y cómputo de las redenciones que aún se encuentren pendientes de aprobación, a fin de que sean sumadas al tiempo de reclusión efectiva para efectos del cálculo total del cumplimiento de la pena.
+PRIMERO: Que se tenga en cuenta la redención de pena obtenida mediante actividades desarrolladas dentro del establecimiento penitenciario, y que se autorice por parte del despacho la verificación, validación y cómputo de las redenciones pendientes de aprobación, para que sean sumadas al tiempo de reclusión efectiva con el fin de completar el porcentaje requerido.
 
-SEGUNDO: Que se ordene al establecimiento penitenciario y carcelario, área jurídica, emitir la documentación correspondiente para el trámite de libertad condicional como lo indica el art.471 del CPP.
+SEGUNDO: Que se aplique el artículo 19 de la Ley 2466 de 2025, autorizando el cómputo de redención conforme a la nueva fórmula tres por dos (3x2), reconociendo dichas actividades como experiencia laboral válida, en aplicación del principio de favorabilidad previsto en la Constitución, la ley penal y tratados internacionales.
 
-TERCERO: Que se conceda el beneficio de libertad condicional, al cumplir con los requisitos del artículo 64 del Código Penal, demostrando arraigo familiar y social, así como el cumplimiento del 60% de la pena impuesta.
+TERCERO: Que se ordene al establecimiento penitenciario y carcelario, área jurídica, emitir la documentación correspondiente para el trámite de libertad condicional, conforme al artículo 471 del Código de Procedimiento Penal.
+
+CUARTO: Que se conceda el beneficio de libertad condicional, por cumplir los requisitos legales establecidos en el artículo 64 de la Ley 65 de 1993, incluyendo el tiempo purgado, la conducta ejemplar y el arraigo familiar y social demostrado durante la ejecución de la pena.
 """;
   }
+
 
 
   String generarTextoFundamentosDesdeDatos(
@@ -1598,35 +1603,47 @@ TERCERO: Que se conceda el beneficio de libertad condicional, al cumplir con los
 
     if (situacion == "En Prisión domiciliaria") {
       return """
-1. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es una forma de cumplimiento de la pena privativa de la libertad fuera del establecimiento carcelario, bajo vigilancia del Estado, cuando el condenado haya cumplido las tres quintas partes de la pena y demostrado buena conducta.
+1. Conforme al <b>Artículo 19 de la Ley 2466 de 2025</b>, incorporado mediante la Reforma Laboral, se establece que por cada <b>tres (3) días de trabajo o estudio</b> realizados por una persona privada de la libertad, se podrán redimir <b>dos (2) días de pena</b>. Esta norma reconoce además dichas actividades como <b>experiencia laboral válida</b>, siempre que sean certificadas por el INPEC o la autoridad penitenciaria correspondiente.
 
-2. Actualmente me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria, evidencia de mi proceso de resocialización anticipada, del arraigo demostrado en el entorno familiar y del cumplimiento disciplinado de las condiciones impuestas.
+Esta modificación legislativa implica un cambio sustancial y favorable respecto al régimen anterior de redención, previsto en el artículo 82-2 de la Ley 65 de 1993. Por tanto, conforme al <b>parágrafo segundo del artículo 19 de la Ley 2466 de 2025</b>, y de acuerdo con el <b>numeral 7º del artículo 38 de la Ley 906 de 2004</b>, solicito que el Juez de Ejecución de Penas aplique el <b>principio de favorabilidad</b> contenido en el <b>artículo 29 de la Constitución</b>, en el <b>artículo 6º del Código Penal</b> y en tratados internacionales como el <b>Pacto Internacional de Derechos Civiles y Políticos</b> y la <b>Convención Americana sobre Derechos Humanos</b>.
 
-3. De acuerdo con los artículos 21 y 42 de la Constitución Política, el respeto a la dignidad humana y la protección de la familia respaldan la importancia de continuar con mi proceso de integración social en un ambiente de apoyo familiar.
+La Corte Suprema de Justicia ha reiterado que la favorabilidad no es un problema de creación legislativa, sino de aplicación judicial frente a normas sucesivas. Por tanto, en este caso, corresponde aplicar de manera inmediata y retroactiva la fórmula 3x2, como más beneficiosa, al cómputo de pena ejecutada para acceder a la libertad condicional.
 
-4. El artículo 145 de la Ley 65 de 1993 establece que, cumplidos los requisitos de porcentaje de pena ejecutada, buena conducta y plan de resocialización, procede la concesión de la libertad condicional, requisitos que he satisfecho.
+2. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es una forma de cumplimiento de la pena privativa de la libertad fuera del establecimiento carcelario, bajo vigilancia del Estado, cuando el condenado haya cumplido las tres quintas partes de la pena y demostrado buena conducta.
 
-5. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos para la procedencia del beneficio.
+3. Actualmente me encuentro cumpliendo la condena bajo el beneficio de prisión domiciliaria, evidencia de mi proceso de resocialización anticipada, del arraigo demostrado en el entorno familiar y del cumplimiento disciplinado de las condiciones impuestas.
 
-6. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, dispone que las penas privativas de libertad deben tener como finalidad esencial la rehabilitación social, principio que respaldo mediante esta solicitud.
+4. De acuerdo con los artículos 21 y 42 de la Constitución Política, el respeto a la dignidad humana y la protección de la familia respaldan la importancia de continuar con mi proceso de integración social en un ambiente de apoyo familiar.
+
+5. El artículo 145 de la Ley 65 de 1993 establece que, cumplidos los requisitos de porcentaje de pena ejecutada, buena conducta y plan de resocialización, procede la concesión de la libertad condicional, requisitos que he satisfecho.
+
+6. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos para la procedencia del beneficio.
+
+7. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, dispone que las penas privativas de libertad deben tener como finalidad esencial la rehabilitación social, principio que respaldo mediante esta solicitud.
 """;
     }
 
     // 🔹 Situación por defecto: En Reclusión
     return """
-1. Conforme a los artículos 97, 98 y 101 de la Ley 65 de 1993 (Código Penitenciario y Carcelario), las personas privadas de la libertad tienen derecho a redimir parte de su pena a través de actividades como el estudio, el trabajo y la participación en labores culturales o deportivas, previa autorización del centro penitenciario. Estos días redimidos deben ser sumados al tiempo efectivo de reclusión para efectos del cómputo del cumplimiento total de la pena y la evaluación de beneficios como la libertad condicional.
+1. Conforme al <b>Artículo 19 de la Ley 2466 de 2025</b>, incluido en la Reforma Laboral, se establece que por cada <b>tres (3) días de trabajo o estudio</b> realizados por personas privadas de la libertad, se redimirán <b>dos (2) días de pena</b>. Esta medida, además de fortalecer el valor resocializador de dichas actividades, las reconoce como <b>experiencia laboral válida</b> siempre que estén certificadas por la autoridad penitenciaria competente.
 
-2. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es un mecanismo de cumplimiento de la pena bajo vigilancia estatal, aplicable a quienes hayan cumplido las tres quintas partes de la pena y demuestren buena conducta.
+Solicito que dicha norma sea aplicada conforme al <b>principio de favorabilidad</b>, previsto en el <b>artículo 29 de la Constitución Política</b>, el <b>artículo 6º del Código Penal (Ley 599 de 2000)</b>, el <b>numeral 7º del artículo 38 de la Ley 906 de 2004</b>, y en tratados internacionales como el <b>Pacto Internacional de Derechos Civiles y Políticos</b> y la <b>Convención Americana sobre Derechos Humanos</b>. 
 
-3. Durante mi permanencia en el centro de reclusión, he cumplido más del 60% de la pena impuesta, observando una conducta ejemplar, compromiso constante con procesos de resocialización, educación y trabajo, y respeto por las normas internas.
+La Corte Suprema de Justicia ha sostenido que el juez está facultado para aplicar retroactivamente normas más benéficas, incluso si son posteriores, siempre que impliquen una reducción, modificación o sustitución de la sanción penal. En consecuencia, se solicita la aplicación de la fórmula 3x2 de redención de pena establecida en la Ley 2466 de 2025 como parte del cómputo total para el beneficio de libertad condicional.
 
-4. En atención a los artículos 21 y 42 de la Constitución Política, solicito el beneficio como medio para fortalecer el derecho fundamental a la dignidad humana y la importancia de la familia como núcleo esencial de la sociedad.
+2. Conforme a los artículos 97, 98 y 101 de la Ley 65 de 1993 (Código Penitenciario y Carcelario), las personas privadas de la libertad tienen derecho a redimir parte de su pena a través de actividades como el estudio, el trabajo y la participación en labores culturales o deportivas, previa autorización del centro penitenciario. Estos días redimidos deben ser sumados al tiempo efectivo de reclusión para efectos de la evaluación de beneficios como la libertad condicional.
 
-5. El artículo 145 de la Ley 65 de 1993 señala que cumplidos los requisitos de tiempo, comportamiento y plan de resocialización, es procedente acceder a la libertad condicional, condiciones que se reflejan en mi trayectoria penitenciaria.
+3. Conforme al artículo 64 del Código Penitenciario y Carcelario (Ley 65 de 1993), la libertad condicional es un mecanismo de cumplimiento de la pena bajo vigilancia estatal, aplicable a quienes hayan cumplido las tres quintas partes de la pena y demuestren buena conducta.
 
-6. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos de este beneficio.
+4. Durante mi permanencia en el centro de reclusión, he cumplido más del 60% de la pena impuesta, observando una conducta ejemplar, compromiso constante con procesos de resocialización, educación y trabajo, y respeto por las normas internas.
 
-7. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, resalta la necesidad de que la privación de la libertad tenga como fin principal la rehabilitación social, principio que oriento en mi solicitud.
+5. En atención a los artículos 21 y 42 de la Constitución Política, solicito el beneficio como medio para fortalecer el derecho fundamental a la dignidad humana y la importancia de la familia como núcleo esencial de la sociedad.
+
+6. El artículo 145 de la Ley 65 de 1993 señala que cumplidos los requisitos de tiempo, comportamiento y plan de resocialización, es procedente acceder a la libertad condicional, condiciones que se reflejan en mi trayectoria penitenciaria.
+
+7. No pertenezco al núcleo familiar de la víctima y no he sido condenado por delitos excluidos de este beneficio.
+
+8. El artículo 10 del Pacto Internacional de Derechos Civiles y Políticos, ratificado por Colombia, resalta la necesidad de que la privación de la libertad tenga como fin principal la rehabilitación social, principio que oriento en mi solicitud.
 """;
   }
 
