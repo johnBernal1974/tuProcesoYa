@@ -25,6 +25,7 @@ class _SideBarState extends State<SideBar> {
   bool _isTrial = false;
   String? rol;
   int solicitudesRedencion = 0;
+  int solicitudesReadecuacion = 0;
   int solicitudesDomiciliaria = 0;
   int solicitudesPermiso72h = 0;
   int solicitudesCondicional = 0;
@@ -53,6 +54,7 @@ class _SideBarState extends State<SideBar> {
     _fetchExtincionlicitados();
     _fetchAcumulacionlicitados();
     _fetchApelacionSolicitados();
+    _fetchReadecuacionRedencionesSolicitados();
   }
 
   Future<void> _loadData() async {
@@ -223,6 +225,19 @@ class _SideBarState extends State<SideBar> {
     }
   }
 
+  Future<void> _fetchReadecuacionRedencionesSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('readecuacion_solicitados')
+        .where('status', isEqualTo: 'Solicitado') // 👈 Asegúrate de usar comillas
+        .get();
+
+    if (mounted) {
+      setState(() {
+        solicitudesReadecuacion = querySnapshot.docs.length;
+      });
+    }
+  }
+
   Future<void> _fetchDomiciliariasSolicitados() async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('domiciliaria_solicitados')
@@ -377,6 +392,17 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
+                  "Solicitudes de Readecuación de redención",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_readecuacion_redenciones_admin',
+                  showBadge: solicitudesReadecuacion > 0,
+                  contador: solicitudesReadecuacion,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
                   "Solicitudes de derechos petición",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_derecho_peticion_admin',
@@ -527,6 +553,17 @@ class _SideBarState extends State<SideBar> {
             iconColor: Colors.black,
             collapsedIconColor: Colors.black,
             children: [
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes de Readecuación de redención",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_readecuacion_redenciones_admin',
+                  showBadge: solicitudesReadecuacion > 0,
+                  contador: solicitudesReadecuacion,
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(

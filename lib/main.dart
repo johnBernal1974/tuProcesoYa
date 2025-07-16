@@ -22,6 +22,7 @@ import 'Pages/administrador/atender_extincion_pena/atender_extincion_pena.dart';
 import 'Pages/administrador/atender_libertad_condicional/atender_libertad_condicional.dart';
 import 'Pages/administrador/atender_permiso_72horas/atender_permiso_72horas.dart';
 import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
+import 'Pages/administrador/atender_readecuacion/atender_readecuacion.dart';
 import 'Pages/administrador/atender_solicitud_acumulacion/atender_solicitud_acumulacion.dart';
 import 'Pages/administrador/atender_traslado_proceso_admin/atender_traslado_proceso_admin.dart';
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
@@ -34,6 +35,7 @@ import 'Pages/administrador/historial_solicitudes_extincion_pena_admin/historial
 import 'Pages/administrador/historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'Pages/administrador/historial_solicitudes_permiso_72horas_admin/historial_solicitudes_permiso_72horas_admin.dart';
 import 'Pages/administrador/historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
+import 'Pages/administrador/historial_solicitudes_readecuacion_admin/historial_solicitudes_readecuacion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_redenciones_admin/historial_solicitudes_redenciones_admin.dart';
 import 'Pages/administrador/historial_solicitudes_tutela_admin/historial_solicitudes_tutela_admin.dart';
 import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
@@ -238,6 +240,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_extincion_pena_admin': (context) => const HistorialSolicitudesExtincionPenaAdminPage(),
         'historial_solicitudes_traslado_proceso_admin': (context) => const HistorialSolicitudesTrasladoProcesoAdminPage(),
         'historial_solicitudes_redenciones_admin': (context) => const HistorialSolicitudesRedencionesAdminPage(),
+        'historial_solicitudes_readecuacion_redenciones_admin': (context) => const HistorialSolicitudesReadecuacionRedencionesAdminPage(),
         'historial_solicitudes_acumulacion_admin': (context) => const HistorialSolicitudesAcumulacionAdminPage(),
         'historial_solicitudes_apelacion_admin': (context) => const HistorialSolicitudesApelacionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
@@ -703,6 +706,19 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => AtenderSolicitudAcumulacionPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+              ),
+            );
+          }
+
+          else if (settings.name == 'atender_readecuacion_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderSolicitudReadecuacionRedencionesPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
