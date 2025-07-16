@@ -156,7 +156,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'redenciones': 'Redenciones',
       'acumulacion': 'Acumulación de penas',
       'apelacion': 'Apelación',
-      'readecuacion': 'Readecuación',
+      'readecuacion': 'Readecuación de redención segun art. 19 ley 2466 de 2005',
     };
 
     if (tiposPagos.containsKey(widget.tipoPago)) {

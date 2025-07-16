@@ -42,7 +42,7 @@ class _SolicitudReadecuacionRedencionPageState extends State<SolicitudReadecuaci
                   const SizedBox(height: 10),
 
                   const Text(
-                    'La redención de pena es un mecanismo legal mediante el cual las personas privadas de la libertad pueden reducir su condena a través del trabajo, el estudio o la enseñanza certificada. Este proceso forma parte integral del camino hacia la resocialización y reintegración social.',
+                    'La redención de pena es un mecanismo legal mediante el cual las personas privadas de la libertad pueden reducir su condena a través de trabajo certificado. Este proceso forma parte integral del camino hacia la resocialización y reintegración social.',
                     textAlign: TextAlign.justify,
                     style: textoNormal,
                   ),
@@ -56,27 +56,12 @@ class _SolicitudReadecuacionRedencionPageState extends State<SolicitudReadecuaci
                         TextSpan(text: 'Con la entrada en vigor del '),
                         TextSpan(text: 'Artículo 19 de la Ley 2466 de 2025', style: textoNegrilla),
                         TextSpan(text: ', como parte de la Reforma Laboral en Colombia, se introdujo un nuevo esquema más favorable para las redenciones: por cada '),
-                        TextSpan(text: 'tres (3) días de trabajo, estudio o enseñanza', style: textoNegrilla),
+                        TextSpan(text: 'tres (3) días de trabajo', style: textoNegrilla),
                         TextSpan(text: ', se redimen '),
                         TextSpan(text: 'dos (2) días de pena', style: textoNegrilla),
                         TextSpan(text: '.'),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  const Text(
-                    '🔄 Comparativo con el esquema anterior:',
-                    style: textoNegrilla,
-                  ),
-                  const SizedBox(height: 6),
-
-                  const Text(
-                    '• Antes: 2 días de trabajo o estudio redimían 1 día de pena.\n'
-                        '• Ahora (Ley 2466 de 2025): 3 días de actividad redimen 2 días de pena.\n\n'
-                        'Esto representa una mejora sustancial en el tiempo redimido por el esfuerzo realizado dentro del centro penitenciario.',
-                    textAlign: TextAlign.justify,
-                    style: textoNormal,
                   ),
                   const SizedBox(height: 10),
 
@@ -112,14 +97,39 @@ class _SolicitudReadecuacionRedencionPageState extends State<SolicitudReadecuaci
 
                   const Text('📌 Fundamento legal actualizado:', style: textoNegrilla),
                   const SizedBox(height: 6),
-                  const Text(
-                    '• Artículo 19, Ley 2466 de 2025 (Reforma Laboral)\n'
-                        '• Artículo 141, Ley 65 de 1993 (Código Penitenciario y Carcelario)\n'
-                        '• Artículo 147, Ley 65 de 1993\n'
-                        '• Artículo 29, Constitución Política de Colombia (principio de favorabilidad)\n'
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '• Artículo 19, Ley 2466 de 2025 (Reforma Laboral)',
+                        textAlign: TextAlign.justify,
+                        style: textoNormal,
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        '• Artículo 141, Ley 65 de 1993 (Código Penitenciario y Carcelario)',
+                        textAlign: TextAlign.justify,
+                        style: textoNormal,
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        '• Artículo 147, Ley 65 de 1993',
+                        textAlign: TextAlign.justify,
+                        style: textoNormal,
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        '• Artículo 29, Constitución Política de Colombia (principio de favorabilidad)',
+                        textAlign: TextAlign.justify,
+                        style: textoNormal,
+                      ),
+                      SizedBox(height: 6),
+                      Text(
                         '• Jurisprudencia de la Corte Suprema de Justicia (Rad. No. 39257)',
-                    textAlign: TextAlign.justify,
-                    style: textoNormal,
+                        textAlign: TextAlign.justify,
+                        style: textoNormal,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
 
@@ -158,7 +168,7 @@ class _SolicitudReadecuacionRedencionPageState extends State<SolicitudReadecuaci
                         children: const [
                           Padding(
                             padding: EdgeInsets.all(8.0),
-                            child: Text('Días de trabajo o estudio', style: textoNegrilla, textAlign: TextAlign.center),
+                            child: Text('Días de trabajo', style: textoNegrilla, textAlign: TextAlign.center),
                           ),
                           Padding(
                             padding: EdgeInsets.all(8.0),
@@ -250,7 +260,7 @@ class _SolicitudReadecuacionRedencionPageState extends State<SolicitudReadecuaci
                   const SizedBox(height: 10),
                   const Text(
                     'El juez de ejecución de penas y medidas de seguridad, al momento de estudiar una solicitud de redención de pena, debe aplicar el principio de favorabilidad penal. '
-                        'Esto significa que, si una persona privada de la libertad acumuló días de trabajo o estudio bajo el antiguo esquema (Ley 65 de 1993), el juez debe evaluar si aplicar el nuevo beneficio establecido en el Artículo 19 de la Ley 2466 de 2025 resulta más favorable.',
+                        'Esto significa que, si una persona privada de la libertad acumuló días de trabajo bajo el antiguo esquema (Ley 65 de 1993), el juez debe evaluar si aplicar el nuevo beneficio establecido en el Artículo 19 de la Ley 2466 de 2025 resulta más favorable.',
                     textAlign: TextAlign.justify,
                     style: textoNormal,
                   ),

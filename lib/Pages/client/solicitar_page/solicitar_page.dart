@@ -12,6 +12,11 @@ class SolicitarServiciosPage extends StatelessWidget {
   // Lista de servicios disponibles
   final List<Map<String, dynamic>> _serviciosConfig = [
     {
+      "title": "Solicitud Readecuación Redencion, según art. 19 de la ley 2466 de 2025.",
+      "icon": Icons.calculate_rounded, // Puedes cambiar el ícono si prefieres otro
+      "route": "solicitud_readecuacion_redenciones_page",
+    },
+    {
       "title": "Derecho de petición",
       "icon": Icons.description,
       "route": "derecho_peticion",
@@ -40,12 +45,6 @@ class SolicitarServiciosPage extends StatelessWidget {
       "title": "Solicitud de apelación",
       "icon": Icons.rate_review, // Puedes cambiar el ícono si prefieres otro
       "route": "solicitud_apelacion_page",
-    },
-
-    {
-      "title": "Solicitud Readecuación Redencion, según art. 19 de la ley 2466 de 2025. Reforma laboral",
-      "icon": Icons.calculate_rounded, // Puedes cambiar el ícono si prefieres otro
-      "route": "solicitud_readecuacion_redenciones_page",
     },
   ];
 
@@ -80,6 +79,7 @@ class SolicitarServiciosPage extends StatelessWidget {
                       servicio["icon"],
                       servicio["title"],
                       servicio["route"],
+                      esDestacada: index == 0,
                     );
                   },
                 ),
@@ -92,37 +92,64 @@ class SolicitarServiciosPage extends StatelessWidget {
     );
   }
 
-  Widget _buildServicioCard(BuildContext context, IconData icon, String titulo, String ruta) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-      decoration: BoxDecoration(
-        color: blanco,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
+  Widget _buildServicioCard(BuildContext context, IconData icon, String titulo, String ruta, {bool esDestacada = false}) {
+    return Stack(
+      children: [
+        Container(
+          padding: EdgeInsets.fromLTRB(12, esDestacada ? 26 : 14, 12, 14),
+          decoration: BoxDecoration(
+            color: esDestacada ? Colors.green.shade100 : blanco,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black12,
+                blurRadius: 4,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 28, color: Colors.black54),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              titulo,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          child: Row(
+            children: [
+              Icon(icon, size: 28, color: Colors.black54),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  titulo,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward, color: primary),
+                onPressed: () => navegar(context, ruta),
+                tooltip: "Solicitar",
+              ),
+            ],
+          ),
+        ),
+        if (esDestacada)
+          Positioned(
+            right: 0,
+            top: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: const BoxDecoration(
+                color: Colors.deepPurple,
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(10),
+                  bottomLeft: Radius.circular(10),
+                ),
+              ),
+              child: const Text(
+                '¡Reforma laboral!',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.arrow_forward, color: primary),
-            onPressed: () => navegar(context, ruta),
-            tooltip: "Solicitar",
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

@@ -400,17 +400,29 @@ class _HomePageState extends State<HomePage> {
             builder: (_) => AlertDialog(
               backgroundColor: blanco,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text(
-                '¡Ya está vigente la Ley 2466 de 2025!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.deepPurple,
-                  fontWeight: FontWeight.bold,
-                ),
+              title: const Column(
+                children: [
+                  Text(
+                    'Ya está vigente',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Ley 2466 de 2025 - Reforma Laboral',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.deepPurple,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
               content: const Text(
-                'El artículo 19 permite redimir 3 días de pena por cada 2 días de estudio o trabajo certificado. '
-                    'Si ya estás condenado, este beneficio puede ayudarte a reducir tu condena. ¡Solicítalo ahora!',
+                'El artículo 19 permite redimir 2 días de pena por cada 3 días de trabajo certificado. '
+                    'Este beneficio puede ayudarte a reducir tu condena. ¡Solicítalo ahora!',
                 textAlign: TextAlign.justify,
                 style: TextStyle(fontSize: 16),
               ),

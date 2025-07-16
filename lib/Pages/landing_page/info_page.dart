@@ -65,7 +65,7 @@ class InfoPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Text(
-                        '¡Ya está vigente la Ley 2466 de 2025!',
+                        'Ya está vigente',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20,
@@ -73,13 +73,28 @@ class InfoPage extends StatelessWidget {
                           color: Colors.deepPurple,
                         ),
                       ),
+                      const Text(
+                        'Ley 2466 de 2025',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
                       const SizedBox(height: 10),
                       const Text(
-                        'El artículo 19 permite redimir 3 días de pena por cada 2 días de estudio o trabajo. '
-                            'Esto aplica para quienes ya están condenados. ¡No dejes pasar esta oportunidad!',
+                        '¡Atención! El artículo 19 de ésta ley te permite redimir 2 días de tu condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
+                            'Este es el momento de aprovechar el nuevo beneficio.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                        ),
                       ),
+
+
                       const SizedBox(height: 12),
                       TextButton.icon(
                         icon: const Icon(Icons.info_outline, color: Colors.deepPurple),
@@ -108,7 +123,7 @@ class InfoPage extends StatelessWidget {
                                       SizedBox(height: 16),
                                       Text(
                                         'La Ley 2466 de 2025 entró en vigencia y con ella, el artículo 19 establece un nuevo beneficio para las personas privadas de la libertad ya condenadas. '
-                                            'Ahora es posible redimir 3 días de la pena por cada 2 días de participación en actividades productivas, laborales o de estudio certificadas. '
+                                            'Ahora es posible redimir 2 días de la pena por cada 3 días de participación en actividades productivas o laborales certificadas. '
                                             'Esto representa una oportunidad concreta para acortar el tiempo de condena mediante esfuerzo y compromiso personal.',
                                         style: TextStyle(fontSize: 16),
                                         textAlign: TextAlign.justify,
