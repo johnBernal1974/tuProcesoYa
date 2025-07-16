@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../commons/wompi/checkout_page.dart';
@@ -54,6 +55,7 @@ class _HomePageState extends State<HomePage> {
   int? _valorSuscripcionOriginal;
   int? _valorConDescuento;
   int? _porcentajeDescuentoPersonalizado;
+  bool _mostrarBanner = false;
 
 
 
@@ -68,6 +70,8 @@ class _HomePageState extends State<HomePage> {
     _loadUid();
     _checkSubscriptionStatus();
     _cargarDescuentoInicial();
+    _consultarYMostrarBanner();
+
   }
 
   Future<void> _cargarValorSuscripcion() async {
@@ -80,7 +84,6 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
-
 
   Future<void> _loadUid() async {
     final user = _myAuthProvider.getUser();
@@ -375,6 +378,73 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+  Future<void> _consultarYMostrarBanner() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bannerCerrado = prefs.getBool('banner_cerrado') ?? false;
+    if (bannerCerrado) return;
+
+    final query = await FirebaseFirestore.instance
+        .collection('configuraciones')
+        .limit(1)
+        .get();
+
+    if (query.docs.isNotEmpty) {
+      final data = query.docs.first.data();
+      if (data['isBanner'] == true) {
+        // Esperar a que se monte el contexto
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => AlertDialog(
+              backgroundColor: blanco,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text(
+                '¡Ya está vigente la Ley 2466 de 2025!',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.deepPurple,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: const Text(
+                'El artículo 19 permite redimir 3 días de pena por cada 2 días de estudio o trabajo certificado. '
+                    'Si ya estás condenado, este beneficio puede ayudarte a reducir tu condena. ¡Solicítalo ahora!',
+                textAlign: TextAlign.justify,
+                style: TextStyle(fontSize: 16),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    await prefs.setBool('banner_cerrado', true);
+                    Navigator.of(context).pop();
+                  },
+                  child: const Text('Cerrar'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    prefs.setBool('banner_cerrado', true);
+                    Navigator.of(context).pop();
+                    Navigator.pushNamed(context, 'solicitud_readecuacion_redenciones_page');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text('Hacer la solicitud'),
+                ),
+              ],
+            ),
+          );
+        });
+      }
+    }
+  }
+
 
   Widget _buildLoading() {
     return const Center(
@@ -1163,8 +1233,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-
 
   final formatter = NumberFormat.currency(
     locale: 'es_CO',

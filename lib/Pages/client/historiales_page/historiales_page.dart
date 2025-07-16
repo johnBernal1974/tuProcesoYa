@@ -74,6 +74,13 @@ class HistorialSolicitudesPage extends StatelessWidget {
       "icon": Icons.rate_review,
       "route": "historial_solicitudes_apelacion",
     },
+
+    {
+      "collection": "readecuacion_solicitados",
+      "title": "Solicitud\nde Readecuación de redención\n Art. 19 - ley 2466 de 2025",
+      "icon": Icons.calculate_sharp,
+      "route": "historial_solicitudes_readecuacion_redenciones",
+    },
   ];
 
   Future<List<Map<String, dynamic>>> _obtenerSolicitudes(String userId) async {
@@ -140,22 +147,27 @@ class HistorialSolicitudesPage extends StatelessWidget {
             );
           }
 
-          return GridView.count(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: filteredConfigs.map((result) {
-              final config = result['config'] as Map<String, dynamic>;
-              return _buildCard(
-                context,
-                config['icon'],
-                config['title'],
-                config['route'],
-                blanco,
-              );
-            }).toList(),
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: GridView.count(
+                crossAxisCount: crossAxisCount,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                children: filteredConfigs.map((result) {
+                  final config = result['config'] as Map<String, dynamic>;
+                  return _buildCard(
+                    context,
+                    config['icon'],
+                    config['title'],
+                    config['route'],
+                    blanco,
+                  );
+                }).toList(),
+              ),
+            ),
           );
         },
       ),

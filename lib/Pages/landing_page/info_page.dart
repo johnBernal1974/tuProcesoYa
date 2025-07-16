@@ -21,6 +21,7 @@ class InfoPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 15),
@@ -45,6 +46,118 @@ class InfoPage extends StatelessWidget {
                 child: RedesSocialesWidget(),
               ),
             ),
+            const SizedBox(height: 30),
+
+            /// tarjeta que habla de la ley 2466 de 2025
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Card(
+                color: blanco,
+                surfaceTintColor: blanco,
+                elevation: 5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: const BorderSide(color: Colors.deepPurple, width: 2),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        '¡Ya está vigente la Ley 2466 de 2025!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'El artículo 19 permite redimir 3 días de pena por cada 2 días de estudio o trabajo. '
+                            'Esto aplica para quienes ya están condenados. ¡No dejes pasar esta oportunidad!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        icon: const Icon(Icons.info_outline, color: Colors.deepPurple),
+                        label: const Text('Ver más', style: TextStyle(color: Colors.deepPurple)),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: blanco,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              contentPadding: const EdgeInsets.all(16),
+                              content: const SizedBox(
+                                width: double.maxFinite,
+                                child: SingleChildScrollView(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Artículo 19 – Ley 2466 de 2025',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.deepPurple,
+                                        ),
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'La Ley 2466 de 2025 entró en vigencia y con ella, el artículo 19 establece un nuevo beneficio para las personas privadas de la libertad ya condenadas. '
+                                            'Ahora es posible redimir 3 días de la pena por cada 2 días de participación en actividades productivas, laborales o de estudio certificadas. '
+                                            'Esto representa una oportunidad concreta para acortar el tiempo de condena mediante esfuerzo y compromiso personal.',
+                                        style: TextStyle(fontSize: 16),
+                                        textAlign: TextAlign.justify,
+                                      ),
+                                      SizedBox(height: 16),
+                                      Text(
+                                        '¡Actúa ya, registrate y haz tu solicitud desde nuestra plataforma!',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  child: const Text('Cerrar'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                    Navigator.pushReplacementNamed(context, 'login');
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.deepPurple,
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10),
+                                    ),
+                                  ),
+                                  child: const Text('Ir a la aplicación'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
 
             Padding(
               padding: contentPadding,

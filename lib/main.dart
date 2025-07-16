@@ -8,6 +8,7 @@ import 'package:tuprocesoya/Pages/administrador/historial_solicitud_traslado_pro
 import 'package:tuprocesoya/Pages/client/derecho_de_peticion_solicitud/derecho_de_peticion_solicitud.dart';
 import 'package:tuprocesoya/Pages/client/derechos_info/derechos_info.dart';
 import 'package:tuprocesoya/Pages/client/historial_solicitudes_acumulacion/historial_solicitudes_acumulacion.dart';
+import 'package:tuprocesoya/Pages/client/otras_solicitudes/readecuacion_redencion.dart';
 import 'package:tuprocesoya/Pages/detalle_de_correo_page/detalle_correo_acumulacion.dart';
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
@@ -67,6 +68,7 @@ import 'Pages/client/historial_solicitudes_extincion_pena/historial_solicitudes_
 import 'Pages/client/historial_solicitudes_libertad_condicional/historial_solicitudes_libertad_condicional.dart';
 import 'Pages/client/historial_solicitudes_permiso_72h/historial_solicitudes_permiso_72h.dart';
 import 'Pages/client/historial_solicitudes_prision_domiciliaria/historial_solicitudes_prision_domiciliaria.dart';
+import 'Pages/client/historial_solicitudes_readecuacion/historial_solicitudes_readecuacion.dart';
 import 'Pages/client/historial_solicitudes_redenciones/historial_solicitudes_redenciones.dart';
 import 'Pages/client/historial_solicitudes_traslado_proceso/historial_solicitudes_traslado_proceso.dart';
 import 'Pages/client/historial_solicitudes_tutela/historial_solicitudes_tutela.dart';
@@ -103,6 +105,7 @@ import 'Pages/detalle_de_correo_page/detalle_correo_condicional.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_domiciliaria.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_extincion_pena.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_permiso_72horas.dart';
+import 'Pages/detalle_de_correo_page/detalle_correo_readecuacion.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_redenciones.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_traslado_proceso.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_tutela.dart';
@@ -261,6 +264,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_extincion_pena': (context) => const HistorialSolicitudesExtincionPenaPage(),
         'historial_solicitudes_traslado_proceso': (context) => const HistorialSolicitudesTrasladoProcesoPage(),
         'historial_solicitudes_redenciones': (context) => const HistorialSolicitudesRedencionesPage(),
+        'historial_solicitudes_readecuacion_redenciones': (context) => const HistorialSolicitudesReadecuacionRedencionesPage(),
         'historial_solicitudes_acumulacion': (context) => const HistorialSolicitudesAcumulacionPage(),
         'historial_solicitudes_apelacion': (context) => const HistorialSolicitudesApelacionPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
@@ -277,6 +281,7 @@ class MyApp extends StatelessWidget {
         'solicitud_extincion_pena_page': (context) => const SolicitudExtincionPenaPage(),
         'solicitud_traslado_proceso_page': (context) => const SolicitudTrasladoProcesoPage(),
         'solicitud_redenciones_page': (context) => const SolicitudRedencionPage(),
+        'solicitud_readecuacion_redenciones_page': (context) => const SolicitudReadecuacionRedencionPage(),
         'solicitud_acumulacion_page': (context) => const SolicitudAcumulacionPenasPage(),
         'solicitud_apelacion_page': (context) => const SolicitudApelacionPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
@@ -788,6 +793,15 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => DetalleCorreoRedencionesPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
+          else if (settings.name == 'detalle_correo_readecuacion') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoReadecuacionRedencionesPage(
                 idDocumento: args['idDocumento'],
                 correoId: args['correoId'],
               ),

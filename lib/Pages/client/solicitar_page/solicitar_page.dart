@@ -41,8 +41,13 @@ class SolicitarServiciosPage extends StatelessWidget {
       "icon": Icons.rate_review, // Puedes cambiar el ícono si prefieres otro
       "route": "solicitud_apelacion_page",
     },
-  ];
 
+    {
+      "title": "Solicitud Readecuación Redencion, según art. 19 de la ley 2466 de 2025. Reforma laboral",
+      "icon": Icons.calculate_rounded, // Puedes cambiar el ícono si prefieres otro
+      "route": "solicitud_readecuacion_redenciones_page",
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {

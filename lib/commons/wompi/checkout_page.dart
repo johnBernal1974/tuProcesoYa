@@ -155,7 +155,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'traslado': 'Traslado de proceso',
       'redenciones': 'Redenciones',
       'acumulacion': 'Acumulación de penas',
-      'apelacion': 'Apelación'
+      'apelacion': 'Apelación',
+      'readecuacion': 'Readecuación',
     };
 
     if (tiposPagos.containsKey(widget.tipoPago)) {
