@@ -1603,7 +1603,7 @@ CUARTO: Que se conceda el beneficio de libertad condicional, por cumplir los req
 
     if (situacion == "En Prisión domiciliaria") {
       return """
-1. Conforme al <b>Artículo 19 de la Ley 2466 de 2025</b>, incorporado mediante la Reforma Laboral, se establece que por cada <b>tres (3) días de trabajo o estudio</b> realizados por una persona privada de la libertad, se podrán redimir <b>dos (2) días de pena</b>. Esta norma reconoce además dichas actividades como <b>experiencia laboral válida</b>, siempre que sean certificadas por el INPEC o la autoridad penitenciaria correspondiente.
+1. Conforme al <b>Artículo 19 de la Ley 2466 de 2025</b>, incorporado mediante la Reforma Laboral, se establece que por cada <b>tres (3) días de trabajo</b> realizados por una persona privada de la libertad, se podrán redimir <b>dos (2) días de pena</b>. Esta norma reconoce además dichas actividades como <b>experiencia laboral válida</b>, siempre que sean certificadas por el INPEC o la autoridad penitenciaria correspondiente.
 
 Esta modificación legislativa implica un cambio sustancial y favorable respecto al régimen anterior de redención, previsto en el artículo 82-2 de la Ley 65 de 1993. Por tanto, conforme al <b>parágrafo segundo del artículo 19 de la Ley 2466 de 2025</b>, y de acuerdo con el <b>numeral 7º del artículo 38 de la Ley 906 de 2004</b>, solicito que el Juez de Ejecución de Penas aplique el <b>principio de favorabilidad</b> contenido en el <b>artículo 29 de la Constitución</b>, en el <b>artículo 6º del Código Penal</b> y en tratados internacionales como el <b>Pacto Internacional de Derechos Civiles y Políticos</b> y la <b>Convención Americana sobre Derechos Humanos</b>.
 
@@ -1625,7 +1625,7 @@ La Corte Suprema de Justicia ha reiterado que la favorabilidad no es un problema
 
     // 🔹 Situación por defecto: En Reclusión
     return """
-1. Conforme al <b>Artículo 19 de la Ley 2466 de 2025</b>, incluido en la Reforma Laboral, se establece que por cada <b>tres (3) días de trabajo o estudio</b> realizados por personas privadas de la libertad, se redimirán <b>dos (2) días de pena</b>. Esta medida, además de fortalecer el valor resocializador de dichas actividades, las reconoce como <b>experiencia laboral válida</b> siempre que estén certificadas por la autoridad penitenciaria competente.
+1. Conforme al <b>Artículo 19 de la Ley 2466 de 2025</b>, incluido en la Reforma Laboral, se establece que por cada <b>tres (3) días de trabajo</b> realizados por personas privadas de la libertad, se redimirán <b>dos (2) días de pena</b>. Esta medida, además de fortalecer el valor resocializador de dichas actividades, las reconoce como <b>experiencia laboral válida</b> siempre que estén certificadas por la autoridad penitenciaria competente.
 
 Solicito que dicha norma sea aplicada conforme al <b>principio de favorabilidad</b>, previsto en el <b>artículo 29 de la Constitución Política</b>, el <b>artículo 6º del Código Penal (Ley 599 de 2000)</b>, el <b>numeral 7º del artículo 38 de la Ley 906 de 2004</b>, y en tratados internacionales como el <b>Pacto Internacional de Derechos Civiles y Políticos</b> y la <b>Convención Americana sobre Derechos Humanos</b>. 
 
