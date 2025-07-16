@@ -114,8 +114,9 @@ class LibertadCondicionalTemplate {
         <span style="font-size: 16px;"><b>II. CONSIDERACIONES</b></span><br>
         ${convertirParrafos(consideraciones)}<br><br>
 
-        <span style="font-size: 16px;"><b>III. FUNDAMENTOS DE DERECHO</b></span><br><br>
-        $fundamentosDeDerecho<br><br>
+       <span style="font-size: 16px;"><b>III. FUNDAMENTOS DE DERECHO</b></span><br><br>
+        ${convertirParrafos(fundamentosDeDerecho)}<br><br>
+
 
         <span style="font-size: 16px;"><b>IV. PRETENSIONES</b></span><br>
         ${convertirParrafos(pretenciones)}<br><br>

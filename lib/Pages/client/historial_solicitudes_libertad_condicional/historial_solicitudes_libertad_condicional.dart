@@ -250,21 +250,6 @@ class _HistorialSolicitudesLibertadCondicionalPageState extends State<HistorialS
                         const SizedBox(height: 8),
                         ArchivoViewerWeb(archivos: urlsHijos),
                       ],
-                      if (data['enviadoSinDocumentos'] == true) ...[
-                        const Divider(color: gris),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade50,
-                            border: Border.all(color: Colors.red),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            "⚠️ El usuario envió la solicitud sin adjuntar documentos obligatorios.",
-                            style: TextStyle(color: Colors.red),
-                          ),
-                        ),
-                      ],
                     ],
                   ),
                 ),
