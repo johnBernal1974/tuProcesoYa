@@ -200,58 +200,76 @@ class _HistorialSolicitudesLibertadCondicionalPageState extends State<HistorialS
               children: [
                 _buildDatoFila("Subcategoría", "Libertad condicional"),
                 const Divider(color: gris),
-                Card(
-                  surfaceTintColor: Colors.amber.shade700,
-                  margin: const EdgeInsets.only(top: 20),
-                  elevation: 3,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+              Card(
+                surfaceTintColor: Colors.amber.shade700,
+                margin: const EdgeInsets.only(top: 20),
+                elevation: 3,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (data.containsKey('reparacion') && data['reparacion'] != null)
                         _buildDatoReparacion(data['reparacion']),
-                        const SizedBox(height: 15),
+                      const SizedBox(height: 15),
+                      const Divider(color: gris),
+                      const Text(
+                        "Archivos que enviaste en la solicitud",
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: negro),
+                      ),
+                      const SizedBox(height: 5),
+                      const Text(
+                        "📎 Archivos adjuntos:",
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                      const SizedBox(height: 5),
+                      archivosAdjuntos.isNotEmpty
+                          ? ArchivoViewerWeb(archivos: archivos)
+                          : const Text("El usuario no compartió ningún archivo"),
+                      const SizedBox(height: 12),
+                      if (data.containsKey('archivo_cedula_responsable') &&
+                          data['archivo_cedula_responsable'] != null &&
+                          (data['archivo_cedula_responsable'] as String).isNotEmpty) ...[
                         const Divider(color: gris),
                         const Text(
-                          "Archivos que enviaste en la solicitud",
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: negro),
-                        ),const SizedBox(height: 5),
-                        const Text(
-                          "📎 Archivos adjuntos:",
+                          "🧾 Cédula del responsable:",
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                         ),
-                        const SizedBox(height: 5),
-                        archivosAdjuntos.isNotEmpty
-                            ? ArchivoViewerWeb(archivos: archivos)
-                            : const Text("El usuario no compartió ningún archivo"),
-                        const SizedBox(height: 12),
-                        if (data.containsKey('archivo_cedula_responsable') &&
-                            (data['archivo_cedula_responsable'] as String).isNotEmpty) ...[
-                          const Divider(color: gris),
-                          const Text(
-                            "🧾 Cédula del responsable:",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          const SizedBox(height: 8),
-                          ArchivoViewerWeb(
-                            archivos: [data['archivo_cedula_responsable']],
-                          ),
-                        ],
-                        if (urlsHijos.isNotEmpty) ...[
-                          const Divider(color: gris),
-                          const Text(
-                            "👶 Documentos de identidad de los hijos:",
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                          ),
-                          const SizedBox(height: 8),
-                          ArchivoViewerWeb(archivos: urlsHijos),
-                        ],
+                        const SizedBox(height: 8),
+                        ArchivoViewerWeb(
+                          archivos: [data['archivo_cedula_responsable']],
+                        ),
                       ],
-                    ),
+                      if (urlsHijos.isNotEmpty) ...[
+                        const Divider(color: gris),
+                        const Text(
+                          "👶 Documentos de identidad de los hijos:",
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        const SizedBox(height: 8),
+                        ArchivoViewerWeb(archivos: urlsHijos),
+                      ],
+                      if (data['enviadoSinDocumentos'] == true) ...[
+                        const Divider(color: gris),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            border: Border.all(color: Colors.red),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Text(
+                            "⚠️ El usuario envió la solicitud sin adjuntar documentos obligatorios.",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                const SizedBox(height: 40),
+              ),
+              const SizedBox(height: 40),
                 const Text("Informe de Diligencias realizadas"),
                 FutureBuilder<QuerySnapshot>(
                   future: FirebaseFirestore.instance
