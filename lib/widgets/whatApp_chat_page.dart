@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:tuprocesoya/widgets/reproductor_audios_whatsApp.dart';
 import 'package:tuprocesoya/widgets/whatsapp_state.dart';
 import '../commons/admin_provider.dart';
@@ -403,18 +404,18 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                         padding: const EdgeInsets.only(right: 50),
                                         child: AudioPlayerWeb(bytes: bytes),
                                       ),
-                                      if (createdAt != null)
-                                        Positioned(
-                                          bottom: 0,
-                                          right: 0,
-                                          child: Text(
-                                            formatTimeAMPM(createdAt),
-                                            style: const TextStyle(
-                                              fontSize: 11,
-                                              color: Colors.black87,
-                                            ),
-                                          ),
-                                        ),
+                                      // if (createdAt != null)
+                                      //   Positioned(
+                                      //     bottom: 0,
+                                      //     right: 0,
+                                      //     child: Text(
+                                      //       formatTimeAMPM(createdAt),
+                                      //       style: const TextStyle(
+                                      //         fontSize: 11,
+                                      //         color: Colors.black87,
+                                      //       ),
+                                      //     ),
+                                      //   ),
                                     ],
                                   ),
                                 ),
@@ -444,28 +445,52 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                         }
 
                         else if (mediaType == 'document' && mediaId != null) {
-                          if (_documentCache.containsKey(mediaId)) {
-                            final bytes = _documentCache[mediaId]!;
-                            return _buildDocumentCard(bytes, text, createdAt ?? DateTime.now());
-                          }
-
                           return FutureBuilder<http.Response>(
-                            future: http.get(
-                              Uri.parse('https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getMediaFile?mediaId=$mediaId'),
+                            future: _documentCache.containsKey(mediaId)
+                                ? Future.value(http.Response.bytes(_documentCache[mediaId]!, 200))
+                                : http.get(
+                              Uri.parse(
+                                'https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getMediaFile?mediaId=$mediaId',
+                              ),
                             ),
                             builder: (context, snapshot) {
+                              final alignment = isAdmin ? Alignment.centerRight : Alignment.centerLeft;
+                              final crossAlign = isAdmin ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+
                               if (snapshot.connectionState == ConnectionState.waiting) {
-                                return _buildDocumentPlaceholder();
+                                return Align(
+                                  alignment: alignment,
+                                  child: _buildDocumentPlaceholder(),
+                                );
                               }
 
                               if (snapshot.hasError || snapshot.data == null || snapshot.data!.statusCode != 200) {
-                                return _buildDocumentPlaceholder();
+                                return Align(
+                                  alignment: alignment,
+                                  child: _buildDocumentPlaceholder(),
+                                );
                               }
 
                               final bytes = snapshot.data!.bodyBytes;
                               _documentCache[mediaId] = bytes;
 
-                              return _buildDocumentCard(bytes, fileName, createdAt ?? DateTime.now());
+                              return Align(
+                                alignment: alignment,
+                                child: Column(
+                                  crossAxisAlignment: crossAlign,
+                                  children: [
+                                    _buildDocumentCard(bytes, fileName, createdAt ?? DateTime.now()),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      isAdmin ? adminName : 'Usuario',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
                             },
                           );
                         }
@@ -473,66 +498,93 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                           content = _buildMensaje(data);
                         }
 
-                        return Align(
-                          alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Padding(
-                            padding: EdgeInsets.only(
-                              left: isAdmin ? 180.0 : 0.0,
-                              right: isAdmin ? 0.0 : 180.0,
-                            ),
-                            child: Column(
-                              crossAxisAlignment: isAdmin ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                              children: [
-                                // Tarjeta del mensaje
-                                Card(
-                                  surfaceTintColor: blanco,
-                                  elevation: 1.5,
-                                  color: isAdmin ? const Color(0xFFE6F4EA) : Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(7),
-                                  ),
-                                  margin: const EdgeInsets.symmetric(vertical: 6),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                    child: Stack(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(right: 50),
-                                          child: content,
-                                        ),
-                                        if (createdAt != null)
-                                          Positioned(
-                                            bottom: 0,
-                                            right: 0,
-                                            child: Text(
-                                              formatTimeAMPM(createdAt),
-                                              style: const TextStyle(
-                                                fontSize: 11,
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                        return Builder(
+                          builder: (context) {
+                            final screenWidth = MediaQuery.of(context).size.width;
+                            final bool isMobile = screenWidth < 600;
 
-                                // Nombre del admin debajo de la tarjeta
-                                if (isAdmin)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 8, right: 8),
-                                    child: Text(
-                                      adminName,
-                                      style: const TextStyle(
-                                        fontSize: 9,
-                                        color: Colors.black87,
-                                        fontWeight: FontWeight.w500,
+                            final double paddingLeft = isAdmin ? (isMobile ? 50.0 : 180.0) : 0.0;
+                            final double paddingRight = isAdmin ? 0.0 : (isMobile ? 50.0 : 180.0);
+
+                            return Align(
+                              alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
+                              child: Padding(
+                                padding: EdgeInsets.only(
+                                  left: paddingLeft,
+                                  right: paddingRight,
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: isAdmin ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                                  children: [
+                                    // Tarjeta del mensaje
+                                    Card(
+                                      surfaceTintColor: blanco,
+                                      elevation: 1.5,
+                                      color: isAdmin ? const Color(0xFFD7FFD9) : Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(7),
+                                      ),
+                                      margin: const EdgeInsets.symmetric(vertical: 6),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.end,
+                                          children: [
+                                            // 👉 Contenido del mensaje
+                                            Padding(
+                                              padding: const EdgeInsets.only(right: 0), // o ajusta si necesitas espacio
+                                              child: content,
+                                            ),
+
+                                            const SizedBox(height: 6),
+
+                                            // 👉 Hora y fecha debajo
+                                            if (createdAt != null)
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.end,
+                                                children: [
+                                                  Text(
+                                                    formatTimeAMPM(createdAt),
+                                                    style: const TextStyle(
+                                                      fontSize: 10,
+                                                      color: Colors.black,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 1),
+                                                  Text(
+                                                    formatFechaSolo(createdAt),
+                                                    style: const TextStyle(
+                                                      fontSize: 11,
+                                                      color: Colors.black87,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
-                              ],
-                            ),
-                          ),
+
+
+                                    // Nombre del admin debajo de la tarjeta
+                                    if (isAdmin)
+                                      Padding(
+                                        padding: const EdgeInsets.only(left: 8, right: 8),
+                                        child: Text(
+                                          adminName,
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Colors.black87,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
                     );
@@ -847,29 +899,54 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
     );
   }
 
+  String formatFechaSolo(DateTime fecha) {
+    final ahora = DateTime.now();
+    final hoy = DateTime(ahora.year, ahora.month, ahora.day);
+    final fechaComparada = DateTime(fecha.year, fecha.month, fecha.day);
+
+    if (fechaComparada == hoy) {
+      return 'Hoy';
+    } else if (fechaComparada == hoy.subtract(const Duration(days: 1))) {
+      return 'Ayer';
+    } else {
+      return DateFormat('d \'de\' MMMM \'de\' y', 'es').format(fecha);
+    }
+  }
+
+  /// ACA SE CONFIGURA LO QUE SE ESCRIBE DENTRO DEL MENSAJE
   Widget _buildMensaje(Map<String, dynamic> mensaje) {
     final contenido = mensaje['contenido'];
     final esImagen = mensaje['esImagen'] == true;
     final esArchivo = mensaje['esArchivo'] == true;
     final fileName = mensaje['fileName'] ?? 'Archivo';
+    final createdAt = (mensaje['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
 
     if (esImagen) {
       return Image.network(contenido, width: 200, height: 200, fit: BoxFit.cover);
-    } else if (esArchivo) {
-      return InkWell(
-        onTap: () => html.window.open(contenido, '_blank'),
-        child: Row(
-          children: [
-            const Icon(Icons.insert_drive_file),
-            const SizedBox(width: 8),
-            Text(fileName, style: const TextStyle(decoration: TextDecoration.underline)),
-          ],
-        ),
-      );
-    } else {
-      return Text(mensaje['text'] ?? '');
     }
+
+    if (esArchivo) {
+      return FutureBuilder<http.Response>(
+        future: http.get(Uri.parse(contenido)),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData || snapshot.data!.statusCode != 200) {
+            return const Text("Error al cargar el archivo");
+          }
+
+          final bytes = snapshot.data!.bodyBytes;
+          return _buildDocumentCard(bytes, fileName, createdAt);
+        },
+      );
+    }
+
+    return Text(mensaje['text'] ?? '', style: const TextStyle(
+      color: Colors.black,
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      height: 1.2
+    ),);
   }
+
 
   Widget _buildQuickMessageCard(IconData icon, String titulo, String mensaje) {
     return Builder(
@@ -1176,90 +1253,88 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
 
 
   Widget _buildDocumentCard(Uint8List bytes, String fileName, DateTime createdAt) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Card(
-        elevation: 1.5,
-        color: Colors.white,
-        surfaceTintColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
+    return Card(
+      elevation: 1.5,
+      color: Colors.white,
+      surfaceTintColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(
+          maxWidth: 300,
+          minHeight: 80,
         ),
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxWidth: 280, // Máximo ancho
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min, // 👈 Esto es clave
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Icono PDF
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade100,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 24),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Icono PDF
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: Colors.red.shade100,
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(width: 10),
-                // Nombre y detalles
-                Flexible(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        fileName,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
+                child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 20),
+              ),
+              const SizedBox(width: 10),
+
+              // Nombre del archivo y detalles
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fileName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        "PDF • ${(bytes.lengthInBytes / 1024).toStringAsFixed(1)} KB",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade700,
-                        ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "PDF • ${(bytes.lengthInBytes / 1024).toStringAsFixed(1)} KB",
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.black54,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        formatTimeAMPM(createdAt),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.black54,
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      formatTimeAMPM(createdAt),
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 5),
-                // Botón abrir
-                GestureDetector(
-                  onTap: () {
-                    final blob = html.Blob([bytes], 'application/pdf');
-                    final url = html.Url.createObjectUrlFromBlob(blob);
-                    html.window.open(url, "_blank");
-                  },
-                  child: const Padding(
-                    padding: EdgeInsets.only(top: 4),
-                    child: Icon(Icons.download, color: Colors.black87),
-                  ),
-                ),
-              ],
-            ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // Botón de descarga
+              GestureDetector(
+                onTap: () {
+                  final blob = html.Blob([bytes], 'application/pdf');
+                  final url = html.Url.createObjectUrlFromBlob(blob);
+                  html.window.open(url, "_blank");
+                },
+                child: const Icon(Icons.download, size: 20, color: Colors.black87),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+
 
   Widget _buildImageMessage(
       bool isAdmin,
@@ -1388,17 +1463,6 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
                     ),
                   ],
                 ),
-                if (createdAt != null)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8, top: 4, bottom: 4),
-                    child: Text(
-                      formatTimeAMPM(createdAt),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -1596,6 +1660,7 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
     final storageRef = FirebaseStorage.instance.ref().child('whatsapp_files/$fileName');
     await storageRef.putData(bytes);
     final fileUrl = await storageRef.getDownloadURL();
+    final nombreAdmin = AdminProvider().adminName;
 
     // 3. Llamar a la función Cloud que sube y envía por WhatsApp
     final uri = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/uploadAndSendWhatsAppMedia");
@@ -1620,6 +1685,7 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
     // 4. Guardar en Firestore para mostrar en el chat
     await FirebaseFirestore.instance.collection('whatsapp_messages').add({
       'from': 'admin',
+      'adminName': nombreAdmin, // 👈 Agregado
       'conversationId': numeroDestino,
       'createdAt': FieldValue.serverTimestamp(),
       'esImagen': tipo == 'image',
@@ -1627,6 +1693,7 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
       'fileName': fileName,
       'contenido': fileUrl,
     });
+
   }
 
 
