@@ -1173,7 +1173,7 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
                             ),
                             onTap: () async {
                               if (esPequena) {
-                                // En móvil, navega a otra pantalla
+                                selectedNumeroCliente.value = conversationId; // ✅ Asegura que esté actualizado
                                 Navigator.of(context).push(MaterialPageRoute(
                                   builder: (_) => Scaffold(
                                     appBar: AppBar(
@@ -1185,9 +1185,9 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
                                   ),
                                 ));
                               } else {
-                                // En escritorio, selecciona
                                 selectedNumeroCliente.value = conversationId;
                               }
+
 
                               // Marcar como leído
                               await FirebaseFirestore.instance

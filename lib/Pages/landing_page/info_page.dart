@@ -65,7 +65,7 @@ class InfoPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       const Text(
-                        'Ya está vigente',
+                        'Nuevo beneficio en vigor',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20,
@@ -74,18 +74,18 @@ class InfoPage extends StatelessWidget {
                         ),
                       ),
                       const Text(
-                        'Ley 2466 de 2025',
+                        'Redención 2x3 según la Ley 2466 de 2025',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.black,
                         ),
                       ),
                       const SizedBox(height: 10),
                       const Text(
-                        '¡Atención! El artículo 19 de ésta ley te permite redimir 2 días de tu condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
-                            'Este es el momento de aprovechar el nuevo beneficio.',
+                        '¡Atención! Ya puedes invocar el beneficio del artículo 19: redime 2 días de condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
+                            'Aún falta reglamentación del Ministerio de Trabajo, pero puedes anticipar tu solicitud con base en el principio de favorabilidad.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 16,
@@ -93,8 +93,6 @@ class InfoPage extends StatelessWidget {
                           height: 1.5,
                         ),
                       ),
-
-
                       const SizedBox(height: 12),
                       TextButton.icon(
                         icon: const Icon(Icons.info_outline, color: Colors.deepPurple),
@@ -122,15 +120,14 @@ class InfoPage extends StatelessWidget {
                                       ),
                                       SizedBox(height: 16),
                                       Text(
-                                        'La Ley 2466 de 2025 entró en vigencia y con ella, el artículo 19 establece un nuevo beneficio para las personas privadas de la libertad ya condenadas. '
-                                            'Ahora es posible redimir 2 días de la pena por cada 3 días de participación en actividades productivas o laborales certificadas. '
-                                            'Esto representa una oportunidad concreta para acortar el tiempo de condena mediante esfuerzo y compromiso personal.',
+                                        'Desde el 25 de junio de 2025, está vigente un nuevo beneficio para personas condenadas. El artículo 19 permite redimir 2 días de la condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
+                                            'Aunque falta el decreto reglamentario del Ministerio de Trabajo (que debe expedirse antes de diciembre de 2025), ya puedes presentar tu solicitud anticipada bajo el principio de favorabilidad.',
                                         style: TextStyle(fontSize: 16),
                                         textAlign: TextAlign.justify,
                                       ),
                                       SizedBox(height: 16),
                                       Text(
-                                        '¡Actúa ya, registrate y haz tu solicitud desde nuestra plataforma!',
+                                        'Este es el momento de actuar. Regístrate en nuestra plataforma y deja constancia de tu intención de acogerte a este beneficio.',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
@@ -170,6 +167,7 @@ class InfoPage extends StatelessWidget {
                 ),
               ),
             ),
+
 
             const SizedBox(height: 20),
 
