@@ -2,7 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:cloud_functions/cloud_functions.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:tuprocesoya/widgets/reproductor_audios_whatsApp.dart';
 import 'package:tuprocesoya/widgets/whatsapp_state.dart';
+import '../commons/admin_provider.dart';
 import '../src/colors/colors.dart';
 import 'dart:html' as html;
 
@@ -28,7 +28,6 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
 
   Map<String, String> _pplNombres = {};
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = "";
   final Map<String, Uint8List> _imageCache = {};
   final Map<String, Uint8List> _audioCache = {};
   final Map<String, Uint8List> _documentCache = {};
@@ -37,8 +36,6 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
   bool tieneServicioSolicitado = false;
   Set<String> _usuariosConSolicitudes = {};
   bool _cargandoSolicitudes = true;
-
-
 
 
   @override
@@ -175,8 +172,17 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       CircleAvatar(
-                        backgroundColor: Colors.green.shade50,
-                        child: const Icon(Icons.person, color: Colors.green),
+                        backgroundColor: snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                            ? (isPaid == true ? Colors.green.shade50 : Colors.red.shade50)
+                            : Colors.grey.shade300,
+                        child: Icon(
+                          snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                              ? (isPaid == true ? Icons.verified_user_rounded : Icons.mood_bad)
+                              : Icons.new_releases,
+                          color: snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                              ? (isPaid == true ? Colors.green : Colors.red)
+                              : Colors.grey,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -328,6 +334,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
                         final from = data['from'] ?? '';
                         final isAdmin = from == 'admin';
+                        final adminName = data['adminName'] ?? 'Admin';
                         final mediaType = data.containsKey('mediaType') ? data['mediaType'] : null;
                         final mediaId = data.containsKey('mediaId') ? data['mediaId'] : null;
 
@@ -468,38 +475,62 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
 
                         return Align(
                           alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
-                          child: Card(
-                            surfaceTintColor: blanco,
-                            elevation: 1.5,
-                            color: isAdmin ? const Color(0xFFFFF3E0)
-                                : Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(7),
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              left: isAdmin ? 180.0 : 0.0,
+                              right: isAdmin ? 0.0 : 180.0,
                             ),
-                            margin: const EdgeInsets.symmetric(vertical: 4),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                              child: Stack(
-                                children: [
-                                  // Contenido dinámico
-                                  Padding(
-                                    padding: const EdgeInsets.only(right: 50),
-                                    child: content,
+                            child: Column(
+                              crossAxisAlignment: isAdmin ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                              children: [
+                                // Tarjeta del mensaje
+                                Card(
+                                  surfaceTintColor: blanco,
+                                  elevation: 1.5,
+                                  color: isAdmin ? const Color(0xFFE6F4EA) : Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(7),
                                   ),
-                                  if (createdAt != null)
-                                    Positioned(
-                                      bottom: 0,
-                                      right: 0,
-                                      child: Text(
-                                        formatTimeAMPM(createdAt),
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.black87,
+                                  margin: const EdgeInsets.symmetric(vertical: 6),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                                    child: Stack(
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.only(right: 50),
+                                          child: content,
                                         ),
+                                        if (createdAt != null)
+                                          Positioned(
+                                            bottom: 0,
+                                            right: 0,
+                                            child: Text(
+                                              formatTimeAMPM(createdAt),
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                                // Nombre del admin debajo de la tarjeta
+                                if (isAdmin)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 8, right: 8),
+                                    child: Text(
+                                      adminName,
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                ],
-                              ),
+                                  ),
+                              ],
                             ),
                           ),
                         );
@@ -597,26 +628,6 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                                               }
                                             },
                                           ),
-                                          // ListTile(
-                                          //   leading: const Icon(Icons.audiotrack),
-                                          //   title: const Text("Audio (MP3)"),
-                                          //   onTap: () {
-                                          //     Navigator.pop(context);
-                                          //     if (selectedNumeroCliente.value != null) {
-                                          //       adjuntarYEnviar(tipo: 'audio', numeroDestino: selectedNumeroCliente.value!);
-                                          //     }
-                                          //   },
-                                          // ),
-                                          // ListTile(
-                                          //   leading: const Icon(Icons.videocam),
-                                          //   title: const Text("Video (MP4)"),
-                                          //   onTap: () {
-                                          //     Navigator.pop(context);
-                                          //     if (selectedNumeroCliente.value != null) {
-                                          //       adjuntarYEnviar(tipo: 'video', numeroDestino: selectedNumeroCliente.value!);
-                                          //     }
-                                          //   },
-                                          // ),
                                         ],
                                       ),
                                     );
@@ -638,7 +649,14 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                             ),
                             IconButton(
                               icon: const Icon(Icons.send, color: Colors.deepPurple),
-                              onPressed: _sendMessage,
+                              onPressed: () {
+                                _sendMessage();
+
+                                // 🔄 Limpia visualmente justo después del frame
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  _controller.clear();
+                                });
+                              },
                             ),
                           ],
                         ),
@@ -661,7 +679,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                             children: [
                               _buildQuickMessageCard(
                                 Icons.waving_hand,
-                                "Bienvenida/o",
+                                "Bienvenida",
                                 primerNombre.isNotEmpty
                                     ? "Hola $primerNombre, nos alegra poder atenderte. ¿En qué te podemos ayudar hoy?"
                                     : "Hola, nos alegra poder atenderte. ¿En qué te podemos ayudar hoy?",
@@ -670,7 +688,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                               if (!estaRegistrado)
                               _buildQuickMessageCard(
                                 Icons.lightbulb,
-                                "Explicación servicio",
+                                "Explicación\nservicio",
                                 """
 👋 ¡Hola! Bienvenid@ a *Tu Proceso Ya*.
 
@@ -706,7 +724,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                               if (!estaRegistrado)
                               _buildQuickMessageCard(
                                 Icons.app_registration,
-                                "Como Registrarse",
+                                "Como\nRegistrarse",
                                 """
 📝 *El proceso de registro es muy fácil*.
 
@@ -719,7 +737,7 @@ Solo ingresa al siguiente enlace, crea tu usuario y en un máximo de *72 horas* 
                               if (!estaRegistrado)
                               _buildQuickMessageCard(
                                 Icons.info_outline,
-                                "Necesario registrarse",
+                                "Necesario\nregistrarse",
                                 """
 ℹ️ Para poder orientarte y guiarte correctamente, es *indispensable que estés registrad@ en la plataforma*.
 
@@ -733,7 +751,7 @@ Solo ingresa al siguiente enlace, crea tu usuario y en un máximo de *72 horas* 
                               if (estaRegistrado && isPaid )
                               _buildQuickMessageCard(
                                 Icons.handshake,
-                                "Acompañamiento",
+                                "Tienes un\nequipo",
                                 """
 Con todo gusto. Recuerda que con *Tu Proceso YA*, cuentas ahora con un equipo. Ya no estás sol@ en esta situación tan difícil.
 
@@ -744,7 +762,7 @@ Cuenta con nosotros.
                               if (estaRegistrado && isPaid )
                               _buildQuickMessageCard(
                                 Icons.hourglass_top,
-                                "Espera",
+                                "Espera\nun momento",
                                 """
 Dame un momento, vamos a revisar tu caso con detenimiento y en breve te comparto la información.
 
@@ -756,7 +774,7 @@ Gracias por tu paciencia.
                               if (estaRegistrado && isPaid )
                                 _buildQuickMessageCard(
                                     Icons.share,
-                                    "Compartir Link",
+                                    "Compartir\nLink",
                                     """
 Puedes ingresar a la app en:
 https://www.tuprocesoya.com
@@ -764,7 +782,7 @@ https://www.tuprocesoya.com
                               if (estaRegistrado && !isPaid)
                                 _buildQuickMessageCard(
                                   Icons.lock_outline,
-                                  "Sin Pago suscripción",
+                                  "Sin Pago\nsuscripción",
                                   """
 Gracias por haber creado tu usuario en *Tu Proceso YA*.  
 🔍 Hemos notado que aún no has activado tu suscripción.
@@ -788,7 +806,7 @@ Gracias por haber creado tu usuario en *Tu Proceso YA*.
                               if (estaRegistrado && !isPaid)
                                 _buildQuickMessageCard(
                                   Icons.discount,
-                                  "¡Descuento exclusivo!",
+                                  "¡Descuento\nespecial!",
                                   """
 🎉 *¡Aprovecha esta oportunidad por tiempo limitado!*  
 Sabemos lo importante que es apoyar a tu familiar en este momento, por eso queremos ayudarte con un *20% de descuento* si activas tu cuenta en las próximas *2 horas*.
@@ -853,38 +871,54 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
     }
   }
 
-  Widget _buildQuickMessageCard(IconData icono, String titulo, String texto) {
-    return GestureDetector(
-      onTap: () {
-        _controller.text += (_controller.text.isNotEmpty ? '\n' : '') + texto;
-        _controller.selection = TextSelection.fromPosition(
-          TextPosition(offset: _controller.text.length),
+  Widget _buildQuickMessageCard(IconData icon, String titulo, String mensaje) {
+    return Builder(
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final bool isMobile = screenWidth < 600;
+        final double cardWidth = isMobile ? 140 : 180; // Ancho fijo por tarjeta
+
+        return GestureDetector(
+          onTap: () => _enviarMensajeRapido(mensaje),
+          child: SizedBox(
+            width: cardWidth,
+            child: Card(
+              surfaceTintColor: blanco,
+              color: Colors.white,
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 8 : 12,
+                  vertical: isMobile ? 6 : 10,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      icon,
+                      color: Colors.deepPurple,
+                      size: isMobile ? 20 : 24,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      titulo,
+                      style: TextStyle(
+                        fontSize: isMobile ? 11 : 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
-      child: Container(
-        width: 90,
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.deepPurple.shade50,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.deepPurple.shade200),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icono, size: 30, color: Colors.deepPurple),
-            const SizedBox(height: 6),
-            Text(
-              titulo,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
-        ),
-      ),
     );
   }
+
 
   Widget _buildListaConversaciones(bool esPequena) {
     return Container(
@@ -1067,7 +1101,8 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
                                   builder: (_) => Scaffold(
                                     appBar: AppBar(
                                       backgroundColor: Colors.green,
-                                      title: Text(displayName),
+                                      iconTheme: const IconThemeData(color: Colors.white),
+                                      title: const Text("Conversación", style: TextStyle(color: blanco)),
                                     ),
                                     body: _buildChatConversacion(conversationId, esPequena),
                                   ),
@@ -1107,6 +1142,38 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
       ),
     );
   }
+
+  void _enviarMensajeRapido(String texto) async {
+    final numero = selectedNumeroCliente.value?.trim();
+    if (numero == null || numero.isEmpty) return;
+
+    final nombreAdmin = AdminProvider().adminName;
+
+    await FirebaseFirestore.instance.collection('whatsapp_messages').add({
+      'from': 'admin',
+      'adminName': nombreAdmin,
+      'conversationId': numero,
+      'text': texto,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    try {
+      final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendWhatsAppMessage");
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({'to': numero, 'text': texto}),
+      );
+      if (response.statusCode != 200) {
+        debugPrint('Error enviando mensaje rápido: ${response.body}');
+      }
+    } catch (e) {
+      debugPrint('Error enviando mensaje rápido: $e');
+    }
+
+    _mensajeRespondido.value = null;
+  }
+
 
   Widget _buildDocumentCard(Uint8List bytes, String fileName, DateTime createdAt) {
     return Align(
@@ -1394,32 +1461,26 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
 
     final respuesta = _mensajeRespondido.value;
 
-    // 1. Guardar en Firestore para que se vea en la interfaz
+    final nombreAdmin = AdminProvider().adminName; // ✅ Aquí traes tu nombre
+
     await FirebaseFirestore.instance.collection('whatsapp_messages').add({
       'from': 'admin',
+      'adminName': nombreAdmin, // ✅ Lo guardas
       'conversationId': numero,
       'text': text,
       'createdAt': FieldValue.serverTimestamp(),
       if (respuesta != null) 'replyTo': respuesta,
     });
 
-    print('DEBUG ENVÍO:');
-    print('TO: "$numero"');
-    print('TEXT: "$text"');
-
-    // 2. Llamar la Cloud Function HTTP
+    // Cloud Function
     try {
       final url = Uri.parse(
-          "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendWhatsAppMessage"
-      );
+          "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendWhatsAppMessage");
 
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          'to': numero,
-          'text': text,
-        }),
+        body: jsonEncode({'to': numero, 'text': text}),
       );
 
       if (response.statusCode != 200) {
@@ -1429,9 +1490,13 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
       debugPrint('Error enviando mensaje real: $e');
     }
 
-    _controller.clear();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _controller.clear();
+    });
     _mensajeRespondido.value = null;
   }
+
+
 
   Widget _buildImagePlaceholder() {
     return Container(
