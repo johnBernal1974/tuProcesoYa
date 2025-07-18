@@ -100,45 +100,55 @@ class _CardGestionarDescuentoState extends State<CardGestionarDescuento> {
   void _mostrarDialogoOtorgar() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Asignar descuento"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("Selecciona el porcentaje de descuento:"),
-            const SizedBox(height: 8),
-            DropdownButton<int>(
-              dropdownColor: blanco,
-              value: _porcentajeSeleccionado,
-              items: [5, 10, 20, 30, 50]
-                  .map((p) => DropdownMenuItem(value: p, child: Text("$p%")))
-                  .toList(),
-              onChanged: (value) {
-                if (value != null) {
-                  setState(() => _porcentajeSeleccionado = value);
-                }
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: blanco,
+          title: const Text("Asignar descuento"),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setStateDialog) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Selecciona el porcentaje de descuento:"),
+                  const SizedBox(height: 8),
+                  DropdownButton<int>(
+                    dropdownColor: blanco,
+                    value: _porcentajeSeleccionado,
+                    items: [5, 10, 20, 30, 50]
+                        .map((p) => DropdownMenuItem(value: p, child: Text("$p%")))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _porcentajeSeleccionado = value;
+                        });
+                        setStateDialog(() {}); // ← actualiza también el diálogo
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              child: const Text("Cancelar"),
+              onPressed: () => Navigator.pop(context),
+            ),
+            ElevatedButton(
+              child: const Text("Guardar"),
+              onPressed: () async {
+                Navigator.pop(context);
+                await _otorgarDescuento();
               },
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            child: const Text("Cancelar"),
-            onPressed: () => Navigator.pop(context),
-          ),
-          ElevatedButton(
-            child: const Text("Guardar"),
-            onPressed: () async {
-              Navigator.pop(context);
-              await _otorgarDescuento();
-            },
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
+
 
   void _mostrarDialogoDetalle() {
     final formatter = DateFormat('dd/MM/yyyy HH:mm');
@@ -156,7 +166,7 @@ class _CardGestionarDescuentoState extends State<CardGestionarDescuento> {
             Text("🎁 Porcentaje: ${_descuentoOtorgado!["porcentaje"]}%"),
             if (fecha != null)
               Text("📅 Fecha: ${formatter.format(fecha.toDate())}"),
-            Text("👤 Otorgado por: ${_nombreAdmin ?? 'Desconocido'}", style: TextStyle(fontSize: 12)),
+            Text("👤 Otorgado por: ${_nombreAdmin ?? 'Desconocido'}", style: const TextStyle(fontSize: 12)),
           ],
         ),
         actions: [
@@ -164,10 +174,49 @@ class _CardGestionarDescuentoState extends State<CardGestionarDescuento> {
             child: const Text("Cerrar"),
             onPressed: () => Navigator.pop(context),
           ),
+          TextButton(
+            child: const Text("QUITAR DESCUENTO", style: TextStyle(color: Colors.red)),
+            onPressed: () {
+              Navigator.pop(context); // Cierra el detalle
+              _mostrarDialogoConfirmarEliminacion();
+            },
+          ),
         ],
       ),
     );
   }
+
+  void _mostrarDialogoConfirmarEliminacion() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("¿Eliminar descuento?"),
+        content: const Text("Esta acción eliminará el descuento otorgado. ¿Deseas continuar?"),
+        actions: [
+          TextButton(
+            child: const Text("Cancelar"),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text("CONFIRMAR", style: TextStyle(color: blanco)),
+            onPressed: () async {
+              Navigator.pop(context); // Cierra el diálogo
+              await FirebaseFirestore.instance
+                  .collection('Ppl')
+                  .doc(widget.uidUsuario)
+                  .update({"descuento": FieldValue.delete()});
+
+              await _cargarDescuento(); // Recarga estado
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+
 
   Future<String?> _obtenerNombreAdminSeguro(String uidAdmin) async {
     try {

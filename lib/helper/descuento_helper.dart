@@ -50,13 +50,13 @@ class DescuentoHelper {
     required int porcentaje,
     required String uidAdmin,
   }) async {
-    await FirebaseFirestore.instance.collection('Ppl').doc(uidUsuario).update({
+    await FirebaseFirestore.instance.collection('Ppl').doc(uidUsuario).set({
       "descuento": {
         "porcentaje": porcentaje,
         "fecha": FieldValue.serverTimestamp(),
         "otorgadoPor": uidAdmin,
       }
-    });
+    }, SetOptions(merge: true));
   }
 
   /// Obtiene los datos de descuento personalizado (si existen)

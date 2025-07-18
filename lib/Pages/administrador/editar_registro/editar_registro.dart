@@ -903,7 +903,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 data['status'] == "activado" &&
                 data['isPaid'] == false)
               CardGestionarDescuento(
-                uidUsuario: FirebaseAuth.instance.currentUser!.uid,
+                uidUsuario: ppl.id,
                 uidAdmin: descuento?['otorgadoPor'],
               ),
 
