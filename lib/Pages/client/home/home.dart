@@ -1729,17 +1729,18 @@ class _HomePageState extends State<HomePage> {
         break;
       case 'negado':
         icono = Icons.cancel;
-        mensaje = "La autoridad competente negó la solicitud.";
-        backgroundColor = Colors.red.shade50;
-        borderColor = Colors.red.shade100;
-        iconColor = Colors.red.shade700;
+        mensaje = "ATENCIÓN: La autoridad competente te ha negado este beneficio.";
+        backgroundColor = Colors.red.shade100;
+        borderColor = Colors.red.shade400;
+        iconColor = Colors.red.shade800;
         break;
+
       case 'concedido':
         icono = Icons.verified;
-        mensaje = "La autoridad competente aceptó la solicitud.";
-        backgroundColor = Colors.green.shade50;
-        borderColor = Colors.green.shade100;
-        iconColor = Colors.green.shade700;
+        mensaje = "🎉 ¡FELICITACIONES! La autoridad competente te ha concedido este beneficio.";
+        backgroundColor = Colors.green.shade100;
+        borderColor = Colors.green.shade400;
+        iconColor = Colors.green.shade800;
         break;
       default:
         icono = Icons.info_outline;
@@ -1763,15 +1764,39 @@ class _HomePageState extends State<HomePage> {
           Icon(icono, size: 20, color: iconColor),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              mensaje,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
+            child: _buildMensajeRichText(status, mensaje),
           ),
         ],
       ),
     );
   }
+  Widget _buildMensajeRichText(String status, String mensaje) {
+    if (status != 'negado' && status != 'concedido') {
+      return Text(
+        mensaje,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+      );
+    }
+
+    // Dividir mensaje con palabra clave
+    String palabraClave = status == 'negado' ? 'ATENCIÓN' : 'FELICITACIONES';
+    List<String> partes = mensaje.split(palabraClave);
+
+    return RichText(
+      text: TextSpan(
+        style: const TextStyle(fontSize: 13, color: Colors.black87),
+        children: [
+          TextSpan(text: partes[0]),
+          TextSpan(
+            text: palabraClave,
+            style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.black),
+          ),
+          TextSpan(text: partes.length > 1 ? partes[1] : ''),
+        ],
+      ),
+    );
+  }
+
 
 
   Future<void> _cargarStatusSolicitudes() async {

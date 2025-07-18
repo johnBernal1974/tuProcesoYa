@@ -153,18 +153,59 @@ class _HistorialSolicitudesTrasladoProcesoPageState extends State<HistorialSolic
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      switch (data['status']) {
-                        "Solicitado" => "Hemos recibido tu solicitud",
-                        "Diligenciado" => "Se está analizando tu solicitud",
-                        "Revisado" => "Tu solicitud está lista para ser enviada",
-                        "Enviado" => "Se ha enviado a la autoridad competente",
-                        "Negado" => "La autoridad competente ha negado ésta solicitud",
-                        "Concedido" => "La autoridad ha concedido ésta solicitud",
+                    child: Builder(
+                      builder: (context) {
+                        final status = data['status'];
+                        String textoCompleto;
+                        String? palabraClave;
 
-                        _ => "Estado desconocido",
+                        switch (status) {
+                          case "Solicitado":
+                            textoCompleto = "Hemos recibido tu solicitud";
+                            break;
+                          case "Diligenciado":
+                            textoCompleto = "Se está analizando tu solicitud";
+                            break;
+                          case "Revisado":
+                            textoCompleto = "Tu solicitud está lista para ser enviada";
+                            break;
+                          case "Enviado":
+                            textoCompleto = "Se ha enviado a la autoridad competente";
+                            break;
+                          case "Negado":
+                            textoCompleto = "ATENCIÓN !! La autoridad competente ha negado ésta solicitud";
+                            palabraClave = "ATENCIÓN";
+                            break;
+                          case "Concedido":
+                            textoCompleto = "FELICITACIONES !!, La autoridad ha concedido ésta solicitd";
+                            palabraClave = "FELICITACIONES";
+                            break;
+                          default:
+                            textoCompleto = "Estado desconocido";
+                        }
+
+                        if (palabraClave != null && textoCompleto.contains(palabraClave)) {
+                          final partes = textoCompleto.split(palabraClave);
+                          return RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w500),
+                              children: [
+                                TextSpan(text: partes[0]),
+                                TextSpan(
+                                  text: palabraClave,
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                TextSpan(text: partes.length > 1 ? partes[1] : ''),
+                              ],
+                            ),
+                          );
+                        } else {
+                          return Text(
+                            textoCompleto,
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                          );
+                        }
                       },
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
                     ),
                   ),
                 ],
