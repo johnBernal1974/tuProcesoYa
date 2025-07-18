@@ -18,6 +18,7 @@ import '../../../models/ppl.dart';
 import '../../../providers/ppl_provider.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/actualizar_nodo_30%.dart';
+import '../../../widgets/admin_acceso_temporal.dart';
 import '../../../widgets/agregar_agenda.dart';
 import '../../../widgets/card_comuncar_con_el_usuario.dart';
 import '../../../widgets/card_gestionar_descuento.dart';
@@ -907,6 +908,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 uidAdmin: descuento?['otorgadoPor'],
               ),
 
+            const SizedBox(height: 20),
+
+            if (FirebaseAuth.instance.currentUser != null &&
+                data['status'] == "activado" &&
+                data['isPaid'] == false)
+              AdminAccesoTemporal(uidPPL: ppl.id),
 
             const SizedBox(height: 20),
 
