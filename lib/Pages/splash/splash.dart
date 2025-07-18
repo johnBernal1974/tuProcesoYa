@@ -7,7 +7,7 @@ import '../bloqueado_page/bloqueado.dart';
 import '../client/estamos_validando/estamos_validando.dart';
 import '../client/home/home.dart';
 import '../landing_page/info_page.dart';
-import '../login/login.dart';
+import '../pantalla_inicio_registro/pantalla_inicio_registro.dart';
 
 
 class SplashPage extends StatefulWidget {
@@ -111,7 +111,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
         if (context.mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const LoginPage()),
+            MaterialPageRoute(builder: (context) => const PantallaInicioRegistroPage()),
           );
         }
       }

@@ -146,7 +146,7 @@ class InfoPage extends StatelessWidget {
                                 ElevatedButton(
                                   onPressed: () {
                                     Navigator.of(context).pop();
-                                    Navigator.pushReplacementNamed(context, 'login');
+                                    Navigator.pushReplacementNamed(context, 'pagina_inicio_registro_page');
                                   },
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.deepPurple,
@@ -191,7 +191,7 @@ class InfoPage extends StatelessWidget {
 
                   Center(
                     child: ElevatedButton.icon(
-                      onPressed: () => Navigator.pushReplacementNamed(context, 'login'),
+                      onPressed: () => Navigator.pushReplacementNamed(context, 'pagina_inicio_registro_page'),
                       icon: const Icon(Icons.arrow_forward),
                       label: const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -320,7 +320,7 @@ class InfoPage extends StatelessWidget {
 
                   Center(
                     child: ElevatedButton.icon(
-                      onPressed: () => Navigator.pushReplacementNamed(context, 'login'),
+                      onPressed: () => Navigator.pushReplacementNamed(context, 'pagina_inicio_registro_page'),
                       icon: const Icon(Icons.arrow_forward),
                       label: const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),

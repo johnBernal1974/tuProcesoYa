@@ -43,12 +43,13 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: primary,
-        iconTheme: const IconThemeData(color: negro, size: 30),
+        iconTheme: const IconThemeData(color: blanco, size: 30),
         title: const Text(
-          "Bienvenido",
+          "Tu Proceso Ya",
           style: TextStyle(color: Colors.white),
         ),
         centerTitle: true,
@@ -63,85 +64,62 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (_isOtp) ...[
-                  // 🔵 Solo muestra esto si estamos en OTP (Usuario normal)
-
-                  Image.asset(
-                      'assets/images/logo_tu_proceso_ya_transparente.png', height: 60),
-                  const SizedBox(height: 30),
-                  const Text(
-                    '¿No tienes una cuenta?',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _isLoading = true;
-                      });
-                      Navigator.pushNamed(context, "register").then((_) {
-                        setState(() {
-                          _isLoading = false;
-                        });
-                      });
-                    },
-                    child: _isLoading
-                        ? const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                    )
-                        : ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: const Icon(
-                        Icons.double_arrow,
-                        color: Colors.white,
-                      ),
-                      label: Text(
-                        "Regístrate aquí",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: screenWidth > 600 ? 18 : 18,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isLoading = true;
-                        });
-                        Navigator.pushNamed(context, "register").then((_) {
+                Column(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        _clickCounter++;
+                        if (_clickCounter == 3) {
                           setState(() {
-                            _isLoading = false;
+                            _isOtp = false;
+                            _clickCounter = 0;
                           });
+                        }
+                        _tapTimer?.cancel();
+                        _tapTimer = Timer(const Duration(seconds: 2), () {
+                          _clickCounter = 0;
                         });
                       },
-                    ),
-                  ),
-
-                  const SizedBox(height: 30),
-                  const Divider(color: gris, height: 1),
-                  const SizedBox(height: 30),
-                  GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _tienesCuenta = !_tienesCuenta;
-                      });
-                    },
-                    child: const Text(
-                      "Ya estoy registrado",
-                      style: TextStyle(
-                        decoration: TextDecoration.underline,
+                      onLongPress: () {
+                        setState(() {
+                          _isOtp = false;
+                        });
+                      },
+                      child: Text(
+                        _isOtp ? "Ingresar a la cuenta" : "Iniciar sesión",
+                        style: TextStyle(
+                          fontSize: isMobile ? 14 : 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
                       ),
                     ),
-                  )
-                ],
+                    // 🔥 Este espacio adicional debajo del título
+                    if (_isOtp)
+                      formularioOTP()
+                    else
+                      formularioCorreoContrasena(),
+
+                    const SizedBox(height: 40),
+
+                    if (_isOtp) // 🔵 El botón de recuperar solo para usuarios normales
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushNamed(context, "forgot_password");
+                        },
+                        child: Text(
+                          "¿Quieres recuperar tu cuenta?",
+                          style: TextStyle(
+                            color: gris,
+                            fontSize: screenWidth > 600 ? 18 : 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+
+                  ],
+                ),
+
                 const SizedBox(height: 30),
                 if(_tienesCuenta)
                 Column(
@@ -166,7 +144,7 @@ class _LoginPageState extends State<LoginPage> {
                         });
                       },
                       child: Text(
-                        _isOtp ? "Inicio de sesión" : "Iniciar sesión",
+                        _isOtp ? "Ingresar a la cuenta" : "Iniciar sesión",
                         style: TextStyle(
                           fontSize: screenWidth > 600 ? 24 : 16,
                           fontWeight: FontWeight.bold,
@@ -580,9 +558,13 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget formularioOTP() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
     return Column(
       children: [
-        const Text("Ingresa el número de celular que registraste."),
+        Text("Introduce el número de celular que registraste.", style: TextStyle(
+            fontSize: isMobile ? 13 : 22
+        ),),
         const SizedBox(height: 25),
 
         // CAMPO DE CELULAR

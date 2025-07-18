@@ -115,6 +115,7 @@ import 'Pages/detalle_de_correo_page/detalle_correo_tutela.dart';
 import 'Pages/detalle_de_correo_page/detalle_de_correo_page.dart';
 import 'Pages/landing_page/info_page.dart';
 import 'Pages/login/login.dart';
+import 'Pages/pantalla_inicio_registro/pantalla_inicio_registro.dart';
 import 'Pages/recuperar_cuenta/recuperar_cuenta.dart';
 import 'commons/wompi/checkout_page.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -300,6 +301,7 @@ class MyApp extends StatelessWidget {
         },
         //general
         'login': (context) => const LoginPage(),
+        'pagina_inicio_registro_page': (context) => const PantallaInicioRegistroPage(),
         'splash': (context) => SplashPage(),
         'cargar_info': (context) => AddDelitoPage(),
         'derecho_peticion': (context) => const DerechoDePeticionPage(),
