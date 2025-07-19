@@ -278,7 +278,7 @@ class _MainLayoutState extends State<MainLayout> {
     );
   }
   void _playNotificationSound() {
-    final audio = html.AudioElement('sounds/notifica_whatsapp.mp3');
+    final audio = html.AudioElement('sounds/sound_whatsapp.mp3');
     audio.play();
   }
 }

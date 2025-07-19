@@ -29,6 +29,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
 
   Map<String, String> _pplNombres = {};
   final TextEditingController _searchController = TextEditingController();
+  final ValueNotifier<String> _searchTerm = ValueNotifier<String>('');
   final Map<String, Uint8List> _imageCache = {};
   final Map<String, Uint8List> _audioCache = {};
   final Map<String, Uint8List> _documentCache = {};
@@ -44,6 +45,9 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
     super.initState();
     _cargarNombresPpl();
     _cargarSolicitudes();
+    _searchController.addListener(() {
+      _searchTerm.value = _searchController.text.toLowerCase().trim();
+    });
 
   }
 
@@ -996,7 +1000,6 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
     );
   }
 
-
   Widget _buildListaConversaciones(bool esPequena) {
     return Container(
       width: esPequena ? double.infinity : 500,
@@ -1035,179 +1038,199 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
               return ValueListenableBuilder<String?>(
                 valueListenable: selectedNumeroCliente,
                 builder: (context, selectedValue, _) {
-                  return ListView.builder(
-                    itemCount: docs.length,
-                    itemBuilder: (context, index) {
-                      final data = docs[index];
-                      final conversationId = data['conversationId'];
-                      final lastMessage = data['lastMessage'] ?? '';
-                      final createdAt = (data['lastMessageAt'] as Timestamp?)?.toDate();
-                      final hasUnread = data['hasUnread'] == true;
-                      final isSelected = conversationId == selectedValue;
-
-                      return FutureBuilder<QuerySnapshot>(
-                        future: FirebaseFirestore.instance
-                            .collection('Ppl')
-                            .where('celularWhatsapp',
-                            isEqualTo: conversationId.startsWith('57')
-                                ? conversationId.substring(2)
-                                : conversationId)
-                            .limit(1)
-                            .get(),
-                        builder: (context, snapshotPpl) {
-                          String displayName = conversationId;
-                          bool? isPaid;
-                          if (snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty) {
-                            final d = snapshotPpl.data!.docs.first;
-                            final nombreAcudiente = d['nombre_acudiente'] ?? '';
-                            final apellidoAcudiente = d['apellido_acudiente'] ?? '';
-                            displayName = "$nombreAcudiente $apellidoAcudiente";
-                            isPaid = d['isPaid'] == true;
-                            bool estaRegistrado = snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty;
-
-                          }
-
-                          return ListTile(
-                            selected: isSelected,
-                            selectedTileColor: Colors.grey.shade100,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            leading: CircleAvatar(
-                              backgroundColor: snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
-                                  ? (isPaid == true ? Colors.green.shade50 : Colors.red.shade50)
-                                  : Colors.grey.shade300,
-                              child: Icon(
-                                snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
-                                    ? (isPaid == true ? Icons.verified_user_rounded : Icons.mood_bad)
-                                    : Icons.new_releases,
-                                color: snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
-                                    ? (isPaid == true ? Colors.green : Colors.red)
-                                    : Colors.grey,
-                              ),
-                            ),
-                            title: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    displayName,
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                                    overflow: TextOverflow.ellipsis,
+                  return ValueListenableBuilder<String?>(
+                    valueListenable: selectedNumeroCliente,
+                    builder: (context, selectedValue, _) {
+                      return Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (value) {
+                                _searchTerm.value = value.trim().toLowerCase();
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Buscar por nombre o apellido',
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _searchController.text.isNotEmpty
+                                    ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    _searchTerm.value = '';
+                                  },
+                                )
+                                    : null,
+                                filled: true,
+                                fillColor: Colors.grey.shade200,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(
+                                    color: Colors.black,
+                                    width: 2,
                                   ),
                                 ),
-                                if (createdAt != null)
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        "${createdAt.day.toString().padLeft(2, '0')}/"
-                                            "${createdAt.month.toString().padLeft(2, '0')}/"
-                                            "${createdAt.year} "
-                                            "${formatTimeAMPM(createdAt)}",
-                                        style: const TextStyle(
-                                          fontSize: 11,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      if (hasUnread)
-                                        Container(
-                                          margin: const EdgeInsets.only(top: 4),
-                                          width: 14,
-                                          height: 14,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.red,
-                                            shape: BoxShape.circle,
-                                          ),
-                                        ),
-                                    ],
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(
+                                    color: Colors.black,
+                                    width: 2,
                                   ),
-                              ],
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(
+                                    color: Colors.black,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
                             ),
-                            subtitle: Builder(
-                              builder: (context) {
-                                Widget content;
+                          ),
+                          Expanded(
+                            child: ValueListenableBuilder<String>(
+                              valueListenable: _searchTerm,
+                              builder: (context, filtro, _) {
+                                return ListView.builder(
+                                  itemCount: docs.length,
+                                  itemBuilder: (context, index) {
+                                    final data = docs[index];
+                                    final conversationId = data['conversationId'];
+                                    final lastMessage = data['lastMessage'] ?? '';
+                                    final createdAt = (data['lastMessageAt'] as Timestamp?)?.toDate();
+                                    final hasUnread = data['hasUnread'] == true;
+                                    final isSelected = conversationId == selectedValue;
 
-                                if (lastMessage == "(Imagen)") {
-                                  content = const Row(
-                                    children: [
-                                      Icon(Icons.photo, size: 16, color: Colors.black54),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        "Foto",
-                                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                                      ),
-                                    ],
-                                  );
-                                } else if (lastMessage == "(Audio)") {
-                                  content = const Row(
-                                    children: [
-                                      Icon(Icons.mic, size: 16, color: Colors.black54),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        "Audio",
-                                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                                      ),
-                                    ],
-                                  );
-                                } else if (lastMessage == "(Documento)") {
-                                  content = const Row(
-                                    children: [
-                                      Icon(Icons.insert_drive_file, size: 16, color: Colors.black54),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        "Documento",
-                                        style: TextStyle(fontSize: 12, color: Colors.black87),
-                                      ),
-                                    ],
-                                  );
-                                } else {
-                                  content = Text(
-                                    lastMessage,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 12),
-                                  );
-                                }
+                                    return FutureBuilder<QuerySnapshot>(
+                                      future: FirebaseFirestore.instance
+                                          .collection('Ppl')
+                                          .where('celularWhatsapp',
+                                          isEqualTo: conversationId.startsWith('57')
+                                              ? conversationId.substring(2)
+                                              : conversationId)
+                                          .limit(1)
+                                          .get(),
+                                      builder: (context, snapshotPpl) {
+                                        String displayName = conversationId;
+                                        bool? isPaid;
+                                        if (snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty) {
+                                          final d = snapshotPpl.data!.docs.first;
+                                          final nombreAcudiente = d['nombre_acudiente'] ?? '';
+                                          final apellidoAcudiente = d['apellido_acudiente'] ?? '';
+                                          displayName = "$nombreAcudiente $apellidoAcudiente";
+                                          isPaid = d['isPaid'] == true;
 
-                                return content;
+                                          // Filtrar por nombre o apellido
+                                          if (filtro.isNotEmpty &&
+                                              !nombreAcudiente.toLowerCase().contains(filtro) &&
+                                              !apellidoAcudiente.toLowerCase().contains(filtro)) {
+                                            return const SizedBox.shrink();
+                                          }
+                                        } else if (filtro.isNotEmpty) {
+                                          return const SizedBox.shrink();
+                                        }
+
+                                        return ListTile(
+                                          selected: isSelected,
+                                          selectedTileColor: Colors.grey.shade100,
+                                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                          leading: CircleAvatar(
+                                            backgroundColor: snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                                                ? (isPaid == true ? Colors.green.shade50 : Colors.red.shade50)
+                                                : Colors.grey.shade300,
+                                            child: Icon(
+                                              snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                                                  ? (isPaid == true ? Icons.verified_user_rounded : Icons.mood_bad)
+                                                  : Icons.new_releases,
+                                              color: snapshotPpl.hasData && snapshotPpl.data!.docs.isNotEmpty
+                                                  ? (isPaid == true ? Colors.green : Colors.red)
+                                                  : Colors.grey,
+                                            ),
+                                          ),
+                                          title: Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  displayName,
+                                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                              if (createdAt != null)
+                                                Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                                  children: [
+                                                    Text(
+                                                      "${createdAt.day.toString().padLeft(2, '0')}/"
+                                                          "${createdAt.month.toString().padLeft(2, '0')}/"
+                                                          "${createdAt.year} ${formatTimeAMPM(createdAt)}",
+                                                      style: const TextStyle(fontSize: 11, color: Colors.black87),
+                                                    ),
+                                                    if (hasUnread)
+                                                      Container(
+                                                        margin: const EdgeInsets.only(top: 4),
+                                                        width: 14,
+                                                        height: 14,
+                                                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                                      ),
+                                                  ],
+                                                ),
+                                            ],
+                                          ),
+                                          subtitle: lastMessage == "(Imagen)"
+                                              ? const Row(children: [Icon(Icons.photo, size: 16), SizedBox(width: 4), Text("Foto", style: TextStyle(fontSize: 12))])
+                                              : lastMessage == "(Audio)"
+                                              ? const Row(children: [Icon(Icons.mic, size: 16), SizedBox(width: 4), Text("Audio", style: TextStyle(fontSize: 12))])
+                                              : lastMessage == "(Documento)"
+                                              ? const Row(children: [Icon(Icons.insert_drive_file, size: 16), SizedBox(width: 4), Text("Documento", style: TextStyle(fontSize: 12))])
+                                              : Text(
+                                            lastMessage,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(fontSize: 12),
+                                          ),
+                                          onTap: () async {
+                                            selectedNumeroCliente.value = conversationId;
+                                            if (esPequena) {
+                                              Navigator.of(context).push(MaterialPageRoute(
+                                                builder: (_) => Scaffold(
+                                                  appBar: AppBar(
+                                                    backgroundColor: Colors.green,
+                                                    iconTheme: const IconThemeData(color: Colors.white),
+                                                    title: const Text("Conversación", style: TextStyle(color: Colors.white)),
+                                                  ),
+                                                  body: _buildChatConversacion(conversationId, esPequena),
+                                                ),
+                                              ));
+                                            }
+                                            // Marcar como leído
+                                            await FirebaseFirestore.instance
+                                                .collection('whatsapp_messages')
+                                                .where('conversationId', isEqualTo: conversationId)
+                                                .where('isRead', isEqualTo: false)
+                                                .where('from', isNotEqualTo: 'admin')
+                                                .get()
+                                                .then((q) async {
+                                              for (var d in q.docs) {
+                                                await d.reference.update({'isRead': true});
+                                              }
+                                            });
+                                            await FirebaseFirestore.instance
+                                                .collection('whatsapp_conversations')
+                                                .doc(conversationId)
+                                                .set({'hasUnread': false}, SetOptions(merge: true));
+                                          },
+                                        );
+                                      },
+                                    );
+                                  },
+                                );
                               },
                             ),
-                            onTap: () async {
-                              if (esPequena) {
-                                selectedNumeroCliente.value = conversationId; // ✅ Asegura que esté actualizado
-                                Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) => Scaffold(
-                                    appBar: AppBar(
-                                      backgroundColor: Colors.green,
-                                      iconTheme: const IconThemeData(color: Colors.white),
-                                      title: const Text("Conversación", style: TextStyle(color: blanco)),
-                                    ),
-                                    body: _buildChatConversacion(conversationId, esPequena),
-                                  ),
-                                ));
-                              } else {
-                                selectedNumeroCliente.value = conversationId;
-                              }
-
-
-                              // Marcar como leído
-                              await FirebaseFirestore.instance
-                                  .collection('whatsapp_messages')
-                                  .where('conversationId', isEqualTo: conversationId)
-                                  .where('isRead', isEqualTo: false)
-                                  .where('from', isNotEqualTo: 'admin')
-                                  .get()
-                                  .then((q) async {
-                                for (var d in q.docs) {
-                                  await d.reference.update({'isRead': true});
-                                }
-                              });
-                              await FirebaseFirestore.instance
-                                  .collection('whatsapp_conversations')
-                                  .doc(conversationId)
-                                  .set({'hasUnread': false}, SetOptions(merge: true));
-                            },
-                          );
-                        },
+                          ),
+                        ],
                       );
                     },
                   );

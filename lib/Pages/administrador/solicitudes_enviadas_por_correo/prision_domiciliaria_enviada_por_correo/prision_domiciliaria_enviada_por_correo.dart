@@ -96,8 +96,6 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
   DateTime? fechaDiligenciamiento;
   DateTime? fechaRevision;
   String rol = AdminProvider().rol ?? "";
-
-  List<PlatformFile> _selectedFiles = [];
   Map<String, dynamic>? solicitudData;
 
 
@@ -300,7 +298,7 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
           print("📢 La solicitud ha sido enviada a Tutela.");
         }
       },
-      child: const Text("Iniciar Tutela"),
+      child: const Text("Enviar Impulso Procesal"),
     );
   }
 
