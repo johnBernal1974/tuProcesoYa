@@ -505,39 +505,53 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               builder: (context, constraints) {
                                 final isDesktop = constraints.maxWidth > 600;
 
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Tarjeta total de usuarios
-                                    TotalUsuariosCard(totalUsuarios: docs.length),
+                                if (isDesktop) {
+                                  // Diseño en fila para escritorio
+                                  return Row(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Tarjeta total de usuarios
+                                      TotalUsuariosCard(totalUsuarios: docs.length),
 
-                                    // Campo de búsqueda
-                                    SizedBox(
-                                      width: 250,
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                      // Campo de búsqueda
+                                      SizedBox(
+                                        width: 250,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                          child: _buildSearchField(),
+                                        ),
+                                      ),
+
+                                      // Chat de WhatsApp
+                                      if (constraints.maxWidth >= 800)
+                                        const SizedBox(
+                                          width: 400,
+                                          child: WhatsAppChatWrapper(),
+                                        ),
+
+                                      // Agendador
+                                      if (constraints.maxWidth >= 1200)
+                                        const SizedBox(
+                                          width: 400,
+                                          child: AgendaViewerCompact(),
+                                        ),
+                                    ],
+                                  );
+                                } else {
+                                  // Diseño en columna para móviles
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Center(child: TotalUsuariosCard(totalUsuarios: docs.length)),
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                                         child: _buildSearchField(),
                                       ),
-                                    ),
-
-                                    // Chat de WhatsApp (solo en pantallas grandes)
-                                    if (constraints.maxWidth >= 800)
-                                      const SizedBox(
-                                        width: 400,
-                                        child: WhatsAppChatWrapper(),
-                                      ),
-
-                                    // Agendador (solo si hay suficiente espacio)
-                                    if (constraints.maxWidth >= 1200)
-                                      const SizedBox(
-                                        width: 400,
-                                        child: AgendaViewerCompact(),
-                                      ),
-                                  ],
-                                );
+                                    ],
+                                  );
+                                }
                               },
                             ),
-
                             const SizedBox(height: 30),
                             const Divider(color: primary, height: 2),
                             const SizedBox(height: 30),
@@ -894,7 +908,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
-olicitudes() async {
+  solicitudes() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('solicitudes_usuario')
         .get();
@@ -952,12 +966,15 @@ olicitudes() async {
     }
   }
 
-  Widget buildTotalUsuariosCard(int totalUsuarios) {
+  Widget buildTotalUsuariosCard(int totalUsuarios, BuildContext context) {
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool esMobil = screenWidth < 600;
+
     // Formatear fecha actual con formato largo en español
     final String fechaActual = "Hoy es ${DateFormat('d \'de\' MMMM \'de\' y', 'es_ES').format(DateTime.now())}";
 
     return Container(
-      width: 180,
+      width: esMobil ? double.infinity : 180,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -976,8 +993,8 @@ olicitudes() async {
         children: [
           Text(
             fechaActual,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: esMobil ? 9 : 12,
               color: Colors.black54,
             ),
             textAlign: TextAlign.center,
@@ -985,17 +1002,17 @@ olicitudes() async {
           const SizedBox(height: 8),
           Text(
             totalUsuarios.toString(),
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: esMobil ? 11 : 24,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Usuarios Totales",
             style: TextStyle(
-              fontSize: 13,
+              fontSize: esMobil ? 9: 13,
               color: Colors.black87,
             ),
             textAlign: TextAlign.center,
@@ -1004,6 +1021,7 @@ olicitudes() async {
       ),
     );
   }
+
 
   String normalizar(String texto) {
     return removeDiacritics(texto.toLowerCase());
@@ -1851,6 +1869,8 @@ class TotalUsuariosCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String fechaActual = "Hoy es ${DateFormat('d \'de\' MMMM \'de\' y', 'es_ES').format(DateTime.now())}";
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool esMobil = screenWidth < 600;
 
     return Container(
       width: 180,
@@ -1872,8 +1892,8 @@ class TotalUsuariosCard extends StatelessWidget {
         children: [
           Text(
             fechaActual,
-            style: const TextStyle(
-              fontSize: 12,
+            style: TextStyle(
+              fontSize: esMobil ? 9 : 12,
               color: Colors.black54,
             ),
             textAlign: TextAlign.center,
@@ -1881,17 +1901,17 @@ class TotalUsuariosCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             totalUsuarios.toString(),
-            style: const TextStyle(
-              fontSize: 24,
+            style: TextStyle(
+              fontSize: esMobil ? 16 : 24,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             "Usuarios Totales",
             style: TextStyle(
-              fontSize: 13,
+              fontSize: esMobil ? 10 : 13,
               color: Colors.black87,
             ),
             textAlign: TextAlign.center,
