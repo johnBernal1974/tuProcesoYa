@@ -152,6 +152,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   String? _statusActual;
   bool? _isNotificatedActivated;
+  DocumentSnapshot? _docEditable;
+
 
 
 
@@ -219,6 +221,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     calcularTotalRedenciones(widget.doc.id); // 🔥 Llama la función aquí
     _statusActual = widget.doc["status"]?.toString();
     _isNotificatedActivated = widget.doc["isNotificatedActivated"] == true;
+    _docEditable = widget.doc;
   }
 
   Future<void> _cargarTiempoDePrueba() async {
@@ -703,20 +706,96 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: Padding(
                         padding: const EdgeInsets.all(12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Wrap(
+                          spacing: 12,
+                          runSpacing: 12,
+                          crossAxisAlignment: WrapCrossAlignment.start,
                           children: [
-                            // Estado del usuario (activa, bloqueado, registrado)
+                            // Estado del usuario
                             estadoUsuarioWidget(widget.doc["status"]),
-                            const SizedBox(height: 12),
+
                             // Estado de notificación
                             estadoNotificacionWidget(
                               widget.doc["isNotificatedActivated"],
                               widget.doc["celularWhatsapp"],
                               widget.doc.id,
                             ),
+
+                            // Tarjeta de activación (condicional)
+                            if (_docEditable!["status"] == "registrado" || _docEditable!["status"] == "por_activar")
+                              SizedBox(
+                                width: 170, // Ajusta si deseas más ancho
+                                child: Card(
+                                  color: Colors.white,
+                                  surfaceTintColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: const BorderSide(color: Colors.grey),
+                                  ),
+                                  elevation: 2,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(12),
+                                    onTap: () async {
+                                      final docRef = _docEditable!.reference;
+                                      final status = _docEditable!["status"];
+
+                                      if (status == "registrado") {
+                                        await docRef.update({"status": "por_activar"});
+                                      } else if (status == "por_activar") {
+                                        bool confirmar = await showDialog(
+                                          context: context,
+                                          builder: (_) => AlertDialog(
+                                            backgroundColor: blanco,
+                                            title: const Text("Confirmar activación"),
+                                            content: const Text("¿Deseas activar este usuario?"),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
+                                              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Activar")),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirmar == true) {
+                                          await docRef.update({"status": "activado"});
+                                        }
+                                      }
+
+                                      final nuevoSnapshot = await docRef.get();
+                                      if (mounted) {
+                                        setState(() {
+                                          _docEditable = nuevoSnapshot;
+                                        });
+                                      }
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            _docEditable!["status"] == "registrado" ? Icons.arrow_upward : Icons.watch_later_outlined,
+                                            color: _docEditable!["status"] == "registrado" ? Colors.deepPurple : Colors.amber,
+                                            size: 30,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            _docEditable!["status"] == "registrado"
+                                                ? "Para activar"
+                                                : "Pendiente\npara activar",
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
-                        ),
+                        )
                       ),
                     ),
 
@@ -725,16 +804,23 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        if (widget.doc["status"] != "bloqueado") ...[
+                        if (_docEditable!["status"] != "bloqueado") ...[
                           botonGuardar(),
                           bloquearUsuario(),
-                          if (_statusActual == "activado" &&
-                              (_isNotificatedActivated == false ||
-                                  _isNotificatedActivated == null))
-                            botonEnviarWhatsappDesdeImagen(
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 500),
+                            transitionBuilder: (Widget child, Animation<double> animation) {
+                              return FadeTransition(opacity: animation, child: child);
+                            },
+                            child: (_docEditable!["status"] == "activado" &&
+                                (_isNotificatedActivated == false || _isNotificatedActivated == null))
+                                ? botonEnviarWhatsappDesdeImagen(
                               widget.doc["celularWhatsapp"],
                               widget.doc.id,
-                            ),
+                            )
+                                : const SizedBox(), // Para ocultar si no se cumple
+                          ),
+
                         ] else
                           FutureBuilder<bool>(
                             future: _adminPuedeDesbloquear(),
@@ -967,7 +1053,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
 
   //para seleccionar fecha redenciones
   /// 🔥 Mostrar un DatePicker para seleccionar la fecha de redención
@@ -2776,7 +2861,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   Future<void> _obtenerDatos() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
     final DocumentSnapshot document = await firestore.collection('Ppl').doc(widget.doc.id).get();
@@ -3577,182 +3661,173 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       child: Align(
         alignment: Alignment.center,
         child: GestureDetector(
-          onTap: () async {
-            bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
-            if (!confirmar) return;
+            onTap: () async {
+              bool confirmar = await _mostrarDialogoConfirmacionBotonGuardar();
+              if (!confirmar) return;
 
-            final docSnapshot = await widget.doc.reference.get();
-            final data = docSnapshot.data() as Map<String, dynamic>?;
+              final docSnapshot = await widget.doc.reference.get();
+              final data = docSnapshot.data() as Map<String, dynamic>?;
 
-// 🔒 Validar centro_validado solo si situación es "En Reclusión"
-            final centroValidado = data?['centro_validado'] == true;
-            final centroFinal = selectedCentro ?? widget.doc['centro_reclusion'] ?? '';
-            final situacion = data?['situacion']?.toString().trim() ?? '';
+              // Validaciones iniciales...
+              final centroValidado = data?['centro_validado'] == true;
+              final centroFinal = selectedCentro ?? widget.doc['centro_reclusion'] ?? '';
+              final situacion = data?['situacion']?.toString().trim() ?? '';
 
-            if (situacion == 'En Reclusión' && !centroValidado && _centroController.text.trim().isEmpty) {
-              if (context.mounted) {
-                await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: Colors.white,
-                  title: const Text("Centro de reclusión requerido"),
-                  content: const Text("Debes validar el centro de reclusión antes de guardar."),
-                  actions: [
-                    TextButton(
-                      child: const Text("Cerrar"),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                );
-              }
-              return; // 🚫 Se detiene aquí el proceso
-            }
-
-
-            final rawFechaCaptura = data?['fecha_captura'];
-            final tieneFechaCaptura = rawFechaCaptura != null &&
-                rawFechaCaptura.toString().trim().isNotEmpty;
-
-            final eventoSinFechaCaptura = await widget.doc.reference
-                .collection('eventos')
-                .doc('sin_fecha_captura')
-                .get();
-
-            final tieneEventoSinFechaCaptura = eventoSinFechaCaptura.exists;
-
-            if (!tieneFechaCaptura && !tieneEventoSinFechaCaptura) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("⚠️ Este PPL no tiene fecha de captura registrada. Asegúrate de crear una estadía o marca el evento correspondiente."),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-              return;
-            }
-
-            List<String> camposFaltantes = [];
-
-            if (situacion == 'En Reclusión') {
-              String? centro = selectedCentro ?? widget.doc['centro_reclusion'];
-              if (centro == null || centro.trim().isEmpty) camposFaltantes.add("Centro de Reclusión");
-              if (_tdController.text.trim().isEmpty) camposFaltantes.add("TD");
-              if (_nuiController.text.trim().isEmpty) camposFaltantes.add("NUI");
-              if (_patioController.text.trim().isEmpty) camposFaltantes.add("Patio");
-            }
-
-            if ((selectedRegional ?? widget.doc['regional'])?.toString().trim().isEmpty ?? true)
-              camposFaltantes.add("Regional");
-            if ((selectedCiudad ?? widget.doc['ciudad'])?.toString().trim().isEmpty ?? true)
-              camposFaltantes.add("Ciudad");
-            if ((selectedDelito ?? widget.doc['delito'])?.toString().trim().isEmpty ?? true)
-              camposFaltantes.add("Delito");
-            if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'])?.toString().trim().isEmpty ?? true)
-              camposFaltantes.add("Juzgado de Ejecución de Penas");
-            if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'])?.toString().trim().isEmpty ?? true)
-              camposFaltantes.add("Juzgado que Condenó");
-            if (_radicadoController.text.trim().isEmpty) camposFaltantes.add("Radicado");
-            if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
-            if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
-            if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
-            if ((int.tryParse(_mesesCondenaController.text) ?? 0) <= 0)
-              camposFaltantes.add("Meses de condena (debe ser mayor a 0)");
-
-            if (_celularWhatsappController.text.trim().isEmpty) camposFaltantes.add("Número de WhatsApp");
-
-            bool tieneEvento = await tieneEventoEspecial(widget.doc.reference);
-            String comentario = "";
-            String nuevoStatus = "activado";
-
-            bool tieneProcesoEnTribunal = false;
-
-            try {
-              final eventoDoc = await widget.doc.reference
-                  .collection('eventos')
-                  .doc('proceso_en_tribunal')
-                  .get();
-
-              tieneProcesoEnTribunal = eventoDoc.exists;
-            } catch (e) {
-              tieneProcesoEnTribunal = false;
-            }
-
-            if (camposFaltantes.isNotEmpty) {
-              if (tieneEvento || tieneProcesoEnTribunal) {
+              if (situacion == 'En Reclusión' && !centroValidado && _centroController.text.trim().isEmpty) {
                 if (context.mounted) {
-                  comentario = await _mostrarDialogoActivacionConDatosIncompletos(context, camposFaltantes.join(", "));
+                  await showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: Colors.white,
+                      title: const Text("Centro de reclusión requerido"),
+                      content: const Text("Debes validar el centro de reclusión antes de guardar."),
+                      actions: [
+                        TextButton(
+                          child: const Text("Cerrar"),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                return;
+              }
+
+              final rawFechaCaptura = data?['fecha_captura'];
+              final tieneFechaCaptura = rawFechaCaptura != null && rawFechaCaptura.toString().trim().isNotEmpty;
+
+              final eventoSinFechaCaptura = await widget.doc.reference
+                  .collection('eventos')
+                  .doc('sin_fecha_captura')
+                  .get();
+              final tieneEventoSinFechaCaptura = eventoSinFechaCaptura.exists;
+
+              if (!tieneFechaCaptura && !tieneEventoSinFechaCaptura) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("⚠️ Este PPL no tiene fecha de captura registrada."),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+                return;
+              }
+
+              List<String> camposFaltantes = [];
+
+              if (situacion == 'En Reclusión') {
+                String? centro = selectedCentro ?? widget.doc['centro_reclusion'];
+                if (centro == null || centro.trim().isEmpty) camposFaltantes.add("Centro de Reclusión");
+                if (_tdController.text.trim().isEmpty) camposFaltantes.add("TD");
+                if (_nuiController.text.trim().isEmpty) camposFaltantes.add("NUI");
+                if (_patioController.text.trim().isEmpty) camposFaltantes.add("Patio");
+              }
+
+              if ((selectedRegional ?? widget.doc['regional'])?.toString().trim().isEmpty ?? true)
+                camposFaltantes.add("Regional");
+              if ((selectedCiudad ?? widget.doc['ciudad'])?.toString().trim().isEmpty ?? true)
+                camposFaltantes.add("Ciudad");
+              if ((selectedDelito ?? widget.doc['delito'])?.toString().trim().isEmpty ?? true)
+                camposFaltantes.add("Delito");
+              if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'])?.toString().trim().isEmpty ?? true)
+                camposFaltantes.add("Juzgado de Ejecución de Penas");
+              if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'])?.toString().trim().isEmpty ?? true)
+                camposFaltantes.add("Juzgado que Condenó");
+              if (_radicadoController.text.trim().isEmpty) camposFaltantes.add("Radicado");
+              if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
+              if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
+              if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
+              if ((int.tryParse(_mesesCondenaController.text) ?? 0) <= 0)
+                camposFaltantes.add("Meses de condena (debe ser mayor a 0)");
+              if (_celularWhatsappController.text.trim().isEmpty) camposFaltantes.add("Número de WhatsApp");
+
+              bool tieneEvento = await tieneEventoEspecial(widget.doc.reference);
+              String comentario = "";
+              bool tieneProcesoEnTribunal = false;
+
+              try {
+                final eventoDoc = await widget.doc.reference
+                    .collection('eventos')
+                    .doc('proceso_en_tribunal')
+                    .get();
+                tieneProcesoEnTribunal = eventoDoc.exists;
+              } catch (e) {
+                tieneProcesoEnTribunal = false;
+              }
+
+              if (camposFaltantes.isNotEmpty) {
+                if (tieneEvento || tieneProcesoEnTribunal) {
+                  if (context.mounted) {
+                    comentario = await _mostrarDialogoActivacionConDatosIncompletos(
+                      context,
+                      camposFaltantes.join(", "),
+                    );
+                  }
+                  if (comentario.trim().isEmpty) return;
+                } else {
+                  if (context.mounted) {
+                    comentario = await _mostrarDialogoComentarioPendiente(
+                      context,
+                      camposFaltantes.join(", "),
+                    );
+                  }
+                  if (comentario.trim().isEmpty) return;
+                }
+              } else if (tieneProcesoEnTribunal) {
+                if (context.mounted) {
+                  comentario = await _mostrarDialogoActivacionConDatosIncompletos(
+                    context,
+                    "Proceso en tribunal",
+                  );
                 }
                 if (comentario.trim().isEmpty) return;
-                nuevoStatus = "activado";
+              } else if (tieneEventoSinFechaCaptura) {
+                if (context.mounted) {
+                  comentario = await _mostrarDialogoActivacionConDatosIncompletos(
+                    context,
+                    "Sin fecha de captura (evento activado)",
+                  );
+                }
+                if (comentario.trim().isEmpty) return;
               } else {
                 if (context.mounted) {
-                  comentario = await _mostrarDialogoComentarioPendiente(context, camposFaltantes.join(", "));
+                  final resultadoComentario = await _mostrarDialogoComentarioObligatorio(
+                    context,
+                    FirebaseFirestore.instance.collection('Ppl').doc(ppl.id),
+                    widget.doc.reference.collection('seguimiento'),
+                    adminFullName,
+                  );
+
+                  comentario = resultadoComentario['comentario'] ?? '';
+                  marcarParaSeguimiento = resultadoComentario['seguimiento'] ?? false;
                 }
-                if (comentario.trim().isEmpty) return;
-                nuevoStatus = "pendiente";
-              }
-            } else if (tieneProcesoEnTribunal) {
-              // 🔥 No hay campos faltantes, pero hay proceso_en_tribunal → forzar comentario
-              if (context.mounted) {
-                comentario = await _mostrarDialogoActivacionConDatosIncompletos(context, "Proceso en tribunal");
-              }
-              if (comentario.trim().isEmpty) return;
-              nuevoStatus = "activado";
-            }
-            else if (tieneEventoSinFechaCaptura) {
-              if (context.mounted) {
-                comentario = await _mostrarDialogoActivacionConDatosIncompletos(context, "Sin fecha de captura (evento activado)");
-              }
-              if (comentario.trim().isEmpty) return;
-              nuevoStatus = "activado";
-            }
 
-            else {
-              // ✅ Todos los datos están completos y no hay eventos → solicitar comentario obligatorio
-              if (context.mounted) {
-                final resultadoComentario = await _mostrarDialogoComentarioObligatorio(
-                  context,
-                  FirebaseFirestore.instance.collection('Ppl').doc(ppl.id), // Documento principal del PPL
-                  widget.doc.reference.collection('seguimiento'),          // Subcolección de seguimiento
-                  adminFullName,                                           // Nombre del administrador actual
-                );
-
-                comentario = resultadoComentario['comentario'] ?? '';
-                marcarParaSeguimiento = resultadoComentario['seguimiento'] ?? false;
+                if (comentario.trim().isEmpty && !marcarParaSeguimiento) return;
               }
 
-              if (comentario.trim().isEmpty && !marcarParaSeguimiento) return;
-              nuevoStatus = "activado";
-            }
+              if (marcarParaSeguimiento) {
+                await widget.doc.reference.collection('seguimiento').add({
+                  'fecha_inicio': DateTime.now(),
+                  'creado_por': adminFullName,
+                  'comentario': comentario,
+                  'activo': true,
+                });
 
-            if (marcarParaSeguimiento) {
-              // 1. Guardar en la subcolección 'seguimiento'
-              await widget.doc.reference.collection('seguimiento').add({
-                'fecha_inicio': DateTime.now(),
-                'creado_por': adminFullName,
-                'comentario': comentario,
-                'activo': true,
-              });
+                await widget.doc.reference.update({
+                  'tiene_seguimiento_activo': true,
+                });
+              }
 
-              // 2. Actualizar el documento principal para facilitar futuros filtros
-              await widget.doc.reference.update({
-                'tiene_seguimiento_activo': true,
-              });
-            }
+              // Correos del centro
+              Map<String, String> correosCentro = {
+                'correo_direccion': '',
+                'correo_juridica': '',
+                'correo_principal': '',
+                'correo_sanidad': '',
+              };
 
-            Map<String, String> correosCentro = {
-              'correo_direccion': '',
-              'correo_juridica': '',
-              'correo_principal': '',
-              'correo_sanidad': '',
-            };
-
-            // 🔄 Cargar correos del centro de reclusión si la situación es En Reclusión y el centro no ha sido validado
-            if (situacion == 'En Reclusión' && !centroValidado) {
-              // ✅ Si sí hay centro escrito, cargar correos
-              if (centroFinal.isNotEmpty) {
+              if (situacion == 'En Reclusión' && !centroValidado && centroFinal.isNotEmpty) {
                 final centroEncontrado = centrosReclusionTodos.firstWhere(
                       (centro) => centro['id'] == centroFinal,
                   orElse: () => <String, Object>{},
@@ -3768,179 +3843,104 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   };
                 }
               }
-            }
 
-            try {
-              final Map<String, dynamic> datosActualizados = {
-                'nombre_ppl': _nombreController.text,
-                'apellido_ppl': _apellidoController.text,
-                'numero_documento_ppl': _numeroDocumentoController.text,
-                'tipo_documento_ppl': _tipoDocumento,
-                'centro_reclusion': centroFinal,
-                'regional': selectedRegional ?? widget.doc['regional'],
-                'ciudad': selectedCiudad ?? widget.doc['ciudad'],
-                'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
-                'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'],
-                'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
-                'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'],
-                'delito': selectedDelito ?? widget.doc['delito'],
-                'categoria_delito': categoriaDelito ?? widget.doc['categoria_delito'],
-                'radicado': _radicadoController.text,
-                'meses_condena': int.tryParse(_mesesCondenaController.text) ?? 0,
-                'dias_condena': int.tryParse(_diasCondenaController.text) ?? 0,
-                //'fecha_captura': _fechaDeCapturaController.text,
-                'td': _tdController.text,
-                'nui': _nuiController.text,
-                'patio': _patioController.text,
-                'nombre_acudiente': _nombreAcudienteController.text,
-                'apellido_acudiente': _apellidosAcudienteController.text,
-                'parentesco_representante': _parentescoAcudienteController.text,
-                'celular': _celularAcudienteController.text,
-                'celularWhatsapp': _celularWhatsappController.text,
-                'email': _emailAcudienteController.text,
-                'status': nuevoStatus,
-              };
+              try {
+                final Map<String, dynamic> datosActualizados = {
+                  'nombre_ppl': _nombreController.text,
+                  'apellido_ppl': _apellidoController.text,
+                  'numero_documento_ppl': _numeroDocumentoController.text,
+                  'tipo_documento_ppl': _tipoDocumento,
+                  'centro_reclusion': centroFinal,
+                  'regional': selectedRegional ?? widget.doc['regional'],
+                  'ciudad': selectedCiudad ?? widget.doc['ciudad'],
+                  'juzgado_ejecucion_penas': selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'],
+                  'juzgado_ejecucion_penas_email': selectedJuzgadoEjecucionEmail ?? widget.doc['juzgado_ejecucion_penas_email'],
+                  'juzgado_que_condeno': selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'],
+                  'juzgado_que_condeno_email': selectedJuzgadoConocimientoEmail ?? widget.doc['juzgado_que_condeno_email'],
+                  'delito': selectedDelito ?? widget.doc['delito'],
+                  'categoria_delito': categoriaDelito ?? widget.doc['categoria_delito'],
+                  'radicado': _radicadoController.text,
+                  'meses_condena': int.tryParse(_mesesCondenaController.text) ?? 0,
+                  'dias_condena': int.tryParse(_diasCondenaController.text) ?? 0,
+                  'td': _tdController.text,
+                  'nui': _nuiController.text,
+                  'patio': _patioController.text,
+                  'nombre_acudiente': _nombreAcudienteController.text,
+                  'apellido_acudiente': _apellidosAcudienteController.text,
+                  'parentesco_representante': _parentescoAcudienteController.text,
+                  'celular': _celularAcudienteController.text,
+                  'celularWhatsapp': _celularWhatsappController.text,
+                  'email': _emailAcudienteController.text,
+                };
 
-              // Validar si ya existe una fechaActivacion y no actualizarla si ya está definida
-              final docSnapshot = await widget.doc.reference.get();
-              final data = docSnapshot.data() as Map<String, dynamic>?;
+                await widget.doc.reference.update(datosActualizados);
 
-              // Validar si ya existe una fechaActivacion y no actualizarla si ya está definida
-              final existingFechaActivacion = data?['fechaActivacion'];
-              if (nuevoStatus == 'activado') {
-                if (existingFechaActivacion == null || (existingFechaActivacion is String && existingFechaActivacion.trim().isEmpty)) {
-                  datosActualizados['fechaActivacion'] = DateTime.now();
-                }
-              }
-
-              if (tieneEvento) {
-                datosActualizados['activado_por_evento'] = true;
-                datosActualizados['requiere_actualizacion_datos'] = true;
-              }
-
-              if (data != null && !data.containsKey('ultima_actualizacion_redenciones')) {
-                await widget.doc.reference.update({
-                  'ultima_actualizacion_redenciones': Timestamp.now(),
-                });
-              }
-
-              await widget.doc.reference.update(datosActualizados);
-
-              setState(() {
-                _statusActual = nuevoStatus;
-              });
-
-              if (!centroValidado) {
-                await widget.doc.reference
-                    .collection('correos_centro_reclusion')
-                    .doc('emails')
-                    .set(correosCentro);
-              }
-
-              if (situacion == 'En Reclusión') {
-                await FirebaseFirestore.instance
-                    .collection('Ppl')
-                    .doc(widget.doc.id)
-                    .update({
-                  'centro_validado': true,
-                });
-              }
-
-              if (comentario.isNotEmpty) {
-                await widget.doc.reference.collection('comentarios').add({
-                  'comentario': comentario,
-                  'autor': adminFullName,
-                  'fecha': DateTime.now(),
-                });
-              }
-
-              if (situacion != 'En Reclusión') {
-                await widget.doc.reference.update({
-                  'centro_reclusion': "",
-                  'td': "",
-                  'nui': "",
-                  'patio': "",
-                });
-              }
-              String accionHistorial = nuevoStatus == 'activado' ? 'activado' : 'guardado pendiente';
-
-              // 🔍 Revisar si ya hay una acción 'activado' en el historial
-              if (nuevoStatus == 'activado') {
-                final historialSnapshot = await widget.doc.reference
-                    .collection('historial_acciones')
-                    .where('accion', isEqualTo: 'activado')
-                    .limit(1)
-                    .get();
-
-                if (historialSnapshot.docs.isNotEmpty) {
-                  accionHistorial = 'actualización';
-                }
-              }
-
-              await widget.doc.reference.collection('historial_acciones').add({
-                'admin': adminFullName,
-                'accion': accionHistorial,
-                'fecha': DateTime.now().toString(),
-              });
-
-
-              // ✅ Evaluar si campos están completos y se puede limpiar todo
-              final bool estaCompleto = _camposCompletos(situacion);
-              final bool requiereActualizacion = datosActualizados['requiere_actualizacion_datos'] == true;
-
-              if (nuevoStatus == 'activado' && !requiereActualizacion && estaCompleto) {
-                final comentariosSnapshot = await widget.doc.reference.collection('comentarios').get();
-                for (final doc in comentariosSnapshot.docs) {
-                  await doc.reference.delete();
-                }
-                final eventosRef = widget.doc.reference.collection('eventos');
-                try {
-                  await eventosRef.doc('requiere_actualizacion_datos').delete();
-                  await eventosRef.doc('comentarios').delete();
-                } catch (e) {
-                  print("❌ Error al eliminar nodos de eventos: $e");
+                if (!centroValidado) {
+                  await widget.doc.reference
+                      .collection('correos_centro_reclusion')
+                      .doc('emails')
+                      .set(correosCentro);
                 }
 
-                await widget.doc.reference.update({
-                  'requiere_actualizacion_datos': false,
-                  'activado_por_evento': FieldValue.delete(),
+                if (situacion == 'En Reclusión') {
+                  await FirebaseFirestore.instance
+                      .collection('Ppl')
+                      .doc(widget.doc.id)
+                      .update({'centro_validado': true});
+                }
+
+                if (comentario.isNotEmpty) {
+                  await widget.doc.reference.collection('comentarios').add({
+                    'comentario': comentario,
+                    'autor': adminFullName,
+                    'fecha': DateTime.now(),
+                  });
+                }
+
+                if (situacion != 'En Reclusión') {
+                  await widget.doc.reference.update({
+                    'centro_reclusion': "",
+                    'td': "",
+                    'nui': "",
+                    'patio': "",
+                  });
+                }
+
+                await widget.doc.reference.collection('historial_acciones').add({
+                  'admin': adminFullName,
+                  'accion': 'guardado',
+                  'fecha': DateTime.now().toString(),
                 });
-              }
 
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Información guardada como "$nuevoStatus".'),
-                    backgroundColor: nuevoStatus == "activado" ? Colors.green : Colors.orange,
-                    duration: const Duration(seconds: 2),
-                  ),
-                );
-
-                // Navigator.pushReplacement(
-                //   context,
-                //   MaterialPageRoute(builder: (context) => const HomeAdministradorPage()),
-                // );
-              }
-            } catch (error) {
-              if (context.mounted) {
-                await showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: Colors.white,
-                  title: const Text("Centro de reclusión requerido"),
-                  content: const Text("Debes validar el centro de reclusión antes de guardar."),
-                  actions: [
-                    TextButton(
-                      child: const Text("Cerrar"),
-                      onPressed: () => Navigator.of(context).pop(),
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Información guardada correctamente.'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
                     ),
-                  ],
-                ),
-                );
+                  );
+                }
+              } catch (error) {
+                if (context.mounted) {
+                  await showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      backgroundColor: Colors.white,
+                      title: const Text("Error"),
+                      content: const Text("Ocurrió un error al guardar los datos."),
+                      actions: [
+                        TextButton(
+                          child: const Text("Cerrar"),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
+                  );
+                }
               }
-            }
-          },
-          child: Container(
+            },
+            child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.green,

@@ -68,6 +68,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
     switch (estado) {
       case 'registrado':
         return primary;
+      case 'por_activar':
+        return Colors.amberAccent;
       case 'activado':
         return Colors.green;
       case 'bloqueado':
