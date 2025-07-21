@@ -234,6 +234,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           return status == 'registrado' && (!esOperador || assignedTo.isEmpty || assignedTo == currentUserUid);
                         }).length;
 
+                        final int countPorActivar = docs.where((doc) {
+                          final status = doc.get('status').toString().toLowerCase();
+                          return status == 'por_activar';
+                        }).length;
+
                         final int countActivado = docs.where((doc) {
                           final status = doc.get('status').toString().toLowerCase();
                           final data = doc.data() as Map<String, dynamic>;
@@ -560,6 +565,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                             buildDashboardContent(
                               filteredDocs,
                               countRegistrado: countRegistrado,
+                              countPorActivar: countPorActivar,
                               countActivado: countActivado,
                               countSuscritos: countSuscritos,
                               countPendiente: countPendiente,
@@ -589,6 +595,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   Widget buildDashboardContent(
       List<QueryDocumentSnapshot> filteredDocs, {
         required int countRegistrado,
+        required int countPorActivar,
         required int countActivado,
         required int countSuscritos,
         required int countPendiente,
@@ -611,6 +618,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
               FilterContainer(
                 countRegistrado: countRegistrado,
                 countActivado: countActivado,
+                countPorActivar: countPorActivar,
                 countSuscritos: countSuscritos,
                 countPendiente: countPendiente,
                 countBloqueado: countBloqueado,
@@ -641,6 +649,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                 child: _buildFilterContainer(
                   countRegistrado,
                   countActivado,
+                  countPorActivar,
                   countSuscritos,
                   countPendiente,
                   countBloqueado,
@@ -669,6 +678,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   Widget _buildFilterContainer(
       int countRegistrado,
       int countActivado,
+      int countPorActivar,
       int countSuscritos,
       int countPendiente,
       int countBloqueado,
@@ -704,6 +714,24 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
             isSelected: filterStatus == "registrado",
           ),
           const SizedBox(height: 6),
+          _buildStatRow(
+            "Por Activar",
+            countPorActivar, // ✅ Se corrige el contador
+            Colors.amberAccent,
+                () {
+              setState(() {
+                filterStatus = "por_activar";
+                filterIsPaid = null;
+                mostrarSoloIncompletos = false;
+                mostrarRedencionesVencidas = false;
+                mostrarSeguimiento = false;
+                mostrarConSolicitudes = false;
+                filtrarPorExentos = false;
+              });
+            },
+            isSelected: filterStatus == "por_activar", // ✅ Se corrige la lógica de selección
+          ),
+
           _buildStatRow(
             "Activados",
             countActivado,
@@ -908,6 +936,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       ),
     );
   }
+
   solicitudes() async {
     final snapshot = await FirebaseFirestore.instance
         .collection('solicitudes_usuario')
@@ -1343,6 +1372,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       return const Icon(Icons.check_circle, color: Colors.green, size: 15);
     }
   }
+
+
+  /// REVISAR ESTE YA QUE YA NO ESTA NECESITANDO
 
   void _mostrarDialogoPagoPendiente(QueryDocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -1924,6 +1956,7 @@ class TotalUsuariosCard extends StatelessWidget {
 
 class FilterContainer extends StatelessWidget {
   final int countRegistrado;
+  final int countPorActivar;
   final int countActivado;
   final int countSuscritos;
   final int countPendiente;
@@ -1939,6 +1972,7 @@ class FilterContainer extends StatelessWidget {
   const FilterContainer({
     Key? key,
     required this.countRegistrado,
+    required this.countPorActivar,
     required this.countActivado,
     required this.countSuscritos,
     required this.countPendiente,
@@ -1957,6 +1991,8 @@ class FilterContainer extends StatelessWidget {
     return Column(
       children: [
         _buildStatRow("Registrados", countRegistrado, Colors.blue, () => onFilterSelected("registrado")),
+        const SizedBox(height: 6),
+        _buildStatRow("Por Activar", countPorActivar, Colors.amberAccent, () => onFilterSelected("por_activar")),
         const SizedBox(height: 6),
         _buildStatRow("Activados", countActivado, Colors.green, () => onFilterSelected("activado")),
         const SizedBox(height: 6),
