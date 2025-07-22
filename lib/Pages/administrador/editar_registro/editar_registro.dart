@@ -754,11 +754,14 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                             ],
                                           ),
                                         );
+
                                         if (confirmar == true) {
-                                          await docRef.update({"status": "activado"});
+                                          await docRef.update({
+                                            "status": "activado",
+                                            "fechaActivacion": FieldValue.serverTimestamp(),
+                                          });
                                         }
                                       }
-
                                       final nuevoSnapshot = await docRef.get();
                                       if (mounted) {
                                         setState(() {
@@ -950,6 +953,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     final descuento = data.containsKey('descuento') ? data['descuento'] as Map<String, dynamic>? : null;
     final referidoPor = data.containsKey('referidoPor') ? data['referidoPor'] : null;
     final bool esReferido = referidoPor != null && referidoPor.toString().trim().isNotEmpty;
+    final accesoTemporalActivo = data['accesoTemporal']?['activo'] == true;
 
 
     return Container(
@@ -982,7 +986,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 ),
               ),
-
 
             // ✅ Mostrar el botón solo si no fue referido por "355"
             if (FirebaseAuth.instance.currentUser != null &&

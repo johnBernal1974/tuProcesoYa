@@ -92,7 +92,7 @@ class _SplashPageState extends State<SplashPage> with SingleTickerProviderStateM
               MaterialPageRoute(builder: (context) => const BloqueadoPage()),
             );
           }
-        } else if (status == 'registrado') {
+        } else if (status == 'registrado' || status == 'por_activar') {
           if (context.mounted) {
             Navigator.pushReplacement(
               context,
