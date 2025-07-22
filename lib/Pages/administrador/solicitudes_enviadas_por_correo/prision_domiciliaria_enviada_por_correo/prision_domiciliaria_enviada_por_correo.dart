@@ -16,7 +16,9 @@ import '../../../../commons/archivoViewerWeb.dart';
 import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
+import '../../../../services/whatsapp_service.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 import '../../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 
@@ -204,6 +206,15 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                       nombreColeccion: "domiciliaria_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 20),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      celular: widget.celularResponsable,
+                                      docId: widget.idDocumento,
+                                      servicio: "domiciliaria",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Prisión domiciliaria",
+                                    ),
+
                                   ],
                                 ),
                               ),
@@ -244,6 +255,14 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                     solicitudId: widget.idDocumento,
                                     nombreColeccion: "domiciliaria_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    celular: widget.celularResponsable,
+                                    docId: widget.idDocumento,
+                                    servicio: "domiciliaria",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Prisión domiciliaria",
                                   ),
                                 ],
                               ),

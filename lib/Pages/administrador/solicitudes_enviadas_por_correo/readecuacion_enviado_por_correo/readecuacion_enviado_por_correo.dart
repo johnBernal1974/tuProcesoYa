@@ -17,6 +17,7 @@ import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 
@@ -26,6 +27,7 @@ class SolicitudesReadecuacionRedencionPenaPorCorreoPage extends StatefulWidget {
   final String numeroSeguimiento;
   final String categoria;
   final String subcategoria;
+  final String celularResponsable;
   final String fecha;
   final String idUser;
   final bool sinRespuesta;
@@ -37,6 +39,7 @@ class SolicitudesReadecuacionRedencionPenaPorCorreoPage extends StatefulWidget {
     required this.numeroSeguimiento,
     required this.categoria,
     required this.subcategoria,
+    required this.celularResponsable,
     required this.fecha,
     required this.idUser,
     required this.sinRespuesta,
@@ -179,6 +182,14 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
                                       nombreColeccion: "readecuacion_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      celular: widget.celularResponsable,
+                                      docId: widget.idDocumento,
+                                      servicio: "readecuación",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Readecuación de redención art. 19 ley 2466 de 2025",
+                                    ),
                                   ],
                                 ),
                               ),
@@ -219,6 +230,14 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
                                     solicitudId: widget.idDocumento,
                                     nombreColeccion: "readecuacion_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  const SizedBox(height: 20),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    celular: widget.celularResponsable,
+                                    docId: widget.idDocumento,
+                                    servicio: "readecuación",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Readecuación de redención art. 19 ley 2466 de 2025",
                                   ),
                                 ],
                               ),

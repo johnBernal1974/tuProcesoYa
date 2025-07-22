@@ -536,6 +536,7 @@ class MyApp extends StatelessWidget {
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'],
+                celularResponsable: args['celularResponsable'] ?? "",
                 categoria: args['categoria'] ?? "Beneficios penitenciarios",
                 subcategoria: args['subcategoria'] ?? "Redención de pena",
                 fecha: args['fecha'],
@@ -544,6 +545,7 @@ class MyApp extends StatelessWidget {
               ),
             );
           }
+
           else if (settings.name == 'solicitudes_acumulacion_enviadas_por_correo') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(

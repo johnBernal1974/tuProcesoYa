@@ -558,6 +558,7 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
               ? latestData['fecha_fin'].toDate().toString()
               : "",
           'sinRespuesta': sinRespuesta,
+          'celularResponsable': latestData['celularResponsable'] ?? "",
         },
       );
     }

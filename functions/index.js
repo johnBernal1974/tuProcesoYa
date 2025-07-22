@@ -1189,6 +1189,126 @@ exports.sendNewSolicitudMessage = functions.https.onRequest(async (req, res) => 
   }
 });
 
+//para el envio de mensajes de respuesta a correos
+exports.sendRespuestaSolicitudMessage = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") return res.status(204).send("");
+  if (req.method !== "POST") return res.status(405).send("Method Not Allowed");
+
+  const { to, docId, tipoSolicitud, numeroSeguimiento, seccionHistorial } = req.body;
+
+  if (!to || !docId || !tipoSolicitud || !numeroSeguimiento || !seccionHistorial) {
+    return res.status(400).json({
+      error: "Faltan datos. Se requiere: 'to', 'docId', 'tipoSolicitud', 'numeroSeguimiento', 'seccionHistorial'"
+    });
+  }
+
+  let acudienteNombre = "";
+
+  try {
+    // 🔹 Determinar la colección del servicio
+    let collectionName = "";
+    switch (tipoSolicitud.toLowerCase()) {
+      case "readecuación":
+        collectionName = "readecuacion_solicitados";
+        break;
+      case "domiciliaria":
+        collectionName = "domiciliaria_solicitados";
+        break;
+
+      default:
+        return res.status(400).json({ error: `No se reconoce el tipo de solicitud: ${tipoSolicitud}` });
+    }
+
+    // 🔹 Obtener documento del servicio (para obtener idUser)
+    const docRefServicio = admin.firestore().collection(collectionName).doc(docId);
+    const docSnapServicio = await docRefServicio.get();
+
+    if (!docSnapServicio.exists) {
+      return res.status(404).json({ error: `Documento no encontrado en ${collectionName}` });
+    }
+
+    const dataServicio = docSnapServicio.data();
+    const celularResponsable = dataServicio.celularResponsable || to;
+    const idUser = dataServicio.idUser;
+
+    if (!idUser) {
+      return res.status(400).json({ error: "No se encontró el campo idUser en el documento del servicio" });
+    }
+
+    // 🔹 Obtener acudiente desde Ppl usando idUser
+    const docRefPpl = admin.firestore().collection("Ppl").doc(idUser);
+    const docSnapPpl = await docRefPpl.get();
+
+    if (!docSnapPpl.exists) {
+      return res.status(404).json({ error: "Usuario no encontrado en la colección Ppl" });
+    }
+
+    const dataPpl = docSnapPpl.data();
+    acudienteNombre = dataPpl.nombre_acudiente || "";
+
+    // 🔹 Construir cuerpo del mensaje
+    const body = {
+      messaging_product: "whatsapp",
+      to: celularResponsable.startsWith("57") ? celularResponsable : `57${celularResponsable}`,
+      type: "template",
+      template: {
+        name: "respuesta_correo", // Asegúrate que este sea el nombre exacto de la plantilla en Meta
+        language: { code: "es_CO" },
+        components: [
+          {
+            type: "header",
+            parameters: [
+              {
+                type: "image",
+                image: {
+                  link: "https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635"
+                }
+              }
+            ]
+          },
+          {
+            type: "body",
+            parameters: [
+              { type: "text", text: acudienteNombre },     // {{1}}
+              { type: "text", text: tipoSolicitud },       // {{2}}
+              { type: "text", text: numeroSeguimiento },   // {{3}}
+              { type: "text", text: seccionHistorial }     // {{4}}
+            ]
+          }
+        ]
+      }
+    };
+
+    const url = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
+
+    const response = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ACCESS_TOKEN}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Error de la API:", result);
+      return res.status(500).json({ error: "Error al enviar el mensaje", details: result });
+    }
+
+    console.log("Mensaje de respuesta enviado correctamente:", result);
+    return res.json({ success: true, result });
+
+  } catch (error) {
+    console.error("Error general:", error);
+    return res.status(500).json({ error: "Error interno del servidor", details: error.message });
+  }
+});
 
 exports.guardarMediaFile = functions.https.onRequest(async (req, res) => {
   res.set('Access-Control-Allow-Origin', '*');

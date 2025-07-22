@@ -77,7 +77,7 @@ class HistorialSolicitudesPage extends StatelessWidget {
 
     {
       "collection": "readecuacion_solicitados",
-      "title": "Solicitud\nde Readecuación de redención\n Art. 19 - ley 2466 de 2025",
+      "title": "Readecuación de redención\n Art. 19 - ley 2466 de 2025",
       "icon": Icons.calculate_sharp,
       "route": "historial_solicitudes_readecuacion_redenciones",
     },

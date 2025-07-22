@@ -4850,6 +4850,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 }
 
 
+
+
 class MostrarTiempoBeneficioCard extends StatelessWidget {
   final String idPpl;
 
