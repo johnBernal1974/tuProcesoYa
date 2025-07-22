@@ -351,7 +351,6 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
   }
 
 
-
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
     return Column(
