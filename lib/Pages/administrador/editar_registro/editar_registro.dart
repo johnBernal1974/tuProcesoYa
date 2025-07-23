@@ -32,6 +32,8 @@ import '../../../widgets/tabla_vista_estadias_reclusion.dart';
 import '../../seguimiento_solicitudes_page.dart';
 import '../home_admin/home_admin.dart';
 import 'package:http/http.dart' as http;
+import 'dart:html' as html;
+
 
 
 class EditarRegistroPage extends StatefulWidget {
@@ -135,7 +137,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
 
   String? departamentoSeleccionado;
   String? municipioSeleccionado;
-
+  String? ramaJudicialUrl;
 
   bool _isLoadingJuzgados = false; //
   late Ppl ppl;
@@ -153,13 +155,12 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   String? _statusActual;
   bool? _isNotificatedActivated;
   DocumentSnapshot? _docEditable;
-
-
-
-
-
   /// opciones de documento de identidad
   final List<String> _opciones = ['Cédula de Ciudadanía','Pasaporte', 'Tarjeta de Identidad'];
+
+  bool mostrarFormularioUrl = false;
+  final TextEditingController _ramaUrlController = TextEditingController();
+
 
   @override
   void initState() {
@@ -188,6 +189,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       municipioSeleccionado = data['municipio'];
       categoriaDelito = data['categoria_delito'];
       selectedDelito = data['delito'];
+      ramaJudicialUrl = data?['rama_judicial_url'];
+      mostrarFormularioUrl = ramaJudicialUrl == null || ramaJudicialUrl!.isEmpty;
+
 
       if (categoriaDelito != null && categoriaDelito!.trim().isEmpty) {
         categoriaDelito = null;
@@ -383,8 +387,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             ),
           const SizedBox(height: 20),
           Wrap(
-            spacing: 20, // espacio horizontal entre widgets cuando caben en una fila
-            runSpacing: 20, // espacio vertical entre widgets cuando se apilan
+            spacing: 20,
+            runSpacing: 20,
             children: [
               // Contenedor de beneficios
               Container(
@@ -392,7 +396,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade400),
                   borderRadius: BorderRadius.circular(12),
-                  color: blanco
+                  color: blanco,
                 ),
                 child: SizedBox(
                   width: 350,
@@ -415,7 +419,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                   style: TextStyle(
                                     color: Colors.black,
                                     fontWeight: FontWeight.w700,
-                                    fontSize: 12
+                                    fontSize: 12,
                                   ),
                                 ),
                               ),
@@ -442,7 +446,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                   condition: porcentajeEjecutado >= 60,
                                   remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
                                 ),
-
                               ],
                             ),
                           ),
@@ -458,7 +461,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                       condition: porcentajeEjecutado >= 50,
                                       remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
                                     ),
-
                                 _buildBenefitMinimalSection(
                                   titulo: "Extinción",
                                   condition: porcentajeEjecutado >= 100,
@@ -473,21 +475,148 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   ),
                 ),
               ),
-              // Widget de resumen de solicitudes
+
+              // Contenedor de resumen de solicitudes
               Container(
                 padding: const EdgeInsets.all(12),
+                width: 280,
                 decoration: BoxDecoration(
                   border: Border.all(color: Colors.grey.shade400),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Column(
                   children: [
-                    const Text("Solicitudes hechas por el PPL", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    const Text(
+                      "Solicitudes hechas por el PPL",
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+                    ),
                     SizedBox(
                       width: 280,
                       child: ResumenSolicitudesWidget(idPpl: ppl.id),
                     ),
                   ],
+                ),
+              ),
+
+              mostrarFormularioUrl
+                  ? Container(
+                padding: const EdgeInsets.all(12),
+                width: 300,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      "Agregar enlace de rama judicial",
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: _ramaUrlController,
+                      decoration: InputDecoration(
+                        hintText: "https://...",
+                        border: const OutlineInputBorder(), // fallback
+                        enabledBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade400), // Borde siempre visible
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey.shade600, width: 1.5), // Borde al enfocar
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () async {
+                        final nuevaUrl = _ramaUrlController.text.trim();
+
+                        if (nuevaUrl.isEmpty) {
+                          // Mostrar alerta si el campo está vacío
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              backgroundColor: blanco,
+                              title: const Text("Campo obligatorio"),
+                              content: const Text("Por favor, ingresa la URL de la Rama Judicial."),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text("Aceptar"),
+                                ),
+                              ],
+                            ),
+                          );
+                          return; // Cancelar ejecución
+                        }
+
+                        // Si no está vacío, actualiza Firestore
+                        await FirebaseFirestore.instance
+                            .collection('Ppl')
+                            .doc(widget.doc.id)
+                            .update({'rama_judicial_url': nuevaUrl});
+
+                        setState(() {
+                          ramaJudicialUrl = nuevaUrl;
+                          mostrarFormularioUrl = false;
+                        });
+                      },
+                      child: const Text("Guardar"),
+                    ),
+
+                  ],
+                ),
+              )
+                  : // 👇 Este es el widget que ya creaste con logo, texto e ícono
+              GestureDetector(
+                onTap: () {
+                  if (ramaJudicialUrl != null && ramaJudicialUrl!.isNotEmpty) {
+                    html.window.open(ramaJudicialUrl!, '_blank');
+                  }
+                },
+                child: Container(
+                  width: 280,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey.shade400),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8, right: 8),
+                        child: Image.asset(
+                          'assets/images/logo_rama_judicial_ok.png',
+                          width: 100,
+                          height: 100,
+                        ),
+                      ),
+                      const Expanded(
+                        child: Text(
+                          "Revisar rama judicial",
+                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -722,7 +851,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                             ),
 
                             // Tarjeta de activación (condicional)
-                            if (_docEditable!["status"] == "registrado" || _docEditable!["status"] == "por_activar")
+                            if (_docEditable!["status"] == "registrado" ||
+                                _docEditable!["status"] == "por_activar" ||
+                                _docEditable!["status"] == "pendiente")
                               SizedBox(
                                 width: 170, // Ajusta si deseas más ancho
                                 child: Card(
@@ -739,7 +870,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                       final docRef = _docEditable!.reference;
                                       final status = _docEditable!["status"];
 
-                                      if (status == "registrado") {
+                                      if (status == "registrado" || status == "pendiente") {
                                         await docRef.update({"status": "por_activar"});
                                       } else if (status == "por_activar") {
                                         bool confirmar = await showDialog(
@@ -775,15 +906,21 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Icon(
-                                            _docEditable!["status"] == "registrado" ? Icons.arrow_upward : Icons.watch_later_outlined,
-                                            color: _docEditable!["status"] == "registrado" ? Colors.deepPurple : Colors.amber,
-                                            size: 30,
+                                            (_docEditable!["status"] == "registrado" || _docEditable!["status"] == "pendiente")
+                                                ? Icons.arrow_upward
+                                                : Icons.touch_app_sharp,
+                                            color: (_docEditable!["status"] == "registrado" || _docEditable!["status"] == "pendiente")
+                                                ? Colors.deepPurple
+                                                : Colors.black87,
+                                            size: 50,
                                           ),
                                           const SizedBox(height: 8),
                                           Text(
                                             _docEditable!["status"] == "registrado"
                                                 ? "Para activar"
-                                                : "Pendiente\npara activar",
+                                                : _docEditable!["status"] == "pendiente"
+                                                ? "Para activar"
+                                                : "Activar",
                                             textAlign: TextAlign.center,
                                             style: const TextStyle(
                                               color: Colors.black,
@@ -791,6 +928,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                                               fontSize: 12,
                                             ),
                                           ),
+
                                         ],
                                       ),
                                     ),

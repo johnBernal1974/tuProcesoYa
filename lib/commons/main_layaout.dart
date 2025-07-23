@@ -34,10 +34,9 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   void initState() {
     super.initState();
-    _checkIfUserIsAdmin();
-    // 🔔 Inicia el escuchador de agenda
-    AgendaListener().iniciar(context);
+    _checkIfUserIsAdmin(); // Solo aquí
   }
+
 
   Future<void> _checkIfUserIsAdmin() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -52,8 +51,12 @@ class _MainLayoutState extends State<MainLayout> {
     }
 
     if (_isAdmin) {
-      await _adminProvider.loadAdminData(); // Cargar solo si es admin
-      setState(() {}); // Refrescar el widget con el nombre del admin
+      await _adminProvider.loadAdminData();
+      if(context.mounted){
+        AgendaListener().iniciar(context, soloSiAdmin: true);
+        // ✅ Solo iniciar si es admin
+      }
+      setState(() {}); // Refrescar para mostrar nombre admin
     }
   }
 
@@ -281,4 +284,7 @@ class _MainLayoutState extends State<MainLayout> {
     final audio = html.AudioElement('sounds/sound_whatsapp.mp3');
     audio.play();
   }
+
+
+
 }

@@ -484,13 +484,13 @@ class _HomePageState extends State<HomePage> {
     final String formattedValue = currencyFormat.format(_subscriptionValue);
     return SizedBox(
       child: Card(
-        surfaceTintColor: blanco,
-        shadowColor: blanco,
+        surfaceTintColor: Colors.amber.shade200,
+        shadowColor: Colors.black87,
         elevation: 6,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
         ),
-        color: Colors.white,
+        color: Colors.amber.shade200,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

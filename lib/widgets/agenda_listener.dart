@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:html' as html;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AgendaListener {
@@ -14,19 +15,28 @@ class AgendaListener {
   bool _iniciado = false;
   bool _mostrandoNotificacion = false;
   Function? _abrirCalendarioCallback;
-
   OverlayEntry? _notificacionActual;
-
-
 
   void configurarAbrirCalendario(Function callback) {
     _abrirCalendarioCallback = callback;
   }
 
-
-  void iniciar(BuildContext context) {
+  void iniciar(BuildContext context, {bool soloSiAdmin = false}) async {
     if (_iniciado) return;
     _iniciado = true;
+
+    if (soloSiAdmin) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection("admin")
+          .where("uid", isEqualTo: user.uid)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isEmpty) return; // ⛔ No es admin
+    }
 
     _timer = Timer.periodic(const Duration(minutes: 1), (_) async {
       final ahora = DateTime.now();
@@ -54,7 +64,7 @@ class AgendaListener {
               "📝 ${data['comentario']}",
             );
           }
-        } else if (diferencia.inMinutes > 0 && diferencia.inMinutes <= 300) {
+        } else if (diferencia.inMinutes > 0 && diferencia.inMinutes <= 10) {
           _alertasMostradas.add(doc.id);
           if (context.mounted) {
             _mostrarNotificacion(
@@ -76,12 +86,12 @@ class AgendaListener {
 
     final overlay = Overlay.of(context, rootOverlay: true);
     final controller = AnimationController(
-      vsync: Navigator.of(context), // Usa el `TickerProvider` del contexto
+      vsync: Navigator.of(context),
       duration: const Duration(milliseconds: 500),
     );
 
     final animation = Tween<Offset>(
-      begin: const Offset(1.0, 0.0), // desde la derecha
+      begin: const Offset(1.0, 0.0),
       end: Offset.zero,
     ).animate(CurvedAnimation(parent: controller, curve: Curves.easeOut));
 
@@ -103,9 +113,9 @@ class AgendaListener {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 decoration: BoxDecoration(
-                  color: Colors.white, // Fondo blanco
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.deepPurple, width: 2), // Borde morado
+                  border: Border.all(color: Colors.deepPurple, width: 2),
                   boxShadow: const [
                     BoxShadow(
                       color: Colors.black26,
@@ -166,7 +176,6 @@ class AgendaListener {
     overlay?.insert(_notificacionActual!);
     controller.forward();
   }
-
 
   void _reproducirSonido() {
     final audio = html.AudioElement('sounds/notificacion_agenda.mp3')..play();
