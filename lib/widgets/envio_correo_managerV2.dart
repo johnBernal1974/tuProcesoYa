@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/widgets/prefacio_centro_reclusion.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../services/whatsapp_service.dart';
 

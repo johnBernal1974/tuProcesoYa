@@ -18,6 +18,7 @@ import '../../../commons/main_layaout.dart';
 import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_derecho_peticion.dart';
+import '../../../services/whatsapp_service.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -1083,6 +1084,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             emailUsuario: userData?.email?.trim() ?? "",
             td: userData?.td?.trim() ?? "",
             nui: userData?.nui?.trim() ?? "",
+            patio: userData?.patio?.trim() ?? "",
             numeroSeguimiento: widget.numeroSeguimiento,
             nombreAcudiente: '${userData!.nombreAcudiente} ${userData!.apellidoAcudiente}'
 
@@ -1504,6 +1506,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       emailUsuario: userData?.email?.trim() ?? "",
       td: userData?.td?.trim() ?? "",
       nui: userData?.nui?.trim() ?? "",
+      patio: userData?.patio?.trim() ?? "",
       numeroSeguimiento: widget.numeroSeguimiento,
       nombreAcudiente: '${userData!.nombreAcudiente} ${userData!.apellidoAcudiente}'
     );
@@ -1560,6 +1563,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         peticionConcreta: peticionConcreta,
         emailUsuario: userData?.email.trim() ?? "",
         nui: userData?.nui.trim() ?? "",
+        patio: userData?.patio?.trim() ?? "",
         td: userData?.td.trim() ?? "",
         numeroSeguimiento: widget.numeroSeguimiento,
         nombreAcudiente: '${userData!.nombreAcudiente} ${userData!.apellidoAcudiente}'
@@ -1650,7 +1654,8 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
         foregroundColor: Colors.black,
       ),
       onPressed: () async {
-        if (correoSeleccionado!.isEmpty) {
+        if (correoSeleccionado?.isEmpty ?? true) {
+          if (!context.mounted) return;
           await showDialog(
             context: context,
             builder: (context) => AlertDialog(
@@ -1687,84 +1692,210 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
         );
 
-        if (confirmacion ?? false) {
-          if (context.mounted) {
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (context) => const AlertDialog(
-                backgroundColor: blanco,
-                title: Text("Enviando correo..."),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text("Espere mientras se envía el correo."),
-                    SizedBox(height: 20),
-                    CircularProgressIndicator(),
-                  ],
-                ),
+        if (confirmacion != true || !context.mounted) return;
+
+        BuildContext? loaderCtx;
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            loaderCtx = ctx;
+            return const AlertDialog(
+              backgroundColor: blanco,
+              title: Text("Enviando correo..."),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Espere mientras se envía el correo."),
+                  SizedBox(height: 20),
+                  CircularProgressIndicator(),
+                ],
               ),
             );
-          }
+          },
+        );
 
+        final html = derechoPeticion.generarTextoHtml();
+
+        try {
           await enviarCorreoResend();
-
-          final html = derechoPeticion.generarTextoHtml();
           await subirHtmlCorreoADocumento(
             idDocumento: widget.idDocumento,
             htmlContent: html,
           );
-
-          const urlApp = "https://www.tuprocesoya.com";
-          final numeroSeguimiento = derechoPeticion.numeroSeguimiento;
-
+        } catch (e) {
           if (context.mounted) {
-            Navigator.of(context).pop(); // Cerrar loading
+            Navigator.of(loaderCtx!).pop();
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Error al enviar: $e"), backgroundColor: Colors.red),
+            );
+          }
+          return;
+        }
 
-            if (urlApp != null) {
-              final enviar = await showDialog<bool>(
+        if (!context.mounted) return;
+        Navigator.of(loaderCtx!).pop();
+
+        // Confirmar envío de WhatsApp
+        final notificarWhatsapp = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            backgroundColor: blanco,
+            title: const Text("¿Enviar Notificación?"),
+            content: const Text("¿Deseas notificar al usuario del envío por WhatsApp?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: const Text("No"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: const Text("Sí, enviar"),
+              ),
+            ],
+          ),
+        );
+
+        if (notificarWhatsapp == true && userData?.celularWhatsapp?.isNotEmpty == true) {
+          BuildContext? whatsappCtx;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (ctx) {
+              whatsappCtx = ctx;
+              return const AlertDialog(
+                backgroundColor: blanco,
+                title: Text("Enviando WhatsApp..."),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text("Por favor espera mientras se envía la notificación."),
+                    SizedBox(height: 20),
+                    CircularProgressIndicator(),
+                  ],
+                ),
+              );
+            },
+          );
+
+          try {
+            print("🟣🟣🟣🟣🟣🟣 ID a enviar por WhatsApp: ${widget.idDocumento}");
+
+            // 🟡 Leer el documento de derecho de petición y obtener idUser
+            final docSolicitud = await FirebaseFirestore.instance
+                .collection("derechos_peticion_solicitados")
+                .doc(widget.idDocumento)
+                .get();
+
+            final idUser = docSolicitud.data()?["idUser"];
+            if (idUser == null) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Error: idUser no encontrado en la solicitud")),
+                );
+              }
+              return;
+            }
+
+// 🔵 Leer el usuario desde Ppl
+            final docUsuario = await FirebaseFirestore.instance
+                .collection("Ppl")
+                .doc(idUser)
+                .get();
+
+            if (!docUsuario.exists) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Error: usuario no encontrado en Ppl")),
+                );
+              }
+              return;
+            }
+
+            final celular = docUsuario.data()?["celularWhatsapp"];
+            final nombreAcudiente = docUsuario.data()?["nombre_acudiente"];
+
+            if (celular == null || celular.isEmpty) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Error: número de WhatsApp no registrado")),
+                );
+              }
+              return;
+            }
+
+// 🔹 Enviar notificación con el idUser (este sí existe en Ppl)
+            await WhatsappService.enviarNotificacion(
+              numero: "+57$celular",
+              docId: idUser,
+              servicio: "Derecho de petición",
+              seguimiento: widget.numeroSeguimiento,
+            );
+
+
+            if (context.mounted) {
+              Navigator.of(whatsappCtx!).pop();
+
+              await showDialog(
+                barrierDismissible: false,
                 context: context,
-                builder: (context) => AlertDialog(
+                builder: (ctx) => AlertDialog(
                   backgroundColor: blanco,
-                  title: const Text("¿Enviar Notificación?"),
-                  content: const Text("¿Deseas notificar al usuario del envio del correo por WhatsApp?"),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  title: Row(
+                    children: [
+                      Image.asset("assets/images/icono_whatsapp.png", height: 28),
+                      const SizedBox(width: 8),
+                      const Expanded(
+                        child: Text(
+                          "WhatsApp enviado",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  content: const Text(
+                    "La notificación de activación fue enviada con éxito.",
+                    style: TextStyle(fontSize: 14),
+                  ),
                   actions: [
                     TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text("No"),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: const Text("Sí, enviar"),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        if (context.mounted) {
+                          Navigator.of(context).pushReplacementNamed('historial_solicitudes_derecho_peticion_admin');
+                        }
+                      },
+                      child: const Text(
+                        "Ir al historial",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                     ),
                   ],
                 ),
               );
-
-              if (enviar == true) {
-                final celulartWhatsApp = "+57${userData!.celularWhatsapp}";
-                final mensaje = Uri.encodeComponent(
-                    "Hola *${userData!.nombreAcudiente}*,\n\n"
-                    "Hemos enviado tu derecho de petición número *$numeroSeguimiento* a la autoridad competente.\n\n"
-                        "Recuerda que la entidad tiene un tiempo aproximado de 20 días para responder a la presente solicitud. Te estaremos informando el resultado de la diligencia.\n\n\n"
-                        "Ingresa a la aplicación / menú / Historiales/ Tus Solicitudes derecho petición. Allí podrás ver el correo enviado:\n$urlApp\n\n"
-                        "Gracias por confiar en nosotros.\n\nCordialmente,\n\n*El equipo de Tu Proceso Ya.*"
-                );
-                final link = "https://wa.me/$celulartWhatsApp?text=$mensaje";
-                await launchUrl(Uri.parse(link), mode: LaunchMode.externalApplication);
-              }
             }
-            if(context.mounted){
-              Navigator.pushReplacementNamed(context, 'historial_solicitudes_derecho_peticion_admin');
+          } catch (e) {
+            if (context.mounted) {
+              Navigator.of(whatsappCtx!).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Error al enviar WhatsApp: $e"), backgroundColor: Colors.red),
+              );
+              return;
             }
+          }
+        } else {
+          if (context.mounted) {
+            Navigator.of(context).pushReplacementNamed('historial_solicitudes_derecho_peticion_admin');
           }
         }
       },
       child: const Text("Enviar por correo"),
     );
   }
-
-
 
   Future<void> subirHtmlCorreoADocumento({
     required String idDocumento,
