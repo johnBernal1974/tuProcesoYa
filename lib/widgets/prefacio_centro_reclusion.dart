@@ -26,7 +26,7 @@ String generarPrefacioCentroReclusion({
   </p>
 
   <p>
-    Me permito informar que el día de hoy ha sido presentada ante el Juzgado de Ejecución de Penas la solicitud <b>$beneficioPenitenciario</b>. Con el fin de que dicho despacho pueda resolver adecuadamente, respetuosamente solicito que se remitan con carácter urgente los siguientes documentos:
+    Me permito informar que el día de hoy ha sido presentada ante el Juzgado de Ejecución de Penas la solicitud de <b>$beneficioPenitenciario</b>. Con el fin de que dicho despacho pueda resolver adecuadamente, respetuosamente solicito que se remitan con carácter urgente los siguientes documentos:
   </p>
 
   <ol>

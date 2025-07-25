@@ -22,6 +22,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
+import '../../../widgets/envio_correo_managerV2.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -2418,7 +2419,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
         }
 
         // Crear instancia de EnvioCorreoManager
-        final envioCorreoManager = EnvioCorreoManager();
+        final envioCorreoManager = EnvioCorreoManagerV2();
 
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
@@ -2430,15 +2431,22 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
           rutaHistorial: 'historial_solicitudes_prision_domiciliaria_admin',
           nombreServicio: "Prisión Domiciliaria",
           idDocumentoPpl: widget.idUser,
+
+          // Nuevos campos requeridos
+          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+          nombrePpl: userData?.nombrePpl ?? '',
+          apellidoPpl: userData?.apellidoPpl ?? '',
+          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          beneficioPenitenciario: "Prisión domiciliaria", // Puedes ajustar si se requiere algo más específico
+
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
             String? prefacioHtml,
           }) async {
-            final htmlContent = prefacioHtml != null
-                ? '$prefacioHtml${prisionDomiciliaria.generarTextoHtml()}'
-                : prisionDomiciliaria.generarTextoHtml();
-
             await enviarCorreoResend(
               correoDestino: correoDestino,
               asuntoPersonalizado: asuntoPersonalizado,

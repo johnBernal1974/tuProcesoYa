@@ -22,6 +22,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
+import '../../../widgets/envio_correo_managerV2.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -2401,7 +2402,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
         });
 
         // Instanciar manager
-        final envioCorreoManager = EnvioCorreoManager();
+        final envioCorreoManager = EnvioCorreoManagerV2();
 
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
@@ -2413,6 +2414,17 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
           rutaHistorial: 'historial_solicitudes_permiso_72horas_admin',
           nombreServicio: "Permiso de 72 Horas",
           idDocumentoPpl: widget.idUser,
+
+          // Nuevos campos requeridos
+          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+          nombrePpl: userData?.nombrePpl ?? '',
+          apellidoPpl: userData?.apellidoPpl ?? '',
+          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          beneficioPenitenciario: "Permiso de 72 Horas",
+
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
@@ -2424,6 +2436,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
               prefacioHtml: prefacioHtml,
             );
           },
+
           subirHtml: () async {
             await subirHtmlCorreoADocumentoPermiso72Horas(
               idDocumento: widget.idDocumento,

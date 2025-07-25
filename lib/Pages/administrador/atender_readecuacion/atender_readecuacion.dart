@@ -1243,7 +1243,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
   }
 
   ///Aca Inicia el cambio
-  ///
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(

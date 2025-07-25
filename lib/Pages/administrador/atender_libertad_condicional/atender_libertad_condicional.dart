@@ -22,6 +22,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
+import '../../../widgets/envio_correo_managerV2.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -2442,7 +2443,7 @@ La Corte Suprema de Justicia ha sostenido que el juez está facultado para aplic
         }
 
         // Crear la instancia
-        final envioCorreoManager = EnvioCorreoManager();
+        final envioCorreoManager = EnvioCorreoManagerV2();
 
         // Llamar al método
         await envioCorreoManager.enviarCorreoCompleto(
@@ -2455,6 +2456,18 @@ La Corte Suprema de Justicia ha sostenido que el juez está facultado para aplic
           rutaHistorial: 'historial_solicitudes_libertad_condicional_admin',
           nombreServicio: "Libertad Condicional",
           idDocumentoPpl: widget.idUser,
+
+          // Nuevos campos requeridos
+          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+          nombrePpl: userData?.nombrePpl ?? '',
+          apellidoPpl: userData?.apellidoPpl ?? '',
+          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          beneficioPenitenciario: "Libertad condicional",
+
+
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
