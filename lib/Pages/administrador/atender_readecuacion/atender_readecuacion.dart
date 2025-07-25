@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
+import 'package:tuprocesoya/widgets/envio_correo_managerV2.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
@@ -1270,10 +1271,8 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           return;
         }
 
-        // Crear la instancia
-        final envioCorreoManager = EnvioCorreoManager();
+        final envioCorreoManager = EnvioCorreoManagerV2();
 
-        // Llamar al método
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
@@ -1284,6 +1283,17 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           rutaHistorial: 'historial_solicitudes_readecuacion_redenciones_admin',
           nombreServicio: "Readecuación de Redención",
           idDocumentoPpl: widget.idUser,
+
+          // Nuevos campos requeridos
+          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+          nombrePpl: userData?.nombrePpl ?? '',
+          apellidoPpl: userData?.apellidoPpl ?? '',
+          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          beneficioPenitenciario: "Readecuación de Redención", // Puedes ajustar si se requiere algo más específico
+
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
@@ -1295,12 +1305,14 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
               prefacioHtml: prefacioHtml,
             );
           },
+
           subirHtml: () async {
             await subirHtmlCorreoADocumentoSolicitudRedenciones(
               idDocumento: widget.idDocumento,
               htmlContent: readecuacion.generarTextoHtml(),
             );
           },
+
           buildSelectorCorreoCentroReclusion: ({
             required Function(String correo, String nombreCentro) onEnviarCorreo,
             required Function() onOmitir,
@@ -1311,6 +1323,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
               onOmitir: onOmitir,
             );
           },
+
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -1322,9 +1335,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
               onCorreoValidado: onCorreoValidado,
               onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
               onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () {
-                Navigator.of(context).pop();
-              },
+              onOmitir: () => Navigator.of(context).pop(),
             );
           },
         );
@@ -1332,6 +1343,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       child: const Text("Enviar por correo"),
     );
   }
+
 
   Future<void> subirHtmlCorreoADocumentoSolicitudRedenciones({
     required String idDocumento,
