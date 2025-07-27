@@ -46,6 +46,11 @@ class SolicitarServiciosPage extends StatelessWidget {
       "icon": Icons.rate_review, // Puedes cambiar el ícono si prefieres otro
       "route": "solicitud_apelacion_page",
     },
+    {
+      "title": "Solicitud traslado penitenciaría",
+      "icon": Icons.door_back_door_outlined, // Puedes cambiar el ícono si prefieres otro
+      "route": "solicitud_trasladoPenitenciaria_page",
+    },
   ];
 
   @override

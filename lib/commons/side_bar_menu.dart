@@ -35,6 +35,7 @@ class _SideBarState extends State<SideBar> {
   int solicitudesPeticion = 0;
   int solicitudesAcumulacion = 0;
   int solicitudesApelacion = 0;
+  int solicitudesTrasladoPenitenciaria = 0;
 
 
 
@@ -55,6 +56,7 @@ class _SideBarState extends State<SideBar> {
     _fetchAcumulacionlicitados();
     _fetchApelacionSolicitados();
     _fetchReadecuacionRedencionesSolicitados();
+    _fetchTraladoPenitenciariaSolicitados();
   }
 
   Future<void> _loadData() async {
@@ -345,6 +347,17 @@ class _SideBarState extends State<SideBar> {
       });
     }
   }
+  Future<void> _fetchTraladoPenitenciariaSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('trasladoPenitenciaria_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesApelacion = querySnapshot.docs.length;
+      });
+    }
+  }
 
   Widget _buildDrawerHeader(bool? isAdmin) {
     return Container(
@@ -511,6 +524,7 @@ class _SideBarState extends State<SideBar> {
                   contador: solicitudesApelacion,
                 ),
               ),
+
             ],
           ),
 

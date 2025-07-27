@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-
 import '../services/whatsapp_service.dart';
 
 class EnvioCorreoManager {
@@ -20,10 +19,6 @@ class EnvioCorreoManager {
     String? prefacioHtml,
     }) enviarCorreoResend,
     required Future<void> Function() subirHtml,
-    required Widget Function({
-    required Function(String correo, String nombreCentro) onEnviarCorreo,
-    required Function() onOmitir,
-    }) buildSelectorCorreoCentroReclusion,
     required Widget Function({
     required Function(String correo, String entidad) onCorreoValidado,
     required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -93,7 +88,7 @@ class EnvioCorreoManager {
       await enviarCorreoResend(correoDestino: correoDestinoPrincipal);
       await subirHtml();
     } catch (e) {
-      if(context.mounted){
+      if (context.mounted) {
         Navigator.of(loaderCtx!).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error al enviar: $e"), backgroundColor: Colors.red),
@@ -103,72 +98,10 @@ class EnvioCorreoManager {
     }
 
     Navigator.of(loaderCtx!).pop();
-
-// Esperar un frame antes de abrir otro dialog:
     await Future.delayed(Duration.zero);
     if (!context.mounted) return;
 
-// 2️⃣ Copia al centro de reclusión
-    final enviarCopiaCentro = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text("Copia al centro de reclusión"),
-        content: const Text("¿Deseas enviar una copia de este correo al centro de reclusión?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text("Omitir"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text("Sí, enviar"),
-          ),
-        ],
-      ),
-    );
-
-
-    if (enviarCopiaCentro == true) {
-      if (context.mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: buildSelectorCorreoCentroReclusion(
-                onEnviarCorreo: (correoCentro, nombreCentro) async {
-                  Navigator.of(context).pop();
-                  // Esperar un frame
-                  await Future.delayed(const Duration(milliseconds: 150));
-                  if(context.mounted){
-                    await _enviarCopiaConLoader(
-                      context: context,
-                      correoDestino: correoCentro,
-                      enviarCorreoResend: enviarCorreoResend,
-                      asunto: "Copia: Solicitud de $nombreServicio - $numeroSeguimiento",
-                      prefacio: """
-<p><strong>Copia al centro de reclusión:</strong> $nombreCentro</p>
-<hr>
-""",
-                      mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
-                    );
-                  }
-                  // Esperar que el usuario cierre el popup
-                  await Future.delayed(const Duration(milliseconds: 100));
-                },
-                onOmitir: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ),
-        );
-      }
-    }
-    if (!context.mounted) return;
-
-    // 3️⃣ Copia al reparto
+    // 2️⃣ Copia a reparto
     final enviarCopiaReparto = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -192,7 +125,7 @@ class EnvioCorreoManager {
     if (enviarCopiaReparto == true) {
       await Future.delayed(const Duration(milliseconds: 200));
 
-      if(context.mounted){
+      if (context.mounted) {
         await showDialog(
           context: context,
           barrierDismissible: false,
@@ -203,7 +136,6 @@ class EnvioCorreoManager {
                 onCorreoValidado: (correo, entidad) {},
                 onCiudadNombreSeleccionada: (_) {},
                 onEnviarCorreoManual: (correo, entidad) async {
-                  // Confirmación con correo en negrita
                   final confirmarEnvio = await showDialog<bool>(
                     context: context,
                     barrierDismissible: false,
@@ -236,7 +168,7 @@ class EnvioCorreoManager {
                   );
 
                   if (confirmarEnvio != true) return;
-                  if(context.mounted){
+                  if (context.mounted) {
                     await _enviarCopiaConLoader(
                       context: context,
                       correoDestino: correo,
@@ -254,12 +186,9 @@ class EnvioCorreoManager {
           ),
         );
       }
-
     }
 
-
-    if (!context.mounted) return;
-    // 4️⃣ Notificación WhatsApp
+    // 3️⃣ WhatsApp
     final notificarWhatsapp = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -282,7 +211,7 @@ class EnvioCorreoManager {
 
     if (notificarWhatsapp == true && celularWhatsapp != null && celularWhatsapp.isNotEmpty) {
       BuildContext? loaderCtx;
-      if(context.mounted){
+      if (context.mounted) {
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -357,7 +286,7 @@ class EnvioCorreoManager {
           );
         }
       } catch (e) {
-        if(context.mounted){
+        if (context.mounted) {
           Navigator.of(loaderCtx!).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Error al enviar WhatsApp: $e"), backgroundColor: Colors.red),
@@ -407,7 +336,7 @@ class EnvioCorreoManager {
         prefacioHtml: prefacio,
       );
       Navigator.of(loaderCtx!).pop();
-      if(context.mounted){
+      if (context.mounted) {
         await showDialog(
           barrierDismissible: false,
           context: context,
@@ -425,7 +354,7 @@ class EnvioCorreoManager {
         );
       }
     } catch (e) {
-      if(context.mounted){
+      if (context.mounted) {
         Navigator.of(loaderCtx!).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error al enviar copia: $e"), backgroundColor: Colors.red),

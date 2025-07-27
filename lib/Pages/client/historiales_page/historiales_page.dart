@@ -81,6 +81,13 @@ class HistorialSolicitudesPage extends StatelessWidget {
       "icon": Icons.calculate_sharp,
       "route": "historial_solicitudes_readecuacion_redenciones",
     },
+
+    {
+      "collection": "trasladoPenitenciaria_solicitados",
+      "title": "Traslado\nPenitenciaria",
+      "icon": Icons.door_back_door_outlined,
+      "route": "historial_solicitudes_trasladoPenitenciaria",
+    },
   ];
 
   Future<List<Map<String, dynamic>>> _obtenerSolicitudes(String userId) async {

@@ -776,6 +776,8 @@ class _HistorialSolicitudesAcumulacionAdminPageState extends State<HistorialSoli
         return Colors.deepPurpleAccent; // Puedes cambiarlo por Theme.of(context).primaryColor si lo prefieres
       case "Enviado":
         return Colors.green;
+      case "Cpncedido":
+        return Colors.lightGreenAccent;
       default:
         return Colors.grey; // Color por defecto si el estado no coincide
     }

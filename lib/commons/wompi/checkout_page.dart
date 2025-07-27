@@ -157,6 +157,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'acumulacion': 'Acumulación de penas',
       'apelacion': 'Apelación',
       'readecuacion': 'Readecuación de redención segun art. 19 ley 2466 de 2005',
+      'trasladoPenitenciaria': 'Traslado de penitenciaría',
     };
 
     if (tiposPagos.containsKey(widget.tipoPago)) {
@@ -247,9 +248,6 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 textAlign: TextAlign.center,
               ),
 
-              // const SizedBox(height: 10),
-              // const Text("¡Este valor se paga una única vez!",
-              //     style: TextStyle(fontWeight: FontWeight.w900), textAlign: TextAlign.center),
               const SizedBox(height: 40),
               if (_subscriptionValue != null)
                 Container(

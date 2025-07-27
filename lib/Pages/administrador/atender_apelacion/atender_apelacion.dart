@@ -2144,16 +2144,16 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
               htmlContent: apelacionTemplate.generarTextoHtml(),
             );
           },
-          buildSelectorCorreoCentroReclusion: ({
-            required Function(String correo, String nombreCentro) onEnviarCorreo,
-            required Function() onOmitir,
-          }) {
-            return SeleccionarCorreoCentroReclusionV2(
-              idUser: widget.idUser,
-              onEnviarCorreo: onEnviarCorreo,
-              onOmitir: onOmitir,
-            );
-          },
+          // buildSelectorCorreoCentroReclusion: ({
+          //   required Function(String correo, String nombreCentro) onEnviarCorreo,
+          //   required Function() onOmitir,
+          // }) {
+          //   return SeleccionarCorreoCentroReclusionV2(
+          //     idUser: widget.idUser,
+          //     onEnviarCorreo: onEnviarCorreo,
+          //     onOmitir: onOmitir,
+          //   );
+          // },
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,

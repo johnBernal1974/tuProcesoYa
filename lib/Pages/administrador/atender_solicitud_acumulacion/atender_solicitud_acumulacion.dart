@@ -1401,16 +1401,16 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
               htmlContent: acumulacion.generarTextoHtml(),
             );
           },
-          buildSelectorCorreoCentroReclusion: ({
-            required Function(String correo, String nombreCentro) onEnviarCorreo,
-            required Function() onOmitir,
-          }) {
-            return SeleccionarCorreoCentroReclusionV2(
-              idUser: widget.idUser,
-              onEnviarCorreo: onEnviarCorreo,
-              onOmitir: onOmitir,
-            );
-          },
+          // buildSelectorCorreoCentroReclusion: ({
+          //   required Function(String correo, String nombreCentro) onEnviarCorreo,
+          //   required Function() onOmitir,
+          // }) {
+          //   return SeleccionarCorreoCentroReclusionV2(
+          //     idUser: widget.idUser,
+          //     onEnviarCorreo: onEnviarCorreo,
+          //     onOmitir: onOmitir,
+          //   );
+          // },
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
