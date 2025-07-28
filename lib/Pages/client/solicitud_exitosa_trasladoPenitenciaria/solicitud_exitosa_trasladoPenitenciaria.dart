@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:tuprocesoya/Pages/client/historial_solicitudes_TrasladoPenitenciaria/historial_solicitudes_TrasladoPenitenciaria.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
-import '../historial_solicitudes_redenciones/historial_solicitudes_redenciones.dart';
-import '../historial_solicitudes_traslado_proceso/historial_solicitudes_traslado_proceso.dart';
 
 class SolicitudExitosaTrasladoPenitenciariaPage extends StatelessWidget {
   final String numeroSeguimiento;

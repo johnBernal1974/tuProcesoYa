@@ -354,7 +354,7 @@ class _SideBarState extends State<SideBar> {
         .get();
     if (mounted) {
       setState(() {
-        solicitudesApelacion = querySnapshot.docs.length;
+        solicitudesTrasladoPenitenciaria = querySnapshot.docs.length;
       });
     }
   }
@@ -525,6 +525,18 @@ class _SideBarState extends State<SideBar> {
                 ),
               ),
 
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes Traslado de penitenciaria",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_trasladoPenitenciaria_admin',
+                  showBadge: solicitudesTrasladoPenitenciaria > 0,
+                  contador: solicitudesTrasladoPenitenciaria,
+                ),
+              ),
+
             ],
           ),
 
@@ -687,6 +699,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_apelacion_admin',
                   showBadge: solicitudesApelacion > 0,
                   contador: solicitudesApelacion,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Solicitudes Traslado de penitenciaria",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_trasladoPenitenciaria_admin',
+                  showBadge: solicitudesTrasladoPenitenciaria > 0,
+                  contador: solicitudesTrasladoPenitenciaria,
                 ),
               ),
             ],
