@@ -93,8 +93,6 @@ class _SolicitudTrasladoProcesoPageState extends State<SolicitudTrasladoProcesoP
   DateTime? _fechaTraslado;
 
 
-
-
   @override
   void initState() {
     super.initState();

@@ -623,7 +623,6 @@ class _SolicitudDomiciliariaPageState extends State<SolicitudDomiciliariaPage> {
     return true; // ✅ Todo validado bien
   }
 
-
   Future<bool> mostrarConfirmacionEnvio(BuildContext context) async {
     return await showDialog<bool>(
       context: context,

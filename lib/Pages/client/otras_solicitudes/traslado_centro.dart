@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../commons/wompi/checkout_page.dart';
 import '../../../services/resumen_solicitudes_service.dart';
 import '../../../src/colors/colors.dart';
@@ -18,18 +19,12 @@ class SolicitudTrasladoPenitenciariaPage extends StatefulWidget {
 
 class _SolicitudTrasladoPenitenciariaPageState extends State<SolicitudTrasladoPenitenciariaPage> {
 
-  final Map<String, bool> _motivosTraslado = {
-    'Por acercamiento familiar': false,
-    'Por derecho al trabajo o redención de pena': false,
-    'Por razones de salud': false,
-  };
-
-  bool hayAlMenosUnMotivoSeleccionado() {
-    return _motivosTraslado.values.any((seleccionado) => seleccionado);
-  }
-
-
-
+  String? _motivoSeleccionado;
+  String? departamentoSeleccionado;
+  String? municipioSeleccionado;
+  String? parentescoSeleccionado;
+  String? nombreFamiliar;
+  String? descripcionSalud;
 
   @override
   Widget build(BuildContext context) {
@@ -65,54 +60,164 @@ class _SolicitudTrasladoPenitenciariaPageState extends State<SolicitudTrasladoPe
                   textAlign: TextAlign.justify,
                 ),
                 const SizedBox(height: 30),
-                const SizedBox(height: 30),
                 const Text(
-                  'Selecciona los motivos por los cuales solicitas el traslado:',
+                  'Selecciona el motivo principal de tu solicitud de traslado:',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.deepPurple),
                 ),
                 const SizedBox(height: 10),
-                ..._motivosTraslado.entries.map((entry) {
-                  return CheckboxListTile(
-                    title: Text(entry.key),
-                    value: entry.value,
+                ...[
+                  'Por acercamiento familiar',
+                  'Por derecho al trabajo o redención de pena',
+                  'Por razones de salud',
+                ].map((motivo) {
+                  return RadioListTile<String>(
+                    title: Text(motivo),
+                    value: motivo,
+                    groupValue: _motivoSeleccionado,
                     activeColor: primary,
-                    onChanged: (bool? value) {
+                    onChanged: (value) {
                       setState(() {
-                        _motivosTraslado[entry.key] = value ?? false;
+                        _motivoSeleccionado = value;
                       });
                     },
                   );
                 }).toList(),
+
+                if (_motivoSeleccionado == 'Por acercamiento familiar') ...[
+                  const SizedBox(height: 20),
+                  const Text(
+                    '¿En qué departamento y municipio se encuentra el familiar con el que se pretende realizar el acercamiento?',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  DepartamentosMunicipiosWidget(
+                    departamentoSeleccionado: departamentoSeleccionado,
+                    municipioSeleccionado: municipioSeleccionado,
+                    onSelectionChanged: (String departamento, String municipio) {
+                      setState(() {
+                        departamentoSeleccionado = departamento;
+                        municipioSeleccionado = municipio;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '¿Cuál es el parentesco del familiar?',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    dropdownColor: blanco,
+                    decoration: const InputDecoration(
+                      labelText: 'Parentesco del familiar con el PPL',
+                      border: OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                    ),
+                    value: parentescoSeleccionado,
+                    items: const [
+                      DropdownMenuItem(value: 'Madre', child: Text('Madre')),
+                      DropdownMenuItem(value: 'Padre', child: Text('Padre')),
+                      DropdownMenuItem(value: 'Hija', child: Text('Hija')),
+                      DropdownMenuItem(value: 'Hijo', child: Text('Hijo')),
+                      DropdownMenuItem(value: 'Esposa', child: Text('Esposa')),
+                      DropdownMenuItem(value: 'Esposo', child: Text('Esposo')),
+                      DropdownMenuItem(value: 'Abuela', child: Text('Abuela')),
+                      DropdownMenuItem(value: 'Abuelo', child: Text('Abuelo')),
+                      DropdownMenuItem(value: 'Nieta', child: Text('Nieta')),
+                      DropdownMenuItem(value: 'Nieto', child: Text('Nieto')),
+                      DropdownMenuItem(value: 'Hermana', child: Text('Hermana')),
+                      DropdownMenuItem(value: 'Hermano', child: Text('Hermano')),
+                      DropdownMenuItem(value: 'Tía', child: Text('Tía')),
+                      DropdownMenuItem(value: 'Tío', child: Text('Tío')),
+                      DropdownMenuItem(value: 'Prima', child: Text('Prima')),
+                      DropdownMenuItem(value: 'Primo', child: Text('Primo')),
+                      DropdownMenuItem(value: 'Compañera', child: Text('Compañera')),
+                      DropdownMenuItem(value: 'Compañero', child: Text('Compañero')),
+                      DropdownMenuItem(value: 'Cuñada', child: Text('Cuñada')),
+                      DropdownMenuItem(value: 'Cuñado', child: Text('Cuñado')),
+                      DropdownMenuItem(value: 'Suegra', child: Text('Suegra')),
+                      DropdownMenuItem(value: 'Suegro', child: Text('Suegro')),
+                      DropdownMenuItem(value: 'Nuera', child: Text('Nuera')),
+                      DropdownMenuItem(value: 'Yerno', child: Text('Yerno')),
+                      DropdownMenuItem(value: 'Sobrina', child: Text('Sobrina')),
+                      DropdownMenuItem(value: 'Sobrino', child: Text('Sobrino')),
+                      DropdownMenuItem(value: 'Amiga', child: Text('Amiga')),
+                      DropdownMenuItem(value: 'Amigo', child: Text('Amigo')),
+                      DropdownMenuItem(value: 'Otro', child: Text('Otro')),
+                    ],
+                    onChanged: (value) {
+                      setState(() {
+                        parentescoSeleccionado = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '¿Cuál es el nombre y apellido del familiar?',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  TextFormField(
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre y apellido del familiar',
+                      border: OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        nombreFamiliar = value.trim();
+                      });
+                    },
+                  ),
+                ],
+                if (_motivoSeleccionado == 'Por razones de salud') ...[
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Describe tu situación médica con detalle:',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Ej. Requiero atención especializada por una enfermedad crónica que no es tratada en este centro...',
+                      labelText: 'Motivo de salud',
+                      border: OutlineInputBorder(),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey),
+                      ),
+                    ),
+                    keyboardType: TextInputType.multiline,
+                    minLines: 4,
+                    maxLines: null,
+                    onChanged: (value) {
+                      setState(() {
+                        descripcionSalud = value.trim();
+                      });
+                    },
+                  ),
+                ],
+
                 const SizedBox(height: 30),
 
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: hayAlMenosUnMotivoSeleccionado() ? primary : Colors.grey,
+                    backgroundColor: primary,
                     padding: const EdgeInsets.symmetric(vertical: 18),
                   ),
-                  onPressed: hayAlMenosUnMotivoSeleccionado()
-                      ? () async {
-                    final confirmado = await mostrarConfirmacionEnvio(context);
-                    if (confirmado) {
-                      await verificarSaldoYEnviarSolicitudTraslado();
-                    }
-                  }
-                      : () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Por favor selecciona al menos un motivo antes de continuar."),
-                        duration: Duration(seconds: 3),
-                      ),
-                    );
-                  },
+                  onPressed: _intentarEnviarSolicitud,
                   child: const Text(
                     'Solicitar Traslado de Centro',
                     style: TextStyle(fontSize: 18, color: blanco),
                   ),
                 ),
-                const SizedBox(height: 30)
+                const SizedBox(height: 30),
               ],
             ),
+
           ),
         ),
       ),
@@ -139,6 +244,45 @@ class _SolicitudTrasladoPenitenciariaPageState extends State<SolicitudTrasladoPe
     ) ??
         false;
   }
+
+  void _intentarEnviarSolicitud() async {
+    if (_motivoSeleccionado == null) {
+      _mostrarSnackBar("Debes seleccionar un motivo para el traslado.");
+      return;
+    }
+
+    if (_motivoSeleccionado == 'Por acercamiento familiar') {
+      if ((departamentoSeleccionado?.isEmpty ?? true) ||
+          (municipioSeleccionado?.isEmpty ?? true) ||
+          (parentescoSeleccionado?.isEmpty ?? true) ||
+          (nombreFamiliar?.isEmpty ?? true)) {
+        _mostrarSnackBar("Completa todos los campos de acercamiento familiar.");
+        return;
+      }
+    }
+
+    if (_motivoSeleccionado == 'Por razones de salud') {
+      if (descripcionSalud == null || descripcionSalud!.trim().isEmpty) {
+        _mostrarSnackBar("Debes describir la situación médica.");
+        return;
+      }
+    }
+
+    final confirmado = await mostrarConfirmacionEnvio(context);
+    if (confirmado) {
+      await verificarSaldoYEnviarSolicitudTraslado();
+    }
+  }
+
+  void _mostrarSnackBar(String mensaje) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensaje),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
 
   Future<void> verificarSaldoYEnviarSolicitudTraslado() async {
     final configSnapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
@@ -220,10 +364,20 @@ class _SolicitudTrasladoPenitenciariaPageState extends State<SolicitudTrasladoPe
 
       await descontarSaldo(valor);
 
-      final motivosSeleccionados = _motivosTraslado.entries
-          .where((entry) => entry.value)
-          .map((entry) => entry.key)
-          .toList();
+      final Map<String, dynamic> motivoData = {
+        'motivo': _motivoSeleccionado,
+      };
+
+      if (_motivoSeleccionado == 'Por acercamiento familiar') {
+        motivoData['departamento_familiar'] = departamentoSeleccionado;
+        motivoData['municipio_familiar'] = municipioSeleccionado;
+        motivoData['parentesco'] = parentescoSeleccionado;
+        motivoData['nombre_familiar'] = nombreFamiliar;
+      }
+
+      if (_motivoSeleccionado == 'Por razones de salud') {
+        motivoData['descripcion_salud'] = descripcionSalud;
+      }
 
       await firestore.collection('trasladoPenitenciaria_solicitados').doc(docId).set({
         'id': docId,
@@ -232,9 +386,8 @@ class _SolicitudTrasladoPenitenciariaPageState extends State<SolicitudTrasladoPe
         'fecha': FieldValue.serverTimestamp(),
         'status': 'Solicitado',
         'asignadoA': "",
-        'motivos': motivosSeleccionados, // <-- Aquí los motivos seleccionados
+        ...motivoData,
       });
-
 
       await ResumenSolicitudesService.guardarResumen(
         idUser: user.uid,
