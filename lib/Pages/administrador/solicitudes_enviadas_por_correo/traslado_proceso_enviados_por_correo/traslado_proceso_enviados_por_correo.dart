@@ -84,10 +84,19 @@ class _SolicitudesTrasladoProcesoPorCorreoPageState extends State<SolicitudesTra
 
   }
 
+
+
   @override
   Widget build(BuildContext context) {
+    final normalizedStatus = widget.status.trim().toLowerCase();
     return MainLayout(
-      pageTitle: 'Traslado proceso Enviado',
+      pageTitle: 'Traslado proceso Enviado - ${normalizedStatus == "enviado"
+          ? "Enviado"
+          : normalizedStatus == "concedido"
+          ? "Concedido"
+          : normalizedStatus == "negado"
+          ? "Negado"
+          : widget.status}',
       content: SingleChildScrollView(
         child: Center(
           child: SizedBox(
@@ -345,21 +354,35 @@ class _SolicitudesTrasladoProcesoPorCorreoPageState extends State<SolicitudesTra
                   width: 20,
                   height: 20,
                   margin: const EdgeInsets.only(right: 8),
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
+                  decoration: BoxDecoration(
+                    color: widget.status == "Concedido"
+                        ? Colors.green
+                        : widget.status == "Negado"
+                        ? Colors.red
+                        : Colors.blue, // Azul para Enviado
                     shape: BoxShape.circle,
                   ),
                 ),
                 Text(
-                  "Traslado proceso - Enviado",
+                  "Traslado proceso - ${widget.status == "Enviado"
+                      ? "Enviado"
+                      : widget.status == "Concedido"
+                      ? "Concedido"
+                      : widget.status == "Negado"
+                      ? "Negado"
+                      : widget.status}",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: fontSize,
+                    color: widget.status == "Concedido"
+                        ? Colors.green
+                        : widget.status == "Negado"
+                        ? Colors.red
+                        : Colors.blue, // Mismo color del estado
                   ),
                 ),
               ],
             );
-
           },
         ),
         Row(

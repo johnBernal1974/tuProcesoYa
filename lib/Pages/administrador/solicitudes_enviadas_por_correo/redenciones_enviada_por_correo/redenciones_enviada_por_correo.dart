@@ -84,10 +84,18 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
 
   }
 
+
   @override
   Widget build(BuildContext context) {
+    final normalizedStatus = widget.status.trim().toLowerCase();
     return MainLayout(
-      pageTitle: 'Redención de penas -  Enviado',
+      pageTitle: 'Redención de penas - ${normalizedStatus == "enviado"
+          ? "Enviado"
+          : normalizedStatus == "concedido"
+          ? "Concedido"
+          : normalizedStatus == "negado"
+          ? "Negado"
+          : widget.status}',
       content: SingleChildScrollView(
         child: Center(
           child: SizedBox(
@@ -113,10 +121,10 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                                 child: isMobile
                                     ? Column( // En móviles, disposición en columna
                                   children: [
-                                    if (widget.sinRespuesta)
+                                    if (widget.sinRespuesta && widget.status == 'Enviado')
                                       _buildWarningMessage(),
                                     const SizedBox(height: 10),
-                                    if (widget.sinRespuesta && rol != "pasante 1") _buildTutelaButton(context),
+                                    //if (widget.sinRespuesta && rol != "pasante 1") _buildTutelaButton(context),
                                     const SizedBox(height: 15)
                                   ],
                                 )
@@ -125,13 +133,13 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    if (widget.sinRespuesta)
+                                    if (widget.sinRespuesta && widget.status == 'Enviado')
                                       Flexible(child: _buildWarningMessage()),
 
                                     const SizedBox(width: 50),
 
-                                    if (widget.sinRespuesta && rol != "pasante 1")
-                                      SizedBox(width: 200, child: _buildTutelaButton(context)),
+                                    // if (widget.sinRespuesta && rol != "pasante 1")
+                                    //   SizedBox(width: 200, child: _buildTutelaButton(context)),
                                     const Divider(color: Colors.red, height: 1),
                                   ],
                                 ),
@@ -326,7 +334,6 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
     }
   }
 
-
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
     return Column(
@@ -345,21 +352,35 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                   width: 20,
                   height: 20,
                   margin: const EdgeInsets.only(right: 8),
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
+                  decoration: BoxDecoration(
+                    color: widget.status == "Concedido"
+                        ? Colors.green
+                        : widget.status == "Negado"
+                        ? Colors.red
+                        : Colors.blue, // Azul para Enviado
                     shape: BoxShape.circle,
                   ),
                 ),
                 Text(
-                  "Redención de penas - Enviado",
+                  "Redención de penas - ${widget.status == "Enviado"
+                      ? "Enviado"
+                      : widget.status == "Concedido"
+                      ? "Concedido"
+                      : widget.status == "Negado"
+                      ? "Negado"
+                      : widget.status}",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: fontSize,
+                    color: widget.status == "Concedido"
+                        ? Colors.green
+                        : widget.status == "Negado"
+                        ? Colors.red
+                        : Colors.blue, // Mismo color del estado
                   ),
                 ),
               ],
             );
-
           },
         ),
         Row(

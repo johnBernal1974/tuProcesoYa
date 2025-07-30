@@ -24,6 +24,7 @@ import 'Pages/administrador/atender_permiso_72horas/atender_permiso_72horas.dart
 import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
 import 'Pages/administrador/atender_readecuacion/atender_readecuacion.dart';
 import 'Pages/administrador/atender_solicitud_acumulacion/atender_solicitud_acumulacion.dart';
+import 'Pages/administrador/atender_trasladoPenitenciaria/atender_trasladoPenitenciaria_admin.dart';
 import 'Pages/administrador/atender_traslado_proceso_admin/atender_traslado_proceso_admin.dart';
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
@@ -721,6 +722,18 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => AtenderSolicitudRedencionesPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+              ),
+            );
+          }
+          else if (settings.name == 'atender_trasladoPenitenciaria_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderSolicitudTrasladoPenitenciariaPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",

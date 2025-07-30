@@ -530,7 +530,6 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
   }
 
 
-
   /// 🔹 Navegar a la página correspondiente
   void _navegarAPagina(Map<String, dynamic> latestData, String idDocumento) async {
     final String rutaDestino = obtenerRutaSegunStatus(latestData['status'] ?? "Pendiente");
@@ -570,7 +569,6 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
       );
     }
   }
-
 
   Widget _buildFechaRevision(String? titulo, Timestamp? fecha) {
     if (fecha == null) return const SizedBox(); // Si no hay fecha, no mostrar nada

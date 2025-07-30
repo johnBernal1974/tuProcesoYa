@@ -786,7 +786,7 @@ class _HistorialSolicitudesTrasladoPenitenciariaAdminPageState extends State<His
       case "Enviado":
         return 'solicitudes_apelacion_enviadas_por_correo';
       default:
-        return 'atender_apelacion_page';
+        return 'atender_trasladoPenitenciaria_page';
     }
   }
 }

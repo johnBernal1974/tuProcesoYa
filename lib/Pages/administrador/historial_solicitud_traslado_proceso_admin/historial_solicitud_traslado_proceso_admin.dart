@@ -855,6 +855,10 @@ class _HistorialSolicitudesTrasladoProcesoAdminPageState extends State<Historial
     switch (status) {
       case "Enviado":
         return 'solicitudes_traslado_proceso_enviadas_por_correo';
+      case "Concedido":
+        return 'solicitudes_traslado_proceso_enviadas_por_correo';
+      case "Negado":
+        return 'solicitudes_traslado_proceso_enviadas_por_correo';
       default:
         return 'atender_traslado_proceso_page';
     }
