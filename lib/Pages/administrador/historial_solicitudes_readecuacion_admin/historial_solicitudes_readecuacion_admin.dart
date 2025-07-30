@@ -52,7 +52,7 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
       pageTitle: 'Solicitudes de readecuación de redencion',
       content: Center(
         child: SizedBox(
-          width: MediaQuery.of(context).size.width >= 1000 ? 1000 : double.infinity,
+          width: MediaQuery.of(context).size.width >= 1000 ? 1200 : double.infinity,
           child: Column(
             children: [
               _buildEstadoCards(rol),
@@ -210,21 +210,26 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
 
         // 🔹 Contar "Enviados" (Todos los pasantes 2 lo pueden ver)
         int countEnviado = docs.where((d) => d['status'] == 'Enviado').length;
+        int countConcedido = docs.where((d) => d['status'] == 'Concedido').length;
+        int countNegado = docs.where((d) => d['status'] == 'Negado').length;
+
 
         List<Widget> cards = [];
 
         if (role == "pasante 1") {
-          cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.red));
+          cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.brown));
           cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
         } else if (role == "pasante 2") {
           cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
           cards.add(_buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor));
-          cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.green));
+          cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.blue));
         } else {
-          cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.red));
+          cards.add(_buildEstadoCard("Solicitado", countSolicitado, Colors.brown));
           cards.add(_buildEstadoCard("Diligenciado", countDiligenciado, Colors.amber));
           cards.add(_buildEstadoCard("Revisado", countRevisado, Theme.of(context).primaryColor));
-          cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.green));
+          cards.add(_buildEstadoCard("Enviado", countEnviado, Colors.blue));
+          cards.add(_buildEstadoCard("Concedido", countConcedido, Colors.green));
+          cards.add(_buildEstadoCard("Negado", countNegado, Colors.red));
         }
 
         return LayoutBuilder(
@@ -408,7 +413,8 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
                     const SizedBox(height: 10),
                     _buildFechaEnvio("Enviado", fechaEnviado),
                     const SizedBox(height: 10),
-                    _buildTiempoSinRespuesta(fechaEnviado), // 🔥 NUEVO: Mostrar tiempo sin respuesta
+                    if(data['status'] == "Enviado")
+                      _buildTiempoSinRespuesta(fechaEnviado),
                   ],
                 )
               else
@@ -433,7 +439,8 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
                       ],
                     ),
                     const SizedBox(height: 10),
-                    _buildTiempoSinRespuesta(fechaEnviado), // 🔥 NUEVO: Mostrar tiempo sin respuesta
+                    if(data['status'] == "Enviado")
+                      _buildTiempoSinRespuesta(fechaEnviado),
                   ],
                 ),
             ],
@@ -625,6 +632,33 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
         ],
       ),
       const SizedBox(height: 5),
+      FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance
+            .collection('Ppl')
+            .doc(data['idUser']) // 🔹 Usamos el idUser que viene de la solicitud
+            .get(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Text("Cargando nombre...",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold));
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Text("Usuario no encontrado",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold));
+          }
+
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final nombreCompleto =
+          "${userData['nombre_ppl'] ?? ''} ${userData['apellido_ppl'] ?? ''}".trim();
+
+          return Text(
+            nombreCompleto.isNotEmpty ? nombreCompleto : "Sin nombre",
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          );
+        },
+      ),
+      const SizedBox(height: 5),
       Text(
         DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es').format(data['fecha']?.toDate() ?? DateTime.now()),
         style: const TextStyle(fontSize: 12),
@@ -679,6 +713,33 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
                 ],
               ),
             ],
+          ),
+          const SizedBox(height: 5),
+          FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('Ppl')
+                .doc(data['idUser']) // 🔹 Usamos el idUser que viene de la solicitud
+                .get(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Text("Cargando nombre...",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold));
+              }
+
+              if (!snapshot.hasData || !snapshot.data!.exists) {
+                return const Text("Usuario no encontrado",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold));
+              }
+
+              final userData = snapshot.data!.data() as Map<String, dynamic>;
+              final nombreCompleto =
+              "${userData['nombre_ppl'] ?? ''} ${userData['apellido_ppl'] ?? ''}".trim();
+
+              return Text(
+                nombreCompleto.isNotEmpty ? nombreCompleto : "Sin nombre",
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              );
+            },
           ),
           const SizedBox(height: 5),
 
@@ -770,13 +831,17 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
   Color getColorEstado(String estado) {
     switch (estado) {
       case "Solicitado":
-        return Colors.red;
+        return Colors.brown;
       case "Diligenciado":
         return Colors.amber;
       case "Revisado":
         return Colors.deepPurpleAccent; // Puedes cambiarlo por Theme.of(context).primaryColor si lo prefieres
       case "Enviado":
+        return Colors.blue;
+      case "Concedido":
         return Colors.green;
+      case "Negado":
+        return Colors.red;
       default:
         return Colors.grey; // Color por defecto si el estado no coincide
     }
@@ -785,6 +850,10 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
   String obtenerRutaSegunStatus(String status) {
     switch (status) {
       case "Enviado":
+        return 'solicitudes_readecuacion_redencion_enviadas_por_correo';
+      case "Concedido":
+        return 'solicitudes_readecuacion_redencion_enviadas_por_correo';
+      case "Negado":
         return 'solicitudes_readecuacion_redencion_enviadas_por_correo';
       default:
         return 'atender_readecuacion_page';

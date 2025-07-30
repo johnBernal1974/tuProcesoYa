@@ -84,10 +84,18 @@ class _SolicitudesExincionPenaPorCorreoPageState extends State<SolicitudesExinci
 
   }
 
+
   @override
   Widget build(BuildContext context) {
+    final normalizedStatus = widget.status.trim().toLowerCase();
     return MainLayout(
-      pageTitle: 'Extinción de la pena Enviado',
+      pageTitle: 'Extinción de la pena - ${normalizedStatus == "enviado"
+          ? "Enviado"
+          : normalizedStatus == "concedido"
+          ? "Concedido"
+          : normalizedStatus == "negado"
+          ? "Negado"
+          : widget.status}',
       content: SingleChildScrollView(
         child: Center(
           child: SizedBox(
@@ -113,10 +121,10 @@ class _SolicitudesExincionPenaPorCorreoPageState extends State<SolicitudesExinci
                                 child: isMobile
                                     ? Column( // En móviles, disposición en columna
                                   children: [
-                                    if (widget.sinRespuesta)
+                                    if (widget.sinRespuesta && widget.status == 'Enviado')
                                       _buildWarningMessage(),
                                     const SizedBox(height: 10),
-                                    if (widget.sinRespuesta && rol != "pasante 1") _buildTutelaButton(context),
+                                    //if (widget.sinRespuesta && rol != "pasante 1") _buildTutelaButton(context),
                                     const SizedBox(height: 15)
                                   ],
                                 )
@@ -125,13 +133,13 @@ class _SolicitudesExincionPenaPorCorreoPageState extends State<SolicitudesExinci
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
-                                    if (widget.sinRespuesta)
+                                    if (widget.sinRespuesta && widget.status == 'Enviado')
                                       Flexible(child: _buildWarningMessage()),
 
                                     const SizedBox(width: 50),
 
-                                    if (widget.sinRespuesta && rol != "pasante 1")
-                                      SizedBox(width: 200, child: _buildTutelaButton(context)),
+                                    // if (widget.sinRespuesta && rol != "pasante 1")
+                                    //   SizedBox(width: 200, child: _buildTutelaButton(context)),
                                     const Divider(color: Colors.red, height: 1),
                                   ],
                                 ),
@@ -306,27 +314,6 @@ class _SolicitudesExincionPenaPorCorreoPageState extends State<SolicitudesExinci
     );
   }
 
-  Future<void> pickFiles() async {
-    try {
-      // Permitir selección múltiple de archivos
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: false, // Permitir selección múltiple
-      );
-
-      if (result != null) {
-        setState(() {
-          // Agregar los archivos seleccionados a la lista existente
-          _selectedFiles.addAll(result.files);
-        });
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error al seleccionar archivos: $e");
-      }
-    }
-  }
-
-
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
     return Column(
@@ -338,28 +325,41 @@ class _SolicitudesExincionPenaPorCorreoPageState extends State<SolicitudesExinci
           builder: (context, constraints) {
             final isMobile = constraints.maxWidth < 600;
             final fontSize = isMobile ? 20.0 : 28.0;
-
             return Row(
               children: [
                 Container(
                   width: 20,
                   height: 20,
                   margin: const EdgeInsets.only(right: 8),
-                  decoration: const BoxDecoration(
-                    color: Colors.green,
+                  decoration: BoxDecoration(
+                    color: widget.status == "Concedido"
+                        ? Colors.green
+                        : widget.status == "Negado"
+                        ? Colors.red
+                        : Colors.blue, // Azul para Enviado
                     shape: BoxShape.circle,
                   ),
                 ),
                 Text(
-                  "Extinción de la pena - Enviado",
+                  "Extinción de la pena - ${widget.status == "Enviado"
+                      ? "Enviado"
+                      : widget.status == "Concedido"
+                      ? "Concedido"
+                      : widget.status == "Negado"
+                      ? "Negado"
+                      : widget.status}",
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: fontSize,
+                    color: widget.status == "Concedido"
+                        ? Colors.green
+                        : widget.status == "Negado"
+                        ? Colors.red
+                        : Colors.blue, // Mismo color del estado
                   ),
                 ),
               ],
             );
-
           },
         ),
         Row(

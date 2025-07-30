@@ -389,14 +389,13 @@ class _SideBarState extends State<SideBar> {
         items.addAll([
           _buildDrawerTile(
               context, "Página principal", Icons.home_filled, 'home_admin'),
-          _buildDrawerTile(context, "Configuraciones", Icons.settings,
-              'configuraciones'),
+
           ExpansionTile(
-            initiallyExpanded: false,
-            leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
+            initiallyExpanded: true,
+            leading: const Icon(Icons.add_chart, color: Colors.deepPurple),
             title: const Text(
-              "Historial de solicitudes",
-              style: TextStyle(color: Colors.black, fontSize: 13),
+              "Solicitudes",
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             iconColor: Colors.black,
             collapsedIconColor: Colors.black,
@@ -540,27 +539,69 @@ class _SideBarState extends State<SideBar> {
             ],
           ),
 
-          _buildDrawerTile(context, " Historial Transacciones", Icons.monitor_heart_rounded,
-              'admin_transacciones'),
-          _buildDrawerTile(context, " Referidores", Icons.double_arrow_outlined,
-              'referidores_page_admin'),
-          _buildDrawerTile(context, " Registrar Referidor", Icons.double_arrow_outlined,
-              'registrar_referidores_page_admin'),
-          _buildDrawerTile(
-              context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
-              'buzon_sugerencias_administrador',
-              showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(
-              context, "Registro asistido usuarios", Icons.add,
-              'registraro_asistido_page_admin'),
-
-          _buildDrawerTile(
-              context, "Registrar Operadores", Icons.app_registration,
-              'registrar_operadores'),
-          _buildDrawerTile(
-              context, "Operadores", Icons.account_box, 'operadores_page'),
-          _buildDrawerTile(
-              context, "Respuestas a correos", Icons.mark_email_read_outlined, 'ver_respuestas_correos_page_admin'),
+          ExpansionTile(
+            leading: const Icon(Icons.admin_panel_settings, color: Colors.deepPurple),
+            title: const Text(
+              "Administración",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            children: [
+              _buildDrawerTile(
+                context,
+                "Historial Transacciones",
+                Icons.monitor_heart_rounded,
+                'admin_transacciones',
+              ),
+              _buildDrawerTile(
+                context,
+                "Referidores",
+                Icons.double_arrow_outlined,
+                'referidores_page_admin',
+              ),
+              _buildDrawerTile(
+                context,
+                "Registrar Referidor",
+                Icons.double_arrow_outlined,
+                'registrar_referidores_page_admin',
+              ),
+              _buildDrawerTile(
+                context,
+                "Buzón de sugerencias",
+                Icons.mark_email_unread_outlined,
+                'buzon_sugerencias_administrador',
+                showBadge: _pendingSuggestions > 0,
+              ),
+              _buildDrawerTile(
+                context,
+                "Registro asistido usuarios",
+                Icons.add,
+                'registraro_asistido_page_admin',
+              ),
+              _buildDrawerTile(
+                context,
+                "Registrar Operadores",
+                Icons.app_registration,
+                'registrar_operadores',
+              ),
+              _buildDrawerTile(
+                context,
+                "Operadores",
+                Icons.account_box,
+                'operadores_page',
+              ),
+              _buildDrawerTile(
+                context,
+                "Respuestas a correos",
+                Icons.mark_email_read_outlined,
+                'ver_respuestas_correos_page_admin',
+              ),
+              _buildDrawerTile(
+                  context,
+                  "Configuraciones",
+                  Icons.settings,
+                  'configuraciones'),
+            ],
+          ),
         ]);
 
 
@@ -571,10 +612,10 @@ class _SideBarState extends State<SideBar> {
 
           ExpansionTile(
             initiallyExpanded: true,
-            leading: const Icon(Icons.add_chart, color: Colors.black, size: 20),
+            leading: const Icon(Icons.add_chart, color: Colors.deepPurple),
             title: const Text(
-              "Historial de solicitudes",
-              style: TextStyle(color: Colors.black, fontSize: 13),
+              "Solicitudes",
+              style: TextStyle(fontWeight: FontWeight.bold),
             ),
             iconColor: Colors.black,
             collapsedIconColor: Colors.black,
@@ -715,17 +756,40 @@ class _SideBarState extends State<SideBar> {
               ),
             ],
           ),
-          _buildDrawerTile(context, " Historial Transacciones", Icons.monitor_heart_rounded,
-              'admin_transacciones'),
-          _buildDrawerTile(
-              context, "Buzón de sugerencias", Icons.mark_email_unread_outlined,
-              'buzon_sugerencias_administrador',
-              showBadge: _pendingSuggestions > 0),
-          _buildDrawerTile(context, " Referidores", Icons.double_arrow_outlined,
-              'referidores_page_admin'),
-          _buildDrawerTile(
-              context, "Registro asistido usuarios", Icons.add,
-              'registraro_asistido_page_admin'),
+          ExpansionTile(
+            leading: const Icon(Icons.admin_panel_settings, color: Colors.deepPurple),
+            title: const Text(
+              "Administración",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            children: [
+              _buildDrawerTile(
+                context,
+                "Historial Transacciones",
+                Icons.monitor_heart_rounded,
+                'admin_transacciones',
+              ),
+              _buildDrawerTile(
+                context,
+                "Referidores",
+                Icons.double_arrow_outlined,
+                'referidores_page_admin',
+              ),
+              _buildDrawerTile(
+                context,
+                "Buzón de sugerencias",
+                Icons.mark_email_unread_outlined,
+                'buzon_sugerencias_administrador',
+                showBadge: _pendingSuggestions > 0,
+              ),
+              _buildDrawerTile(
+                context,
+                "Registro asistido usuarios",
+                Icons.add,
+                'registraro_asistido_page_admin',
+              ),
+            ],
+          ),
         ]);
       }
 
@@ -936,11 +1000,9 @@ class _SideBarState extends State<SideBar> {
       ]);
     }
 
-
     items.add(const SizedBox(height: 60)); // Espacio extra al final
     return items;
   }
-
 
   Widget _buildDrawerTile(
       BuildContext context,

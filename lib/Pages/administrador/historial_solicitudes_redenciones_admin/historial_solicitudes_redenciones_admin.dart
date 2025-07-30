@@ -408,7 +408,8 @@ class _HistorialSolicitudesRedencionesAdminPageState extends State<HistorialSoli
                     const SizedBox(height: 10),
                     _buildFechaEnvio("Enviado", fechaEnviado),
                     const SizedBox(height: 10),
-                    _buildTiempoSinRespuesta(fechaEnviado), // 🔥 NUEVO: Mostrar tiempo sin respuesta
+                    if(data['status'] == "Enviado")
+                      _buildTiempoSinRespuesta(fechaEnviado),
                   ],
                 )
               else
@@ -433,7 +434,8 @@ class _HistorialSolicitudesRedencionesAdminPageState extends State<HistorialSoli
                       ],
                     ),
                     const SizedBox(height: 10),
-                    _buildTiempoSinRespuesta(fechaEnviado), // 🔥 NUEVO: Mostrar tiempo sin respuesta
+                    if(data['status'] == "Enviado")
+                      _buildTiempoSinRespuesta(fechaEnviado),
                   ],
                 ),
             ],
@@ -624,6 +626,33 @@ class _HistorialSolicitudesRedencionesAdminPageState extends State<HistorialSoli
         ],
       ),
       const SizedBox(height: 5),
+      FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance
+            .collection('Ppl')
+            .doc(data['idUser']) // 🔹 Usamos el idUser que viene de la solicitud
+            .get(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Text("Cargando nombre...",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold));
+          }
+
+          if (!snapshot.hasData || !snapshot.data!.exists) {
+            return const Text("Usuario no encontrado",
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold));
+          }
+
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final nombreCompleto =
+          "${userData['nombre_ppl'] ?? ''} ${userData['apellido_ppl'] ?? ''}".trim();
+
+          return Text(
+            nombreCompleto.isNotEmpty ? nombreCompleto : "Sin nombre",
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+          );
+        },
+      ),
+      const SizedBox(height: 5),
       Text(
         DateFormat("dd 'de' MMMM 'de' yyyy - hh:mm a", 'es').format(data['fecha']?.toDate() ?? DateTime.now()),
         style: const TextStyle(fontSize: 12),
@@ -681,6 +710,33 @@ class _HistorialSolicitudesRedencionesAdminPageState extends State<HistorialSoli
           ),
           const SizedBox(height: 5),
 
+          FutureBuilder<DocumentSnapshot>(
+            future: FirebaseFirestore.instance
+                .collection('Ppl')
+                .doc(data['idUser']) // 🔹 Usamos el idUser que viene de la solicitud
+                .get(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Text("Cargando nombre...",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold));
+              }
+
+              if (!snapshot.hasData || !snapshot.data!.exists) {
+                return const Text("Usuario no encontrado",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold));
+              }
+
+              final userData = snapshot.data!.data() as Map<String, dynamic>;
+              final nombreCompleto =
+              "${userData['nombre_ppl'] ?? ''} ${userData['apellido_ppl'] ?? ''}".trim();
+
+              return Text(
+                nombreCompleto.isNotEmpty ? nombreCompleto : "Sin nombre",
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+              );
+            },
+          ),
+          const SizedBox(height: 5),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
