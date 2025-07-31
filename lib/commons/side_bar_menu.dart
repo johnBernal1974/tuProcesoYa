@@ -36,6 +36,7 @@ class _SideBarState extends State<SideBar> {
   int solicitudesAcumulacion = 0;
   int solicitudesApelacion = 0;
   int solicitudesTrasladoPenitenciaria = 0;
+  int solicitudesCopiaSentencia = 0;
 
 
 
@@ -57,6 +58,7 @@ class _SideBarState extends State<SideBar> {
     _fetchApelacionSolicitados();
     _fetchReadecuacionRedencionesSolicitados();
     _fetchTraladoPenitenciariaSolicitados();
+    _fetchCopiaSentenciaSolicitados();
   }
 
   Future<void> _loadData() async {
@@ -359,6 +361,18 @@ class _SideBarState extends State<SideBar> {
     }
   }
 
+  Future<void> _fetchCopiaSentenciaSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('copiaSentencia_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesCopiaSentencia = querySnapshot.docs.length;
+      });
+    }
+  }
+
   Widget _buildDrawerHeader(bool? isAdmin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
@@ -533,6 +547,17 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_trasladoPenitenciaria_admin',
                   showBadge: solicitudesTrasladoPenitenciaria > 0,
                   contador: solicitudesTrasladoPenitenciaria,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Copia de sentencia",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_copiaSentencia_admin',
+                  showBadge: solicitudesCopiaSentencia > 0,
+                  contador: solicitudesCopiaSentencia,
                 ),
               ),
 
@@ -752,6 +777,17 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_trasladoPenitenciaria_admin',
                   showBadge: solicitudesTrasladoPenitenciaria > 0,
                   contador: solicitudesTrasladoPenitenciaria,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Copia de sentencia",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_copiaSentencia_admin',
+                  showBadge: solicitudesCopiaSentencia > 0,
+                  contador: solicitudesCopiaSentencia,
                 ),
               ),
             ],

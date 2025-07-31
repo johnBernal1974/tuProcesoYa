@@ -20,7 +20,7 @@ import '../../../../src/colors/colors.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 
-class SolicitudesApelacionEnviadasPorCorreoPage extends StatefulWidget {
+class SolicitudesCopiaSentenciaEnviadoPorCorreoPage extends StatefulWidget {
   final String status;
   final String idDocumento;
   final String numeroSeguimiento;
@@ -30,7 +30,7 @@ class SolicitudesApelacionEnviadasPorCorreoPage extends StatefulWidget {
   final String idUser;
   final bool sinRespuesta;
 
-  const SolicitudesApelacionEnviadasPorCorreoPage({
+  const SolicitudesCopiaSentenciaEnviadoPorCorreoPage({
     super.key,
     required this.status,
     required this.idDocumento,
@@ -44,10 +44,10 @@ class SolicitudesApelacionEnviadasPorCorreoPage extends StatefulWidget {
 
 
   @override
-  State<SolicitudesApelacionEnviadasPorCorreoPage> createState() => _SolicitudesApelacionEnviadasPorCorreoPageState();
+  State<SolicitudesCopiaSentenciaEnviadoPorCorreoPage> createState() => _SolicitudesCopiaSentenciaEnviadoPorCorreoPageState();
 }
 
-class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesApelacionEnviadasPorCorreoPage> {
+class _SolicitudesCopiaSentenciaEnviadoPorCorreoPageState extends State<SolicitudesCopiaSentenciaEnviadoPorCorreoPage> {
   late PplProvider _pplProvider;
   Ppl? userData;
   bool isLoading = true; // Bandera para controlar la carga
@@ -60,6 +60,9 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
   List<String> archivos = [];
+  String consideraciones = "";
+  String fundamentosDeDerecho = "";
+  String peticionConcreta = "";
   String diligencio = '';
   String reviso = '';
   String envio = '';
@@ -86,7 +89,7 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
   Widget build(BuildContext context) {
     final normalizedStatus = widget.status.trim().toLowerCase();
     return MainLayout(
-      pageTitle: 'Apelación - ${normalizedStatus == "enviado"
+      pageTitle: 'Copia de sentencia - ${normalizedStatus == "enviado"
           ? "Enviado"
           : normalizedStatus == "concedido"
           ? "Concedido"
@@ -181,7 +184,7 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
                                     ),
                                     ListaCorreosWidget(
                                       solicitudId: widget.idDocumento,
-                                      nombreColeccion: "apelacion_solicitados",
+                                      nombreColeccion: "copiaSentencia_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
                                   ],
@@ -222,7 +225,7 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
                                   ),
                                   ListaCorreosWidget(
                                     solicitudId: widget.idDocumento,
-                                    nombreColeccion: "apelacion_solicitados",
+                                    nombreColeccion: "copiaSentencia_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
                                   ),
                                 ],
@@ -331,8 +334,6 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
     }
   }
 
-
-
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
   Widget _buildMainContent() {
     return Column(
@@ -361,7 +362,7 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
                   ),
                 ),
                 Text(
-                  "Apelación - ${widget.status == "Enviado"
+                  "Copia de sentencia - ${widget.status == "Enviado"
                       ? "Enviado"
                       : widget.status == "Concedido"
                       ? "Concedido"
@@ -584,7 +585,7 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
 
       // 🔥 Obtener documento de Firestore
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('apelacion_solicitados')
+          .collection('copiaSentencia_solicitados')
           .doc(widget.idDocumento)
           .get();
 
@@ -599,6 +600,12 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
               userData = fetchedData;
               solicitudData = data;
               isLoading = false;
+
+              // ✅ Asignar valores de Firestore o definir valores por defecto si no existen
+              consideraciones = data['consideraciones_revisado'] ?? 'Sin consideraciones';
+              fundamentosDeDerecho = data['fundamentos_de_derecho_revisado'] ?? 'Sin fundamentos';
+              peticionConcreta = data['peticion_concreta_revisado'] ?? 'Sin petición concreta';
+
               // 🆕 Cargar nuevos nodos
               diligencio = data['diligencio'] ?? 'No registrado';
               reviso = data['reviso'] ?? 'No registrado';
@@ -658,7 +665,7 @@ class _SolicitudesApelacionEnviadasPorCorreoPageState extends State<SolicitudesA
               padding: const EdgeInsets.all(20),
               child: FutureBuilder<DocumentSnapshot>(
                 future: FirebaseFirestore.instance
-                    .collection('apelacion_solicitados')
+                    .collection('copiaSentencia_solicitados')
                     .doc(widget.idDocumento)
                     .collection('log_correos')
                     .doc(correoId)

@@ -17,6 +17,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/administrador/atender_ solicitud_redenciones/atender_ solicitud_redenciones.dart';
 import 'Pages/administrador/atender_apelacion/atender_apelacion.dart';
+import 'Pages/administrador/atender_copia_sentencia/atender_copia_sentencia.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
 import 'Pages/administrador/atender_extincion_pena/atender_extincion_pena.dart';
 import 'Pages/administrador/atender_libertad_condicional/atender_libertad_condicional.dart';
@@ -31,6 +32,7 @@ import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_ad
 import 'Pages/administrador/editar_registro/editar_registro.dart';
 import 'Pages/administrador/historial_solicitudes_acumulacion_admin/historial_solicitudes_acumulacion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_apelacion_admin/historial_solicitudes_apelacion_admin.dart';
+import 'Pages/administrador/historial_solicitudes_copia_sentencia_admin/historial_solicitudes_copia_sentencia_admin.dart';
 import 'Pages/administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
 import 'Pages/administrador/historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
@@ -50,6 +52,7 @@ import 'Pages/administrador/registro_asistido_admin/registro_asistido_admin.dart
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/acumulacion_enviadas_por_correo/acumulacion_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/apelacion_enviadas_por_correo/apelacion_enviadas_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/copiaSentencia_enviadas_por_correo/copiaSentencia_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_enviada_por_correo/extincion_perna_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/libertad_condicional_enviada_por_correo/libertad_condicional_enviada_por_correo.dart';
@@ -254,6 +257,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_acumulacion_admin': (context) => const HistorialSolicitudesAcumulacionAdminPage(),
         'historial_solicitudes_apelacion_admin': (context) => const HistorialSolicitudesApelacionAdminPage(),
         'historial_solicitudes_trasladoPenitenciaria_admin': (context) => const HistorialSolicitudesTrasladoPenitenciariaAdminPage(),
+        'historial_solicitudes_copiaSentencia_admin': (context) => const HistorialSolicitudesCopiaSentenciaAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -591,6 +595,22 @@ class MyApp extends StatelessWidget {
             );
           }
 
+          else if (settings.name == 'solicitudes_copiaSentencia_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesCopiaSentenciaEnviadoPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'] ?? "Beneficios penitenciarios",
+                subcategoria: args['subcategoria'] ?? "Redención de pena",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
+
           else if (settings.name == 'atender_derecho_peticion_page') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
@@ -739,6 +759,19 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => AtenderSolicitudTrasladoPenitenciariaPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+              ),
+            );
+          }
+
+          else if (settings.name == 'atender_copiaSentencia_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderSolicitudCopiaSentenciaPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",

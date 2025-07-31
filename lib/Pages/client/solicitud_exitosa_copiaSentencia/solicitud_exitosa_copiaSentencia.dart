@@ -1,9 +1,8 @@
 
 import 'package:flutter/material.dart';
-import 'package:tuprocesoya/Pages/client/home/home.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import '../../../commons/main_layaout.dart';
-import '../historial_solicitudes_prision_domiciliaria/historial_solicitudes_prision_domiciliaria.dart';
+import '../historial_solicitudes_copiaSentencia/historial_solicitudes_copiaSentencia.dart';
 
 class SolicitudExitosaCopiaSentenciaPage extends StatelessWidget {
   final String numeroSeguimiento;
@@ -101,7 +100,7 @@ class SolicitudExitosaCopiaSentenciaPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const HistorialSolicitudesPrisionDomiciliariaPage()),
+                    MaterialPageRoute(builder: (context) => const HistorialSolicitudesCopiaSentenciaPage()),
                   );
                 },
                 style: ElevatedButton.styleFrom(

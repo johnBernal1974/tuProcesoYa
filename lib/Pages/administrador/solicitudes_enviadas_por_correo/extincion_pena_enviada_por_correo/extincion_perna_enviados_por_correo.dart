@@ -370,6 +370,14 @@ class _SolicitudesExincionPenaPorCorreoPageState extends State<SolicitudesExinci
             ),
           ],
         ),
+        Row(
+          children: [
+            Text(
+              "PPL: ${userData?.nombrePpl ?? "Sin información"} ${userData?.apellidoPpl ?? "Sin información"}",
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+            ),
+          ],
+        ),
         const SizedBox(height: 15),
         _buildDetallesSolicitud(),
         const SizedBox(height: 15),

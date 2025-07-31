@@ -401,7 +401,6 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
                 ),
               ],
             );
-
           },
         ),
         Row(
@@ -409,6 +408,14 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
             Text(
               "Solicitado por: ${userData?.nombreAcudiente ?? "Sin información"} ${userData?.apellidoAcudiente ?? "Sin información"}",
               style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Text(
+              "PPL: ${userData?.nombrePpl ?? "Sin información"} ${userData?.apellidoPpl ?? "Sin información"}",
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
             ),
           ],
         ),
