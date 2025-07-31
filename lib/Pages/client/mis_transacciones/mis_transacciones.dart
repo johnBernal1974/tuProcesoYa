@@ -78,6 +78,9 @@ class _MisTransaccionesPageState extends State<MisTransaccionesPage> {
     if (reference.startsWith("traslado")) return "Traslado proceso";
     if (reference.startsWith("redenciones")) return "Redenciones";
     if (reference.startsWith("apelacion")) return "Apelación";
+    if (reference.startsWith("readecuacion")) return "Readecuación redención penas";
+    if (reference.startsWith("trasladoPenitenciaria")) return "Traslado Penitenciaria";
+    if (reference.startsWith("copiaSentencia")) return "Copia de Sentencia";
     return "Otro";
   }
 

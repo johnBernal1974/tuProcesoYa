@@ -37,33 +37,35 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
             .collection('Ppl')
             .doc(_uid)
             .collection('redenciones')
-            .orderBy('fecha_redencion', descending: true)
-            .get();
+            .get(); // 🔹 Quitamos orderBy aquí porque la fecha es string
 
         double sumatoria = 0.0;
 
+        List<Map<String, dynamic>> tempList = redencionesSnapshot.docs.map((doc) {
+          String fechaStr = doc['fecha_redencion'] ?? "";
+          DateTime fecha;
+
+          try {
+            fecha = DateFormat('d/M/yyyy').parse(fechaStr);
+          } catch (e) {
+            debugPrint("❌ Error al parsear fecha: $fechaStr - $e");
+            fecha = DateTime(2000, 1, 1);
+          }
+
+          double dias = (doc['dias_redimidos'] ?? 0).toDouble();
+          sumatoria += dias;
+
+          return {
+            'dias_redimidos': dias,
+            'fecha': fecha,
+          };
+        }).toList();
+
+        // 🔹 Ordenar por fecha descendente
+        tempList.sort((a, b) => b['fecha'].compareTo(a['fecha']));
+
         setState(() {
-          Intl.defaultLocale = 'es'; // ✅ Configura español
-          _redenciones = redencionesSnapshot.docs.map((doc) {
-            String fechaStr = doc['fecha_redencion'] ?? "";
-            DateTime fecha;
-
-            try {
-              fecha = DateFormat('d/M/yyyy').parse(fechaStr);
-            } catch (e) {
-              debugPrint("❌ Error al parsear fecha: $fechaStr - $e");
-              fecha = DateTime(2000, 1, 1);
-            }
-
-            double dias = (doc['dias_redimidos'] ?? 0).toDouble();
-            sumatoria += dias;
-
-            return {
-              'dias_redimidos': dias,
-              'fecha': fecha,
-            };
-          }).toList();
-
+          _redenciones = tempList;
           _totalDiasRedimidos = sumatoria;
           _isLoading = false;
         });
@@ -105,9 +107,9 @@ class _HistorialRedencionesPageState extends State<HistorialRedencionesPage> {
               child: Container(
                 width: MediaQuery.of(context).size.width,
                 alignment: Alignment.centerLeft,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 5),
                 child: DataTable(
-                  columnSpacing: MediaQuery.of(context).size.width >= 600 ? 150 : 100,
+                  columnSpacing: MediaQuery.of(context).size.width >= 600 ? 150 : 70,
                   headingRowColor: MaterialStateColor.resolveWith((states) => Colors.grey.shade300),
                   columns: const [
                     DataColumn(label: Text('Fecha', style: TextStyle(fontWeight: FontWeight.bold))),

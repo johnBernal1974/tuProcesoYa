@@ -69,6 +69,7 @@ import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_TrasladoPenitenciaria/historial_solicitudes_TrasladoPenitenciaria.dart';
 import 'Pages/client/historial_solicitudes_apelacion/historial_solicitudes_apelacion.dart';
+import 'Pages/client/historial_solicitudes_copiaSentencia/historial_solicitudes_copiaSentencia.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 import 'Pages/client/historial_solicitudes_extincion_pena/historial_solicitudes_extincion_pena.dart';
 import 'Pages/client/historial_solicitudes_libertad_condicional/historial_solicitudes_libertad_condicional.dart';
@@ -281,6 +282,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_acumulacion': (context) => const HistorialSolicitudesAcumulacionPage(),
         'historial_solicitudes_apelacion': (context) => const HistorialSolicitudesApelacionPage(),
         'historial_solicitudes_trasladoPenitenciaria': (context) => const HistorialSolicitudesTrasladoPenitenciariaPage(),
+        'historial_solicitudes_copiaSentencia': (context) => const HistorialSolicitudesCopiaSentenciaPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),

@@ -88,6 +88,13 @@ class HistorialSolicitudesPage extends StatelessWidget {
       "icon": Icons.door_back_door_outlined,
       "route": "historial_solicitudes_trasladoPenitenciaria",
     },
+
+    {
+      "collection": "copiaSentencia_solicitados",
+      "title": "Copia de\nSentencia",
+      "icon": Icons.copy,
+      "route": "historial_solicitudes_copiaSentencia",
+    },
   ];
 
   Future<List<Map<String, dynamic>>> _obtenerSolicitudes(String userId) async {
