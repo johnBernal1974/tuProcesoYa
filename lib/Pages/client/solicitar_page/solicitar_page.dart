@@ -43,13 +43,18 @@ class SolicitarServiciosPage extends StatelessWidget {
     },
     {
       "title": "Solicitud de apelación",
-      "icon": Icons.rate_review, // Puedes cambiar el ícono si prefieres otro
+      "icon": Icons.rate_review,
       "route": "solicitud_apelacion_page",
     },
     {
       "title": "Solicitud traslado penitenciaría",
-      "icon": Icons.door_back_door_outlined, // Puedes cambiar el ícono si prefieres otro
+      "icon": Icons.door_back_door_outlined,
       "route": "solicitud_trasladoPenitenciaria_page",
+    },
+    {
+      "title": "Solicitud copia de sentencia",
+      "icon": Icons.copy,
+      "route": "solicitud_copia_sentencia_page",
     },
   ];
 

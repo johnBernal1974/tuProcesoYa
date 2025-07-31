@@ -404,7 +404,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Readecuación de redención",
+                  "Readecuación de redención",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_readecuacion_redenciones_admin',
                   showBadge: solicitudesReadecuacion > 0,
@@ -415,7 +415,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de derechos petición",
+                  "Derecho de petición",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_derecho_peticion_admin',
                   showBadge: solicitudesPeticion > 0,
@@ -426,7 +426,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de tutela",
+                  "Tutela",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_tutelas_admin',
                   showBadge: solicitudesTutelas > 0,
@@ -437,7 +437,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes permiso 72 horas",
+                  "Permiso 72 horas",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_permiso_72horas_admin',
                   showBadge: solicitudesPermiso72h > 0,
@@ -448,7 +448,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de prisión domiciliaria",
+                  "Prisión domiciliaria",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_prision_domiciliaria_admin',
                   showBadge: solicitudesDomiciliaria > 0,
@@ -459,7 +459,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Libertad condicional",
+                  "Libertad condicional",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_libertad_condicional_admin',
                   showBadge: solicitudesCondicional > 0,
@@ -470,7 +470,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Extinción de pena",
+                  "Extinción de pena",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_extincion_pena_admin',
                   showBadge: solicitudesExtincion > 0,
@@ -481,7 +481,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Traslado de proceso",
+                  "Traslado de proceso",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_traslado_proceso_admin',
                   showBadge: solicitudesTraslado > 0,
@@ -492,7 +492,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Redenciones",
+                  "Redenciones",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_redenciones_admin',
                   showBadge: solicitudesRedencion > 0,
@@ -504,7 +504,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Acumulación",
+                  "Acumulación de penas",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_acumulacion_admin',
                   showBadge: solicitudesAcumulacion > 0,
@@ -516,7 +516,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Apelación",
+                  "Apelación",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_apelacion_admin',
                   showBadge: solicitudesApelacion > 0,
@@ -528,7 +528,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes Traslado de penitenciaria",
+                  "Traslado de penitenciaria",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_trasladoPenitenciaria_admin',
                   showBadge: solicitudesTrasladoPenitenciaria > 0,
@@ -548,7 +548,7 @@ class _SideBarState extends State<SideBar> {
             children: [
               _buildDrawerTile(
                 context,
-                "Historial Transacciones",
+                "Transacciones",
                 Icons.monitor_heart_rounded,
                 'admin_transacciones',
               ),
@@ -624,7 +624,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Readecuación de redención",
+                  "Readecuación de redención",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_readecuacion_redenciones_admin',
                   showBadge: solicitudesReadecuacion > 0,
@@ -635,7 +635,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de derechos petición",
+                  "Derecho de petición",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_derecho_peticion_admin',
                   showBadge: solicitudesPeticion > 0,
@@ -646,7 +646,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de tutela",
+                  "Tutela",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_tutelas_admin',
                   showBadge: solicitudesTutelas > 0,
@@ -657,7 +657,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes permiso 72 horas",
+                  "Permiso 72 horas",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_permiso_72horas_admin',
                   showBadge: solicitudesPermiso72h > 0,
@@ -668,7 +668,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de prisión domiciliaria",
+                  "Prisión domiciliaria",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_prision_domiciliaria_admin',
                   showBadge: solicitudesDomiciliaria > 0,
@@ -679,7 +679,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Libertad condicional",
+                  "Libertad condicional",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_libertad_condicional_admin',
                   showBadge: solicitudesCondicional > 0,
@@ -690,7 +690,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Extinción de pena",
+                  "Extinción de pena",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_extincion_pena_admin',
                   showBadge: solicitudesExtincion > 0,
@@ -701,7 +701,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Traslado de proceso",
+                  "Traslado de proceso",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_traslado_proceso_admin',
                   showBadge: solicitudesTraslado > 0,
@@ -712,7 +712,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Redenciones",
+                  "Redenciones",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_redenciones_admin',
                   showBadge: solicitudesRedencion > 0,
@@ -723,7 +723,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Acumulación",
+                  "Acumulación de pena",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_acumulacion_admin',
                   showBadge: solicitudesAcumulacion > 0,
@@ -735,7 +735,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes de Apelación",
+                  "Apelación",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_apelacion_admin',
                   showBadge: solicitudesApelacion > 0,
@@ -747,7 +747,7 @@ class _SideBarState extends State<SideBar> {
                 padding: const EdgeInsets.only(left: 16.0),
                 child: _buildDrawerTile(
                   context,
-                  "Solicitudes Traslado de penitenciaria",
+                  "Traslado de penitenciaria",
                   Icons.double_arrow_outlined,
                   'historial_solicitudes_trasladoPenitenciaria_admin',
                   showBadge: solicitudesTrasladoPenitenciaria > 0,
@@ -765,7 +765,7 @@ class _SideBarState extends State<SideBar> {
             children: [
               _buildDrawerTile(
                 context,
-                "Historial Transacciones",
+                "Transacciones",
                 Icons.monitor_heart_rounded,
                 'admin_transacciones',
               ),
@@ -1074,7 +1074,7 @@ class _SideBarState extends State<SideBar> {
 
       title: Text(
         title,
-        style: const TextStyle(color: Colors.black, fontSize: 13),
+        style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
       ),
     );
 

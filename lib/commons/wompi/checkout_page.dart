@@ -158,6 +158,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'apelacion': 'Apelación',
       'readecuacion': 'Readecuación de redención segun art. 19 ley 2466 de 2005',
       'trasladoPenitenciaria': 'Traslado de penitenciaría',
+      'copiaSentencia': 'Copia de sentencia',
     };
 
     if (tiposPagos.containsKey(widget.tipoPago)) {

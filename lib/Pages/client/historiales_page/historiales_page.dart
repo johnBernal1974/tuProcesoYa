@@ -118,7 +118,6 @@ class HistorialSolicitudesPage extends StatelessWidget {
         ? 3
         : 2;
 
-
     return MainLayout(
       pageTitle: 'Historial de solicitudes',
       content: FutureBuilder<List<Map<String, dynamic>>>(
@@ -154,33 +153,38 @@ class HistorialSolicitudesPage extends StatelessWidget {
             );
           }
 
-          return SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: GridView.count(
-                crossAxisCount: crossAxisCount,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                children: filteredConfigs.map((result) {
-                  final config = result['config'] as Map<String, dynamic>;
-                  return _buildCard(
-                    context,
-                    config['icon'],
-                    config['title'],
-                    config['route'],
-                    blanco,
-                  );
-                }).toList(),
+          return Center( // 🔹 Centra el contenido
+            child: ConstrainedBox( // 🔹 Limita ancho máximo
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: GridView.count(
+                    crossAxisCount: crossAxisCount,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    children: filteredConfigs.map((result) {
+                      final config = result['config'] as Map<String, dynamic>;
+                      return _buildCard(
+                        context,
+                        config['icon'],
+                        config['title'],
+                        config['route'],
+                        blanco,
+                      );
+                    }).toList(),
+                  ),
+                ),
               ),
             ),
           );
         },
       ),
-
     );
   }
+
 
   Widget _buildCard(BuildContext context, IconData icon, String titulo, String ruta, Color color) {
     final screenWidth = MediaQuery.of(context).size.width;

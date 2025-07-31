@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/commons/wompi/pago_exitoso_apelacion.dart';
+import 'package:tuprocesoya/commons/wompi/pago_exitoso_copia_sentencia.dart';
 import 'package:tuprocesoya/commons/wompi/pago_exitoso_readecuacion.dart';
 import 'package:tuprocesoya/commons/wompi/pago_exitoso_trasladoPenitenciaria.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_extiocion_pena.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_apelacion.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_copia_sentencia.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_readecuacion.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_trasladoPenitenciaria.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -224,6 +226,16 @@ class _WompiWebViewState extends State<WompiWebView> {
           },
         );
 
+      case 'copiaSentencia':
+        return PagoExitosoCopiaSentenciaPage(
+          montoPagado: monto,
+          transaccionId: id,
+          fecha: fecha,
+          onContinuar: () async {
+            widget.onTransaccionAprobada?.call();
+          },
+        );
+
       default:
         return const Scaffold(
           body: Center(
@@ -321,6 +333,13 @@ class _WompiWebViewState extends State<WompiWebView> {
 
       case 'trasladoPenitenciaria':
         return ReintentoPagoTrasladoPenitenciariaPage(
+          referencia: widget.referencia,
+          valor: widget.valorDerecho,
+          onTransaccionAprobada: widget.onTransaccionAprobada,
+        );
+
+      case 'copiaSentencia':
+        return ReintentoPagoCopiaSentenciaPage(
           referencia: widget.referencia,
           valor: widget.valorDerecho,
           onTransaccionAprobada: widget.onTransaccionAprobada,

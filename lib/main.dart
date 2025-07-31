@@ -89,6 +89,7 @@ import 'Pages/client/mis_referidos/mis_referidos.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
 import 'Pages/client/otras_solicitudes/solicitud_acumulacion.dart';
 import 'Pages/client/otras_solicitudes/solicitud_apelacion.dart';
+import 'Pages/client/otras_solicitudes/solicitud_copia_sentencia.dart';
 import 'Pages/client/otras_solicitudes/solicitud_redenciones.dart';
 import 'Pages/client/otras_solicitudes/solicitud_traslado_proceso.dart';
 import 'Pages/client/otras_solicitudes/traslado_centro.dart';
@@ -110,6 +111,7 @@ import 'Pages/configuraciones/configuraciones.dart';
 import 'Pages/detalle_de_correo_page/detalla_correo_trasladoPenitenciaria.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_apelacion.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_condicional.dart';
+import 'Pages/detalle_de_correo_page/detalle_correo_copiaSentencia.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_domiciliaria.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_extincion_pena.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_permiso_72horas.dart';
@@ -297,6 +299,7 @@ class MyApp extends StatelessWidget {
         'solicitud_acumulacion_page': (context) => const SolicitudAcumulacionPenasPage(),
         'solicitud_apelacion_page': (context) => const SolicitudApelacionPage(),
         'solicitud_trasladoPenitenciaria_page': (context) => const SolicitudTrasladoPenitenciariaPage(),
+        'solicitud_copia_sentencia_page': (context) => const SolicitudCopiaSentenciaPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
         'info_previa_72h_page': (context) => const RequisitosPermiso72hPage(),
@@ -887,6 +890,15 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => DetalleCorreoTrasladoPenitenciariaPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
+          else if (settings.name == 'detalle_correo_copiaSentencia') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoCopiaSentenciaPage(
                 idDocumento: args['idDocumento'],
                 correoId: args['correoId'],
               ),
