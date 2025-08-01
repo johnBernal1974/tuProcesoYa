@@ -49,129 +49,133 @@ class InfoPage extends StatelessWidget {
             const SizedBox(height: 30),
 
             /// tarjeta que habla de la ley 2466 de 2025
+            /// tarjeta que habla de la ley 2466 de 2025
             Padding(
               padding: const EdgeInsets.all(8.0),
-              child: Card(
-                color: blanco,
-                surfaceTintColor: blanco,
-                elevation: 5,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Colors.deepPurple, width: 2),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Nuevo beneficio en vigor',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.deepPurple,
-                        ),
-                      ),
-                      const Text(
-                        'Redención 2x3 según la Ley 2466 de 2025',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        '¡Atención! Ya puedes invocar el beneficio del artículo 19: redime 2 días de condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
-                            'Aún falta reglamentación del Ministerio de Trabajo, pero puedes anticipar tu solicitud con base en el principio de favorabilidad.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextButton.icon(
-                        icon: const Icon(Icons.info_outline, color: Colors.deepPurple),
-                        label: const Text('Ver más', style: TextStyle(color: Colors.deepPurple)),
-                        onPressed: () {
-                          showDialog(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              backgroundColor: blanco,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                              contentPadding: const EdgeInsets.all(16),
-                              content: const SizedBox(
-                                width: double.maxFinite,
-                                child: SingleChildScrollView(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Artículo 19 – Ley 2466 de 2025',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.deepPurple,
-                                        ),
+              child: Center( // 🔹 Centra el contenido
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: 800, // 🔹 Máximo ancho para Desktop
+                  ),
+                  child: Card(
+                    color: blanco,
+                    surfaceTintColor: blanco,
+                    elevation: 5,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: Colors.deepPurple, width: 2),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Nuevo beneficio en vigor',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.deepPurple,
+                            ),
+                          ),
+                          const Text(
+                            'Redención 2x3 según la Ley 2466 de 2025',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          const Text(
+                            '¡Atención! Ya puedes invocar el beneficio del artículo 19: redime 2 días de condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
+                                'Aún falta reglamentación del Ministerio de Trabajo, pero puedes anticipar tu solicitud con base en el principio de favorabilidad.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton.icon(
+                            icon: const Icon(Icons.info_outline, color: Colors.deepPurple),
+                            label: const Text('Ver más', style: TextStyle(color: Colors.deepPurple)),
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  backgroundColor: blanco,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  contentPadding: const EdgeInsets.all(16),
+                                  content: const SizedBox(
+                                    width: double.maxFinite,
+                                    child: SingleChildScrollView(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Artículo 19 – Ley 2466 de 2025',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.deepPurple,
+                                            ),
+                                          ),
+                                          SizedBox(height: 16),
+                                          Text(
+                                            'Desde el 25 de junio de 2025, está vigente un nuevo beneficio para personas condenadas. El artículo 19 permite redimir 2 días de la condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
+                                                'Aunque falta el decreto reglamentario del Ministerio de Trabajo (que debe expedirse antes de diciembre de 2025), ya puedes presentar tu solicitud anticipada bajo el principio de favorabilidad.',
+                                            style: TextStyle(fontSize: 16),
+                                            textAlign: TextAlign.justify,
+                                          ),
+                                          SizedBox(height: 16),
+                                          Text(
+                                            'Este es el momento de actuar. Regístrate en nuestra plataforma y deja constancia de tu intención de acogerte a este beneficio.',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ],
                                       ),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        'Desde el 25 de junio de 2025, está vigente un nuevo beneficio para personas condenadas. El artículo 19 permite redimir 2 días de la condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
-                                            'Aunque falta el decreto reglamentario del Ministerio de Trabajo (que debe expedirse antes de diciembre de 2025), ya puedes presentar tu solicitud anticipada bajo el principio de favorabilidad.',
-                                        style: TextStyle(fontSize: 16),
-                                        textAlign: TextAlign.justify,
-                                      ),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        'Este es el momento de actuar. Regístrate en nuestra plataforma y deja constancia de tu intención de acogerte a este beneficio.',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(),
-                                  child: const Text('Cerrar'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.of(context).pop();
-                                    Navigator.pushReplacementNamed(context, 'pagina_inicio_registro_page');
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.deepPurple,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  child: const Text('Ir a la aplicación'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: const Text('Cerrar'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                        Navigator.pushReplacementNamed(context, 'pagina_inicio_registro_page');
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.deepPurple,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                      ),
+                                      child: const Text('Ir a la aplicación'),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          );
-                        },
+                              );
+                            },
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),
             ),
-
-
             const SizedBox(height: 20),
-
-
             Padding(
               padding: contentPadding,
               child: Column(

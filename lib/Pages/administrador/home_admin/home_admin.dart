@@ -241,19 +241,17 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           return status == 'por_activar';
                         }).length;
 
-                        final int countActivado = docs.where((doc) {
-                          final status = doc.get('status').toString().toLowerCase();
-                          final data = doc.data() as Map<String, dynamic>;
-                          final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
-                          return status == 'activado' && requiereActualizacion != true;
-                        }).length;
-
                         final int countSuscritos = docs.where((doc) {
                           final data = doc.data() as Map<String, dynamic>;
                           final isPaid = data['isPaid'] == true;
                           return isPaid;
                         }).length;
 
+                        final int countSinPago = docs.where((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          final status = (data['status'] ?? '').toString().toLowerCase();
+                          return status == 'activado' && data['isPaid'] != true; // Incluye false o null
+                        }).length;
 
                         final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
                         final int countPendiente = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'pendiente').length;
@@ -263,26 +261,25 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           final data = doc.data() as Map<String, dynamic>;
                           return status == 'activado' && (data['requiere_actualizacion_datos'] == true);
                         }).length;
-
-                        // final int countTotal = docs.where((doc) {
-                        //   final assignedTo = doc.get('assignedTo') ?? "";
-                        //   final status = doc.get('status').toString().toLowerCase();
-                        //   if (esOperador) {
-                        //     return (status == 'registrado' && (assignedTo.isEmpty || assignedTo == currentUserUid)) ||
-                        //         status == 'activado' || status == 'bloqueado';
-                        //   }
-                        //   return true;
-                        // }).length;
-
                         final int countRedencionesVencidas = docs.where((doc) {
                           final status = doc.get('status').toString().toLowerCase();
                           final data = doc.data() as Map<String, dynamic>;
+
+                          // 🔹 Solo activos
                           if (status != 'activado') return false;
+
+                          // 🔹 Solo pagados
+                          if (data['isPaid'] != true) return false;
+
+                          // 🔹 Fecha de última redención
                           final ts = data['ultima_actualizacion_redenciones'];
                           if (ts == null || ts is! Timestamp) return false;
+
+                          // 🔹 Más de 30 días desde la última redención
                           final diferencia = DateTime.now().difference(ts.toDate()).inDays;
                           return diferencia >= 30;
                         }).length;
+
 
                         final int countConSeguimiento = docs.where((doc) {
                           final data = doc.data() as Map<String, dynamic>;
@@ -337,9 +334,14 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                             if (mostrarRedencionesVencidas) {
                               final ts = data['ultima_actualizacion_redenciones'];
+
                               if (ts == null || ts is! Timestamp) return false;
+
                               final diferencia = DateTime.now().difference(ts.toDate()).inDays;
-                              return status == 'activado' && diferencia >= 30;
+
+                              return status == 'activado' &&
+                                  data['isPaid'] == true && // 🔹 Solo pagados
+                                  diferencia >= 30;
                             }
 
                             if (filterStatus != null || filterIsPaid != null) {
@@ -363,11 +365,16 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                 }
                                 return coincideStatus;
                               }
-
-                              // Si solo hay filtro por isPaid (y no importa status)
-                              if (filterStatus == null && filterIsPaid == true) {
-                                return data['isPaid'] == true;
+                              if (filterStatus == null) {
+                                if (filterIsPaid == true) {
+                                  return data['isPaid'] == true;
+                                }
+                                if (filterIsPaid == false) {
+                                  final status = (data['status'] ?? '').toString().toLowerCase();
+                                  return status == 'activado' && data['isPaid'] != true; // incluye false o null
+                                }
                               }
+
 
                               // Otro status cualquiera
                               final coincideStatus = status == filterStatus;
@@ -568,8 +575,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               filteredDocs,
                               countRegistrado: countRegistrado,
                               countPorActivar: countPorActivar,
-                              countActivado: countActivado,
                               countSuscritos: countSuscritos,
+                              countSinPago: countSinPago,
                               countPendiente: countPendiente,
                               countBloqueado: countBloqueado,
                               countRedencionesVencidas: countRedencionesVencidas,
@@ -598,8 +605,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       List<QueryDocumentSnapshot> filteredDocs, {
         required int countRegistrado,
         required int countPorActivar,
-        required int countActivado,
         required int countSuscritos,
+        required int countSinPago,
         required int countPendiente,
         required int countBloqueado,
         required int countRedencionesVencidas,
@@ -619,9 +626,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
             children: [
               FilterContainer(
                 countRegistrado: countRegistrado,
-                countActivado: countActivado,
                 countPorActivar: countPorActivar,
                 countSuscritos: countSuscritos,
+                countSinPago: countSinPago,
                 countPendiente: countPendiente,
                 countBloqueado: countBloqueado,
                 countRedencionesVencidas: countRedencionesVencidas,
@@ -629,10 +636,35 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                 countConSeguimiento: countConSeguimiento,
                 countExentos: countExentos,
                 countUsuariosConSolicitudes: countUsuariosConSolicitudes,
+
+                // 🔹 Estados seleccionados actuales (para mantener highlight correcto)
                 selectedFilter: filterStatus,
-                onFilterSelected: (filtro) {
+                selectedIsPaid: filterIsPaid,
+                selectedIncompletos: mostrarSoloIncompletos,
+                selectedRedenciones: mostrarRedencionesVencidas,
+                selectedSeguimiento: mostrarSeguimiento,
+                selectedSolicitudes: mostrarConSolicitudes,
+                selectedExentos: filtrarPorExentos,
+
+                // 🔹 Al hacer tap en un filtro
+                onFilterSelected: ({
+                  String? status,
+                  bool? isPaid,
+                  bool soloIncompletos = false,
+                  bool redencionesVencidas = false,
+                  bool seguimiento = false,
+                  bool conSolicitudes = false,
+                  bool exentos = false,
+                }) {
                   setState(() {
-                    filterStatus = filtro;
+                    // Resetea todo
+                    filterStatus = status;
+                    filterIsPaid = isPaid;
+                    mostrarSoloIncompletos = soloIncompletos;
+                    mostrarRedencionesVencidas = redencionesVencidas;
+                    mostrarSeguimiento = seguimiento;
+                    mostrarConSolicitudes = conSolicitudes;
+                    filtrarPorExentos = exentos;
                   });
                 },
               ),
@@ -650,9 +682,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                 constraints: const BoxConstraints(maxWidth: 220),
                 child: _buildFilterContainer(
                   countRegistrado,
-                  countActivado,
                   countPorActivar,
                   countSuscritos,
+                  countSinPago,
                   countPendiente,
                   countBloqueado,
                   countRedencionesVencidas,
@@ -679,9 +711,9 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
   Widget _buildFilterContainer(
       int countRegistrado,
-      int countActivado,
       int countPorActivar,
       int countSuscritos,
+      int countSinPago,
       int countPendiente,
       int countBloqueado,
       int countRedencionesVencidas,
@@ -734,26 +766,26 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
             isSelected: filterStatus == "por_activar", // ✅ Se corrige la lógica de selección
           ),
 
-          _buildStatRow(
-            "Activados",
-            countActivado,
-            Colors.green,
-                () { setState(() {
-              filterStatus = "activado";
-              filterIsPaid = null;
-              mostrarSoloIncompletos = false;
-              mostrarRedencionesVencidas = false;
-              mostrarSeguimiento = false;
-              mostrarConSolicitudes = false;
-              filtrarPorExentos = false;
-            }); },
-            isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento,
-          ),
+          // _buildStatRow(
+          //   "Activados",
+          //   countActivado,
+          //   Colors.green,
+          //       () { setState(() {
+          //     filterStatus = "activado";
+          //     filterIsPaid = null;
+          //     mostrarSoloIncompletos = false;
+          //     mostrarRedencionesVencidas = false;
+          //     mostrarSeguimiento = false;
+          //     mostrarConSolicitudes = false;
+          //     filtrarPorExentos = false;
+          //   }); },
+          //   isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento,
+          // ),
           const SizedBox(height: 6),
           _buildStatRow(
             "Suscritos",
             countSuscritos,
-            Colors.blue,
+            Colors.green,
                 () { setState(() {
               filterIsPaid = true;
               filterStatus = null;
@@ -764,6 +796,22 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
               filtrarPorExentos = false;
             }); },
             isSelected: filterIsPaid == true && filterStatus == null && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento && !mostrarConSolicitudes && !filtrarPorExentos,
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Sin Pago",
+            countSinPago,
+            Colors.blue,
+                () { setState(() {
+              filterIsPaid = false;
+              filterStatus = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterIsPaid == false && filterStatus == null && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento && !mostrarConSolicitudes && !filtrarPorExentos,
           ),
           const SizedBox(height: 6),
           _buildStatRow(
@@ -1959,8 +2007,8 @@ class TotalUsuariosCard extends StatelessWidget {
 class FilterContainer extends StatelessWidget {
   final int countRegistrado;
   final int countPorActivar;
-  final int countActivado;
   final int countSuscritos;
+  final int countSinPago;
   final int countPendiente;
   final int countBloqueado;
   final int countRedencionesVencidas;
@@ -1968,15 +2016,31 @@ class FilterContainer extends StatelessWidget {
   final int countConSeguimiento;
   final int countExentos;
   final int countUsuariosConSolicitudes;
-  final void Function(String filtro) onFilterSelected;
+
+  final void Function({
+  String? status,
+  bool? isPaid,
+  bool soloIncompletos,
+  bool redencionesVencidas,
+  bool seguimiento,
+  bool conSolicitudes,
+  bool exentos
+  }) onFilterSelected;
+
   final String? selectedFilter;
+  final bool? selectedIsPaid;
+  final bool selectedIncompletos;
+  final bool selectedRedenciones;
+  final bool selectedSeguimiento;
+  final bool selectedSolicitudes;
+  final bool selectedExentos;
 
   const FilterContainer({
     Key? key,
     required this.countRegistrado,
     required this.countPorActivar,
-    required this.countActivado,
     required this.countSuscritos,
+    required this.countSinPago,
     required this.countPendiente,
     required this.countBloqueado,
     required this.countRedencionesVencidas,
@@ -1986,59 +2050,90 @@ class FilterContainer extends StatelessWidget {
     required this.countUsuariosConSolicitudes,
     required this.onFilterSelected,
     this.selectedFilter,
+    this.selectedIsPaid,
+    this.selectedIncompletos = false,
+    this.selectedRedenciones = false,
+    this.selectedSeguimiento = false,
+    this.selectedSolicitudes = false,
+    this.selectedExentos = false,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _buildStatRow("Registrados", countRegistrado, Colors.blue, () => onFilterSelected("registrado")),
+        _buildStatRow("Registrados", countRegistrado, Colors.deepPurple, () {
+          onFilterSelected(status: "registrado");
+        }, isSelected: selectedFilter == "registrado"),
         const SizedBox(height: 6),
-        _buildStatRow("Por Activar", countPorActivar, Colors.amberAccent, () => onFilterSelected("por_activar")),
+
+        _buildStatRow("Por Activar", countPorActivar, Colors.amberAccent, () {
+          onFilterSelected(status: "por_activar");
+        }, isSelected: selectedFilter == "por_activar"),
         const SizedBox(height: 6),
-        _buildStatRow("Activados", countActivado, Colors.green, () => onFilterSelected("activado")),
+
+        _buildStatRow("Suscritos", countSuscritos, Colors.green, () {
+          onFilterSelected(status: null, isPaid: true);
+        }, isSelected: selectedIsPaid == true && selectedFilter == null),
         const SizedBox(height: 6),
-        _buildStatRow("Suscritos", countSuscritos, Colors.deepPurple, () => onFilterSelected("suscritos")),
+
+        _buildStatRow("Sin Pago", countSinPago, Colors.blue, () {
+          onFilterSelected(status: "activado", isPaid: false);
+        }, isSelected: selectedIsPaid == false && selectedFilter == "activado"),
         const SizedBox(height: 6),
-        _buildStatRow("Pendientes", countPendiente, Colors.orange, () => onFilterSelected("pendiente")),
+
+        _buildStatRow("Seguimiento", countConSeguimiento, Colors.pink, () {
+          onFilterSelected(status: "activado", seguimiento: true);
+        }, isSelected: selectedSeguimiento),
         const SizedBox(height: 6),
-        _buildStatRow("Bloqueados", countBloqueado, Colors.red, () => onFilterSelected("bloqueado")),
+
+        _buildStatRow("Con solicitudes", countUsuariosConSolicitudes, Colors.deepPurpleAccent, () {
+          onFilterSelected(conSolicitudes: true);
+        }, isSelected: selectedSolicitudes),
         const SizedBox(height: 6),
-        _buildStatRow("Redenciones vencidas", countRedencionesVencidas, Colors.purple, () => onFilterSelected("redenciones")),
+
+        _buildStatRow("Pendientes", countPendiente, Colors.orange, () {
+          onFilterSelected(status: "pendiente");
+        }, isSelected: selectedFilter == "pendiente"),
         const SizedBox(height: 6),
-        _buildStatRow("Activos Incompletos", countActivadoIncompleto, Colors.brown, () => onFilterSelected("incompletos")),
+
+        _buildStatRow("Bloqueados", countBloqueado, Colors.red, () {
+          onFilterSelected(status: "bloqueado");
+        }, isSelected: selectedFilter == "bloqueado"),
         const SizedBox(height: 6),
-        _buildStatRow("Seguimiento", countConSeguimiento, Colors.pink, () => onFilterSelected("seguimiento")),
+
+        _buildStatRow("Redenciones vencidas", countRedencionesVencidas, Colors.purple, () {
+          onFilterSelected(redencionesVencidas: true);
+        }, isSelected: selectedRedenciones),
         const SizedBox(height: 6),
-        _buildStatRow("Exentos", countExentos, Colors.black, () => onFilterSelected("exentos")),
+
+        _buildStatRow("Activos Incompletos", countActivadoIncompleto, Colors.brown, () {
+          onFilterSelected(status: "activado", soloIncompletos: true);
+        }, isSelected: selectedIncompletos),
         const SizedBox(height: 6),
-        _buildStatRow("Con solicitudes", countUsuariosConSolicitudes, Colors.deepPurpleAccent, () => onFilterSelected("solicitudes")),
+
+        _buildStatRow("Exentos", countExentos, Colors.black, () {
+          onFilterSelected(exentos: true);
+        }, isSelected: selectedExentos),
       ],
     );
   }
 
-
-  Widget _buildStatRow(
-      String title,
-      int count,
-      Color color,
-      VoidCallback onTap,
-      ) {
+  Widget _buildStatRow(String title, int count, Color color, VoidCallback onTap, {bool isSelected = false}) {
     return InkWell(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.white,
-          border: Border.all(color: Colors.grey.shade300),
+          color: isSelected ? color.withOpacity(0.1) : Colors.white,
+          border: Border.all(color: isSelected ? color : Colors.grey.shade300),
           borderRadius: BorderRadius.circular(6),
         ),
         child: Row(
           children: [
             Container(width: 10, height: 10, color: color),
             const SizedBox(width: 8),
-            Text(title),
-            const Spacer(),
+            Expanded(child: Text(title)),
             Text(count.toString()),
           ],
         ),
@@ -2046,6 +2141,7 @@ class FilterContainer extends StatelessWidget {
     );
   }
 }
+
 
 
 
