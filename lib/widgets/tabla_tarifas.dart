@@ -32,16 +32,21 @@ class TablaPreciosWidget extends StatelessWidget {
     );
 
     final servicios = [
-      {'nombre': 'Permiso de 72h', 'valor': data['valor_72h']},
-      {'nombre': 'Acumulación de penas', 'valor': data['valor_acumulacion']},
-      {'nombre': 'Libertad condicional', 'valor': data['valor_condicional']},
-      {'nombre': 'Derecho de petición', 'valor': data['valor_derecho_peticion']},
-      {'nombre': 'Prisión domiciliaria', 'valor': data['valor_domiciliaria']},
-      {'nombre': 'Extinción de la pena', 'valor': data['valor_extincion']},
-      {'nombre': 'Redención de penas', 'valor': data['valor_redenciones']},
-      {'nombre': 'Suscripción (6 meses)', 'valor': data['valor_subscripcion']},
-      {'nombre': 'Traslado de proceso', 'valor': data['valor_traslado_proceso']},
-      {'nombre': 'Tutela', 'valor': data['valor_tutela']},
+        {'nombre': 'Acumulación de penas', 'valor': data['valor_acumulacion']},
+        {'nombre': 'Apelación', 'valor': data['valor_apelacion']},
+        {'nombre': 'Copia Sentencia', 'valor': data['valor_copia_sentencia']},
+        {'nombre': 'Derecho de petición', 'valor': data['valor_derecho_peticion']},
+        {'nombre': 'Extinción de la pena', 'valor': data['valor_extincion']},
+        {'nombre': 'Libertad condicional', 'valor': data['valor_condicional']},
+        {'nombre': 'Permiso de 72h', 'valor': data['valor_72h']},
+        {'nombre': 'Prisión domiciliaria', 'valor': data['valor_domiciliaria']},
+        {'nombre': 'Readecuación', 'valor': data['valor_readecuacion']},
+        {'nombre': 'Redención de penas', 'valor': data['valor_redenciones']},
+        {'nombre': 'Suscripción (6 meses)', 'valor': data['valor_subscripcion']},
+        {'nombre': 'Traslado de proceso', 'valor': data['valor_traslado_proceso']},
+        {'nombre': 'Traslado penitenciaria', 'valor': data['valor_trasladoPenitenciaria']},
+        {'nombre': 'Tutela', 'valor': data['valor_tutela']},
+
     ];
 
     return Center(
