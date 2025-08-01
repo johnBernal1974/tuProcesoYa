@@ -1208,19 +1208,57 @@ exports.sendRespuestaSolicitudMessage = functions.https.onRequest(async (req, re
 
   let acudienteNombre = "";
 
-  try {
-    // 🔹 Determinar la colección del servicio
-    let collectionName = "";
-    switch (tipoSolicitud.toLowerCase()) {
-      case "readecuación":
-        collectionName = "readecuacion_solicitados";
-        break;
-      case "domiciliaria":
-        collectionName = "domiciliaria_solicitados";
-        break;
+  function normalizarTexto(texto) {
+    return texto
+      .normalize("NFD")               // separa acentos
+      .replace(/[\u0300-\u036f]/g, "") // quita acentos
+      .toLowerCase()
+      .trim();
+  }
 
-      default:
-        return res.status(400).json({ error: `No se reconoce el tipo de solicitud: ${tipoSolicitud}` });
+  try {
+   let tipoNormalizado = normalizarTexto(tipoSolicitud);
+
+   switch (tipoNormalizado) {
+     case "readecuacion de redencion":
+       collectionName = "readecuacion_solicitados";
+       break;
+     case "prision domiciliaria":
+       collectionName = "domiciliaria_solicitados";
+       break;
+     case "acumulacion de penas":
+       collectionName = "acumulacion_solicitados";
+       break;
+     case "apelacion":
+       collectionName = "apelacion_solicitados";
+       break;
+     case "copia de sentencia":
+       collectionName = "copiaSentencia_solicitados";
+       break;
+     case "derecho de peticion":
+       collectionName = "derechos_peticion_solicitados";
+       break;
+     case "extinción de pena":
+       collectionName = "extincion_pena_solicitados";
+       break;
+     case "libertad condicional":
+       collectionName = "condicional_solicitados";
+       break;
+     case "permiso de 72 horas":
+       collectionName = "permiso_solicitados";
+       break;
+     case "redencion":
+       collectionName = "redenciones_solicitados";
+       break;
+     case "traslado de proceso":
+       collectionName = "trasladoProceso_solicitados";
+       break;
+     case "tutela":
+       collectionName = "tutelas_solicitados";
+       break;
+
+     default:
+       return res.status(400).json({ error: `No se reconoce el tipo de solicitud: ${tipoSolicitud}` });
     }
 
     // 🔹 Obtener documento del servicio (para obtener idUser)

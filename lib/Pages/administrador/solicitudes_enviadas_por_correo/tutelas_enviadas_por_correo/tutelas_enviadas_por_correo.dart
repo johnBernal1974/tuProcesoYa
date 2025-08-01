@@ -17,6 +17,7 @@ import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 class TutelasEnviadosPorCorreoPage extends StatefulWidget {
@@ -210,6 +211,13 @@ class _TutelasEnviadosPorCorreoPageState extends State<TutelasEnviadosPorCorreoP
                                       nombreColeccion: "tutelas_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      docId: widget.idDocumento,
+                                      servicio: "Tutela",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Tutelas",
+                                    ),
                                   ],
                                 ),
                               ),
@@ -250,6 +258,13 @@ class _TutelasEnviadosPorCorreoPageState extends State<TutelasEnviadosPorCorreoP
                                     solicitudId: widget.idDocumento,
                                     nombreColeccion: "tutelas_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  const SizedBox(height: 30),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    docId: widget.idDocumento,
+                                    servicio: "Tutela",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Tutelas",
                                   ),
                                 ],
                               ),

@@ -17,6 +17,7 @@ import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 
@@ -188,6 +189,13 @@ class _SolicitudesTrasladoProcesoPorCorreoPageState extends State<SolicitudesTra
                                       nombreColeccion: "trasladoProceso_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      docId: widget.idDocumento,
+                                      servicio: "Traslado de proceso",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Traslado de proceso",
+                                    ),
                                   ],
                                 ),
                               ),
@@ -228,6 +236,13 @@ class _SolicitudesTrasladoProcesoPorCorreoPageState extends State<SolicitudesTra
                                     solicitudId: widget.idDocumento,
                                     nombreColeccion: "trasladoProceso_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  const SizedBox(height: 30),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    docId: widget.idDocumento,
+                                    servicio: "Traslado de proceso",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Traslado de proceso",
                                   ),
                                 ],
                               ),

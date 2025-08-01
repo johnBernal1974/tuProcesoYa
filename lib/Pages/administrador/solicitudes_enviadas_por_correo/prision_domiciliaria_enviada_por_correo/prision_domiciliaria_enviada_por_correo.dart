@@ -216,13 +216,11 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                     ),
                                     const SizedBox(height: 20),
                                     BotonNotificarRespuestaWhatsApp(
-                                      celular: widget.celularResponsable,
                                       docId: widget.idDocumento,
-                                      servicio: "domiciliaria",
+                                      servicio: "Prisión domiciliaría",
                                       seguimiento: widget.numeroSeguimiento,
                                       seccionHistorial: "Prisión domiciliaria",
                                     ),
-
                                   ],
                                 ),
                               ),
@@ -266,9 +264,8 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                                   ),
                                   const SizedBox(height: 20),
                                   BotonNotificarRespuestaWhatsApp(
-                                    celular: widget.celularResponsable,
                                     docId: widget.idDocumento,
-                                    servicio: "domiciliaria",
+                                    servicio: "Prisión domiciliaría",
                                     seguimiento: widget.numeroSeguimiento,
                                     seccionHistorial: "Prisión domiciliaria",
                                   ),

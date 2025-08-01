@@ -17,6 +17,7 @@ import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 
@@ -26,6 +27,7 @@ class SolicitudesAcumulacionEnviadasPorCorreoPage extends StatefulWidget {
   final String numeroSeguimiento;
   final String categoria;
   final String subcategoria;
+  final String celularResponsable;
   final String fecha;
   final String idUser;
   final bool sinRespuesta;
@@ -37,6 +39,7 @@ class SolicitudesAcumulacionEnviadasPorCorreoPage extends StatefulWidget {
     required this.numeroSeguimiento,
     required this.categoria,
     required this.subcategoria,
+    required this.celularResponsable,
     required this.fecha,
     required this.idUser,
     required this.sinRespuesta,
@@ -190,6 +193,13 @@ class _SolicitudesAcumulacionEnviadasPorCorreoPageState extends State<Solicitude
                                       nombreColeccion: "acumulacion_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      docId: widget.idDocumento,
+                                      servicio: "Acumulacion de penas", // O el nombre real de la colección
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Acumulación de penas",
+                                    )
                                   ],
                                 ),
                               ),
@@ -231,6 +241,13 @@ class _SolicitudesAcumulacionEnviadasPorCorreoPageState extends State<Solicitude
                                     nombreColeccion: "acumulacion_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
                                   ),
+                                  const SizedBox(height: 30),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    docId: widget.idDocumento,
+                                    servicio: "Acumulacion de penas", // O el nombre real de la colección
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Acumulación de penas",
+                                  )
                                 ],
                               ),
                             ),

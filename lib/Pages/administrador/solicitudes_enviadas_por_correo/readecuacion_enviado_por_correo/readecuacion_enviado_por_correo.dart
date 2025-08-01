@@ -192,9 +192,8 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
                                     ),
                                     const SizedBox(height: 30),
                                     BotonNotificarRespuestaWhatsApp(
-                                      celular: widget.celularResponsable,
                                       docId: widget.idDocumento,
-                                      servicio: "readecuación",
+                                      servicio: "Readecuación de redención",
                                       seguimiento: widget.numeroSeguimiento,
                                       seccionHistorial: "Readecuación de redención art. 19 ley 2466 de 2025",
                                     ),
@@ -241,9 +240,8 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
                                   ),
                                   const SizedBox(height: 20),
                                   BotonNotificarRespuestaWhatsApp(
-                                    celular: widget.celularResponsable,
                                     docId: widget.idDocumento,
-                                    servicio: "readecuación",
+                                    servicio: "Readecuación de redención",
                                     seguimiento: widget.numeroSeguimiento,
                                     seccionHistorial: "Readecuación de redención art. 19 ley 2466 de 2025",
                                   ),
@@ -263,6 +261,8 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
       ),
     );
   }
+
+
 
   Widget _buildTutelaButton(BuildContext context) {
     return ElevatedButton(

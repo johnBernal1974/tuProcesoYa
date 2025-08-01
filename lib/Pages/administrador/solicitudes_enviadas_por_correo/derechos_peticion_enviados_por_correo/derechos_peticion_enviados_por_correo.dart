@@ -17,6 +17,7 @@ import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 class DerechoSPeticionEnviadosPorCorreoPage extends StatefulWidget {
@@ -211,6 +212,13 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                       nombreColeccion: "derechos_peticion_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      docId: widget.idDocumento,
+                                      servicio: "Derecho de petición",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Derecho de petición",
+                                    ),
                                   ],
                                 ),
                               ),
@@ -251,6 +259,13 @@ class _DerechoSPeticionEnviadosPorCorreoPageState extends State<DerechoSPeticion
                                     solicitudId: widget.idDocumento,
                                     nombreColeccion: "derechos_peticion_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  const SizedBox(height: 30),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    docId: widget.idDocumento,
+                                    servicio: "Derecho de petición",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Derecho de petición",
                                   ),
                                 ],
                               ),

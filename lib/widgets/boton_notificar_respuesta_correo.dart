@@ -1,23 +1,62 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import '../services/whatsapp_service.dart';
 import '../src/colors/colors.dart';
 
 class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
-  final String celular;
-  final String docId;
+  final String docId; // ID de la solicitud en su colección
   final String servicio;
-  final String seguimiento;
+  final String seguimiento; // numeroSeguimiento
   final String seccionHistorial;
 
   const BotonNotificarRespuestaWhatsApp({
     Key? key,
-    required this.celular,
     required this.docId,
     required this.servicio,
     required this.seguimiento,
     required this.seccionHistorial,
   }) : super(key: key);
+
+  /// Obtiene el celularWhatsapp desde Ppl usando numeroSeguimiento → idUser
+  Future<String?> _obtenerCelularDesdePpl() async {
+    try {
+      debugPrint("🔍 Buscando solicitud_usuario con seguimiento: $seguimiento");
+
+      // 1️⃣ Buscar documento en solicitudes_usuario usando numeroSeguimiento
+      final query = await FirebaseFirestore.instance
+          .collection('solicitudes_usuario')
+          .where('numeroSeguimiento', isEqualTo: seguimiento)
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) {
+        debugPrint("⚠ No se encontró solicitud_usuario para seguimiento: $seguimiento");
+        return null;
+      }
+
+      final idUser = query.docs.first.data()['idUser'];
+      debugPrint("✅ idUser encontrado: $idUser");
+
+      if (idUser == null) return null;
+
+      // 2️⃣ Buscar celularWhatsapp en Ppl
+      final pplSnapshot =
+      await FirebaseFirestore.instance.collection('Ppl').doc(idUser).get();
+
+      if (!pplSnapshot.exists) {
+        debugPrint("⚠ No existe documento en Ppl para idUser $idUser");
+        return null;
+      }
+
+      final numero = pplSnapshot.data()?['celularWhatsapp'];
+      debugPrint("📱 Celular encontrado: $numero");
+
+      return numero;
+    } catch (e) {
+      debugPrint("❌ Error obteniendo celular: $e");
+      return null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,42 +68,31 @@ class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
       ),
       onPressed: () async {
         try {
-          String numero = celular.trim();
+          String? numero = await _obtenerCelularDesdePpl();
 
-          // Validación: número vacío
-          if (numero.isEmpty) {
+          // Validar número
+          if (numero == null || numero.isEmpty) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('El número de celular no está disponible.')),
+              const SnackBar(content: Text('No se encontró número de WhatsApp.')),
             );
             return;
           }
 
-          // Formateo del número
+          // Formatear número
           if (!numero.startsWith('57')) {
-            if (numero.startsWith('0')) {
-              numero = '57${numero.substring(1)}';
-            } else {
-              numero = '57$numero';
-            }
+            numero = numero.startsWith('0')
+                ? '57${numero.substring(1)}'
+                : '57$numero';
           }
 
           if (numero.length != 12) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('El número de celular no es válido.')),
+              const SnackBar(content: Text('Número de celular inválido.')),
             );
             return;
           }
 
-          // Imprimir datos enviados
-          print({
-            "numero": numero,
-            "docId": docId,
-            "servicio": servicio,
-            "seguimiento": seguimiento,
-            "seccionHistorial": seccionHistorial,
-          });
-
-          // Enviar notificación
+          // Enviar mensaje
           await WhatsappService.enviarNotificacionRespuesta(
             numero: numero,
             docId: docId,
@@ -76,13 +104,10 @@ class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
           if (context.mounted) {
             showDialog(
               context: context,
-              builder: (context) => AlertDialog(
+              builder: (_) => AlertDialog(
                 backgroundColor: blanco,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 title: const Text('Mensaje enviado'),
-                content: const Text(
-                  'Se notificó por WhatsApp que hay una respuesta a la solicitud.',
-                ),
+                content: const Text('Se notificó por WhatsApp la respuesta.'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
@@ -98,7 +123,6 @@ class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
           );
         }
       },
-
       icon: Image.asset(
         'assets/images/icono_whatsapp.png',
         height: 24,

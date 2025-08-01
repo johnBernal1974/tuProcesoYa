@@ -17,6 +17,7 @@ import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 
@@ -187,6 +188,13 @@ class _SolicitudesExincionPenaPorCorreoPageState extends State<SolicitudesExinci
                                       nombreColeccion: "extincion_pena_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      docId: widget.idDocumento,
+                                      servicio: "Extinción de pena",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Extinción de pena",
+                                    ),
                                   ],
                                 ),
                               ),
@@ -227,6 +235,13 @@ class _SolicitudesExincionPenaPorCorreoPageState extends State<SolicitudesExinci
                                     solicitudId: widget.idDocumento,
                                     nombreColeccion: "extincion_pena_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  const SizedBox(height: 30),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    docId: widget.idDocumento,
+                                    servicio: "Extinción de pena",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Extinción de pena",
                                   ),
                                 ],
                               ),

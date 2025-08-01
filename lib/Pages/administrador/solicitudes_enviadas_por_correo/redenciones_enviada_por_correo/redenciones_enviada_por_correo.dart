@@ -17,6 +17,7 @@ import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 
@@ -187,6 +188,13 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                                       nombreColeccion: "redenciones_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      docId: widget.idDocumento,
+                                      servicio: "Redención",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Solicitud redenciones",
+                                    ),
                                   ],
                                 ),
                               ),
@@ -227,6 +235,12 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                                     solicitudId: widget.idDocumento,
                                     nombreColeccion: "redenciones_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    docId: widget.idDocumento,
+                                    servicio: "Redención",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Solicitud redenciones",
                                   ),
                                 ],
                               ),

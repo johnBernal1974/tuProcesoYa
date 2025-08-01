@@ -17,6 +17,7 @@ import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
 
 
@@ -211,6 +212,13 @@ class _SolicitudesPermiso72HorasEnviadasPorCorreoPageState extends State<Solicit
                                       nombreColeccion: "permiso_solicitados",
                                       onTapCorreo: _mostrarDetalleCorreo,
                                     ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      docId: widget.idDocumento,
+                                      servicio: "Permiso de 72 horas",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Permiso de 72 horas",
+                                    ),
                                   ],
                                 ),
                               ),
@@ -251,6 +259,13 @@ class _SolicitudesPermiso72HorasEnviadasPorCorreoPageState extends State<Solicit
                                     solicitudId: widget.idDocumento,
                                     nombreColeccion: "permiso_solicitados",
                                     onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  const SizedBox(height: 30),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    docId: widget.idDocumento,
+                                    servicio: "Permiso de 72 horas",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Permiso de 72 horas",
                                   ),
                                 ],
                               ),
