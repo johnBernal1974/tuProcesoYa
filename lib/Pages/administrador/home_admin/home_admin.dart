@@ -259,8 +259,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                         final int countActivadoIncompleto = docs.where((doc) {
                           final status = doc.get('status').toString().toLowerCase();
                           final data = doc.data() as Map<String, dynamic>;
-                          return status == 'activado' && (data['requiere_actualizacion_datos'] == true);
+                          return status == 'activado'
+                              && (data['requiere_actualizacion_datos'] == true)
+                              && data['isPaid'] == true;
                         }).length;
+
                         final int countRedencionesVencidas = docs.where((doc) {
                           final status = doc.get('status').toString().toLowerCase();
                           final data = doc.data() as Map<String, dynamic>;
@@ -283,7 +286,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                         final int countConSeguimiento = docs.where((doc) {
                           final data = doc.data() as Map<String, dynamic>;
-                          return data['tiene_seguimiento_activo'] == true;
+                          return data['tiene_seguimiento_activo'] == true && data['isPaid'] == true;
                         }).length;
 
                         final int countUsuariosConSolicitudes = docs.where((doc) {
@@ -292,9 +295,8 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                         final int countExentos = docs.where((doc) {
                           final data = doc.data() as Map<String, dynamic>;
-                          return data['exento'] == true;
+                          return data['exento'] == true && data['isPaid'] == true;
                         }).length;
-
 
                         List<QueryDocumentSnapshot> filteredDocs;
 
@@ -323,14 +325,17 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                             final assignedTo = doc.get('assignedTo') ?? "";
                             final requiereActualizacion = data['requiere_actualizacion_datos'] ?? false;
 
-                            if (filtrarPorExentos && data['exento'] != true) return false;
-
+                            if (filtrarPorExentos) {
+                              return data['exento'] == true && data['isPaid'] == true;
+                            }
                             if (mostrarConSolicitudes && !idsConSolicitudes.contains(doc.id)) return false;
 
                             if (mostrarSeguimiento) {
                               final tieneSeguimiento = data['tiene_seguimiento_activo'] == true;
-                              return status == 'activado' && tieneSeguimiento;
+                              final isPaid = data['isPaid'] == true;
+                              return status == 'activado' && tieneSeguimiento && isPaid;
                             }
+
 
                             if (mostrarRedencionesVencidas) {
                               final ts = data['ultima_actualizacion_redenciones'];
@@ -357,14 +362,19 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
 
                               // Si hay filtro por status "activado"
                               if (filterStatus == 'activado') {
-                                final coincideStatus = mostrarSoloIncompletos
-                                    ? status == 'activado' && requiereActualizacion == true
-                                    : status == 'activado' && requiereActualizacion != true;
-                                if (filterIsPaid == true) {
-                                  return coincideStatus && data['isPaid'] == true;
+                                if (mostrarSoloIncompletos) {
+                                  return status == 'activado' &&
+                                      requiereActualizacion == true &&
+                                      data['isPaid'] == true; // ✅ siempre pagados
+                                } else {
+                                  final coincideStatus = status == 'activado' && requiereActualizacion != true;
+                                  if (filterIsPaid == true) {
+                                    return coincideStatus && data['isPaid'] == true;
+                                  }
+                                  return coincideStatus;
                                 }
-                                return coincideStatus;
                               }
+
                               if (filterStatus == null) {
                                 if (filterIsPaid == true) {
                                   return data['isPaid'] == true;
@@ -765,22 +775,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
             },
             isSelected: filterStatus == "por_activar", // ✅ Se corrige la lógica de selección
           ),
-
-          // _buildStatRow(
-          //   "Activados",
-          //   countActivado,
-          //   Colors.green,
-          //       () { setState(() {
-          //     filterStatus = "activado";
-          //     filterIsPaid = null;
-          //     mostrarSoloIncompletos = false;
-          //     mostrarRedencionesVencidas = false;
-          //     mostrarSeguimiento = false;
-          //     mostrarConSolicitudes = false;
-          //     filtrarPorExentos = false;
-          //   }); },
-          //   isSelected: filterStatus == "activado" && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento,
-          // ),
           const SizedBox(height: 6),
           _buildStatRow(
             "Suscritos",
@@ -799,34 +793,21 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
           ),
           const SizedBox(height: 6),
           _buildStatRow(
-            "Sin Pago",
-            countSinPago,
-            Colors.blue,
-                () { setState(() {
-              filterIsPaid = false;
-              filterStatus = null;
-              mostrarSoloIncompletos = false;
-              mostrarRedencionesVencidas = false;
-              mostrarSeguimiento = false;
-              mostrarConSolicitudes = false;
-              filtrarPorExentos = false;
-            }); },
-            isSelected: filterIsPaid == false && filterStatus == null && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento && !mostrarConSolicitudes && !filtrarPorExentos,
-          ),
-          const SizedBox(height: 6),
-          _buildStatRow(
             "Seguimiento",
             countConSeguimiento,
             Colors.pink,
-                () { setState(() {
-              filterStatus = "activado";
-              mostrarSeguimiento = true;
-              mostrarSoloIncompletos = false;
-              mostrarRedencionesVencidas = false;
-              mostrarConSolicitudes = false;
-              filtrarPorExentos = false;
-            }); },
-            isSelected: mostrarSeguimiento,
+                () {
+              setState(() {
+                filterStatus = "activado";
+                mostrarSeguimiento = true;
+                filterIsPaid = true; // 👈 Solo pagos
+                mostrarSoloIncompletos = false;
+                mostrarRedencionesVencidas = false;
+                mostrarConSolicitudes = false;
+                filtrarPorExentos = false;
+              });
+            },
+            isSelected: mostrarSeguimiento && filterIsPaid == true, // 👈 Para marcar selección
           ),
           const SizedBox(height: 6),
           _buildStatRow(
@@ -861,22 +842,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
           ),
           const SizedBox(height: 6),
           _buildStatRow(
-            "Bloqueados",
-            countBloqueado,
-            Colors.red,
-                () { setState(() {
-              filterStatus = "bloqueado";
-              filterIsPaid = null;
-              mostrarSoloIncompletos = false;
-              mostrarRedencionesVencidas = false;
-              mostrarSeguimiento = false;
-              mostrarConSolicitudes = false;
-              filtrarPorExentos = false;
-            }); },
-            isSelected: filterStatus == "bloqueado",
-          ),
-          const SizedBox(height: 6),
-          _buildStatRow(
             "Redenciones vencidas",
             countRedencionesVencidas,
             Colors.purple,
@@ -907,8 +872,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
             isSelected: filterStatus == "activado" && mostrarSoloIncompletos,
           ),
           const SizedBox(height: 6),
-
-          const SizedBox(height: 6),
           _buildStatRow(
             "Exentos",
             countExentos,
@@ -922,6 +885,40 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
               mostrarConSolicitudes = false;
             }); },
             isSelected: filtrarPorExentos,
+          ),
+          const SizedBox(height: 6),
+          const Divider(color: Colors.black, height: 10),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Sin Pago",
+            countSinPago,
+            Colors.blue,
+                () { setState(() {
+              filterIsPaid = false;
+              filterStatus = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterIsPaid == false && filterStatus == null && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento && !mostrarConSolicitudes && !filtrarPorExentos,
+          ),
+          const SizedBox(height: 6),
+          _buildStatRow(
+            "Bloqueados",
+            countBloqueado,
+            Colors.red,
+                () { setState(() {
+              filterStatus = "bloqueado";
+              filterIsPaid = null;
+              mostrarSoloIncompletos = false;
+              mostrarRedencionesVencidas = false;
+              mostrarSeguimiento = false;
+              mostrarConSolicitudes = false;
+              filtrarPorExentos = false;
+            }); },
+            isSelected: filterStatus == "bloqueado",
           ),
           const SizedBox(height: 6),
 
@@ -1286,20 +1283,19 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         rowsPerPage: rowsPerPage,
         columnSpacing: 30,
         showCheckboxColumn: false,
-        columns: const [
-          DataColumn(label: Text("Beneficios")),
-          DataColumn(label: Text('Estado')),
-          DataColumn(label: Text('Situación')),
-          DataColumn(label: Text('Última\nRedención', style: TextStyle(fontSize: 12))),
-          DataColumn(label: Text('Último\nSeguimiento', style: TextStyle(fontSize: 12))),
-          DataColumn(label: Text('PPL')),
-          DataColumn(label: Text('Identificación')),
-          DataColumn(label: Text('Acudiente')),
-          DataColumn(label: Text('WhatsApp')),
-          DataColumn(label: Text('Pago')),
-          DataColumn(label: Text('Prueba')),
-          DataColumn(label: Text('Registro')),
-        ],
+          columns: const [
+            DataColumn(label: Text('Estado')),
+            DataColumn(label: Text('Situación')),
+            DataColumn(label: Text("Beneficios")),
+            DataColumn(label: Text('Última\nRedención', style: TextStyle(fontSize: 12))),
+            DataColumn(label: Text('Último\nSeguimiento', style: TextStyle(fontSize: 12))),
+            DataColumn(label: Text('PPL')),
+            DataColumn(label: Text('Identificación')),
+            DataColumn(label: Text('Acudiente')),
+            DataColumn(label: Text('WhatsApp')),
+            DataColumn(label: Text('Pago')), // 👈 Eliminamos la de “Prueba”
+            DataColumn(label: Text('Registro')),
+          ],
           source: _TablaDataSource(
             context: context,
             registros: registros,
@@ -1669,17 +1665,6 @@ class _TablaDataSource extends DataTableSource {
       ),
 
       cells: [
-        // 🔷 Nivel beneficio
-        DataCell(Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _getIconoPorNivel(data['nivel_tiempo_beneficio']),
-            const SizedBox(height: 2),
-            Text(_getTextoPorNivel(data['nivel_tiempo_beneficio']), style: const TextStyle(fontSize: 10)),
-          ],
-        )),
-
-        // 🔷 Estado
         // 🔷 Estado
         DataCell(
           Row(
@@ -1726,6 +1711,16 @@ class _TablaDataSource extends DataTableSource {
 
         // 🔷 Situación
         DataCell(_getIconoPorSituacion(situacion)),
+
+        // 🔷 Nivel beneficio
+        DataCell(Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _getIconoPorNivel(data['nivel_tiempo_beneficio']),
+            const SizedBox(height: 2),
+            Text(_getTextoPorNivel(data['nivel_tiempo_beneficio']), style: const TextStyle(fontSize: 10)),
+          ],
+        )),
 
         // 🔷 Redención
         DataCell(aplicaRedencion
@@ -1787,15 +1782,24 @@ class _TablaDataSource extends DataTableSource {
         // 🔷 WhatsApp
         DataCell(Text(data['celularWhatsapp'] ?? '', style: const TextStyle(fontSize: 12))),
 
-        // 🔷 Pago
-        DataCell(Icon(isPaid ? Icons.check_circle : Icons.cancel, color: isPaid ? Colors.blue : Colors.grey)),
-
-        // 🔷 Prueba
+        // 🔷 Pago + Prueba juntos (Prueba solo si no ha pagado)
         DataCell(
-          iconoPruebaYPago(
-            data: data,
-            tiempoDePruebaDias: tiempoDePruebaDias,
-            onTapPagoPendiente: () => onTapPagoPendiente(doc),
+          Row(
+            children: [
+              Icon(
+                isPaid ? Icons.check_circle : Icons.cancel,
+                color: isPaid ? Colors.blue : Colors.grey,
+                size: 18,
+              ),
+              if (!isPaid) ...[ // 👈 Solo se muestra si no ha pagado
+                const SizedBox(width: 6),
+                iconoPruebaYPago(
+                  data: data,
+                  tiempoDePruebaDias: tiempoDePruebaDias,
+                  onTapPagoPendiente: () => onTapPagoPendiente(doc),
+                ),
+              ],
+            ],
           ),
         ),
 
