@@ -27,20 +27,20 @@ String generarPrefacioCentroReclusion({
 
   <p>
     Me permito informar que el día de hoy ha sido presentada ante el Juzgado de Ejecución de Penas la solicitud de <b>$beneficioPenitenciario</b>. Con el fin de que dicho despacho pueda resolver adecuadamente, respetuosamente solicito que se remitan con carácter urgente los siguientes documentos:
-  </p>
+  </p><br>
 
   <ol>
     <li><b>Mi Cartilla biográfica actualizada:</b> incluyendo datos personales, judiciales, penitenciarios, conducta y redenciones acumuladas.</li>
     <li><b>Certificación de tiempo redimido:</b> con detalle de días, tipo de actividad, fechas y modalidad.</li>
     <li><b>Certificado de buena conducta:</b> conforme al artículo 147 de la Ley 65 de 1993.</li>
     <li><b>Concepto del Consejo de Evaluación y Tratamiento:</b> sobre la solicitud y el proceso de resocialización.</li>
-  </ol>
+  </ol><br><br>
 
   <p>
     Agradezco de antemano la atención prestada a esta solicitud.
   </p>
 
-  <p>Cordialmente,</p>
+  <p>Cordialmente,</p><br><br>
 
   <p>
     <b>$nombrePpl $apellidoPpl</b><br>
@@ -48,7 +48,7 @@ String generarPrefacioCentroReclusion({
     TD: $td<br>
     NUI: $nui<br>
     Patio: $patio
-  </p>
+  </p><br><br>
 
   <b>NOTA IMPORTANTE:</b><br>
   <p style="font-size: 13px;">
