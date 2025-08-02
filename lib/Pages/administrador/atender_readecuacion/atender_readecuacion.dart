@@ -919,15 +919,18 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     final latestData = doc.data();
 
     if (fetchedData != null && latestData != null && mounted) {
-      // Calcular tiempo si aplica
       await calcularTiempo(widget.idUser);
       await _calculoCondenaController.calcularTiempo(widget.idUser);
 
       setState(() {
         userData = fetchedData;
+
+        // ✅ Usamos obtenerEntidad para tomar el juzgado o centro correcto
+        final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
+
         readecuacion = SolicitudReadecuacionRedencionTemplate(
           dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-          entidad: fetchedData.centroReclusion ?? "",
+          entidad: entidadSeleccionada,
           referencia: "Solicitudes varias - Solicitud Readecuación de redención",
           nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
           apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
@@ -952,6 +955,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       });
     }
   }
+
 
   void fetchDocumentoSolicitudReadecuacionRedenciones() async {
     try {
@@ -1158,7 +1162,11 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({required String correoDestino,String? asuntoPersonalizado, String? prefacioHtml}) async {
+  Future<void> enviarCorreoResend({
+    required String correoDestino,
+    String? asuntoPersonalizado,
+    String? prefacioHtml,
+  }) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -1169,9 +1177,14 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-    final redenciones = SolicitudReadecuacionRedencionTemplate(
+    final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
+    final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+    final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
+    final correoDestinatario = correoDestino;
+
+    final readecuacion = SolicitudReadecuacionRedencionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad ?? "",
+      entidad: entidadSeleccionada,
       referencia: "Solicitudes varias - Solicitud redenciones",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
@@ -1188,13 +1201,21 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       patio: userData?.patio ?? "",
     );
 
-    final mensajeHtml = "${prefacioHtml ?? ''}${redenciones.generarTextoHtml()}";
+    final mensajeHtml = """
+<html>
+  <body style="font-family: Arial, sans-serif; font-size: 10pt; color: #000;">
+    <p style="margin: 2px 0;">De: peticiones@tuprocesoya.com</p>
+    <p style="margin: 2px 0;">Para: $correoDestinatario</p>
+    <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
+    <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
+    ${prefacioHtml ?? ''}${readecuacion.generarTextoHtml()}
+  </body>
+</html>
+""";
 
     final archivosBase64 = <Map<String, String>>[];
-
     final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de Readecuación de redencion - ${widget.numeroSeguimiento}";
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final enviadoPor = currentUser?.email ?? adminFullName;
+    final enviadoPor = correoRemitente;
 
     final correosCC = <String>[];
     if (userData?.email != null && userData!.email.trim().isNotEmpty) {
@@ -1233,16 +1254,12 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
         nuevoStatus: "Enviado",
         origen: "readecuacion_solicitados",
       );
-
-
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
       }
     }
   }
-
-  ///Aca Inicia el cambio
 
 
   Widget botonEnviarCorreo() {
@@ -1350,26 +1367,53 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     required String htmlContent,
   }) async {
     try {
-      // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
-      final contenidoFinal = htmlUtf8Compatible(htmlContent);
+      final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
+      final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+      final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
+      final correoDestinatario = correoSeleccionado ?? "";
 
-      // 📁 Crear bytes
+      final htmlFinal = """
+<html>
+  <body style="font-family: Arial, sans-serif; font-size: 10pt; color: #000;">
+    <p style="margin: 2px 0;">De: peticiones@tuprocesoya.com</p>
+    <p style="margin: 2px 0;">Para: $correoDestinatario</p>
+    <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
+    <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
+    ${SolicitudReadecuacionRedencionTemplate(
+        dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+        entidad: entidadSeleccionada,
+        referencia: readecuacion.referencia,
+        nombrePpl: userData?.nombrePpl ?? "",
+        apellidoPpl: userData?.apellidoPpl ?? "",
+        identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+        centroPenitenciario: userData?.centroReclusion ?? "",
+        emailUsuario: userData?.email ?? "",
+        emailAlternativo: "peticiones@tuprocesoya.com",
+        radicado: userData?.radicado ?? "",
+        jdc: userData?.juzgadoQueCondeno ?? "",
+        numeroSeguimiento: widget.numeroSeguimiento,
+        situacion: userData?.situacion ?? "",
+        nui: userData?.nui ?? "",
+        td: userData?.td ?? "",
+        patio: userData?.patio ?? "",
+      ).generarTextoHtml()}
+  </body>
+</html>
+""";
+
+      final contenidoFinal = htmlUtf8Compatible(htmlFinal);
       final bytes = utf8.encode(contenidoFinal);
       const fileName = "correo.html";
-      final filePath = "readecuacion/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+      final filePath = "readecuacion/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
 
-      // ⬆️ Subir archivo
       await ref.putData(Uint8List.fromList(bytes), metadata);
-
-      // 🌐 Obtener URL
       final downloadUrl = await ref.getDownloadURL();
 
-      // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("readecuacion_solicitados") // 🟣 Cambiar colección
+          .collection("readecuacion_solicitados")
           .doc(idDocumento)
           .update({
         "correoHtmlUrl": downloadUrl,
@@ -1381,7 +1425,6 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       print("❌ Error al subir HTML del correo de readecuacion: $e");
     }
   }
-
 
   /// 💡 Corrige el HTML para asegurar que tenga codificación UTF-8
   String htmlUtf8Compatible(String html) {
