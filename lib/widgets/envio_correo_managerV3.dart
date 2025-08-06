@@ -52,6 +52,7 @@ class EnvioCorreoManagerV3 {
     required String rutaHistorial,
     required String nombreServicio,
     required String idDocumentoSolicitud,
+    required String idDocumentoPpl,
     required String centroPenitenciario,
     required String nombrePpl,
     required String apellidoPpl,
@@ -401,7 +402,7 @@ class EnvioCorreoManagerV3 {
       try {
         await WhatsappService.enviarNotificacion(
           numero: celularWhatsapp,
-          docId: idDocumentoSolicitud,
+          docId: idDocumentoPpl,
           servicio: nombreServicio,
           seguimiento: numeroSeguimiento,
         );

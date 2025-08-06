@@ -10,37 +10,6 @@ import '../services/whatsapp_service.dart';
 
 class EnvioCorreoManagerV2 {
 
-  // 🔹 Función para guardar el HTML en Storage y registrar URL en Firestore
-  Future<void> _guardarHtmlCorreo({
-    required String idDocumento,
-    required String htmlFinal,
-    required String tipoEnvio, // principal, centro_reclusion, reparto
-  }) async {
-    try {
-      final contenidoFinal = utf8.encode(htmlFinal);
-      final fileName = "correo_$tipoEnvio.html";
-      final filePath = "readecuacion/$idDocumento/correos/$fileName";
-
-      final ref = FirebaseStorage.instance.ref(filePath);
-      final metadata = SettableMetadata(contentType: "text/html");
-
-      await ref.putData(Uint8List.fromList(contenidoFinal), metadata);
-      final downloadUrl = await ref.getDownloadURL();
-
-      await FirebaseFirestore.instance
-          .collection("readecuacion_solicitados")
-          .doc(idDocumento)
-          .set({
-        "correosGuardados.$tipoEnvio": downloadUrl,
-        "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      print("✅ HTML de $tipoEnvio guardado en: $downloadUrl");
-    } catch (e) {
-      print("❌ Error guardando HTML de $tipoEnvio: $e");
-    }
-  }
-
   Future<void> enviarCorreoCompleto({
     required BuildContext context,
     required String correoDestinoPrincipal,

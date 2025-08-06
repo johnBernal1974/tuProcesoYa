@@ -1331,6 +1331,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           rutaHistorial: 'historial_solicitudes_readecuacion_redenciones_admin',
           nombreServicio: "Readecuación de Redención",
           idDocumentoSolicitud: widget.idDocumento,
+          idDocumentoPpl: userData!.id,
 
           centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
           nombrePpl: userData?.nombrePpl ?? '',
