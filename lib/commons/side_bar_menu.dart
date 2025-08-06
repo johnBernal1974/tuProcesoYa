@@ -586,8 +586,14 @@ class _SideBarState extends State<SideBar> {
               _buildDrawerTile(
                 context,
                 "Registrar Referidor",
-                Icons.double_arrow_outlined,
+                Icons.edit_calendar,
                 'registrar_referidores_page_admin',
+              ),
+              _buildDrawerTile(
+                context,
+                "Pago de comisiones",
+                Icons.money_rounded,
+                'historial_pago_comisiones_page_admin',
               ),
               _buildDrawerTile(
                 context,
@@ -810,6 +816,12 @@ class _SideBarState extends State<SideBar> {
                 "Referidores",
                 Icons.double_arrow_outlined,
                 'referidores_page_admin',
+              ),
+              _buildDrawerTile(
+                context,
+                "Pago de comisiones",
+                Icons.money_rounded,
+                'historial_pago_comisiones_page_admin',
               ),
               _buildDrawerTile(
                 context,
