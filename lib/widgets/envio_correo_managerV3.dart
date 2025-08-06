@@ -137,17 +137,15 @@ class EnvioCorreoManagerV3 {
       );
     }
 
+    // 🔹 Envío principal
     try {
-      // 🔹 Envío principal
       await enviarCorreoResend(correoDestino: correoDestinoPrincipal);
       await subirHtml();
 
-      // 🔹 Guardar HTML con encabezados bonitos para Storage
       if (ultimoHtmlEnviado != null && ultimoHtmlEnviado.isNotEmpty) {
-
         final htmlConEncabezado = _generarHtmlUniforme(
           correoDestino: correoDestinoPrincipal,
-          contenidoHtml: ultimoHtmlEnviado ?? "",
+          contenidoHtml: ultimoHtmlEnviado,
         );
 
         await _guardarHtmlCorreo(
@@ -155,8 +153,30 @@ class EnvioCorreoManagerV3 {
           htmlFinal: htmlConEncabezado,
           tipoEnvio: "principal",
         );
-
       }
+
+      Navigator.of(loaderCtx!).pop();
+
+      // ✅ Mostrar éxito principal y seguir con flujo
+      if (context.mounted) {
+        await showDialog(
+          barrierDismissible: false,
+          context: context,
+          builder: (ctx3) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: const Text("✅ Envío exitoso"),
+            content: const Text("El correo principal fue enviado correctamente."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx3).pop(),
+                child: const Text("Continuar"),
+              ),
+            ],
+          ),
+        );
+      }
+
+      // 🔹 Al cerrar el éxito, automáticamente sigue al bloque de centro de reclusión
     } catch (e) {
       if (context.mounted) {
         Navigator.of(loaderCtx!).pop();
@@ -166,8 +186,6 @@ class EnvioCorreoManagerV3 {
       }
       return;
     }
-
-    Navigator.of(loaderCtx!).pop();
 
 // Esperar un frame antes de abrir otro dialog:
     await Future.delayed(Duration.zero);
@@ -188,75 +206,50 @@ class EnvioCorreoManagerV3 {
       ),
     );
 
-
-    if (enviarCopiaCentro == true) {
-      if (context.mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (_) => Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 600),
-              child: buildSelectorCorreoCentroReclusion(
-                onEnviarCorreo: (correoCentro, nombreCentro) async {
-                  Navigator.of(context).pop();
-                  // Esperar un frame
-                  await Future.delayed(const Duration(milliseconds: 150));
-                  if (enviarCopiaCentro == true && context.mounted) {
-                    await showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (_) => Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 600),
-                          child: buildSelectorCorreoCentroReclusion(
-                            onEnviarCorreo: (correoCentro, nombreCentro) async {
-                              Navigator.of(context).pop();
-                              await Future.delayed(const Duration(milliseconds: 150));
-
-                              if (context.mounted) {
-                                await _enviarCopiaConLoader(
-                                  context: context,
-                                  correoDestino: correoCentro,
-                                  enviarCorreoResend: enviarCorreoResend,
-                                  asunto: "Solicitud de documentos para $nombreServicio - $numeroSeguimiento",
-                                  prefacio: generarPrefacioCentroReclusion(
-                                    centroPenitenciario: centroPenitenciario,
-                                    nombrePpl: nombrePpl,
-                                    apellidoPpl: apellidoPpl,
-                                    identificacionPpl: identificacionPpl,
-                                    nui: nui,
-                                    td: td,
-                                    patio: patio,
-                                    beneficioPenitenciario: beneficioPenitenciario,
-                                  ),
-                                  mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
-                                  // 🚀 En copias NO generamos otra vez generarTextoHtml(), usamos el original
-                                  htmlFinal: ultimoHtmlEnviado ?? "",
-                                  idDocumentoSolicitud: idDocumentoSolicitud,
-                                  tipoEnvio: "centro_reclusion",
-                                  ultimoHtmlEnviado: ultimoHtmlEnviado,
-                                );
-                              }
-
-                              await Future.delayed(const Duration(milliseconds: 100));
-                            },
-                            onOmitir: () => Navigator.of(context).pop(),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
-                  // Esperar que el usuario cierre el popup
-                  await Future.delayed(const Duration(milliseconds: 100));
-                },
-                onOmitir: () => Navigator.of(context).pop(),
-              ),
+    if (enviarCopiaCentro == true && context.mounted) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: buildSelectorCorreoCentroReclusion(
+              onEnviarCorreo: (correoCentro, nombreCentro) async {
+                Navigator.of(context).pop();
+                // Esperar un frame
+                await Future.delayed(const Duration(milliseconds: 150));
+                if (context.mounted) {
+                  await _enviarCopiaConLoader(
+                    context: context,
+                    correoDestino: correoCentro,
+                    enviarCorreoResend: enviarCorreoResend,
+                    asunto: "Solicitud de documentos para $nombreServicio - $numeroSeguimiento",
+                    prefacio: generarPrefacioCentroReclusion(
+                      centroPenitenciario: centroPenitenciario,
+                      nombrePpl: nombrePpl,
+                      apellidoPpl: apellidoPpl,
+                      identificacionPpl: identificacionPpl,
+                      nui: nui,
+                      td: td,
+                      patio: patio,
+                      beneficioPenitenciario: beneficioPenitenciario,
+                    ),
+                    mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
+                    idDocumentoSolicitud: idDocumentoSolicitud,
+                    tipoEnvio: "centro_reclusion",
+                    htmlFinal: ultimoHtmlEnviado ?? "",
+                    ultimoHtmlEnviado: ultimoHtmlEnviado,
+                  );
+                }
+                await Future.delayed(const Duration(milliseconds: 100));
+              },
+              onOmitir: () => Navigator.of(context).pop(),
             ),
           ),
-        );
-      }
+        ),
+      );
     }
+
     if (!context.mounted) return;
 
     // 3️⃣ Copia a reparto
