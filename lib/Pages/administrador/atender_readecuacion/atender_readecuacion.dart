@@ -91,7 +91,6 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
   String? ciudadCentroOrigen;
   String? centroDestinoNombre;
   String? ciudadCentroDestino;
-  DateTime? _fechaTraslado;
 
   String? ultimoHtmlEnviado;
 
@@ -985,7 +984,6 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
             ciudadCentroOrigen = data['ciudad_centro_origen'] ?? '';
             centroDestinoNombre = data['centro_destino_nombre'] ?? '';
             ciudadCentroDestino = data['ciudad_centro_destino'] ?? '';
-            _fechaTraslado = (data['fecha_traslado'] as Timestamp?)?.toDate();
           });
         }
       } else {
