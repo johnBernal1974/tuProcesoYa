@@ -68,7 +68,6 @@ class MisReferidosPage extends StatelessWidget {
                 .map((doc) => (doc.data() as Map<String, dynamic>)['id'] as String)
                 .toList();
 
-            // FutureBuilder para traer todos los Ppl
             return FutureBuilder<QuerySnapshot>(
               future: FirebaseFirestore.instance
                   .collection('Ppl')
@@ -79,19 +78,74 @@ class MisReferidosPage extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                // Creamos un set de IDs pagados
+                // IDs de referidos que han pagado suscripción
                 final Set<String> idsPagados = snapshotPpl.data!.docs
                     .where((doc) => doc.get('isPaid') == true)
                     .map((doc) => doc.id)
                     .toSet();
 
-                final int totalReferidosPagos = idsPagados.length;
-                final int totalComision = totalReferidosPagos * 2000;
+                // IDs de referidos con comisión ya pagada
+                final Set<String> idsComisionPagada = referidosDocs
+                    .where((doc) => (doc.data() as Map<String, dynamic>)['comisionPagada'] == true)
+                    .map((doc) => doc.id)
+                    .toSet();
+
+                // Calcular totales
+                final referidosPendientes = referidosDocs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final id = data['id'];
+                  return idsPagados.contains(id) && !(data['comisionPagada'] == true);
+                }).length;
+
+                final referidosPagadosComision = referidosDocs.where((doc) {
+                  final data = doc.data() as Map<String, dynamic>;
+                  final id = data['id'];
+                  return idsPagados.contains(id) && (data['comisionPagada'] == true);
+                }).length;
+
+                final int comisionPendiente = referidosPendientes * 2000;
+                final int comisionPagadaTotal = referidosPagadosComision * 2000;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Card superior
+                    // 🔹 Cards de totales
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Card(
+                            color: Colors.green.shade50,
+                            child: ListTile(
+                              title: const Text(
+                                'Comisión Pagada',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text(
+                                '\$${NumberFormat("#,##0", "es").format(comisionPagadaTotal)}',
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Card(
+                            color: Colors.orange.shade50,
+                            child: ListTile(
+                              title: const Text(
+                                'Comisión Pendiente',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text(
+                                '\$${NumberFormat("#,##0", "es").format(comisionPendiente)}',
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 🔹 Card superior actual
                     Container(
                       width: double.infinity,
                       child: Card(
@@ -112,7 +166,7 @@ class MisReferidosPage extends StatelessWidget {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                '\$${NumberFormat("#,##0", "es").format(totalComision)}',
+                                '\$${NumberFormat("#,##0", "es").format(comisionPagadaTotal + comisionPendiente)}',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.normal,
                                   fontSize: 16,
@@ -132,7 +186,8 @@ class MisReferidosPage extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // Lista por semanas
+
+                    // 🔹 Lista por semanas
                     ...referidosAgrupados.entries.map((entry) {
                       final pagosSemana = entry.value
                           .where((doc) => idsPagados.contains((doc.data() as Map)['id']))
@@ -187,6 +242,7 @@ class MisReferidosPage extends StatelessWidget {
                             final idPpl = data['id'];
 
                             final bool isPaid = idsPagados.contains(idPpl);
+                            final bool comisionPagada = idsComisionPagada.contains(doc.id);
 
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -206,15 +262,29 @@ class MisReferidosPage extends StatelessWidget {
                                         size: 18,
                                       ),
                                       const SizedBox(width: 8),
-                                      Text(
-                                        isPaid
-                                            ? 'Pagó la suscripción'
-                                            : 'No ha pagado la suscripción',
-                                        style: TextStyle(
-                                          color: isPaid ? Colors.green : Colors.red,
-                                          fontSize: 13,
+                                      Expanded(
+                                        child: Text(
+                                          isPaid
+                                              ? 'Pagó la suscripción'
+                                              : 'No ha pagado la suscripción',
+                                          style: TextStyle(
+                                            color: isPaid ? Colors.green : Colors.red,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                       ),
+                                      if (isPaid)
+                                        Text(
+                                          comisionPagada
+                                              ? 'Comisión pagada'
+                                              : 'Pendiente pago\nde comisión',
+                                          style: TextStyle(
+                                            color: comisionPagada ? Colors.green : Colors.orange,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+
                                     ],
                                   ),
                                   Text(

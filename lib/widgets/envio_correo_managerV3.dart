@@ -501,38 +501,34 @@ class EnvioCorreoManagerV3 {
     );
 
     try {
-      // 🔹 Fecha para encabezado
-      final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
-
-      // 🔹 Construir contenido completo (prefacio + correo original)
-      final contenidoCompleto = """
+      // 🔹 Generar HTML que se guardará en Storage (prefacio + contenido original)
+      final htmlConEncabezado = _generarHtmlUniforme(
+        correoDestino: correoDestino,
+        contenidoHtml: """
 ${prefacio ?? ''}
 <hr style="margin: 12px 0; border: 0; border-top: 1px solid #ccc;">
 ${ultimoHtmlEnviado ?? htmlFinal}
-""";
-
-      // 🔹 Generar HTML con encabezado uniforme (el mismo que irá a Storage)
-      final htmlConEncabezado = _generarHtmlUniforme(
-        correoDestino: correoDestino,
-        contenidoHtml: contenidoCompleto,
+""",
       );
 
-      // 🔹 Enviar correo usando exactamente el mismo contenido que se guardará
+      // 🔹 Enviar correo usando solo el prefacio como parte superior
       await enviarCorreoResend(
         correoDestino: correoDestino,
         asuntoPersonalizado: asunto,
-        prefacioHtml: contenidoCompleto,
+        prefacioHtml: prefacio, // ✅ Solo el prefacio original (sin htmlFinal)
       );
 
-      // 🔹 Guardar HTML en Storage
+      // 🔹 Guardar el HTML final en Storage
       await _guardarHtmlCorreo(
         idDocumento: idDocumentoSolicitud,
         htmlFinal: htmlConEncabezado,
         tipoEnvio: tipoEnvio,
       );
 
-      // 🔹 Cerrar loader y mostrar éxito
+      // 🔹 Cerrar el diálogo de carga
       Navigator.of(loaderCtx!).pop();
+
+      // 🔹 Mostrar mensaje de éxito
       if (context.mounted) {
         await showDialog(
           barrierDismissible: false,
@@ -554,11 +550,15 @@ ${ultimoHtmlEnviado ?? htmlFinal}
       if (context.mounted) {
         Navigator.of(loaderCtx!).pop();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error al enviar copia: $e"), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text("Error al enviar copia: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
   }
+
 
 
   String _generarHtmlUniforme({
