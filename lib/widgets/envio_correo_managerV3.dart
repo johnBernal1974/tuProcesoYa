@@ -4,11 +4,12 @@ import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:tuprocesoya/widgets/prefacio_centro_reclusion.dart';
 
 import '../services/whatsapp_service.dart';
 
-class EnvioCorreoManagerV2 {
+class EnvioCorreoManagerV3 {
 
   // 🔹 Función para guardar el HTML en Storage y registrar URL en Firestore
   Future<void> _guardarHtmlCorreo({
@@ -50,7 +51,7 @@ class EnvioCorreoManagerV2 {
     required String? celularWhatsapp,
     required String rutaHistorial,
     required String nombreServicio,
-    required String idDocumentoPpl,
+    required String idDocumentoSolicitud,
     required String centroPenitenciario,
     required String nombrePpl,
     required String apellidoPpl,
@@ -65,6 +66,7 @@ class EnvioCorreoManagerV2 {
     String? prefacioHtml,
     }) enviarCorreoResend,
     required Future<void> Function() subirHtml,
+    required String? ultimoHtmlEnviado, // 🔹 HTML del último correo enviado
     required Widget Function({
     required Function(String correo, String nombreCentro) onEnviarCorreo,
     required Function() onOmitir,
@@ -136,10 +138,27 @@ class EnvioCorreoManagerV2 {
     }
 
     try {
+      // 🔹 Envío principal
       await enviarCorreoResend(correoDestino: correoDestinoPrincipal);
       await subirHtml();
+
+      // 🔹 Guardar HTML con encabezados bonitos para Storage
+      if (ultimoHtmlEnviado != null && ultimoHtmlEnviado.isNotEmpty) {
+
+        final htmlConEncabezado = _generarHtmlUniforme(
+          correoDestino: correoDestinoPrincipal,
+          contenidoHtml: ultimoHtmlEnviado ?? "",
+        );
+
+        await _guardarHtmlCorreo(
+          idDocumento: idDocumentoSolicitud,
+          htmlFinal: htmlConEncabezado,
+          tipoEnvio: "principal",
+        );
+
+      }
     } catch (e) {
-      if(context.mounted){
+      if (context.mounted) {
         Navigator.of(loaderCtx!).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error al enviar: $e"), backgroundColor: Colors.red),
@@ -154,23 +173,17 @@ class EnvioCorreoManagerV2 {
     await Future.delayed(Duration.zero);
     if (!context.mounted) return;
 
-// 2️⃣ Copia al centro de reclusión
+    // 2️⃣ Copia al centro de reclusión
     final enviarCopiaCentro = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: Colors.white,
-        title: const Text("Copia al centro de reclusión"),
-        content: const Text("¿Deseas enviar una copia de este correo al centro de reclusión?"),
+        title: const Text("Correo al centro de reclusión"),
+        content: const Text("¿Deseas enviar este correo al centro de reclusión?"),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text("Omitir"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text("Sí, enviar"),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text("Omitir")),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text("Sí, enviar")),
         ],
       ),
     );
@@ -189,25 +202,50 @@ class EnvioCorreoManagerV2 {
                   Navigator.of(context).pop();
                   // Esperar un frame
                   await Future.delayed(const Duration(milliseconds: 150));
-                  if(context.mounted){
-                    await _enviarCopiaConLoader(
+                  if (enviarCopiaCentro == true && context.mounted) {
+                    await showDialog(
                       context: context,
-                      correoDestino: correoCentro,
-                      enviarCorreoResend: enviarCorreoResend,
-                      asunto: "Solicitud de documentos para $nombreServicio - $numeroSeguimiento",
-                      prefacio: generarPrefacioCentroReclusion(
-                        centroPenitenciario: centroPenitenciario,
-                        nombrePpl: nombrePpl,
-                        apellidoPpl: apellidoPpl,
-                        identificacionPpl: identificacionPpl,
-                        nui: nui,
-                        td: td,
-                        patio: patio,
-                        beneficioPenitenciario: beneficioPenitenciario,
-                      ),
-                      mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
-                    );
+                      barrierDismissible: false,
+                      builder: (_) => Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: buildSelectorCorreoCentroReclusion(
+                            onEnviarCorreo: (correoCentro, nombreCentro) async {
+                              Navigator.of(context).pop();
+                              await Future.delayed(const Duration(milliseconds: 150));
 
+                              if (context.mounted) {
+                                await _enviarCopiaConLoader(
+                                  context: context,
+                                  correoDestino: correoCentro,
+                                  enviarCorreoResend: enviarCorreoResend,
+                                  asunto: "Solicitud de documentos para $nombreServicio - $numeroSeguimiento",
+                                  prefacio: generarPrefacioCentroReclusion(
+                                    centroPenitenciario: centroPenitenciario,
+                                    nombrePpl: nombrePpl,
+                                    apellidoPpl: apellidoPpl,
+                                    identificacionPpl: identificacionPpl,
+                                    nui: nui,
+                                    td: td,
+                                    patio: patio,
+                                    beneficioPenitenciario: beneficioPenitenciario,
+                                  ),
+                                  mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
+                                  // 🚀 En copias NO generamos otra vez generarTextoHtml(), usamos el original
+                                  htmlFinal: ultimoHtmlEnviado ?? "",
+                                  idDocumentoSolicitud: idDocumentoSolicitud,
+                                  tipoEnvio: "centro_reclusion",
+                                  ultimoHtmlEnviado: ultimoHtmlEnviado,
+                                );
+                              }
+
+                              await Future.delayed(const Duration(milliseconds: 100));
+                            },
+                            onOmitir: () => Navigator.of(context).pop(),
+                          ),
+                        ),
+                      ),
+                    );
                   }
                   // Esperar que el usuario cierre el popup
                   await Future.delayed(const Duration(milliseconds: 100));
@@ -221,7 +259,7 @@ class EnvioCorreoManagerV2 {
     }
     if (!context.mounted) return;
 
-    // 3️⃣ Copia al reparto
+    // 3️⃣ Copia a reparto
     final enviarCopiaReparto = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
@@ -230,14 +268,8 @@ class EnvioCorreoManagerV2 {
         title: const Text("Copia a reparto"),
         content: const Text("¿Deseas enviar una copia al correo de reparto?"),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text("Omitir"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text("Sí, enviar"),
-          ),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text("Omitir")),
+          TextButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text("Sí, enviar")),
         ],
       ),
     );
@@ -245,7 +277,7 @@ class EnvioCorreoManagerV2 {
     if (enviarCopiaReparto == true) {
       await Future.delayed(const Duration(milliseconds: 200));
 
-      if(context.mounted){
+      if (context.mounted) {
         await showDialog(
           context: context,
           barrierDismissible: false,
@@ -289,16 +321,35 @@ class EnvioCorreoManagerV2 {
                   );
 
                   if (confirmarEnvio != true) return;
-                  if(context.mounted){
+
+                  if (context.mounted) {
+                    // 1️⃣ Declaras el prefacio antes de llamar la función
+                    final prefacioReparto = """
+<p style="margin: 0;">
+  <strong>Entidad reparto:</strong> $entidad
+</p>
+<p style="margin: 8px 0 0 0;">
+  Solicitamos amablemente su gestión para que sea remitido a la autoridad competente.
+</p>
+<hr style="margin-top: 12px; margin-bottom: 12px;">
+""";
+
+// 2️⃣ Lo pasas como parámetro en la función
                     await _enviarCopiaConLoader(
                       context: context,
                       correoDestino: correo,
                       enviarCorreoResend: enviarCorreoResend,
                       asunto: "Reparto - Solicitud de $nombreServicio - $numeroSeguimiento",
-                      prefacio: "<p><strong>Entidad reparto:</strong> $entidad</p><hr>",
+                      prefacio: prefacioReparto, // ✅ Aquí lo usas
                       mensajeExito: "El correo al juzgado de reparto fue enviado correctamente.",
+                      htmlFinal: ultimoHtmlEnviado ?? "",
+                      idDocumentoSolicitud: idDocumentoSolicitud,
+                      tipoEnvio: "reparto",
+                      ultimoHtmlEnviado: ultimoHtmlEnviado,
                     );
+
                   }
+
                   Navigator.of(context).pop();
                 },
                 onOmitir: () => Navigator.of(context).pop(),
@@ -307,11 +358,9 @@ class EnvioCorreoManagerV2 {
           ),
         );
       }
-
     }
-
-
     if (!context.mounted) return;
+
     // 4️⃣ Notificación WhatsApp
     final notificarWhatsapp = await showDialog<bool>(
       context: context,
@@ -359,7 +408,7 @@ class EnvioCorreoManagerV2 {
       try {
         await WhatsappService.enviarNotificacion(
           numero: celularWhatsapp,
-          docId: idDocumentoPpl,
+          docId: idDocumentoSolicitud,
           servicio: nombreServicio,
           seguimiento: numeroSeguimiento,
         );
@@ -428,11 +477,16 @@ class EnvioCorreoManagerV2 {
     String? asuntoPersonalizado,
     String? prefacioHtml,
     }) enviarCorreoResend,
+    required String htmlFinal,
     String? asunto,
     String? prefacio,
     required String mensajeExito,
+    required String idDocumentoSolicitud,
+    required String tipoEnvio,
+    required String? ultimoHtmlEnviado,
   }) async {
     BuildContext? loaderCtx;
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -454,13 +508,39 @@ class EnvioCorreoManagerV2 {
     );
 
     try {
+      // 🔹 Fecha para encabezado
+      final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+
+      // 🔹 Construir contenido completo (prefacio + correo original)
+      final contenidoCompleto = """
+${prefacio ?? ''}
+<hr style="margin: 12px 0; border: 0; border-top: 1px solid #ccc;">
+${ultimoHtmlEnviado ?? htmlFinal}
+""";
+
+      // 🔹 Generar HTML con encabezado uniforme (el mismo que irá a Storage)
+      final htmlConEncabezado = _generarHtmlUniforme(
+        correoDestino: correoDestino,
+        contenidoHtml: contenidoCompleto,
+      );
+
+      // 🔹 Enviar correo usando exactamente el mismo contenido que se guardará
       await enviarCorreoResend(
         correoDestino: correoDestino,
         asuntoPersonalizado: asunto,
-        prefacioHtml: prefacio,
+        prefacioHtml: contenidoCompleto,
       );
+
+      // 🔹 Guardar HTML en Storage
+      await _guardarHtmlCorreo(
+        idDocumento: idDocumentoSolicitud,
+        htmlFinal: htmlConEncabezado,
+        tipoEnvio: tipoEnvio,
+      );
+
+      // 🔹 Cerrar loader y mostrar éxito
       Navigator.of(loaderCtx!).pop();
-      if(context.mounted){
+      if (context.mounted) {
         await showDialog(
           barrierDismissible: false,
           context: context,
@@ -478,7 +558,7 @@ class EnvioCorreoManagerV2 {
         );
       }
     } catch (e) {
-      if(context.mounted){
+      if (context.mounted) {
         Navigator.of(loaderCtx!).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Error al enviar copia: $e"), backgroundColor: Colors.red),
@@ -486,4 +566,28 @@ class EnvioCorreoManagerV2 {
       }
     }
   }
+
+
+  String _generarHtmlUniforme({
+    required String correoDestino,
+    required String contenidoHtml,
+  }) {
+    final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+
+    return """
+<meta charset="UTF-8">
+<div style="max-width: 750px; margin: auto; padding: 20px; 
+            font-family: Arial, sans-serif; font-size: 11px; line-height: 1.5;">  
+
+  <p style="margin: 0;"><strong>De:</strong> peticiones@tuprocesoya.com</p>
+  <p style="margin: 0;"><strong>Para:</strong> $correoDestino</p>
+  <p style="margin: 0 0 10px 0;"><strong>Fecha de Envío:</strong> $fechaEnvioFormateada</p>
+
+  <hr style="margin: 12px 0; border: 0; border-top: 1px solid #ccc;">
+
+  $contenidoHtml
+</div>
+""";
+  }
+
 }

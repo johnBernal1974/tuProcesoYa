@@ -21,6 +21,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
+import '../../../widgets/envio_correo_managerV3.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_readecuacion_admin/historial_solicitudes_readecuacion_admin.dart';
@@ -91,6 +92,8 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
   String? centroDestinoNombre;
   String? ciudadCentroDestino;
   DateTime? _fechaTraslado;
+
+  String? ultimoHtmlEnviado;
 
   @override
   void initState() {
@@ -925,12 +928,10 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       setState(() {
         userData = fetchedData;
 
-        // ✅ Usamos obtenerEntidad para tomar el juzgado o centro correcto
-        final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
-
+        // ⚠️ Aquí no usamos nombreCorreoSeleccionado porque aún puede estar vacío
         readecuacion = SolicitudReadecuacionRedencionTemplate(
-          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-          entidad: entidadSeleccionada,
+          dirigido: "", // Se llenará al elegir correo
+          entidad: "",  // Se llenará al elegir correo
           referencia: "Solicitudes varias - Solicitud Readecuación de redención",
           nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
           apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
@@ -946,6 +947,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           td: fetchedData.td ?? "",
           patio: fetchedData.patio ?? "",
         );
+
         isLoading = false;
       });
     } else if (mounted) {
@@ -955,7 +957,6 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       });
     }
   }
-
 
   void fetchDocumentoSolicitudReadecuacionRedenciones() async {
     try {
@@ -1167,11 +1168,13 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     String? asuntoPersonalizado,
     String? prefacioHtml,
   }) async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
+    final url = Uri.parse(
+      "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend",
+    );
 
     final doc = await FirebaseFirestore.instance
         .collection('readecuacion_solicitados')
-        .doc(widget.idDocumento)
+        .doc(widget.idDocumento) // 🔹 ID de solicitud, no PPL
         .get();
 
     final latestData = doc.data();
@@ -1185,7 +1188,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     final readecuacion = SolicitudReadecuacionRedencionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidadSeleccionada,
-      referencia: "Solicitudes varias - Solicitud redenciones",
+      referencia: "Solicitudes varias - Solicitud readecuación redención",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
@@ -1201,6 +1204,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       patio: userData?.patio ?? "",
     );
 
+    // 🔹 Generar HTML final
     final mensajeHtml = """
 <html>
   <body style="font-family: Arial, sans-serif; font-size: 10pt; color: #000;">
@@ -1213,8 +1217,12 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
 </html>
 """;
 
+    // 🔹 Guardar HTML en variable global/local para enviarlo al manager
+    ultimoHtmlEnviado = mensajeHtml;
+
     final archivosBase64 = <Map<String, String>>[];
-    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de Readecuación de redencion - ${widget.numeroSeguimiento}";
+    final asuntoCorreo = asuntoPersonalizado ??
+        "Solicitud de Readecuación de Redención - ${widget.numeroSeguimiento}";
     final enviadoPor = correoRemitente;
 
     final correosCC = <String>[];
@@ -1228,7 +1236,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       "subject": asuntoCorreo,
       "html": mensajeHtml,
       "archivos": archivosBase64,
-      "idDocumento": widget.idDocumento,
+      "idDocumento": widget.idDocumento, // 🔹 ID de solicitud
       "enviadoPor": enviadoPor,
       "tipo": "readecuacion",
     });
@@ -1288,20 +1296,42 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           return;
         }
 
-        final envioCorreoManager = EnvioCorreoManagerV2();
+        // 🔹 Antes de generar el HTML, actualizamos dirigido y entidad
+        readecuacion = SolicitudReadecuacionRedencionTemplate(
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: obtenerEntidad(nombreCorreoSeleccionado ?? ""),
+          referencia: readecuacion.referencia,
+          nombrePpl: readecuacion.nombrePpl,
+          apellidoPpl: readecuacion.apellidoPpl,
+          identificacionPpl: readecuacion.identificacionPpl,
+          centroPenitenciario: readecuacion.centroPenitenciario,
+          emailUsuario: readecuacion.emailUsuario,
+          emailAlternativo: readecuacion.emailAlternativo,
+          radicado: readecuacion.radicado,
+          jdc: readecuacion.jdc,
+          numeroSeguimiento: readecuacion.numeroSeguimiento,
+          situacion: readecuacion.situacion,
+          nui: readecuacion.nui,
+          td: readecuacion.td,
+          patio: readecuacion.patio,
+        );
+
+        // ✅ Ahora generas el HTML con la entidad y dirigido correctos
+        final ultimoHtmlEnviado = readecuacion.generarTextoHtml();
+
+        final envioCorreoManager = EnvioCorreoManagerV3();
 
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
-          html: readecuacion.generarTextoHtml(),
+          html: ultimoHtmlEnviado,
           numeroSeguimiento: readecuacion.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
           rutaHistorial: 'historial_solicitudes_readecuacion_redenciones_admin',
           nombreServicio: "Readecuación de Redención",
-          idDocumentoPpl: widget.idUser,
+          idDocumentoSolicitud: widget.idDocumento,
 
-          // Nuevos campos requeridos
           centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
           nombrePpl: userData?.nombrePpl ?? '',
           apellidoPpl: userData?.apellidoPpl ?? '',
@@ -1309,7 +1339,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           nui: userData?.nui ?? '',
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Readecuación de Redención", // Puedes ajustar si se requiere algo más específico
+          beneficioPenitenciario: "Readecuación de Redención",
 
           enviarCorreoResend: ({
             required String correoDestino,
@@ -1324,9 +1354,10 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           },
 
           subirHtml: () async {
-            await subirHtmlCorreoADocumentoSolicitudRedenciones(
+            await subirHtmlCorreoADocumentoSolicitudReadecuacion(
               idDocumento: widget.idDocumento,
-              htmlContent: readecuacion.generarTextoHtml(),
+              htmlFinal: ultimoHtmlEnviado,
+              tipoEnvio: "principal",
             );
           },
 
@@ -1355,6 +1386,8 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
               onOmitir: () => Navigator.of(context).pop(),
             );
           },
+
+          ultimoHtmlEnviado: ultimoHtmlEnviado,
         );
       },
       child: const Text("Enviar por correo"),
@@ -1362,48 +1395,17 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
   }
 
 
-  Future<void> subirHtmlCorreoADocumentoSolicitudRedenciones({
+
+  Future<void> subirHtmlCorreoADocumentoSolicitudReadecuacion({
     required String idDocumento,
-    required String htmlContent,
+    required String htmlFinal,
+    required String tipoEnvio, // 🔹 "principal", "centro_reclusion", "reparto"
   }) async {
     try {
-      final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
-      final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
-      final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
-      final correoDestinatario = correoSeleccionado ?? "";
-
-      final htmlFinal = """
-<html>
-  <body style="font-family: Arial, sans-serif; font-size: 10pt; color: #000;">
-    <p style="margin: 2px 0;">De: peticiones@tuprocesoya.com</p>
-    <p style="margin: 2px 0;">Para: $correoDestinatario</p>
-    <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
-    <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
-    ${SolicitudReadecuacionRedencionTemplate(
-        dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-        entidad: entidadSeleccionada,
-        referencia: readecuacion.referencia,
-        nombrePpl: userData?.nombrePpl ?? "",
-        apellidoPpl: userData?.apellidoPpl ?? "",
-        identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-        centroPenitenciario: userData?.centroReclusion ?? "",
-        emailUsuario: userData?.email ?? "",
-        emailAlternativo: "peticiones@tuprocesoya.com",
-        radicado: userData?.radicado ?? "",
-        jdc: userData?.juzgadoQueCondeno ?? "",
-        numeroSeguimiento: widget.numeroSeguimiento,
-        situacion: userData?.situacion ?? "",
-        nui: userData?.nui ?? "",
-        td: userData?.td ?? "",
-        patio: userData?.patio ?? "",
-      ).generarTextoHtml()}
-  </body>
-</html>
-""";
-
       final contenidoFinal = htmlUtf8Compatible(htmlFinal);
       final bytes = utf8.encode(contenidoFinal);
-      const fileName = "correo.html";
+
+      final fileName = "correo_$tipoEnvio.html"; // 🔹 nombre distinto
       final filePath = "readecuacion/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
@@ -1415,16 +1417,19 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       await FirebaseFirestore.instance
           .collection("readecuacion_solicitados")
           .doc(idDocumento)
-          .update({
-        "correoHtmlUrl": downloadUrl,
-        "fechaHtmlCorreo": FieldValue.serverTimestamp(),
-      });
+          .set({
+        "correosGuardados.$tipoEnvio": downloadUrl, // 🔹 guarda por tipo
+        "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true)); // 🔹 no sobreescribe todo el doc
 
-      print("✅ HTML de readecuacion subido y guardado con URL: $downloadUrl");
+      print("✅ HTML $tipoEnvio guardado en: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo de readecuacion: $e");
+      print("❌ Error al subir HTML $tipoEnvio: $e");
     }
   }
+
+
+
 
   /// 💡 Corrige el HTML para asegurar que tenga codificación UTF-8
   String htmlUtf8Compatible(String html) {
