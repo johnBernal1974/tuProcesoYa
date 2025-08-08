@@ -17,11 +17,18 @@ String generarPrefacioCentroReclusionV2({
   return """
 <div style="font-family: Arial, sans-serif; font-size: 15px;">
 
-  <p><strong>Respetados Señores<br>
-  Oficina Jurídica<br>
-  $centroPenitenciario</strong></p>
+  <p style="margin:0;">
+  <span style="font-size: 10pt; font-weight: normal;">Respetados Señores</span><br>
+  <span style="font-size: 12pt; font-weight: 500;">Oficina Jurídica</span><br>
+  <span style="font-size: 14pt; font-weight: bold; color: #000000;">$centroPenitenciario</span>
+</p>
 
-  <p><b>Asunto:</b> Solicitud de documentación</p>
+
+  <p>
+  <span style="color: #555555; font-weight: bold;">Asunto:</span><br>
+  <span style="font-weight: bold; font-size: 14pt;">Solicitud de documentación para $beneficioPenitenciario</span>
+</p>
+
 
   <p>
     Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.
@@ -29,10 +36,10 @@ String generarPrefacioCentroReclusionV2({
 
   <p>
     Yo, <b>$nombrePpl $apellidoPpl</b>, identificado con cédula <b>$identificacionPpl</b>, actualmente recluido en la <b>$centroPenitenciario</b>, con el NUI: <b>$nui</b> y TD: <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.
-  </p>
+  </p><br><br>
 
  <p>
-    Me permito informar que, en la fecha, ha sido presentada ante el <b>$juzgadoLimpio</b> la solicitud de <b>$beneficioPenitenciario</b>. 
+    Me permito informar que, en la fecha, ha sido presentada ante el <b>$juzgadoLimpio</b>, la solicitud de <b>$beneficioPenitenciario</b>. 
     Con el fin de que dicho despacho pueda resolver de manera oportuna y conforme a derecho, solicito respetuosamente que se remitan, con carácter urgente, directamente a esa autoridad judicial, los siguientes documentos:
 </p><br>
 
