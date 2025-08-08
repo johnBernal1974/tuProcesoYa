@@ -5,7 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:tuprocesoya/widgets/prefacio_centro_reclusion.dart';
+import 'package:tuprocesoya/widgets/prefacio_centro_reclusionV2.dart';
 
 import '../services/whatsapp_service.dart';
 
@@ -15,12 +15,14 @@ class EnvioCorreoManagerV3 {
   Future<void> _guardarHtmlCorreo({
     required String idDocumento,
     required String htmlFinal,
-    required String tipoEnvio, // principal, centro_reclusion, reparto
+    required String tipoEnvio,
+    required String nombrePathStorage,         // para el path en Storage
+    required String nombreColeccionFirestore,  // para la colección en Firestore
   }) async {
     try {
       final contenidoFinal = utf8.encode(htmlFinal);
       final fileName = "correo_$tipoEnvio.html";
-      final filePath = "readecuacion/$idDocumento/correos/$fileName";
+      final filePath = "$nombrePathStorage/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
@@ -29,7 +31,7 @@ class EnvioCorreoManagerV3 {
       final downloadUrl = await ref.getDownloadURL();
 
       await FirebaseFirestore.instance
-          .collection("readecuacion_solicitados")
+          .collection(nombreColeccionFirestore)
           .doc(idDocumento)
           .set({
         "correosGuardados.$tipoEnvio": downloadUrl,
@@ -41,6 +43,8 @@ class EnvioCorreoManagerV3 {
       print("❌ Error guardando HTML de $tipoEnvio: $e");
     }
   }
+
+
 
   Future<void> enviarCorreoCompleto({
     required BuildContext context,
@@ -61,12 +65,21 @@ class EnvioCorreoManagerV3 {
     required String td,
     required String patio,
     required String beneficioPenitenciario,
+    required String nombrePathStorage, // nuevo
+    required String nombreColeccionFirestore, // nuevo
+    required String juzgadoEp,
     required Future<void> Function({
     required String correoDestino,
     String? asuntoPersonalizado,
     String? prefacioHtml,
     }) enviarCorreoResend,
-    required Future<void> Function() subirHtml,
+    required Future<void> Function({
+    required String tipoEnvio,
+    required String htmlFinal,
+    required String nombreColeccionFirestore,
+    required String nombrePathStorage,
+    }) subirHtml,
+
     required String? ultimoHtmlEnviado, // 🔹 HTML del último correo enviado
     required Widget Function({
     required Function(String correo, String nombreCentro) onEnviarCorreo,
@@ -141,7 +154,12 @@ class EnvioCorreoManagerV3 {
     // 🔹 Envío principal
     try {
       await enviarCorreoResend(correoDestino: correoDestinoPrincipal);
-      await subirHtml();
+      await subirHtml(
+        tipoEnvio: "principal",
+        htmlFinal: htmlUtf8Compatible(html),
+        nombreColeccionFirestore: nombreColeccionFirestore,
+        nombrePathStorage: nombrePathStorage,
+      );
 
       if (ultimoHtmlEnviado != null && ultimoHtmlEnviado.isNotEmpty) {
         final htmlConEncabezado = _generarHtmlUniforme(
@@ -153,7 +171,10 @@ class EnvioCorreoManagerV3 {
           idDocumento: idDocumentoSolicitud,
           htmlFinal: htmlConEncabezado,
           tipoEnvio: "principal",
+          nombreColeccionFirestore: nombreColeccionFirestore,
+          nombrePathStorage: nombrePathStorage,
         );
+
       }
 
       Navigator.of(loaderCtx!).pop();
@@ -225,7 +246,7 @@ class EnvioCorreoManagerV3 {
                     correoDestino: correoCentro,
                     enviarCorreoResend: enviarCorreoResend,
                     asunto: "Solicitud de documentos para $nombreServicio - $numeroSeguimiento",
-                    prefacio: generarPrefacioCentroReclusion(
+                    prefacio: generarPrefacioCentroReclusionV2(
                       centroPenitenciario: centroPenitenciario,
                       nombrePpl: nombrePpl,
                       apellidoPpl: apellidoPpl,
@@ -234,13 +255,17 @@ class EnvioCorreoManagerV3 {
                       td: td,
                       patio: patio,
                       beneficioPenitenciario: beneficioPenitenciario,
+                      juzgadoEp: juzgadoEp,
                     ),
                     mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
                     idDocumentoSolicitud: idDocumentoSolicitud,
                     tipoEnvio: "centro_reclusion",
                     htmlFinal: ultimoHtmlEnviado ?? "",
                     ultimoHtmlEnviado: ultimoHtmlEnviado,
+                    nombreColeccionFirestore: nombreColeccionFirestore ,
+                    nombrePathStorage: nombrePathStorage,
                   );
+
                 }
                 await Future.delayed(const Duration(milliseconds: 100));
               },
@@ -320,13 +345,22 @@ class EnvioCorreoManagerV3 {
                     // 1️⃣ Declaras el prefacio antes de llamar la función
                     final prefacioReparto = """
 <p style="margin: 0;">
-  <strong>Entidad reparto:</strong> $entidad
+  <strong>Entidad reparto:</strong>
+</p>
+<p style="margin: 4px 0 12px 0; font-size: 16px; font-weight: bold;">
+  $entidad
+</p>
+
+<p style="margin: 20px 0 0 0;">
+  Estimados señores:
 </p>
 <p style="margin: 8px 0 0 0;">
-  Solicitamos amablemente su gestión para que sea remitido a la autoridad competente.
+  Solicitamos amablemente su importante gestión para que sea remitido a la autoridad competente.
 </p>
-<hr style="margin-top: 12px; margin-bottom: 12px;">
+
+<hr style="border: none; height: 1px; background-color: #ccc; margin-top: 20px; margin-bottom: 12px;">
 """;
+
 
 // 2️⃣ Lo pasas como parámetro en la función
                     await _enviarCopiaConLoader(
@@ -334,14 +368,15 @@ class EnvioCorreoManagerV3 {
                       correoDestino: correo,
                       enviarCorreoResend: enviarCorreoResend,
                       asunto: "Reparto - Solicitud de $nombreServicio - $numeroSeguimiento",
-                      prefacio: prefacioReparto, // ✅ Aquí lo usas
+                      prefacio: prefacioReparto,
                       mensajeExito: "El correo al juzgado de reparto fue enviado correctamente.",
                       htmlFinal: ultimoHtmlEnviado ?? "",
                       idDocumentoSolicitud: idDocumentoSolicitud,
                       tipoEnvio: "reparto",
                       ultimoHtmlEnviado: ultimoHtmlEnviado,
+                      nombreColeccionFirestore: nombreColeccionFirestore,
+                      nombrePathStorage: nombrePathStorage
                     );
-
                   }
 
                   Navigator.of(context).pop();
@@ -478,6 +513,8 @@ class EnvioCorreoManagerV3 {
     required String idDocumentoSolicitud,
     required String tipoEnvio,
     required String? ultimoHtmlEnviado,
+    required String nombrePathStorage,
+    required String nombreColeccionFirestore,
   }) async {
     BuildContext? loaderCtx;
 
@@ -524,7 +561,11 @@ ${ultimoHtmlEnviado ?? htmlFinal}
         idDocumento: idDocumentoSolicitud,
         htmlFinal: htmlConEncabezado,
         tipoEnvio: tipoEnvio,
+        nombrePathStorage: nombrePathStorage, // usado solo en Firebase Storage
+        nombreColeccionFirestore: nombreColeccionFirestore, // usado solo en Firestore
       );
+
+
 
       // 🔹 Cerrar el diálogo de carga
       Navigator.of(loaderCtx!).pop();
@@ -584,4 +625,8 @@ ${ultimoHtmlEnviado ?? htmlFinal}
 """;
   }
 
+  String htmlUtf8Compatible(String html) {
+    final bytes = utf8.encode(html);
+    return utf8.decode(bytes, allowMalformed: true);
+  }
 }

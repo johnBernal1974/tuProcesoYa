@@ -1330,6 +1330,8 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           nombreServicio: "Readecuación de Redención",
           idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: userData!.id,
+          nombreColeccionFirestore: "readecuacion_solicitados",
+          nombrePathStorage: "readecuacion",
 
           centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
           nombrePpl: userData?.nombrePpl ?? '',
@@ -1339,6 +1341,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
           beneficioPenitenciario: "Readecuación de Redención",
+          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
 
           enviarCorreoResend: ({
             required String correoDestino,
@@ -1352,11 +1355,16 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
             );
           },
 
-          subirHtml: () async {
+          subirHtml: ({
+            required String tipoEnvio,
+            required String htmlFinal,
+            required String nombreColeccionFirestore,
+            required String nombrePathStorage,
+          }) async {
             await subirHtmlCorreoADocumentoSolicitudReadecuacion(
               idDocumento: widget.idDocumento,
-              htmlFinal: ultimoHtmlEnviado,
-              tipoEnvio: "principal",
+              htmlFinal: htmlFinal,
+              tipoEnvio: tipoEnvio,
             );
           },
 

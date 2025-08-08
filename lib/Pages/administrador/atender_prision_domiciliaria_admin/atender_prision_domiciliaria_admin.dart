@@ -23,6 +23,7 @@ import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV2.dart';
+import '../../../widgets/envio_correo_managerV3.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -129,6 +130,7 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   late final List<String> urlsArchivosHijos;
   Map<String, dynamic>? solicitudData;
   late CalculoCondenaController _calculoCondenaController;
+  String? ultimoHtmlEnviado;
 
 
   @override
@@ -1468,8 +1470,8 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
         userData = fetchedData;
 
         prisionDomiciliaria = PrisionDomiciliariaTemplate(
-          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-          entidad: fetchedData.centroReclusion ?? "",
+          dirigido: "", // Se llenará al elegir correo
+          entidad: "",  // Se llenará al elegir correo
           referencia: "Beneficios penitenciarios - Prisión domiciliaria",
           nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
           apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
@@ -2255,8 +2257,14 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({required String correoDestino, String? asuntoPersonalizado, String? prefacioHtml}) async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
+  Future<void> enviarCorreoResend({
+    required String correoDestino,
+    String? asuntoPersonalizado,
+    String? prefacioHtml,
+  }) async {
+    final url = Uri.parse(
+      "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend",
+    );
 
     final doc = await FirebaseFirestore.instance
         .collection('domiciliaria_solicitados')
@@ -2266,9 +2274,16 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-      prisionDomiciliaria = PrisionDomiciliariaTemplate(
+    final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
+    final fechaEnvioFormateada =
+    DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+    final correoRemitente =
+        FirebaseAuth.instance.currentUser?.email ?? adminFullName;
+    final correoDestinatario = correoDestino;
+
+    prisionDomiciliaria = PrisionDomiciliariaTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad ?? "",
+      entidad: entidadSeleccionada,
       referencia: "Beneficios penitenciarios - Prisión domiciliaria",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
@@ -2292,26 +2307,40 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
       patio: userData?.patio ?? '',
       radicado: userData?.radicado ?? '',
       delito: userData?.delito ?? '',
-        condena: userData?.diasCondena != null && userData!.diasCondena! > 0
-            ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
-            : "${userData?.mesesCondena ?? 0} meses",
-      purgado: "${mesesEjecutado} meses y ${diasEjecutadoExactos} días",
+      condena: userData?.diasCondena != null && userData!.diasCondena! > 0
+          ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
+          : "${userData?.mesesCondena ?? 0} meses",
+      purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
-        hijos: solicitudData?.containsKey('hijos') == true
-            ? List<Map<String, String>>.from(solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
-            : [],
-        documentosHijos: solicitudData?.containsKey('documentos_hijos') == true
-            ? List<String>.from(solicitudData!['documentos_hijos'])
-            : [],
+      hijos: solicitudData?.containsKey('hijos') == true
+          ? List<Map<String, String>>.from(
+          solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
+          : [],
+      documentosHijos: solicitudData?.containsKey('documentos_hijos') == true
+          ? List<String>.from(solicitudData!['documentos_hijos'])
+          : [],
     );
 
+    // 🔹 Generar HTML final con encabezado
+    final mensajeHtml = """
+  <html>
+    <body style="font-family: Arial, sans-serif; font-size: 10pt; color: #000;">
+      <p style="margin: 2px 0;">De: peticiones@tuprocesoya.com</p>
+      <p style="margin: 2px 0;">Para: $correoDestinatario</p>
+      <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
+      <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
+      ${prefacioHtml ?? ''}${prisionDomiciliaria.generarTextoHtml()}
+    </body>
+  </html>
+  """;
 
-    String mensajeHtml = "${prefacioHtml ?? ''}${prisionDomiciliaria.generarTextoHtml()}";
+    // 🔹 Guardar HTML generado para usar desde el manager
+    ultimoHtmlEnviado = mensajeHtml;
 
-    List<Map<String, String>> archivosBase64 = [];
+    // 🔹 Adjuntar archivos
+    final archivosBase64 = <Map<String, String>>[];
 
-    // Función auxiliar para procesar cualquier archivo por URL
     Future<void> procesarArchivo(String urlArchivo) async {
       try {
         String nombreArchivo = obtenerNombreArchivo(urlArchivo);
@@ -2325,30 +2354,30 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
           });
         }
       } catch (e) {
-        if (kDebugMode) print("❌ Error al procesar archivo $urlArchivo: $e");
+        if (kDebugMode) {
+          print("❌ Error al procesar archivo $urlArchivo: $e");
+        }
       }
     }
 
-    // 🔹 Archivos principales
     for (String archivoUrl in widget.archivos) {
       await procesarArchivo(archivoUrl);
     }
 
-    // 🔹 Cédula del responsable
-    if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) {
+    if (widget.urlArchivoCedulaResponsable?.isNotEmpty == true) {
       await procesarArchivo(widget.urlArchivoCedulaResponsable!);
     }
 
-    // 🔹 Documentos de los hijos
     for (String archivoHijo in widget.urlsArchivosHijos) {
       await procesarArchivo(archivoHijo);
     }
 
-    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de Prisión Domiciliaria - ${widget.numeroSeguimiento}";
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final enviadoPor = currentUser?.email ?? adminFullName;
+    // 🔹 Preparar y enviar correo
+    final asuntoCorreo = asuntoPersonalizado ??
+        "Solicitud de Prisión Domiciliaria - ${widget.numeroSeguimiento}";
+    final enviadoPor = correoRemitente;
 
-    List<String> correosCC = [];
+    final correosCC = <String>[];
     if (userData?.email != null && userData!.email.trim().isNotEmpty) {
       correosCC.add(userData!.email.trim());
     }
@@ -2392,6 +2421,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
     }
   }
 
+
   Widget botonEnviarCorreo() {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
@@ -2418,21 +2448,62 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
           return;
         }
 
-        // Crear instancia de EnvioCorreoManager
-        final envioCorreoManager = EnvioCorreoManagerV2();
+        // 🔹 Actualizamos dirigido y entidad antes de generar el HTML (SIN 'situacion')
+        prisionDomiciliaria = PrisionDomiciliariaTemplate(
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: obtenerEntidad(nombreCorreoSeleccionado ?? ""),
+          referencia: prisionDomiciliaria.referencia,
+          nombrePpl: prisionDomiciliaria.nombrePpl,
+          apellidoPpl: prisionDomiciliaria.apellidoPpl,
+          identificacionPpl: prisionDomiciliaria.identificacionPpl,
+          centroPenitenciario: prisionDomiciliaria.centroPenitenciario,
+          sinopsis: prisionDomiciliaria.sinopsis,
+          consideraciones: prisionDomiciliaria.consideraciones,
+          fundamentosDeDerecho: prisionDomiciliaria.fundamentosDeDerecho,
+          pretenciones: prisionDomiciliaria.pretenciones,
+          anexos: prisionDomiciliaria.anexos,
+          direccionDomicilio: prisionDomiciliaria.direccionDomicilio,
+          municipio: prisionDomiciliaria.municipio,
+          departamento: prisionDomiciliaria.departamento,
+          nombreResponsable: prisionDomiciliaria.nombreResponsable,
+          parentesco: prisionDomiciliaria.parentesco,
+          cedulaResponsable: prisionDomiciliaria.cedulaResponsable,
+          celularResponsable: prisionDomiciliaria.celularResponsable,
+          emailUsuario: prisionDomiciliaria.emailUsuario,
+          emailAlternativo: prisionDomiciliaria.emailAlternativo,
+          nui: prisionDomiciliaria.nui,
+          td: prisionDomiciliaria.td,
+          patio: prisionDomiciliaria.patio,
+          radicado: prisionDomiciliaria.radicado,
+          delito: prisionDomiciliaria.delito,
+          condena: prisionDomiciliaria.condena,
+          purgado: prisionDomiciliaria.purgado,
+          jdc: prisionDomiciliaria.jdc,
+          numeroSeguimiento: prisionDomiciliaria.numeroSeguimiento,
+          hijos: prisionDomiciliaria.hijos,
+          documentosHijos: prisionDomiciliaria.documentosHijos,
+        );
+
+// ✅ HTML actualizado con la entidad y dirigido correctos
+        final ultimoHtmlEnviado = prisionDomiciliaria.generarTextoHtml();
+
+        final envioCorreoManager = EnvioCorreoManagerV3();
 
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
-          html: prisionDomiciliaria.generarTextoHtml(),
+          html: ultimoHtmlEnviado,
           numeroSeguimiento: prisionDomiciliaria.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
           rutaHistorial: 'historial_solicitudes_prision_domiciliaria_admin',
           nombreServicio: "Prisión Domiciliaria",
+          idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: widget.idUser,
+          nombreColeccionFirestore: "domiciliaria_solicitados",
+          nombrePathStorage: "domiciliaria",
 
-          // Nuevos campos requeridos
+          // Campos adicionales necesarios para la plantilla
           centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
           nombrePpl: userData?.nombrePpl ?? '',
           apellidoPpl: userData?.apellidoPpl ?? '',
@@ -2440,7 +2511,8 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
           nui: userData?.nui ?? '',
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Prisión domiciliaria", // Puedes ajustar si se requiere algo más específico
+          beneficioPenitenciario: "Prisión domiciliaria",
+          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
 
           enviarCorreoResend: ({
             required String correoDestino,
@@ -2453,12 +2525,20 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
               prefacioHtml: prefacioHtml,
             );
           },
-          subirHtml: () async {
+
+          subirHtml: ({
+            required String tipoEnvio,
+            required String htmlFinal,
+            required String nombreColeccionFirestore,
+            required String nombrePathStorage,
+          }) async {
             await subirHtmlCorreoADocumentoDomiciliaria(
               idDocumento: widget.idDocumento,
-              htmlContent: prisionDomiciliaria.generarTextoHtml(),
+              htmlFinal: htmlFinal,
+              tipoEnvio: tipoEnvio,
             );
           },
+
           buildSelectorCorreoCentroReclusion: ({
             required Function(String correo, String nombreCentro) onEnviarCorreo,
             required Function() onOmitir,
@@ -2469,6 +2549,7 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
               onOmitir: onOmitir,
             );
           },
+
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -2483,48 +2564,48 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
               onOmitir: onOmitir,
             );
           },
+
+          ultimoHtmlEnviado: ultimoHtmlEnviado,
         );
       },
       child: const Text("Enviar por correo"),
     );
   }
 
+
   Future<void> subirHtmlCorreoADocumentoDomiciliaria({
     required String idDocumento,
-    required String htmlContent,
+    required String htmlFinal,
+    required String tipoEnvio, // "principal", "centro_reclusion", "reparto"
   }) async {
     try {
-      // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
-      final contenidoFinal = htmlUtf8Compatible(htmlContent);
-
-      // 📁 Crear bytes
+      final contenidoFinal = htmlUtf8Compatible(htmlFinal);
       final bytes = utf8.encode(contenidoFinal);
-      const fileName = "correo.html";
-      final filePath = "domiciliaria/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+
+      final fileName = "correo_$tipoEnvio.html";
+      final filePath = "domiciliaria/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
 
-      // ⬆️ Subir archivo
       await ref.putData(Uint8List.fromList(bytes), metadata);
-
-      // 🌐 Obtener URL
       final downloadUrl = await ref.getDownloadURL();
 
-      // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("domiciliaria_solicitados") // 🟣 Cambiar colección
+          .collection("domiciliaria_solicitados")
           .doc(idDocumento)
-          .update({
-        "correoHtmlUrl": downloadUrl,
-        "fechaHtmlCorreo": FieldValue.serverTimestamp(),
-      });
+          .set({
+        "correosGuardados.$tipoEnvio": downloadUrl,
+        "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      print("✅ HTML de domiciliaria subido y guardado con URL: $downloadUrl");
+      print("✅ HTML $tipoEnvio guardado en: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo de domiciliaria: $e");
+      print("❌ Error al subir HTML $tipoEnvio: $e");
     }
   }
+
+
 
 
   /// 💡 Corrige el HTML para asegurar que tenga codificación UTF-8
