@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:tuprocesoya/commons/wompi/pago_exitoso_apelacion.dart';
+import 'package:tuprocesoya/commons/wompi/pago_exitoso_asignacionJep.dart';
 import 'package:tuprocesoya/commons/wompi/pago_exitoso_copia_sentencia.dart';
 import 'package:tuprocesoya/commons/wompi/pago_exitoso_readecuacion.dart';
 import 'package:tuprocesoya/commons/wompi/pago_exitoso_trasladoPenitenciaria.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_extiocion_pena.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_apelacion.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_asignacionJep.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_copia_sentencia.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_readecuacion.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_trasladoPenitenciaria.dart';
@@ -236,6 +238,16 @@ class _WompiWebViewState extends State<WompiWebView> {
           },
         );
 
+      case 'asignacionJep':
+        return PagoExitosoAsignacionJepPage(
+          montoPagado: monto,
+          transaccionId: id,
+          fecha: fecha,
+          onContinuar: () async {
+            widget.onTransaccionAprobada?.call();
+          },
+        );
+
       default:
         return const Scaffold(
           body: Center(
@@ -345,7 +357,12 @@ class _WompiWebViewState extends State<WompiWebView> {
           onTransaccionAprobada: widget.onTransaccionAprobada,
         );
 
-
+      case 'asignacionJep':
+        return ReintentoPagoAsignacionJepPage(
+          referencia: widget.referencia,
+          valor: widget.valorDerecho,
+          onTransaccionAprobada: widget.onTransaccionAprobada,
+        );
 
       default:
         return const Scaffold(

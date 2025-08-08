@@ -95,6 +95,13 @@ class HistorialSolicitudesPage extends StatelessWidget {
       "icon": Icons.copy,
       "route": "historial_solicitudes_copiaSentencia",
     },
+
+    {
+      "collection": "asignacionJEP_solicitados",
+      "title": "Asignación de juzgado\nde ejecución de penas",
+      "icon": Icons.assistant_direction_sharp,
+      "route": "historial_solicitudes_asignacionJep",
+    },
   ];
 
   Future<List<Map<String, dynamic>>> _obtenerSolicitudes(String userId) async {

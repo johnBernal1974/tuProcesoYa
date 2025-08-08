@@ -178,7 +178,7 @@ exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
       await userRef.update({ isPaid: true });
     }
 
-    if (["recarga", "peticion", "condicional", "domiciliaria", "tutela", "permiso", "extincion", "traslado", "redenciones", "acumulacion", "apelacion", "readecuacion", "trasladoPenitenciaria", "copiaSentencia"].includes(tipoTransaccion) && status === "APPROVED") {
+    if (["recarga", "peticion", "condicional", "domiciliaria", "tutela", "permiso", "extincion", "traslado", "redenciones", "acumulacion", "apelacion", "readecuacion", "trasladoPenitenciaria", "copiaSentencia", "asignacionJep"].includes(tipoTransaccion) && status === "APPROVED") {
       await userRef.update({ saldo: nuevoSaldo });
     }
 

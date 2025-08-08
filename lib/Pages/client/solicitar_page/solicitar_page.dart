@@ -56,6 +56,11 @@ class SolicitarServiciosPage extends StatelessWidget {
       "icon": Icons.copy,
       "route": "solicitud_copia_sentencia_page",
     },
+    {
+      "title": "Solicitud asignación de Juzgado de ejecución de penas",
+      "icon": Icons.assistant_direction_sharp,
+      "route": "solicitud_asignacion_jep_page",
+    },
   ];
 
   @override
