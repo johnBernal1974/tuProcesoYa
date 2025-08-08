@@ -37,6 +37,7 @@ class _SideBarState extends State<SideBar> {
   int solicitudesApelacion = 0;
   int solicitudesTrasladoPenitenciaria = 0;
   int solicitudesCopiaSentencia = 0;
+  int solicitudesAsignacionJEP = 0;
 
 
 
@@ -59,6 +60,7 @@ class _SideBarState extends State<SideBar> {
     _fetchReadecuacionRedencionesSolicitados();
     _fetchTraladoPenitenciariaSolicitados();
     _fetchCopiaSentenciaSolicitados();
+    _fetchAsignacionJEPSolicitados();
   }
 
   Future<void> _loadData() async {
@@ -372,6 +374,17 @@ class _SideBarState extends State<SideBar> {
       });
     }
   }
+  Future<void> _fetchAsignacionJEPSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('asignacionJEP_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesAsignacionJEP = querySnapshot.docs.length;
+      });
+    }
+  }
 
   Widget _buildDrawerHeader(bool? isAdmin) {
     return Container(
@@ -558,6 +571,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_copiaSentencia_admin',
                   showBadge: solicitudesCopiaSentencia > 0,
                   contador: solicitudesCopiaSentencia,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Asignación Juzgado EP",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_asignacionJEP_admin',
+                  showBadge: solicitudesAsignacionJEP > 0,
+                  contador: solicitudesAsignacionJEP,
                 ),
               ),
 
@@ -794,6 +819,17 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_copiaSentencia_admin',
                   showBadge: solicitudesCopiaSentencia > 0,
                   contador: solicitudesCopiaSentencia,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Asignación Juzgado EP",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_asignacionJEP_admin',
+                  showBadge: solicitudesAsignacionJEP > 0,
+                  contador: solicitudesAsignacionJEP,
                 ),
               ),
             ],
