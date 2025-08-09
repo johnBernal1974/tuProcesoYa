@@ -72,6 +72,7 @@ class EnvioCorreoManagerV3 {
     required String correoDestino,
     String? asuntoPersonalizado,
     String? prefacioHtml,
+
     }) enviarCorreoResend,
     required Future<void> Function({
     required String tipoEnvio,
@@ -91,10 +92,11 @@ class EnvioCorreoManagerV3 {
     required Function(String correo, String entidad) onEnviarCorreoManual,
     required Function() onOmitir,
     }) buildSelectorCorreoReparto,
+    bool permitirOmitirPrincipal = true, // ← NUEVO
   })
   async {
-    // 1️⃣ Confirmar envío principal
-    final confirmacion = await showDialog<bool>(
+    // 1️⃣ Confirmar envío principal con opción de omitir
+    int? decision = await showDialog<int>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
@@ -104,110 +106,120 @@ class EnvioCorreoManagerV3 {
           text: TextSpan(
             style: const TextStyle(color: Colors.black, fontSize: 14),
             children: [
-              const TextSpan(text: "Se enviará el correo a:\n\n"),
+              const TextSpan(text: "Se enviará el correo principal a:\n\n"),
               TextSpan(
                 text: correoDestinoPrincipal,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
+              if (permitirOmitirPrincipal)
+                const TextSpan(
+                  text: "\n\n¿Deseas enviarlo o continuar sin enviarlo?",
+                ),
             ],
           ),
         ),
         actions: [
           TextButton(
+            onPressed: () => Navigator.of(ctx).pop(0),
             child: const Text("Cancelar"),
-            onPressed: () => Navigator.of(ctx).pop(false),
           ),
+          if (permitirOmitirPrincipal)
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(1),
+              child: const Text("Omitir y continuar"),
+            ),
           TextButton(
+            onPressed: () => Navigator.of(ctx).pop(2),
             child: const Text("Enviar"),
-            onPressed: () => Navigator.of(ctx).pop(true),
           ),
         ],
       ),
     );
 
-    if (confirmacion != true) return;
+    if (decision == 0 || decision == null) return; // cancelar
+    final bool omitirPrincipal = (decision == 1);
 
-    // Loader principal
-    BuildContext? loaderCtx;
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) {
-          loaderCtx = ctx;
-          return const AlertDialog(
-            backgroundColor: Colors.white,
-            title: Text("Enviando correo..."),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text("Espere mientras se envía el correo."),
-                SizedBox(height: 20),
-                CircularProgressIndicator(),
-              ],
-            ),
-          );
-        },
-      );
-    }
-
-    // 🔹 Envío principal
-    try {
-      await enviarCorreoResend(correoDestino: correoDestinoPrincipal);
-      await subirHtml(
-        tipoEnvio: "principal",
-        htmlFinal: htmlUtf8Compatible(html),
-        nombreColeccionFirestore: nombreColeccionFirestore,
-        nombrePathStorage: nombrePathStorage,
-      );
-
-      if (ultimoHtmlEnviado != null && ultimoHtmlEnviado.isNotEmpty) {
-        final htmlConEncabezado = _generarHtmlUniforme(
-          correoDestino: correoDestinoPrincipal,
-          contenidoHtml: ultimoHtmlEnviado,
+    if (!omitirPrincipal) {
+      // Loader principal
+      BuildContext? loaderCtx;
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) {
+            loaderCtx = ctx;
+            return const AlertDialog(
+              backgroundColor: Colors.white,
+              title: Text("Enviando correo..."),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Espere mientras se envía el correo."),
+                  SizedBox(height: 20),
+                  CircularProgressIndicator(),
+                ],
+              ),
+            );
+          },
         );
+      }
 
-        await _guardarHtmlCorreo(
-          idDocumento: idDocumentoSolicitud,
-          htmlFinal: htmlConEncabezado,
+      // 🔹 Envío principal
+      try {
+        await enviarCorreoResend(correoDestino: correoDestinoPrincipal);
+        await subirHtml(
           tipoEnvio: "principal",
+          htmlFinal: htmlUtf8Compatible(html),
           nombreColeccionFirestore: nombreColeccionFirestore,
           nombrePathStorage: nombrePathStorage,
         );
 
-      }
+        if (ultimoHtmlEnviado != null && ultimoHtmlEnviado.isNotEmpty) {
+          final htmlConEncabezado = _generarHtmlUniforme(
+            correoDestino: correoDestinoPrincipal,
+            contenidoHtml: ultimoHtmlEnviado,
+          );
 
-      Navigator.of(loaderCtx!).pop();
+          await _guardarHtmlCorreo(
+            idDocumento: idDocumentoSolicitud,
+            htmlFinal: htmlConEncabezado,
+            tipoEnvio: "principal",
+            nombreColeccionFirestore: nombreColeccionFirestore,
+            nombrePathStorage: nombrePathStorage,
+          );
+        }
 
-      // ✅ Mostrar éxito principal y seguir con flujo
-      if (context.mounted) {
-        await showDialog(
-          barrierDismissible: false,
-          context: context,
-          builder: (ctx3) => AlertDialog(
-            backgroundColor: Colors.white,
-            title: const Text("✅ Envío exitoso"),
-            content: const Text("El correo principal fue enviado correctamente."),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(ctx3).pop(),
-                child: const Text("Continuar"),
-              ),
-            ],
-          ),
-        );
-      }
-
-      // 🔹 Al cerrar el éxito, automáticamente sigue al bloque de centro de reclusión
-    } catch (e) {
-      if (context.mounted) {
         Navigator.of(loaderCtx!).pop();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error al enviar: $e"), backgroundColor: Colors.red),
-        );
+
+        // ✅ Mostrar éxito principal
+        if (context.mounted) {
+          await showDialog(
+            barrierDismissible: false,
+            context: context,
+            builder: (ctx3) => AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text("✅ Envío exitoso"),
+              content: const Text("El correo principal fue enviado correctamente."),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx3).pop(),
+                  child: const Text("Continuar"),
+                ),
+              ],
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          Navigator.of(loaderCtx!).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Error al enviar: $e"), backgroundColor: Colors.red),
+          );
+        }
+        return;
       }
-      return;
     }
+
 
 // Esperar un frame antes de abrir otro dialog:
     await Future.delayed(Duration.zero);

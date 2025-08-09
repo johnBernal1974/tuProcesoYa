@@ -1,19 +1,14 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
-import 'dart:io'; // Necesario para manejar archivos en almacenamiento local
 import 'package:universal_html/html.dart' as html;
 
 import '../../../../commons/admin_provider.dart';
-import '../../../../commons/archivoViewerWeb.dart';
-import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
 import '../../../../src/colors/colors.dart';
@@ -197,6 +192,7 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
                                       seguimiento: widget.numeroSeguimiento,
                                       seccionHistorial: "Readecuación de redención art. 19 ley 2466 de 2025",
                                     ),
+
                                   ],
                                 ),
                               ),
@@ -261,8 +257,6 @@ class _SolicitudesReadecuacionRedencionPenaPorCorreoPageState extends State<Soli
       ),
     );
   }
-
-
 
   Widget _buildTutelaButton(BuildContext context) {
     return ElevatedButton(
