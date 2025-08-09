@@ -55,6 +55,7 @@ import 'Pages/administrador/registro_asistido_admin/registro_asistido_admin.dart
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/acumulacion_enviadas_por_correo/acumulacion_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/apelacion_enviadas_por_correo/apelacion_enviadas_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/asignacion_JEP_enviadas_por_correo/asignacion_JEP_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/copiaSentencia_enviadas_por_correo/copiaSentencia_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_enviada_por_correo/extincion_perna_enviados_por_correo.dart';
@@ -610,6 +611,21 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => SolicitudesCopiaSentenciaEnviadoPorCorreoPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
+                categoria: args['categoria'] ?? "Beneficios penitenciarios",
+                subcategoria: args['subcategoria'] ?? "Redención de pena",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+                sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
+          else if (settings.name == 'solicitudes_asignacionJEP_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesAsignacionJPEPorCorreoPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'],

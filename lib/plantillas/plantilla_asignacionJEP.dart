@@ -86,7 +86,7 @@ La falta de asignación del JEP <b>afecta directamente mi derecho fundamental de
 
     <span style="font-size: 16px;"><b>III. PRETENSIONES</b></span><br><br>
 
-<b>PRIMERO:</b> Que ese despacho, como Juzgado de Conocimiento, disponga de manera inmediata lo pertinente para la <b>asignación formal</b> del Juzgado de Ejecución de Penas y Medidas de Seguridad competente en el proceso con radicado <b>$radicado</b>, y remita el expediente completo con sus anexos.  
+  <b>PRIMERO:</b> Que se emita y disponga de manera inmediata lo pertinente para la <b>asignación formal</b> del Juzgado de Ejecución de Penas y Medidas de Seguridad competente en el proceso con radicado <b>$radicado</b>, y remita el expediente completo con sus anexos.  
 <br><br>
 <b>SEGUNDO:</b> Que, una vez asignado, se informe por este mismo medio el nombre completo, ciudad, datos de contacto y número de radicación de ejecución, y se confirme la recepción del expediente por parte del JEP.  
 <br><br>
@@ -111,9 +111,8 @@ La falta de asignación del JEP <b>afecta directamente mi derecho fundamental de
     </div>
 
     <div style="margin-top: 40px; color: #444; font-size: 12px;">
-      <b style="color: black;">NOTA IMPORTANTE</b><br>
-      <p style="margin-top: 5px;">
-        Este mensaje también será enviado a la Oficina Jurídica del establecimiento <strong>$centroPenitenciario</strong>, con el fin de dejar constancia formal de esta solicitud y facilitar el inicio oportuno de los trámites correspondientes.<br><br>
+      <b style="color: black;">NOTA IMPORTANTE</b><br><br>
+      <p style="margin-top: 5px;">       
 
         La presente solicitud ha sido generada mediante la plataforma tecnológica <b>Tu Proceso Ya</b>, diseñada para facilitar el ejercicio autónomo del derecho fundamental de petición por parte de las personas privadas de la libertad o sus familiares.<br><br>
 

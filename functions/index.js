@@ -1256,6 +1256,9 @@ exports.sendRespuestaSolicitudMessage = functions.https.onRequest(async (req, re
      case "tutela":
        collectionName = "tutelas_solicitados";
        break;
+     case "asignacion jep":
+        collectionName = "asignacionJEP_solicitados";
+        break;
 
      default:
        return res.status(400).json({ error: `No se reconoce el tipo de solicitud: ${tipoSolicitud}` });

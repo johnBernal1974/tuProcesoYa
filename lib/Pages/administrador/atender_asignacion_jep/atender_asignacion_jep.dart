@@ -13,16 +13,12 @@ import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_asignacionJEP.dart';
-import '../../../plantillas/plantilla_readecuacion.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
-import '../../../widgets/envio_correo_managerV3.dart';
-import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
-import '../../../widgets/selector_correo_manual.dart';
+import '../../../widgets/envio_correo_manager_juzjado_conocimiento.dart';
 import '../historial_solicitudes_asignacionJEP_admin/historial_solicitudes_asignacionJEP_admin.dart';
-import '../historial_solicitudes_readecuacion_admin/historial_solicitudes_readecuacion_admin.dart';
 import 'atender_asignacion_jep_controller.dart';
 
 class AtenderSolicitudAsignacionJEPPage extends StatefulWidget {
@@ -1149,7 +1145,7 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
 
     final doc = await FirebaseFirestore.instance
         .collection('asignacionJEP_solicitados')
-        .doc(widget.idDocumento) // 🔹 ID de solicitud, no PPL
+        .doc(widget.idDocumento) // ID de solicitud, no PPL
         .get();
 
     final latestData = doc.data();
@@ -1160,10 +1156,11 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
     final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
     final correoDestinatario = correoDestino;
 
-    final readecuacion = SolicitudReadecuacionRedencionTemplate(
+    // 📄 Usar la plantilla correcta
+    final asignacionJEPtemplate = SolicitudAsignacionJEPTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidadSeleccionada,
-      referencia: "Solicitudes varias - Asignación juzgado ejecución de penas",
+      referencia: "Solicitud de asignación juzgado ejecución de penas",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
@@ -1187,12 +1184,11 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
     <p style="margin: 2px 0;">Para: $correoDestinatario</p>
     <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
     <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
-    ${prefacioHtml ?? ''}${readecuacion.generarTextoHtml()}
+    ${prefacioHtml ?? ''}${asignacionJEPtemplate.generarTextoHtml()}
   </body>
 </html>
 """;
 
-    // 🔹 Guardar HTML en variable global/local para enviarlo al manager
     ultimoHtmlEnviado = mensajeHtml;
 
     final archivosBase64 = <Map<String, String>>[];
@@ -1211,9 +1207,9 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
       "subject": asuntoCorreo,
       "html": mensajeHtml,
       "archivos": archivosBase64,
-      "idDocumento": widget.idDocumento, // 🔹 ID de solicitud
+      "idDocumento": widget.idDocumento, // ID de solicitud
       "enviadoPor": enviadoPor,
-      "tipo": "asignacionJep",
+      "tipo": "asignacionJEP", // ✅ Tipo correcto para identificar en backend
     });
 
     final response = await http.post(
@@ -1245,6 +1241,7 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
   }
 
 
+
   Widget botonEnviarCorreo() {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(
@@ -1271,7 +1268,7 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
           return;
         }
 
-        // 🔹 Antes de generar el HTML, actualizamos dirigido y entidad
+        // 🔹 Actualiza dirigido/entidad ANTES de generar HTML
         asignacionJEP = SolicitudAsignacionJEPTemplate(
           dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
           entidad: obtenerEntidad(nombreCorreoSeleccionado ?? ""),
@@ -1291,35 +1288,36 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
           patio: asignacionJEP.patio,
         );
 
-        // ✅ Ahora generas el HTML con la entidad y dirigido correctos
+        // ✅ HTML final con la entidad/dirigido correctos
         final ultimoHtmlEnviado = asignacionJEP.generarTextoHtml();
 
-        final envioCorreoManager = EnvioCorreoManagerV3();
+        // 📨 Manager “simple” (un solo envío)
+        final envioCorreoManager = EnvioCorreoManagerUnico();
 
-        await envioCorreoManager.enviarCorreoCompleto(
+        await envioCorreoManager.enviarCorreoUnico(
           context: context,
+
+          // ✉️ envío
           correoDestinoPrincipal: correoSeleccionado!,
+          asuntoPersonalizado: "Solicitud de Asignación de JEP - ${asignacionJEP.numeroSeguimiento}",
+          prefacioHtml: null, // si quieres, aquí puedes anteponer un prefacio
+
+          // contenido
           html: ultimoHtmlEnviado,
+          ultimoHtmlEnviado: ultimoHtmlEnviado,
+
+          // metadatos
           numeroSeguimiento: asignacionJEP.numeroSeguimiento,
-          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
-          celularWhatsapp: userData?.celularWhatsapp,
-          rutaHistorial: 'historial_solicitudes_readecuacion_redenciones_admin',
-          nombreServicio: "Readecuación de Redención",
+          nombreServicio: "Asignación de JEP",
+          rutaHistorial: 'historial_solicitudes_asignacionJEP_admin', // <-- ajusta si usas otro
           idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: userData!.id,
+
+          // destino Storage / Firestore
           nombreColeccionFirestore: "asignacionJEP_solicitados",
           nombrePathStorage: "asignacionJEP",
 
-          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
-          nombrePpl: userData?.nombrePpl ?? '',
-          apellidoPpl: userData?.apellidoPpl ?? '',
-          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
-          nui: userData?.nui ?? '',
-          td: userData?.td ?? '',
-          patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Asignación juzgado de ejecución de penas",
-          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
-
+          // función real que envía con Resend (tu misma función)
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
@@ -1332,46 +1330,25 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
             );
           },
 
+          // guardado del HTML (si ya tienes esta función, cámbiale el nombre aquí)
           subirHtml: ({
             required String tipoEnvio,
             required String htmlFinal,
             required String nombreColeccionFirestore,
             required String nombrePathStorage,
           }) async {
-            await subirHtmlCorreoADocumentoSolicitudReadecuacion(
+            await subirHtmlCorreoADocumentoAsignacionJEP(
               idDocumento: widget.idDocumento,
               htmlFinal: htmlFinal,
-              tipoEnvio: tipoEnvio,
+              tipoEnvio: tipoEnvio, // "principal"
+              nombreColeccionFirestore: nombreColeccionFirestore, // "asignacionJEP_solicitados"
+              nombrePathStorage: nombrePathStorage,               // "asignacionJEP"
             );
           },
 
-          buildSelectorCorreoCentroReclusion: ({
-            required Function(String correo, String nombreCentro) onEnviarCorreo,
-            required Function() onOmitir,
-          }) {
-            return SeleccionarCorreoCentroReclusionV2(
-              idUser: widget.idUser,
-              onEnviarCorreo: onEnviarCorreo,
-              onOmitir: onOmitir,
-            );
-          },
-
-          buildSelectorCorreoReparto: ({
-            required Function(String correo, String entidad) onCorreoValidado,
-            required Function(String nombreCiudad) onCiudadNombreSeleccionada,
-            required Function(String correo, String entidad) onEnviarCorreoManual,
-            required Function() onOmitir,
-          }) {
-            return SelectorCorreoManualFlexible(
-              entidadSeleccionada: userData?.juzgadoQueCondeno ?? "Juzgado de conocimiento",
-              onCorreoValidado: onCorreoValidado,
-              onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
-              onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () => Navigator.of(context).pop(),
-            );
-          },
-
-          ultimoHtmlEnviado: ultimoHtmlEnviado,
+          // WhatsApp (opcional)
+          celularWhatsapp: userData?.celularWhatsapp,
+          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
         );
       },
       child: const Text("Enviar por correo"),
@@ -1379,36 +1356,39 @@ class _AtenderSolicitudAsignacionJEPPageState extends State<AtenderSolicitudAsig
   }
 
 
-
-  Future<void> subirHtmlCorreoADocumentoSolicitudReadecuacion({
+  Future<void> subirHtmlCorreoADocumentoAsignacionJEP({
     required String idDocumento,
     required String htmlFinal,
-    required String tipoEnvio, // 🔹 "principal", "centro_reclusion", "reparto"
+    required String tipoEnvio,                // "principal" (en este caso)
+    String nombreColeccionFirestore = "asignacionJEP_solicitados",
+    String nombrePathStorage = "asignacionJEP",
   }) async {
     try {
-      final contenidoFinal = htmlUtf8Compatible(htmlFinal);
-      final bytes = utf8.encode(contenidoFinal);
-
-      final fileName = "correo_$tipoEnvio.html"; // 🔹 nombre distinto
-      final filePath = "asignacionJEP/$idDocumento/correos/$fileName";
+      // 1) Subir a Storage
+      final bytes = utf8.encode(htmlFinal);
+      final fileName = "correo_$tipoEnvio.html";
+      final filePath = "$nombrePathStorage/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
-
       await ref.putData(Uint8List.fromList(bytes), metadata);
+
       final downloadUrl = await ref.getDownloadURL();
 
+      // 2) Guardar URL y fecha en Firestore
       await FirebaseFirestore.instance
-          .collection("asignacionJEP_solicitados")
+          .collection(nombreColeccionFirestore)
           .doc(idDocumento)
           .set({
-        "correosGuardados.$tipoEnvio": downloadUrl, // 🔹 guarda por tipo
+        "correosGuardados.$tipoEnvio": downloadUrl,
         "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true)); // 🔹 no sobreescribe todo el doc
+      }, SetOptions(merge: true));
 
-      print("✅ HTML $tipoEnvio guardado en: $downloadUrl");
+      // opcional log
+      // print("✅ HTML ($tipoEnvio) guardado: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML $tipoEnvio: $e");
+      // print("❌ Error al guardar HTML ($tipoEnvio): $e");
+      rethrow;
     }
   }
 

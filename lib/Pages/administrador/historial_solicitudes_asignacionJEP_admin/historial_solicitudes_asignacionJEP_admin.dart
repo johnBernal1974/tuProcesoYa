@@ -547,7 +547,7 @@ class _HistorialSolicitudesAsignacionJEPAdminPageState extends State<HistorialSo
           'idDocumento': idDocumento,
           'numeroSeguimiento': latestData['numero_seguimiento'] ?? "Sin número",
           'categoria': "Solicitudes varias",
-          'subcategoria': "Solicitud readecuación de redención",
+          'subcategoria': "Solicitud Asignacion JEP",
           'fecha': latestData['fecha'] != null
               ? latestData['fecha'].toDate().toString()
               : "Fecha no disponible",
@@ -836,11 +836,11 @@ class _HistorialSolicitudesAsignacionJEPAdminPageState extends State<HistorialSo
   String obtenerRutaSegunStatus(String status) {
     switch (status) {
       case "Enviado":
-        return 'solicitudes_readecuacion_redencion_enviadas_por_correo';
+        return 'solicitudes_asignacionJEP_por_correo';
       case "Concedido":
-        return 'solicitudes_readecuacion_redencion_enviadas_por_correo';
+        return 'solicitudes_asignacionJEP_por_correo';
       case "Negado":
-        return 'solicitudes_readecuacion_redencion_enviadas_por_correo';
+        return 'solicitudes_asignacionJEP_por_correo';
       default:
         return 'atender_asignacion_jep_page';
     }

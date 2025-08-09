@@ -92,6 +92,24 @@ class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
             return;
           }
 
+          // Mostrar loader de envío
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => AlertDialog(
+              backgroundColor: blanco,
+              title: const Text('Enviando mensaje'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: const [
+                  Text('Por favor espere...'),
+                  SizedBox(height: 20),
+                  CircularProgressIndicator(),
+                ],
+              ),
+            ),
+          );
+
           // Enviar mensaje
           await WhatsappService.enviarNotificacionRespuesta(
             numero: numero,
@@ -102,6 +120,7 @@ class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
           );
 
           if (context.mounted) {
+            Navigator.pop(context); // Cierra el loader
             showDialog(
               context: context,
               builder: (_) => AlertDialog(
@@ -118,6 +137,7 @@ class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
             );
           }
         } catch (e) {
+          Navigator.pop(context); // Cierra el loader en caso de error
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error al enviar WhatsApp: $e')),
           );
