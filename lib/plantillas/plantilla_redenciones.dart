@@ -55,17 +55,18 @@ class SolicitudRedencionesTemplate {
 
       Yo, <b>$nombrePpl $apellidoPpl</b>, identificado con cédula de ciudadanía No. <b>$identificacionPpl</b>, TD: <b>$td</b>, NUI: <b>$nui</b>, actualmente recluido en el establecimiento penitenciario <b>$centroPenitenciario</b>, Patio <b>$patio</b>, presento ante usted la siguiente solicitud:<br><br>
 
-      <span style="font-size: 16px;"><b>I. CONSIDERACIONES</b></span><br><br>
+   <span style="font-size: 16px;"><b>I. CONSIDERACIONES</b></span><br><br>
 
-      Me permito acudir ante su despacho con el fin de solicitar el cómputo y abono de redención de pena a mi favor, conforme a lo dispuesto por la Ley 65 de 1993 y las disposiciones vigentes, incluyendo la Ley 2466 de 2025. Dicha redención se fundamenta en las actividades laborales, educativas o de enseñanza que he venido desarrollando en el establecimiento penitenciario, las cuales son susceptibles de reconocimiento para efectos de redención. <br><br>
+Me permito acudir ante su despacho con el fin de solicitar el cómputo y abono de redención de pena a mi favor, conforme a lo dispuesto por la <b>Ley 65 de 1993</b> y las demás disposiciones vigentes, aplicando adicionalmente lo previsto en la <b>Ley 2466 de 2025</b> únicamente para el reconocimiento de la redención por actividades laborales. Las demás actividades desarrolladas, tales como las educativas o de enseñanza, se solicitan en virtud de la normatividad anterior que las reconoce para efectos de redención.<br><br>
 
-      Solicito respetuosamente que ese despacho oficie a la entidad competente para que certifique formalmente las actividades adelantadas, el tiempo acumulado y los días redimidos que proceda reconocer, con el fin de que el juzgado pueda realizar el respectivo cómputo y abono al total de la pena privativa de la libertad impuesta.<br><br>
+Solicito respetuosamente que ese despacho oficie a la autoridad penitenciaria competente para que certifique formalmente las actividades adelantadas, el tiempo acumulado y los días redimidos que proceda reconocer, con el fin de que el juzgado pueda realizar el respectivo cómputo y abono al total de la pena privativa de la libertad impuesta.
+<br><br>
 
       <span style="font-size: 16px;"><b>II. FUNDAMENTOS DE DERECHO</b></span><br><br>
 
 Conforme a lo dispuesto en los artículos 82, 97, 98 y 101 de la Ley 65 de 1993, las personas privadas de la libertad tienen derecho a la redención de su pena mediante su participación en actividades laborales, educativas o de enseñanza. Este beneficio opera como un mecanismo de resocialización progresiva dentro del sistema penitenciario y está sujeto al cumplimiento de los requisitos legales y certificaciones institucionales.<br><br>
 
-En virtud del <b>Artículo 19 de la Ley 2466 de 2025</b> —incluida en la reciente Reforma Laboral—, se amplió el alcance de este beneficio, estableciendo que por cada <b>tres (3) días de trabajo o estudio</b> se podrá redimir <b>dos (2) días de pena</b>. Esta disposición reconoce expresamente el valor resocializador de dichas actividades y fortalece su aplicación dentro del régimen penitenciario colombiano.<br><br>
+En virtud del <b>Artículo 19 de la Ley 2466 de 2025</b> —incluida en la reciente Reforma Laboral—, se amplió el alcance de este beneficio, estableciendo que por cada <b>tres (3) días de trabajo</b> se podrá redimir <b>dos (2) días de pena</b>. Esta disposición reconoce expresamente el valor resocializador de dichas actividades y fortalece su aplicación dentro del régimen penitenciario colombiano.<br><br>
 
 Adicionalmente, esta norma reconoce dichas actividades como <b>experiencia laboral válida</b>, siempre que sean debidamente certificadas por el Instituto Nacional Penitenciario y Carcelario (INPEC) o la autoridad penitenciaria competente, contribuyendo así a la futura reintegración social y laboral del PPL.<br><br>
 
@@ -86,16 +87,16 @@ Así mismo, en aplicación del <b>principio de favorabilidad penal</b> consagrad
       TD: $td<br>
       NUI: $nui<br><br><br>
 
-      <div style="margin-top: 40px;">
-        <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="160" height="50"/>
-      </div>
+      <div style="margin-top: 40px; color: #444; font-size: 12px;">
+  <b style="color: black;">NOTA IMPORTANTE</b><br>
+  <p style="margin-top: 5px;">
+    Este mensaje también será enviado a la Oficina Jurídica del establecimiento <strong>$centroPenitenciario</strong>, con el fin de dejar constancia formal de esta solicitud y facilitar el inicio oportuno de los trámites correspondientes.<br><br>
 
-      <div style="margin-top: 40px;">
-        <b>NOTA IMPORTANTE</b><br>
-        <p style="font-size: 13px; margin-top: 5px;">
-          Este mensaje también será enviado a la Oficina Jurídica del establecimiento <strong>$centroPenitenciario</strong>, con el fin de dejar constancia formal de esta solicitud y facilitar el inicio oportuno de los trámites correspondientes.
-        </p>
-      </div>
+    La presente solicitud ha sido generada mediante la plataforma tecnológica <b>Tu Proceso Ya</b>, diseñada para facilitar el ejercicio autónomo del derecho fundamental de petición por parte de las personas privadas de la libertad o sus familiares.<br><br>
+
+    En virtud del artículo 23 de la Constitución Política de Colombia y de las sentencias T-377 de 2014 y T-114 de 2017 de la Corte Constitucional, <b>no se requiere la firma de abogado ni apoderado para presentar una petición</b>. La plataforma actúa como medio de apoyo y canal de gestión digital, plenamente legítimo y válido.  Exigir firma del apoderado o desconocer al solicitante por el solo hecho de que la petición fue tramitada por medio electrónico, constituye una barrera de acceso a la justicia e infringe el principio de eficacia del derecho fundamental de petición.<br><br>
+    </p>
+  </div>
     </body>
   </html>
   """);

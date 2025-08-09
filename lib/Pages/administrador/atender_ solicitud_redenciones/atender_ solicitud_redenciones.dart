@@ -21,6 +21,7 @@ import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV2.dart';
+import '../../../widgets/envio_correo_managerV3.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -88,11 +89,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
   DateTime? fechaAsignadoP2;
   Map<String, dynamic>? solicitudData;
   late CalculoCondenaController _calculoCondenaController;
-  String? centroOrigenNombre;
-  String? ciudadCentroOrigen;
-  String? centroDestinoNombre;
-  String? ciudadCentroDestino;
-  DateTime? _fechaTraslado;
+  String? ultimoHtmlEnviado;
 
   @override
   void initState() {
@@ -928,8 +925,8 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
       setState(() {
         userData = fetchedData;
         redenciones = SolicitudRedencionesTemplate(
-          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-          entidad: fetchedData.centroReclusion ?? "",
+          dirigido: "", // Se llenará al elegir correo
+          entidad: "",  // Se llenará al elegir correo
           referencia: "Solicitudes varias - Solicitud redenciones",
           nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
           apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
@@ -978,11 +975,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
             asignadoA_P2 = data['asignadoA_P2'] ?? '';
             asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
             fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
-            centroOrigenNombre = data['centro_origen_nombre'] ?? '';
-            ciudadCentroOrigen = data['ciudad_centro_origen'] ?? '';
-            centroDestinoNombre = data['centro_destino_nombre'] ?? '';
-            ciudadCentroDestino = data['ciudad_centro_destino'] ?? '';
-            _fechaTraslado = (data['fecha_traslado'] as Timestamp?)?.toDate();
           });
         }
       } else {
@@ -1160,9 +1152,16 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({required String correoDestino,String? asuntoPersonalizado, String? prefacioHtml}) async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
+  Future<void> enviarCorreoResend({
+    required String correoDestino,
+    String? asuntoPersonalizado,
+    String? prefacioHtml,
+  }) async {
+    final url = Uri.parse(
+      "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend",
+    );
 
+    // Obtén el doc de la solicitud (no del PPL)
     final doc = await FirebaseFirestore.instance
         .collection('redenciones_solicitados')
         .doc(widget.idDocumento)
@@ -1171,9 +1170,15 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-    final redenciones = SolicitudRedencionesTemplate(
+    final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
+    final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+    final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
+    final correoDestinatario = correoDestino;
+
+    // Construimos el template con dirigido/entidad actualizados
+    final redencionesTpl = SolicitudRedencionesTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad ?? "",
+      entidad: entidadSeleccionada,
       referencia: "Solicitudes varias - Solicitud redenciones",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
@@ -1190,14 +1195,32 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
       patio: userData?.patio ?? "",
     );
 
-    final mensajeHtml = "${prefacioHtml ?? ''}${redenciones.generarTextoHtml()}";
+    // HTML final coherente con Readecuación (encabezado + prefacio + cuerpo)
+    final mensajeHtml = """
+<html>
+  <body style="font-family: Arial, sans-serif; font-size: 10pt; color: #000;">
+    <p style="margin: 2px 0;">De: peticiones@tuprocesoya.com</p>
+    <p style="margin: 2px 0;">Para: $correoDestinatario</p>
+    <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
+    <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
+    ${prefacioHtml ?? ''}${redencionesTpl.generarTextoHtml()}
+  </body>
+</html>
+""";
 
+    // 👉 Muy importante para el Manager V3: guardar el último HTML enviado
+    ultimoHtmlEnviado = mensajeHtml;
+
+    // Adjuntos (si no usas, déjalo vacío)
     final archivosBase64 = <Map<String, String>>[];
 
-    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de redenciones - ${widget.numeroSeguimiento}";
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final enviadoPor = currentUser?.email ?? adminFullName;
+    // Asunto consistente
+    final asuntoCorreo = asuntoPersonalizado
+        ?? "Solicitud de Cómputo de Redención – ${widget.numeroSeguimiento}";
 
+    final enviadoPor = correoRemitente;
+
+    // CC al usuario si tiene email
     final correosCC = <String>[];
     if (userData?.email != null && userData!.email.trim().isNotEmpty) {
       correosCC.add(userData!.email.trim());
@@ -1209,7 +1232,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
       "subject": asuntoCorreo,
       "html": mensajeHtml,
       "archivos": archivosBase64,
-      "idDocumento": widget.idDocumento,
+      "idDocumento": widget.idDocumento, // ID de la solicitud
       "enviadoPor": enviadoPor,
       "tipo": "redenciones",
     });
@@ -1235,8 +1258,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
         nuevoStatus: "Enviado",
         origen: "redenciones_solicitados",
       );
-
-
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -1244,8 +1265,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     }
   }
 
-  ///Aca Inicia el cambio
-  ///
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1273,22 +1293,47 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           return;
         }
 
-        // Crear la instancia
-        final envioCorreoManager = EnvioCorreoManagerV2();
+        // 1) Actualizar dirigido y entidad ANTES de generar el HTML
+        final redencionesTemplate = SolicitudRedencionesTemplate(
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: obtenerEntidad(nombreCorreoSeleccionado ?? ""),
+          referencia: redenciones.referencia,
+          nombrePpl: redenciones.nombrePpl,
+          apellidoPpl: redenciones.apellidoPpl,
+          identificacionPpl: redenciones.identificacionPpl,
+          centroPenitenciario: redenciones.centroPenitenciario,
+          emailUsuario: redenciones.emailUsuario,
+          emailAlternativo: redenciones.emailAlternativo,
+          radicado: redenciones.radicado,
+          jdc: redenciones.jdc,
+          numeroSeguimiento: redenciones.numeroSeguimiento,
+          situacion: redenciones.situacion,
+          nui: redenciones.nui,
+          td: redenciones.td,
+          patio: redenciones.patio,
+        );
 
-        // Llamar al método
+        // 2) HTML principal (servirá también como "ultimoHtmlEnviado" para las copias)
+        final String ultimoHtmlEnviado = redencionesTemplate.generarTextoHtml();
+
+        // 3) Manager V3
+        final envioCorreoManager = EnvioCorreoManagerV3();
+
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
-          html: redenciones.generarTextoHtml(),
+          html: ultimoHtmlEnviado,
           numeroSeguimiento: redenciones.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
           rutaHistorial: 'historial_solicitudes_redenciones_admin',
           nombreServicio: "Cómputo de Redención",
+
+          // IDs
+          idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: widget.idUser,
 
-          // Nuevos campos requeridos
+          // Datos PPL / Centro
           centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
           nombrePpl: userData?.nombrePpl ?? '',
           apellidoPpl: userData?.apellidoPpl ?? '',
@@ -1297,7 +1342,13 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
           beneficioPenitenciario: "Redención de pena",
+          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
 
+          // Rutas de guardado (ajústalas si usas otras)
+          nombrePathStorage: "redenciones",
+          nombreColeccionFirestore: "redenciones_solicitados",
+
+          // Wrapper de Resend (asunto/prefacio los maneja el manager; aquí consolidamos el asunto)
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
@@ -1305,16 +1356,29 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           }) async {
             await enviarCorreoResend(
               correoDestino: correoDestino,
-              asuntoPersonalizado: asuntoPersonalizado,
+              asuntoPersonalizado: asuntoPersonalizado ?? "Cómputo de Redención – ${redenciones.numeroSeguimiento}",
               prefacioHtml: prefacioHtml,
             );
           },
-          subirHtml: () async {
+
+          // Guardado HTML (adapter a tu función existente)
+          subirHtml: ({
+            required String tipoEnvio,
+            required String htmlFinal,
+            required String nombreColeccionFirestore,
+            required String nombrePathStorage,
+          }) async {
             await subirHtmlCorreoADocumentoSolicitudRedenciones(
               idDocumento: widget.idDocumento,
-              htmlContent: redenciones.generarTextoHtml(),
+              htmlFinal: htmlFinal,
+              tipoEnvio: tipoEnvio,
             );
           },
+
+          // Este HTML se usará como "citado" en Centro/Reparto
+          ultimoHtmlEnviado: ultimoHtmlEnviado,
+
+          // Selector Centro de Reclusión
           buildSelectorCorreoCentroReclusion: ({
             required Function(String correo, String nombreCentro) onEnviarCorreo,
             required Function() onOmitir,
@@ -1325,6 +1389,8 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
               onOmitir: onOmitir,
             );
           },
+
+          // Selector Reparto
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -1336,27 +1402,29 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
               onCorreoValidado: onCorreoValidado,
               onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
               onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () {
-                Navigator.of(context).pop();
-              },
+              onOmitir: () => Navigator.of(context).pop(),
             );
           },
+
+          // 👉 Permitir omitir el envío principal y continuar el flujo
+          permitirOmitirPrincipal: true,
         );
       },
       child: const Text("Enviar por correo"),
     );
   }
 
+
   Future<void> subirHtmlCorreoADocumentoSolicitudRedenciones({
     required String idDocumento,
-    required String htmlContent,
+    required String htmlFinal,
+    required String tipoEnvio,
   }) async {
     try {
       // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
-      final contenidoFinal = htmlUtf8Compatible(htmlContent);
-
-      // 📁 Crear bytes
+      final contenidoFinal = htmlUtf8Compatible(htmlFinal);
       final bytes = utf8.encode(contenidoFinal);
+
       const fileName = "correo.html";
       final filePath = "redenciones/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
 
@@ -1371,16 +1439,16 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
 
       // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("redenciones_solicitados") // 🟣 Cambiar colección
+          .collection("redenciones_solicitados")
           .doc(idDocumento)
-          .update({
-        "correoHtmlUrl": downloadUrl,
-        "fechaHtmlCorreo": FieldValue.serverTimestamp(),
-      });
+          .set({
+        "correosGuardados.$tipoEnvio": downloadUrl, // 🔹 guarda por tipo
+        "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      print("✅ HTML de redenciones subido y guardado con URL: $downloadUrl");
+      print("✅ HTML $tipoEnvio guardado en: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo de redenciones: $e");
+      print("❌ Error al subir HTML $tipoEnvio: $e");
     }
   }
 

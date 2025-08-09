@@ -57,7 +57,7 @@ class _SolicitudRedencionPageState extends State<SolicitudRedencionPage> {
                       TextSpan(text: 'Gracias al '),
                       TextSpan(text: 'Artículo 19 de la Ley 2466 de 2025', style: textoNegrilla),
                       TextSpan(text: ', que hace parte de la reciente Reforma Laboral en Colombia, este beneficio fue ampliado: por cada '),
-                      TextSpan(text: 'tres (3) días de trabajo o estudio', style: textoNegrilla),
+                      TextSpan(text: 'tres (3) días de trabajo (únicamente)', style: textoNegrilla),
                       TextSpan(text: ', se podrá redimir '),
                       TextSpan(text: 'dos (2) días de pena', style: textoNegrilla),
                       TextSpan(text: '. Este nuevo esquema fortalece el reconocimiento del esfuerzo realizado por las personas en proceso de resocialización.'),

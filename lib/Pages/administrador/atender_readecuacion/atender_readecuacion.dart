@@ -926,8 +926,6 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
 
       setState(() {
         userData = fetchedData;
-
-        // ⚠️ Aquí no usamos nombreCorreoSeleccionado porque aún puede estar vacío
         readecuacion = SolicitudReadecuacionRedencionTemplate(
           dirigido: "", // Se llenará al elegir correo
           entidad: "",  // Se llenará al elegir correo
@@ -980,10 +978,6 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
             asignadoA_P2 = data['asignadoA_P2'] ?? '';
             asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
             fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
-            centroOrigenNombre = data['centro_origen_nombre'] ?? '';
-            ciudadCentroOrigen = data['ciudad_centro_origen'] ?? '';
-            centroDestinoNombre = data['centro_destino_nombre'] ?? '';
-            ciudadCentroDestino = data['ciudad_centro_destino'] ?? '';
           });
         }
       } else {
@@ -1418,7 +1412,9 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
 
+
       await ref.putData(Uint8List.fromList(bytes), metadata);
+
       final downloadUrl = await ref.getDownloadURL();
 
       await FirebaseFirestore.instance
