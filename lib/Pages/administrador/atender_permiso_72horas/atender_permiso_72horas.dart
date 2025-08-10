@@ -23,6 +23,7 @@ import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV2.dart';
+import '../../../widgets/envio_correo_managerV3.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -130,6 +131,7 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
   Map<String, dynamic>? solicitudData;
   String? _opcionReparacionSeleccionada;
   late CalculoCondenaController _calculoCondenaController;
+  String? ultimoHtmlEnviado;
 
 
   @override
@@ -1538,11 +1540,13 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
   String generarTextoPretencionesParaPermiso72Horas() {
     return """
-PRIMERO: Solicitar al establecimiento penitenciario y carcelario, área jurídica, que emita la documentación correspondiente para el trámite del permiso de hasta 72 horas.
+PRIMERO: Que se ordene al establecimiento penitenciario y carcelario, área jurídica, emitir la documentación correspondiente y certificar el cómputo y abono de redención de pena por actividades de trabajo. estudio o enseñanza, así como cualquier otro requisito necesario para el trámite del permiso de hasta 72 horas.
 
-SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establecido en el artículo 147 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de la tercera parte de la pena, la buena conducta, la participación en actividades de estudio, trabajo o enseñanza, y la existencia de un entorno familiar favorable.
+SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establecido en el artículo 147 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de la tercera parte de la pena, la buena conducta, la participación en actividades de resocialización, y la existencia de un entorno familiar favorable.
 """;
   }
+
+
 
 
   String generarTextoFundamentosDesdeDatos(
@@ -1550,9 +1554,8 @@ SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establ
       Map<String, dynamic> latestData,
       String parentesco,
       ) {
-
     return """
-De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observancia del principio de reserva legal en materia de beneficios administrativos (Sentencias T-972 de 2005 y C-312 de 2002), solicito la concesión del permiso de hasta 72 horas, con base en los siguientes fundamentos:
+De conformidad con el artículo 147 de la Ley 65 de 1993, en concordancia con la Ley 2466 de 2025 y en estricta observancia del principio de reserva legal en materia de beneficios administrativos (Sentencias T-972 de 2005 y C-312 de 2002), se establece la normatividad aplicable tanto para el permiso de hasta 72 horas como para el cómputo y abono de las redenciones de pena derivadas de actividades de trabajo, estudio o enseñanza.
 
 1. Actualmente me encuentro purgando la condena en un establecimiento de mediana seguridad, requisito contemplado en la normatividad vigente. Esta circunstancia se acredita con la certificación expedida por la autoridad penitenciaria.
 
@@ -1560,11 +1563,14 @@ De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observanc
 
 3. No he incurrido en fuga ni tentativa de fuga durante el proceso ni durante la ejecución de la sentencia condenatoria, requisito esencial establecido en el numeral 4º del artículo 147 de la Ley 65 de 1993.
 
-4. Durante mi permanencia en el establecimiento penitenciario he participado en actividades laborales, educativas o de enseñanza, y he mantenido una conducta ejemplar, como se acredita mediante certificación expedida por el Consejo de Disciplina.
+4. Durante mi permanencia en el establecimiento penitenciario he mantenido una conducta ejemplar, participando en actividades laborales, educativas o de enseñanza, como se acredita mediante certificación expedida por el Consejo de Disciplina.
 
 5. No pertenezco al núcleo familiar de la víctima ni he sido condenado por delitos que excluyan este beneficio conforme a la ley.
 """;
   }
+
+
+
 
 
   String generarTextoAnexosParaPermiso72Horas({
@@ -1639,12 +1645,14 @@ De conformidad con el artículo 147 de la Ley 65 de 1993 y en estricta observanc
           "${esPlural ? "quienes son" : "quien es"} parte esencial de mi vida y ${esPlural ? "representan" : "representa"} mi principal motivación para avanzar en mi proceso de resocialización.";
     }
 
-    // 🔹 Texto de cumplimiento de pena (adaptado para 72h)
+    // 🔹 Texto de cumplimiento de pena
     final textoCumplimientoPena =
-        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la pena impuesta, superando el treinta y tres por ciento (33 %) del total de la condena, requisito establecido para acceder al beneficio de permiso administrativo de 72 horas.";
+        "A la fecha, he cumplido $mesesEjecutados meses y $diasEjecutados días de la pena impuesta, superando el treinta y tres por ciento (33 %) del total de la condena, requisito establecido para acceder al beneficio de permiso administrativo de 72 horas.";
 
     return """
 Honorable Juez, me permito respetuosamente solicitar la concesión del permiso de hasta 72 horas, como una oportunidad invaluable para fortalecer mis lazos familiares y sociales.
+
+En el marco de la presente solicitud, también me permito hacer la petición de reconocimiento y aplicación de las redenciones de pena pendientes por recibir, de conformidad con la normativa vigente. En particular, invoco la Ley 2466 de 2025, que amplía y fortalece el reconocimiento de la redención de pena por actividades laborales, solicitando que se valoren de manera integral los tiempos efectivamente trabajados para efectos de su cómputo y aplicación.
 
 Durante el tiempo que he permanecido en reclusión, he mantenido una conducta ejemplar, participando activamente en programas de formación, trabajo o resocialización, y cumpliendo disciplinadamente con las normas del establecimiento penitenciario.
 
@@ -1655,6 +1663,7 @@ Durante el disfrute del permiso, permaneceré en el domicilio ubicado en la $dir
 Esta solicitud representa para mí una oportunidad de inmenso valor en mi proceso de reintegración social y familiar, reafirmando mi propósito de construir un proyecto de vida digno y en armonía con mi entorno.
 """;
   }
+
 
   void fetchDocumentoPermiso72Horas() async {
     try {
@@ -2228,9 +2237,16 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({required String correoDestino, String? asuntoPersonalizado, String? prefacioHtml}) async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
+  Future<void> enviarCorreoResend({
+    required String correoDestino,
+    String? asuntoPersonalizado,
+    String? prefacioHtml,
+  }) async {
+    final url = Uri.parse(
+      "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend",
+    );
 
+    // Doc de la SOLICITUD (no del PPL)
     final doc = await FirebaseFirestore.instance
         .collection('permiso_solicitados')
         .doc(widget.idDocumento)
@@ -2239,9 +2255,16 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
+    // Datos base
+    final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
+    final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+    final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
+    final correoDestinatario = correoDestino;
+
+    // Construir template con dirigido/entidad actualizados
     permiso72horas = Permiso72HorasTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad ?? "",
+      entidad: entidadSeleccionada,
       referencia: "Beneficios penitenciarios - Permiso de 72 horas",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
@@ -2265,34 +2288,49 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       patio: userData?.patio ?? '',
       radicado: userData?.radicado ?? '',
       delito: userData?.delito ?? '',
-      condena: userData?.diasCondena != null && userData!.diasCondena! > 0
+      condena: (userData?.diasCondena != null && (userData!.diasCondena!) > 0)
           ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
           : "${userData?.mesesCondena ?? 0} meses",
       purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
-      hijos: solicitudData?.containsKey('hijos') == true
-          ? List<Map<String, String>>.from(solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
+      hijos: (solicitudData?.containsKey('hijos') == true)
+          ? List<Map<String, String>>.from(
+          solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
           : [],
-      documentosHijos: solicitudData?.containsKey('documentos_hijos') == true
+      documentosHijos: (solicitudData?.containsKey('documentos_hijos') == true)
           ? List<String>.from(solicitudData!['documentos_hijos'])
           : [],
-      situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
+      situacion: userData?.situacion ?? 'En Reclusión',
     );
 
-    String mensajeHtml = "${prefacioHtml ?? ''}${permiso72horas.generarTextoHtml()}";
-    List<Map<String, String>> archivosBase64 = [];
+    // HTML final (encabezado uniforme + prefacio + cuerpo)
+    final mensajeHtml = """
+<html>
+  <body style="font-family: Arial, sans-serif; font-size: 10pt; color: #000;">
+    <p style="margin: 2px 0;">De: peticiones@tuprocesoya.com</p>
+    <p style="margin: 2px 0;">Para: $correoDestinatario</p>
+    <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
+    <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
+    ${prefacioHtml ?? ''}${permiso72horas.generarTextoHtml()}
+  </body>
+</html>
+""";
 
-    // Función auxiliar para procesar cualquier archivo por URL
+    // 👉 importante para Manager V3: se usará como "correo principal citado"
+    ultimoHtmlEnviado = mensajeHtml;
+
+    // Adjuntos
+    final archivosBase64 = <Map<String, String>>[];
+
     Future<void> procesarArchivo(String urlArchivo) async {
       try {
-        String nombreArchivo = obtenerNombreArchivo(urlArchivo);
-        final response = await http.get(Uri.parse(urlArchivo));
-        if (response.statusCode == 200) {
-          String base64String = base64Encode(response.bodyBytes);
+        final nombreArchivo = obtenerNombreArchivo(urlArchivo);
+        final resp = await http.get(Uri.parse(urlArchivo));
+        if (resp.statusCode == 200) {
           archivosBase64.add({
             "nombre": nombreArchivo,
-            "base64": base64String,
+            "base64": base64Encode(resp.bodyBytes),
             "tipo": lookupMimeType(nombreArchivo) ?? "application/octet-stream",
           });
         }
@@ -2301,27 +2339,28 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
       }
     }
 
-    // 🔹 Archivos principales
-    for (String archivoUrl in widget.archivos) {
+    // Archivos principales
+    for (final archivoUrl in widget.archivos) {
       await procesarArchivo(archivoUrl);
     }
-
-    // 🔹 Cédula del responsable
-    if (widget.urlArchivoCedulaResponsable != null && widget.urlArchivoCedulaResponsable!.isNotEmpty) {
+    // Cédula responsable
+    if ((widget.urlArchivoCedulaResponsable ?? '').isNotEmpty) {
       await procesarArchivo(widget.urlArchivoCedulaResponsable!);
     }
-
-    // 🔹 Documentos de los hijos
-    for (String archivoHijo in widget.urlsArchivosHijos) {
+    // Documentos hijos
+    for (final archivoHijo in widget.urlsArchivosHijos) {
       await procesarArchivo(archivoHijo);
     }
 
-    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de Permiso de 72 horas - ${widget.numeroSeguimiento}";
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final enviadoPor = currentUser?.email ?? adminFullName;
+    // Asunto
+    final asuntoCorreo = asuntoPersonalizado
+        ?? "Solicitud de Permiso de 72 horas – ${widget.numeroSeguimiento}";
 
-    List<String> correosCC = [];
-    if (userData?.email != null && userData!.email.trim().isNotEmpty) {
+    final enviadoPor = correoRemitente;
+
+    // CC al usuario si tiene email
+    final correosCC = <String>[];
+    if ((userData?.email ?? '').trim().isNotEmpty) {
       correosCC.add(userData!.email.trim());
     }
 
@@ -2357,7 +2396,6 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
         nuevoStatus: "Enviado",
         origen: "permiso_solicitados",
       );
-
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
@@ -2392,7 +2430,7 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
           return;
         }
 
-        // Guardar datos antes de enviar
+        // Guarda últimos cambios de los campos de texto
         setState(() {
           sinopsis = _sinopsisController.text.trim();
           consideraciones = _consideracionesController.text.trim();
@@ -2401,21 +2439,62 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
           anexos = _anexosController.text.trim();
         });
 
-        // Instanciar manager
-        final envioCorreoManager = EnvioCorreoManagerV2();
+        // Actualiza dirigido/entidad ANTES de generar HTML (si aplica en tu template)
+        permiso72horas = Permiso72HorasTemplate(
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: obtenerEntidad(nombreCorreoSeleccionado ?? ""),
+          referencia: "Beneficios penitenciarios - Permiso de 72 horas",
+          nombrePpl: permiso72horas.nombrePpl,
+          apellidoPpl: permiso72horas.apellidoPpl,
+          identificacionPpl: permiso72horas.identificacionPpl,
+          centroPenitenciario: permiso72horas.centroPenitenciario,
+          sinopsis: sinopsis,
+          consideraciones: consideraciones,
+          fundamentosDeDerecho: fundamentosDeDerecho,
+          pretenciones: pretenciones,
+          anexos: anexos,
+          direccionDomicilio: permiso72horas.direccionDomicilio,
+          municipio: permiso72horas.municipio,
+          departamento: permiso72horas.departamento,
+          nombreResponsable: permiso72horas.nombreResponsable,
+          parentesco: permiso72horas.parentesco,
+          cedulaResponsable: permiso72horas.cedulaResponsable,
+          celularResponsable: permiso72horas.celularResponsable,
+          emailUsuario: permiso72horas.emailUsuario,
+          nui: permiso72horas.nui,
+          td: permiso72horas.td,
+          patio: permiso72horas.patio,
+          radicado: permiso72horas.radicado,
+          delito: permiso72horas.delito,
+          condena: permiso72horas.condena,
+          purgado: permiso72horas.purgado,
+          jdc: permiso72horas.jdc,
+          numeroSeguimiento: permiso72horas.numeroSeguimiento,
+          hijos: permiso72horas.hijos,
+          documentosHijos: permiso72horas.documentosHijos,
+          situacion: permiso72horas.situacion,
+        );
+
+        // HTML principal que también usaremos como "ultimoHtmlEnviado"
+        final String htmlGenerado = permiso72horas.generarTextoHtml();
+
+        final envioCorreoManager = EnvioCorreoManagerV3();
 
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
-          html: permiso72horas.generarTextoHtml(),
+          html: htmlGenerado,
           numeroSeguimiento: permiso72horas.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
           rutaHistorial: 'historial_solicitudes_permiso_72horas_admin',
           nombreServicio: "Permiso de 72 Horas",
+
+          // IDs
+          idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: widget.idUser,
 
-          // Nuevos campos requeridos
+          // Datos para prefacio centro
           centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
           nombrePpl: userData?.nombrePpl ?? '',
           apellidoPpl: userData?.apellidoPpl ?? '',
@@ -2424,7 +2503,13 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
           beneficioPenitenciario: "Permiso de 72 Horas",
+          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
 
+          // Rutas de guardado
+          nombrePathStorage: "permiso",
+          nombreColeccionFirestore: "permiso_solicitados",
+
+          // Resend adapter (asunto y prefacio vienen del manager)
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
@@ -2432,17 +2517,29 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
           }) async {
             await enviarCorreoResend(
               correoDestino: correoDestino,
-              asuntoPersonalizado: asuntoPersonalizado,
+              asuntoPersonalizado: asuntoPersonalizado ?? "Solicitud de Permiso de 72 horas – ${permiso72horas.numeroSeguimiento}",
               prefacioHtml: prefacioHtml,
             );
           },
 
-          subirHtml: () async {
+          // Guardado HTML (firma V3)
+          subirHtml: ({
+            required String tipoEnvio,
+            required String htmlFinal,
+            required String nombreColeccionFirestore,
+            required String nombrePathStorage,
+          }) async {
             await subirHtmlCorreoADocumentoPermiso72Horas(
               idDocumento: widget.idDocumento,
-              htmlContent: permiso72horas.generarTextoHtml(),
+              htmlFinal: htmlFinal,
+              tipoEnvio: tipoEnvio,
             );
           },
+
+          // Esto se cita en centro/reparto si corresponde
+          ultimoHtmlEnviado: htmlGenerado,
+
+          // Selectores
           buildSelectorCorreoCentroReclusion: ({
             required Function(String correo, String nombreCentro) onEnviarCorreo,
             required Function() onOmitir,
@@ -2467,46 +2564,46 @@ Esta solicitud representa para mí una oportunidad de inmenso valor en mi proces
               onOmitir: onOmitir,
             );
           },
+
+          // Opcional: permitir omitir el envío principal
+          permitirOmitirPrincipal: true,
         );
       },
       child: const Text("Enviar por correo"),
     );
   }
 
+
   Future<void> subirHtmlCorreoADocumentoPermiso72Horas({
     required String idDocumento,
-    required String htmlContent,
+    required String htmlFinal,
+    required String tipoEnvio, // "principal", "centro_reclusion", "reparto"
   }) async {
     try {
-      // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
-      final contenidoFinal = htmlUtf8Compatible(htmlContent);
-
-      // 📁 Crear bytes
+      // UTF-8 seguro
+      final contenidoFinal = htmlUtf8Compatible(htmlFinal);
       final bytes = utf8.encode(contenidoFinal);
-      const fileName = "correo.html";
-      final filePath = "permiso/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+
+      final fileName = "correo_$tipoEnvio.html";
+      final filePath = "permiso/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
 
-      // ⬆️ Subir archivo
       await ref.putData(Uint8List.fromList(bytes), metadata);
-
-      // 🌐 Obtener URL
       final downloadUrl = await ref.getDownloadURL();
 
-      // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("permiso_solicitados") // 🟣 Cambiar colección
+          .collection("permiso_solicitados")
           .doc(idDocumento)
-          .update({
-        "correoHtmlUrl": downloadUrl,
-        "fechaHtmlCorreo": FieldValue.serverTimestamp(),
-      });
+          .set({
+        "correosGuardados.$tipoEnvio": downloadUrl,
+        "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      print("✅ HTML de permiso 72 horas subido y guardado con URL: $downloadUrl");
+      print("✅ [permiso] HTML $tipoEnvio guardado en: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo de permiso 72 horas: $e");
+      print("❌ [permiso] Error al subir HTML $tipoEnvio: $e");
     }
   }
 
