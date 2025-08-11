@@ -21,6 +21,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
+import '../../../widgets/manager_correo_sin_reclusion.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -1292,7 +1293,11 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({required String correoDestino, String? asuntoPersonalizado, String? prefacioHtml}) async {
+  Future<void> enviarCorreoResend({
+    required String correoDestino,
+    String? asuntoPersonalizado,
+    String? prefacioHtml,
+  }) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
     final fechaDT = DateTime.parse(widget.fechaTraslado);
     final fechaFormateada = formatearFechaTraslado(fechaDT);
@@ -1305,9 +1310,14 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
+    // ✅ Entidad desde la selección (fallback al JEP del usuario)
+    final entidadSeleccionada =
+        obtenerEntidad(nombreCorreoSeleccionado ?? "") ??
+            (userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas");
+
     trasladoProceso = TrasladoProcesoTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad ?? "",
+      entidad: entidadSeleccionada, // ⬅️ antes: entidad ?? ""
       referencia: "Solicitudes varias - Traslado de proceso",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
@@ -1324,18 +1334,19 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
       radicado: userData?.radicado ?? '',
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
-      situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
+      situacion: userData?.situacion ?? 'En Reclusión',
     );
 
-    String mensajeHtml = "${prefacioHtml ?? ''}${trasladoProceso.generarTextoHtml()}";
+    // Principal: si llamas con prefacioHtml=null, solo va el body
+    final String mensajeHtml = "${prefacioHtml ?? ''}${trasladoProceso.generarTextoHtml()}";
 
-    List<Map<String, String>> archivosBase64 = [];
+    final archivosBase64 = <Map<String, String>>[];
 
     final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de traslado de proceso - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
-    List<String> correosCC = [];
+    final correosCC = <String>[];
     if (userData?.email != null && userData!.email.trim().isNotEmpty) {
       correosCC.add(userData!.email.trim());
     }
@@ -1372,13 +1383,13 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
         nuevoStatus: "Enviado",
         origen: "trasladoProceso_solicitados",
       );
-
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
       }
     }
   }
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1406,20 +1417,73 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
           return;
         }
 
-        // Crear la instancia
-        final envioCorreoManager = EnvioCorreoManager();
+        // 1) Dirigido + Entidad
+        final String dirigido = obtenerTituloCorreo(nombreCorreoSeleccionado);
+        final String entidadDestino =
+            obtenerEntidad(nombreCorreoSeleccionado ?? "") ??
+                (userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas");
 
-        // Llamar al método
+        // 2) Refresca template ANTES de generar HTML
+        final fechaDT = DateTime.parse(widget.fechaTraslado);
+        final fechaFormateada = formatearFechaTraslado(fechaDT);
+
+        final traslado = TrasladoProcesoTemplate(
+          dirigido: dirigido,
+          entidad: entidadDestino,
+          referencia: "Solicitudes varias - Traslado de proceso",
+          nombrePpl: userData?.nombrePpl.trim() ?? "",
+          apellidoPpl: userData?.apellidoPpl.trim() ?? "",
+          identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+          centroPenitenciario: userData?.centroReclusion ?? "",
+          emailUsuario: userData?.email.trim() ?? '',
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          fechaTraslado: fechaFormateada,
+          centroOrigen: widget.centroOrigen,
+          centroDestino: userData?.centroReclusion ?? "",
+          ciudadDestino: widget.ciudadDestino,
+          radicado: userData?.radicado ?? '',
+          jdc: userData?.juzgadoQueCondeno ?? '',
+          numeroSeguimiento: widget.numeroSeguimiento,
+          situacion: userData?.situacion ?? 'En Reclusión',
+        );
+
+        final String htmlActual = traslado.generarTextoHtml();
+
+        // 3) Manager V4
+        final envioCorreoManager = EnvioCorreoManagerV4();
+
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
-          html: trasladoProceso.generarTextoHtml(),
-          numeroSeguimiento: trasladoProceso.numeroSeguimiento,
+          html: htmlActual,
+          numeroSeguimiento: traslado.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
           rutaHistorial: 'historial_solicitudes_traslado_proceso_admin',
           nombreServicio: "Traslado de Proceso",
+
+          // IDs
+          idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: widget.idUser,
+
+          // Compat por firma (el manager V4 los ignora)
+          centroPenitenciario: userData?.centroReclusion ?? '',
+          nombrePpl: userData?.nombrePpl ?? '',
+          apellidoPpl: userData?.apellidoPpl ?? '',
+          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          beneficioPenitenciario: '',
+          juzgadoEp: userData?.juzgadoEjecucionPenas ?? '',
+
+          // Rutas/colecciones
+          nombrePathStorage: "trasladoProceso",
+          nombreColeccionFirestore: "trasladoProceso_solicitados",
+
+          // Principal: SIN prefacio; Reparto: el manager te enviará el prefacio y lo propagas
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
@@ -1428,25 +1492,35 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
             await enviarCorreoResend(
               correoDestino: correoDestino,
               asuntoPersonalizado: asuntoPersonalizado,
-              prefacioHtml: prefacioHtml,
+              prefacioHtml: prefacioHtml, // 👈 PROPAGA lo que mande el manager
             );
           },
-          subirHtml: () async {
+
+          // Guardado por tipo
+          subirHtml: ({
+            required String tipoEnvio,
+            required String htmlFinal,
+            required String nombreColeccionFirestore,
+            required String nombrePathStorage,
+          }) async {
             await subirHtmlCorreoADocumentoTrasladoProceso(
               idDocumento: widget.idDocumento,
-              htmlContent: trasladoProceso.generarTextoHtml(),
+              htmlContent: htmlFinal,
+              tipoEnvio: tipoEnvio, // "principal" | "reparto"
             );
           },
-          // buildSelectorCorreoCentroReclusion: ({
-          //   required Function(String correo, String nombreCentro) onEnviarCorreo,
-          //   required Function() onOmitir,
-          // }) {
-          //   return SeleccionarCorreoCentroReclusionV2(
-          //     idUser: widget.idUser,
-          //     onEnviarCorreo: onEnviarCorreo,
-          //     onOmitir: onOmitir,
-          //   );
-          // },
+
+          ultimoHtmlEnviado: htmlActual,
+
+          // Compat: centro (no usado)
+          buildSelectorCorreoCentroReclusion: ({
+            required Function(String correo, String nombreCentro) onEnviarCorreo,
+            required Function() onOmitir,
+          }) {
+            return const SizedBox.shrink();
+          },
+
+          // Reparto
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -1458,9 +1532,7 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
               onCorreoValidado: onCorreoValidado,
               onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
               onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () {
-                Navigator.of(context).pop();
-              },
+              onOmitir: () => Navigator.of(context).pop(),
             );
           },
         );
@@ -1469,40 +1541,39 @@ class _AtenderTrasladoProcesoPageState extends State<AtenderTrasladoProcesoPage>
     );
   }
 
+
   Future<void> subirHtmlCorreoADocumentoTrasladoProceso({
     required String idDocumento,
     required String htmlContent,
+    required String tipoEnvio, // "principal" | "reparto"
   }) async {
     try {
-      // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
       final contenidoFinal = htmlUtf8Compatible(htmlContent);
-
-      // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
-      const fileName = "correo.html";
-      final filePath = "traslado/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+
+      final fileName = "correo_$tipoEnvio.html";
+      final filePath = "trasladoProceso/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
 
-      // ⬆️ Subir archivo
       await ref.putData(Uint8List.fromList(bytes), metadata);
 
-      // 🌐 Obtener URL
       final downloadUrl = await ref.getDownloadURL();
 
-      // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("trasladoProceso_solicitados") // 🟣 Cambiar colección
+          .collection("trasladoProceso_solicitados")
           .doc(idDocumento)
-          .update({
-        "correoHtmlUrl": downloadUrl,
-        "fechaHtmlCorreo": FieldValue.serverTimestamp(),
-      });
+          .set({
+        "correosGuardados.$tipoEnvio": downloadUrl,
+        "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      print("✅ HTML de extincion subido y guardado con URL: $downloadUrl");
+      // ignore: avoid_print
+      print("✅ HTML $tipoEnvio guardado en: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo de traslado: $e");
+      // ignore: avoid_print
+      print("❌ Error al subir HTML $tipoEnvio: $e");
     }
   }
 

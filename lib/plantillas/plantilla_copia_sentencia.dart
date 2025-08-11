@@ -92,7 +92,8 @@ Solicito respetuosamente que, en virtud de lo establecido en los artículos 23, 
       <div style="margin-top: 80px;">
         <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="150" height="50"><br><br>
 
-        <div style="margin-top: 40px; color: #444; font-size: 12px;">
+      <div style="margin-top: 40px; color: #444; font-size: 12px;">
+      
       <b style="color: black;">NOTA IMPORTANTE</b><br><br>
       <p style="margin-top: 5px;">       
 
@@ -100,7 +101,7 @@ Solicito respetuosamente que, en virtud de lo establecido en los artículos 23, 
 
         En virtud del artículo 23 de la Constitución Política de Colombia y de las sentencias T-377 de 2014 y T-114 de 2017 de la Corte Constitucional, <b>no se requiere la firma de abogado ni apoderado para presentar una petición</b>. La plataforma actúa como medio de apoyo y canal de gestión digital, plenamente legítimo y válido. Exigir firma del apoderado o desconocer al solicitante por el solo hecho de que la petición fue tramitada por medio electrónico, constituye una barrera de acceso a la justicia e infringe el principio de eficacia del derecho fundamental de petición.
       </p>
-    </div>
+      </div>
     </body>
   </html>
   """);
