@@ -20,6 +20,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
+import '../../../widgets/manager_correo_sin_reclusion.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -1256,7 +1257,11 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({required String correoDestino, String? asuntoPersonalizado, String? prefacioHtml}) async {
+  Future<void> enviarCorreoResend({
+    required String correoDestino,
+    String? asuntoPersonalizado,
+    String? prefacioHtml,
+  }) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -1267,9 +1272,14 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
+    // ✅ Entidad desde el correo seleccionado (fallback a JEP del usuario)
+    final entidadSeleccionada =
+        obtenerEntidad(nombreCorreoSeleccionado ?? "") ??
+            (userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas");
+
     final acumulacion = SolicitudAcumulacionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad ?? "",
+      entidad: entidadSeleccionada, // ⬅️ antes: entidad ?? ""
       referencia: "Solicitudes varias - Solicitud acumulación",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
@@ -1285,11 +1295,11 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
       nui: userData?.nui ?? "",
       td: userData?.td ?? "",
       patio: userData?.patio ?? "",
-      radicadoAcumular: _radicadoAcumularController.text.trim(), // 🆕
-      juzgadoAcumular: _juzgadoAcumularController.text.trim(),   // 🆕
+      radicadoAcumular: _radicadoAcumularController.text.trim(),
+      juzgadoAcumular: _juzgadoAcumularController.text.trim(),
     );
 
-
+    // Principal: si llamas con prefacioHtml=null, solo va el body
     final mensajeHtml = "${prefacioHtml ?? ''}${acumulacion.generarTextoHtml()}";
 
     final archivosBase64 = <Map<String, String>>[];
@@ -1335,14 +1345,12 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
         nuevoStatus: "Enviado",
         origen: "acumulacion_solicitados",
       );
-
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
       }
     }
   }
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1370,20 +1378,70 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
           return;
         }
 
-        // Crear la instancia
-        final envioCorreoManager = EnvioCorreoManager();
+        // 1) Dirigido + Entidad
+        final String dirigido = obtenerTituloCorreo(nombreCorreoSeleccionado);
+        final String entidadDestino =
+            obtenerEntidad(nombreCorreoSeleccionado ?? "") ??
+                (userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas");
 
-        // Llamar al método
+        // 2) Refresca el template ANTES de generar HTML
+        final acumulacion = SolicitudAcumulacionTemplate(
+          dirigido: dirigido,
+          entidad: entidadDestino,
+          referencia: "Solicitudes varias - Solicitud acumulación",
+          nombrePpl: userData?.nombrePpl.trim() ?? "",
+          apellidoPpl: userData?.apellidoPpl.trim() ?? "",
+          identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+          centroPenitenciario: userData?.centroReclusion ?? "",
+          emailUsuario: userData?.email.trim() ?? "",
+          emailAlternativo: "peticiones@tuprocesoya.com",
+          radicado: userData?.radicado ?? "",
+          jdc: userData?.juzgadoQueCondeno ?? "",
+          juzgadoEjecucion: userData?.juzgadoEjecucionPenas ?? "",
+          numeroSeguimiento: widget.numeroSeguimiento,
+          situacion: userData?.situacion ?? 'En Reclusión',
+          nui: userData?.nui ?? "",
+          td: userData?.td ?? "",
+          patio: userData?.patio ?? "",
+          radicadoAcumular: _radicadoAcumularController.text.trim(),
+          juzgadoAcumular: _juzgadoAcumularController.text.trim(),
+        );
+
+        final String htmlActual = acumulacion.generarTextoHtml();
+
+        // 3) Manager V4
+        final envioCorreoManager = EnvioCorreoManagerV4();
+
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
-          html: acumulacion.generarTextoHtml(),
+          html: htmlActual,
           numeroSeguimiento: acumulacion.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
           rutaHistorial: 'historial_solicitudes_acumulacion_admin',
           nombreServicio: "Acumulación de Penas",
+
+          // IDs
+          idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: widget.idUser,
+
+          // Compat por firma (el manager V4 no los usa)
+          centroPenitenciario: userData?.centroReclusion ?? '',
+          nombrePpl: userData?.nombrePpl ?? '',
+          apellidoPpl: userData?.apellidoPpl ?? '',
+          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          beneficioPenitenciario: '',
+          juzgadoEp: userData?.juzgadoEjecucionPenas ?? '',
+
+          // Rutas/colecciones
+          nombrePathStorage: "acumulacion",
+          nombreColeccionFirestore: "acumulacion_solicitados",
+
+          // Principal: SIN prefacio; Reparto: el manager te enviará el prefacio y lo propagas
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
@@ -1392,25 +1450,35 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
             await enviarCorreoResend(
               correoDestino: correoDestino,
               asuntoPersonalizado: asuntoPersonalizado,
-              prefacioHtml: prefacioHtml,
+              prefacioHtml: prefacioHtml, // 👈 PROPAGA lo que manda el manager
             );
           },
-          subirHtml: () async {
+
+          // Guardado por tipo
+          subirHtml: ({
+            required String tipoEnvio,
+            required String htmlFinal,
+            required String nombreColeccionFirestore,
+            required String nombrePathStorage,
+          }) async {
             await subirHtmlCorreoADocumentoSolicitudAcumulacion(
               idDocumento: widget.idDocumento,
-              htmlContent: acumulacion.generarTextoHtml(),
+              htmlContent: htmlFinal,
+              tipoEnvio: tipoEnvio, // "principal" | "reparto"
             );
           },
-          // buildSelectorCorreoCentroReclusion: ({
-          //   required Function(String correo, String nombreCentro) onEnviarCorreo,
-          //   required Function() onOmitir,
-          // }) {
-          //   return SeleccionarCorreoCentroReclusionV2(
-          //     idUser: widget.idUser,
-          //     onEnviarCorreo: onEnviarCorreo,
-          //     onOmitir: onOmitir,
-          //   );
-          // },
+
+          ultimoHtmlEnviado: htmlActual,
+
+          // Compat: centro (no usado)
+          buildSelectorCorreoCentroReclusion: ({
+            required Function(String correo, String nombreCentro) onEnviarCorreo,
+            required Function() onOmitir,
+          }) {
+            return const SizedBox.shrink();
+          },
+
+          // Reparto
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -1422,9 +1490,7 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
               onCorreoValidado: onCorreoValidado,
               onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
               onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () {
-                Navigator.of(context).pop();
-              },
+              onOmitir: () => Navigator.of(context).pop(),
             );
           },
         );
@@ -1437,37 +1503,35 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
   Future<void> subirHtmlCorreoADocumentoSolicitudAcumulacion({
     required String idDocumento,
     required String htmlContent,
+    required String tipoEnvio, // "principal" | "reparto"
   }) async {
     try {
-      // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
       final contenidoFinal = htmlUtf8Compatible(htmlContent);
-
-      // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
-      const fileName = "correo.html";
-      final filePath = "acumulacion/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+
+      final fileName = "correo_$tipoEnvio.html";
+      final filePath = "acumulacion/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
 
-      // ⬆️ Subir archivo
       await ref.putData(Uint8List.fromList(bytes), metadata);
 
-      // 🌐 Obtener URL
       final downloadUrl = await ref.getDownloadURL();
 
-      // 🗃️ Guardar en Firestore
       await FirebaseFirestore.instance
-          .collection("acumulacion_solicitados") // 🟣 Cambiar colección
+          .collection("acumulacion_solicitados")
           .doc(idDocumento)
-          .update({
-        "correoHtmlUrl": downloadUrl,
-        "fechaHtmlCorreo": FieldValue.serverTimestamp(),
-      });
+          .set({
+        "correosGuardados.$tipoEnvio": downloadUrl,
+        "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      print("✅ HTML de acumulacion subido y guardado con URL: $downloadUrl");
+      // ignore: avoid_print
+      print("✅ HTML $tipoEnvio guardado en: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo de acumulacion: $e");
+      // ignore: avoid_print
+      print("❌ Error al subir HTML $tipoEnvio: $e");
     }
   }
 
