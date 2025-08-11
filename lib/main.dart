@@ -66,6 +66,7 @@ import 'Pages/administrador/solicitudes_enviadas_por_correo/readecuacion_enviado
 import 'Pages/administrador/solicitudes_enviadas_por_correo/redenciones_enviada_por_correo/redenciones_enviada_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/traslado_proceso_enviados_por_correo/traslado_proceso_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/tutelas_enviadas_por_correo/tutelas_enviadas_por_correo.dart';
+import 'Pages/administrador/solicitudes_generalAdmin/solicitudes_generalAdmin.dart';
 import 'Pages/administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import 'Pages/administrador/tutelas/derechos_tutelables_page.dart';
 import 'Pages/administrador/ver_correos_entrantes/ver_correos_entrantes.dart';
@@ -276,6 +277,7 @@ class MyApp extends StatelessWidget {
         'registraro_asistido_page_admin': (context) => const RegistroAsistidoPage(),
         'ver_respuestas_correos_page_admin': (context) => const VerRespuestasCorreosPage(),
         'historial_pago_comisiones_page_admin': (context) => const HistorialPagosComisionesPage(),
+        'historial_solicitudes_general_admin': (context) => const TodasLasSolicitudesAdminPage(),
 
         //Usuario
         'home': (context) => const HomePage(), // Página principal

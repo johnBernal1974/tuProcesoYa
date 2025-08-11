@@ -417,6 +417,9 @@ class _SideBarState extends State<SideBar> {
           _buildDrawerTile(
               context, "Página principal", Icons.home_filled, 'home_admin'),
 
+          _buildDrawerTile(
+              context, "Solicitudes general", Icons.table_chart, 'historial_solicitudes_general_admin'),
+
           ExpansionTile(
             initiallyExpanded: true,
             leading: const Icon(Icons.add_chart, color: Colors.deepPurple),
@@ -665,6 +668,9 @@ class _SideBarState extends State<SideBar> {
         items.addAll([
           _buildDrawerTile(
               context, "Página principal", Icons.home_filled, 'home_admin'),
+          _buildDrawerTile(
+              context, "Solicitudes general", Icons.table_chart, 'historial_solicitudes_general_admin'),
+
 
           ExpansionTile(
             initiallyExpanded: true,
