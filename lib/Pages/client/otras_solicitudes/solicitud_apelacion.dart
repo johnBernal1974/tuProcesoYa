@@ -140,7 +140,7 @@ class _SolicitudApelacionPageState extends State<SolicitudApelacionPage> {
         });
 
         docIdSolicitud ??= FirebaseFirestore.instance.collection('apelacion_solicitados').doc().id;
-        String path = 'apelaciones/$docIdSolicitud/${file.name}';
+        String path = 'apelacion/$docIdSolicitud/${file.name}';
 
         String? downloadUrl = await ArchivoUploader.subirArchivo(
           file: file,

@@ -20,6 +20,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
+import '../../../widgets/manager_correo_sin_reclusion.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_apelacion_admin/historial_solicitudes_apelacion_admin.dart';
@@ -1964,7 +1965,10 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({required String correoDestino,String? asuntoPersonalizado, String? prefacioHtml}) async {
+  Future<void> enviarCorreoResend({
+    required String correoDestino,
+    String? asuntoPersonalizado,
+    String? prefacioHtml}) async {
     final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
 
     final doc = await FirebaseFirestore.instance
@@ -1983,10 +1987,11 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
         ? _beneficioController.text
         : "Beneficio no especificado";
 
+    final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
 
     apelacionTemplate = ApelacionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad ?? "",
+      entidad: entidadSeleccionada,
       referencia: "Solitudes varias - Apelación",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
@@ -2113,20 +2118,76 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
           return;
         }
 
-        // Crear la instancia
-        final envioCorreoManager = EnvioCorreoManager();
+        // 1) Calcula dirigido + entidad a partir del correo seleccionado
+        final String dirigido = obtenerTituloCorreo(nombreCorreoSeleccionado);
+        final String entidadDestino =
+            obtenerEntidad(nombreCorreoSeleccionado ?? "") ??
+                (userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas");
 
-        // Llamar al método
+        // 2) Refresca el template ANTES de generar el HTML (igual que en Readecuación)
+        apelacionTemplate = ApelacionTemplate(
+          dirigido: dirigido,
+          entidad: entidadDestino,
+          referencia: apelacionTemplate.referencia,
+          nombrePpl: apelacionTemplate.nombrePpl,
+          apellidoPpl: apelacionTemplate.apellidoPpl,
+          identificacionPpl: apelacionTemplate.identificacionPpl,
+          centroPenitenciario: apelacionTemplate.centroPenitenciario,
+          fundamentosDeHecho: apelacionTemplate.fundamentosDeHecho,
+          fundamentosDeDerecho: apelacionTemplate.fundamentosDeDerecho,
+          manifestacionPerdon: apelacionTemplate.manifestacionPerdon,
+          peticion: apelacionTemplate.peticion,
+          pruebas: apelacionTemplate.pruebas,
+          emailUsuario: apelacionTemplate.emailUsuario,
+          nui: apelacionTemplate.nui,
+          td: apelacionTemplate.td,
+          patio: apelacionTemplate.patio,
+          radicado: apelacionTemplate.radicado,
+          delito: apelacionTemplate.delito,
+          condena: apelacionTemplate.condena,
+          purgado: apelacionTemplate.purgado,
+          jdc: apelacionTemplate.jdc,
+          numeroSeguimiento: apelacionTemplate.numeroSeguimiento,
+          fechaAuto: apelacionTemplate.fechaAuto,
+          beneficioSolicitado: apelacionTemplate.beneficioSolicitado,
+        );
+
+        // 3) Genera el HTML del cuerpo ya con dirigido + entidad correctos (sin prefacio arriba)
+        final String htmlActual = apelacionTemplate.generarTextoHtml();
+
+        // 4) Usa el Manager V4 (sin centro)
+        final envioCorreoManager = EnvioCorreoManagerV4();
+
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
-          html: apelacionTemplate.generarTextoHtml(),
+          html: htmlActual, // body puro
           numeroSeguimiento: apelacionTemplate.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
           rutaHistorial: 'historial_solicitudes_apelacion_admin',
-          nombreServicio: "Apelacion",
+          nombreServicio: "Apelación",
+
+          // IDs
+          idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: widget.idUser,
+
+          // Compat (se piden por firma; el manager V4 los ignora internamente)
+          centroPenitenciario: userData?.centroReclusion ?? '',
+          nombrePpl: userData?.nombrePpl ?? '',
+          apellidoPpl: userData?.apellidoPpl ?? '',
+          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          beneficioPenitenciario: '',
+          juzgadoEp: userData?.juzgadoEjecucionPenas ?? '',
+
+          // OJO: coincide con tu helper (usas "apelacion" en singular en el path)
+          nombrePathStorage: "apelacion",
+          nombreColeccionFirestore: "apelacion_solicitados",
+
+          // Envío real del principal: SIN prefacio
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
@@ -2135,25 +2196,36 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
             await enviarCorreoResend(
               correoDestino: correoDestino,
               asuntoPersonalizado: asuntoPersonalizado,
-              prefacioHtml: prefacioHtml,
+              prefacioHtml: null, // <- clave: no mostrar encabezado arriba en el principal
             );
           },
-          subirHtml: () async {
+
+          // Guardado: usa htmlFinal que manda el manager (para "principal" será el body)
+          subirHtml: ({
+            required String tipoEnvio,
+            required String htmlFinal,
+            required String nombreColeccionFirestore,
+            required String nombrePathStorage,
+          }) async {
             await subirHtmlCorreoADocumentoApelacion(
               idDocumento: widget.idDocumento,
-              htmlContent: apelacionTemplate.generarTextoHtml(),
+              htmlContent: htmlFinal,
+              tipoEnvio: tipoEnvio, // "principal" o "reparto"
             );
           },
-          // buildSelectorCorreoCentroReclusion: ({
-          //   required Function(String correo, String nombreCentro) onEnviarCorreo,
-          //   required Function() onOmitir,
-          // }) {
-          //   return SeleccionarCorreoCentroReclusionV2(
-          //     idUser: widget.idUser,
-          //     onEnviarCorreo: onEnviarCorreo,
-          //     onOmitir: onOmitir,
-          //   );
-          // },
+
+          // El manager lo usará para el encabezado uniforme en copias
+          ultimoHtmlEnviado: htmlActual,
+
+          // Compat: centro (no se usa en V4)
+          buildSelectorCorreoCentroReclusion: ({
+            required Function(String correo, String nombreCentro) onEnviarCorreo,
+            required Function() onOmitir,
+          }) {
+            return const SizedBox.shrink();
+          },
+
+          // Reparto (igual que antes)
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -2174,42 +2246,32 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
     );
   }
 
+
   Future<void> subirHtmlCorreoADocumentoApelacion({
     required String idDocumento,
     required String htmlContent,
+    required String tipoEnvio, // "principal" | "reparto" (etc.)
   }) async {
-    try {
-      // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
-      final contenidoFinal = htmlUtf8Compatible(htmlContent);
+    final contenidoFinal = htmlUtf8Compatible(htmlContent);
+    final bytes = utf8.encode(contenidoFinal);
+    final fileName = "correo_$tipoEnvio.html";
+    final filePath = "apelacion/$idDocumento/correos/$fileName";
 
-      // 📁 Crear bytes
-      final bytes = utf8.encode(contenidoFinal);
-      const fileName = "correo.html";
-      final filePath = "apelaciones/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+    final ref = FirebaseStorage.instance.ref(filePath);
+    final metadata = SettableMetadata(contentType: "text/html");
+    await ref.putData(Uint8List.fromList(bytes), metadata);
 
-      final ref = FirebaseStorage.instance.ref(filePath);
-      final metadata = SettableMetadata(contentType: "text/html");
+    final downloadUrl = await ref.getDownloadURL();
 
-      // ⬆️ Subir archivo
-      await ref.putData(Uint8List.fromList(bytes), metadata);
-
-      // 🌐 Obtener URL
-      final downloadUrl = await ref.getDownloadURL();
-
-      // 🗃️ Guardar en Firestore
-      await FirebaseFirestore.instance
-          .collection("apelacion_solicitados") // 🟣 Cambiar colección
-          .doc(idDocumento)
-          .update({
-        "correoHtmlUrl": downloadUrl,
-        "fechaHtmlCorreo": FieldValue.serverTimestamp(),
-      });
-
-      print("✅ HTML de domiciliaria subido y guardado con URL: $downloadUrl");
-    } catch (e) {
-      print("❌ Error al subir HTML del correo de domiciliaria: $e");
-    }
+    await FirebaseFirestore.instance
+        .collection("apelacion_solicitados")
+        .doc(idDocumento)
+        .set({
+      "correosGuardados.$tipoEnvio": downloadUrl,          // ⬅️ igual que readecuación
+      "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
+
 
 
   /// 💡 Corrige el HTML para asegurar que tenga codificación UTF-8
