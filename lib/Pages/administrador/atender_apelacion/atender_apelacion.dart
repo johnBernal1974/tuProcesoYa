@@ -2196,7 +2196,7 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
             await enviarCorreoResend(
               correoDestino: correoDestino,
               asuntoPersonalizado: asuntoPersonalizado,
-              prefacioHtml: null, // <- clave: no mostrar encabezado arriba en el principal
+              prefacioHtml: prefacioHtml
             );
           },
 
