@@ -19,6 +19,8 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
 
   /// Filtro de estado
   String _filtroEstado = 'Solicitado';
+  String _filtroServicio = 'Todos';
+
 
   /// Configuración de colecciones -> etiqueta y carpeta
   final List<_FuenteColeccion> _fuentes = const [
@@ -32,7 +34,7 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
     _FuenteColeccion(collection: 'condicional_solicitados',          tipoServicio: 'Libertad condicional',       pathStorage: 'condicional'),
     _FuenteColeccion(collection: 'copiaSentencia_solicitados',       tipoServicio: 'Copia de sentencia',         pathStorage: 'copiaSentencia'),
     _FuenteColeccion(collection: 'derechos_peticion_solicitados',    tipoServicio: 'Derecho de petición',        pathStorage: 'derechos_peticion'),
-    _FuenteColeccion(collection: 'trasladoProceso_solicitados',      tipoServicio: 'Traslado de proceso',  pathStorage: 'traslado'),
+    _FuenteColeccion(collection: 'trasladoProceso_solicitados',      tipoServicio: 'Traslado de proceso',        pathStorage: 'trasladoProceso'),
   ];
 
   /// Estados que van a la vista de resultado
@@ -99,11 +101,8 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
               return const Center(child: CircularProgressIndicator());
             }
             final listas = snapshot.data ?? [];
-
-            // Achatar
             final todosDocs = listas.expand((l) => l).toList();
 
-            // Mapear a modelo común
             final items = todosDocs
                 .map((doc) => _mapDocToItem(doc))
                 .where((e) => e != null)
@@ -124,13 +123,34 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
               counts[it.status] = (counts[it.status] ?? 0) + 1;
             }
 
-            // Filtro por estado
-            final filtrados = items.where((e) => e.status == _filtroEstado).toList();
+            // Servicios y conteos
+            final serviciosSet = <String>{'Todos'}..addAll(items.map((e) => e.tipoServicio));
+            final servicios = serviciosSet.toList()
+              ..sort((a, b) {
+                if (a == 'Todos') return -1;
+                if (b == 'Todos') return 1;
+                return a.toLowerCase().compareTo(b.toLowerCase());
+              });
 
-            // 👉 Orden: más días desde fechaEnvio → menos.
-// Los que no tienen fechaEnvio van de últimos.
+            final countsServicios = <String, int>{};
+            for (final it in items) {
+              countsServicios[it.tipoServicio] = (countsServicios[it.tipoServicio] ?? 0) + 1;
+            }
+            countsServicios['Todos'] = items.length;
+
+            // 👉 Mostrar/ocultar filtro de estado según servicio
+            final bool showEstado = _filtroServicio == 'Todos';
+
+            // Filtro combinado: si servicio ≠ "Todos", se ignora estado
+            final filtrados = items.where((e) {
+              final okServicio = _filtroServicio == 'Todos' || e.tipoServicio == _filtroServicio;
+              final okEstado = showEstado ? e.status == _filtroEstado : true;
+              return okServicio && okEstado;
+            }).toList();
+
+            // Orden por días desde fechaEnvio
             int _diasDesdeEnvio(SolicitudItem it) {
-              if (it.fechaEnvio == null) return -1; // sin envío -> al final
+              if (it.fechaEnvio == null) return -1;
               return DateTime.now().difference(it.fechaEnvio!).inDays;
             }
             filtrados.sort((a, b) => _diasDesdeEnvio(b).compareTo(_diasDesdeEnvio(a)));
@@ -138,27 +158,112 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
             return Column(
               children: [
                 const SizedBox(height: 8),
-                _EstadoChips(
-                  selected: _filtroEstado,
-                  counts: counts,
-                  onSelected: (estado) => setState(() => _filtroEstado = estado),
-                ),
-                const Divider(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: PopupMenuButton<String>(
-                    initialValue: _filtroEstado,
-                    onSelected: (v) => setState(() => _filtroEstado = v),
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(value: 'Solicitado', child: Text('Solicitado')),
-                      PopupMenuItem(value: 'Diligenciado', child: Text('Diligenciado')),
-                      PopupMenuItem(value: 'Revisado', child: Text('Revisado')),
-                      PopupMenuItem(value: 'Enviado', child: Text('Enviado')),
-                      PopupMenuItem(value: 'Concedido', child: Text('Concedido')),
-                      PopupMenuItem(value: 'Negado', child: Text('Negado')),
-                    ],
-                    icon: const Icon(Icons.filter_list),
+
+                // Chips de ESTADO: solo si servicio == "Todos"
+                if (showEstado)
+                  _EstadoChips(
+                    selected: _filtroEstado,
+                    counts: counts,
+                    onSelected: (estado) => setState(() => _filtroEstado = estado),
                   ),
+
+                const Divider(height: 16),
+
+                // Barra de filtros
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // BOTÓN TIPO SERVICIO
+                    TextButton.icon(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        backgroundColor: Colors.deepPurple.shade50,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: const BorderSide(color: Colors.deepPurple, width: 1),
+                        ),
+                      ),
+                      icon: const Icon(Icons.category, color: Colors.deepPurple),
+                      label: const Text(
+                        'Tipo servicio',
+                        style: TextStyle(
+                          color: Colors.deepPurple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      onPressed: () async {
+                        final seleccionado = await showMenu<String>(
+                          context: context,
+                          position: const RelativeRect.fromLTRB(100, 100, 100, 100),
+                          items: servicios.map((s) {
+                            return PopupMenuItem<String>(
+                              value: s,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Flexible(child: Text(s, overflow: TextOverflow.ellipsis)),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '(${countsServicios[s] ?? 0})',
+                                    style: const TextStyle(color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        );
+
+                        if (seleccionado != null) {
+                          setState(() {
+                            _filtroServicio = seleccionado;
+                            // Si es un servicio específico, resetea el estado
+                            if (seleccionado != 'Todos') _filtroEstado = 'Solicitado';
+                          });
+                        }
+                      },
+                    ),
+
+                    // BOTÓN ESTADO (solo si es "Todos")
+                    if (_filtroServicio == 'Todos')
+                      TextButton.icon(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          backgroundColor: Colors.deepPurple.shade50,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            side: const BorderSide(color: Colors.deepPurple, width: 1),
+                          ),
+                        ),
+                        icon: const Icon(Icons.filter_list, color: Colors.deepPurple),
+                        label: const Text(
+                          'Estado',
+                          style: TextStyle(
+                            color: Colors.deepPurple,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        onPressed: () async {
+                          final seleccionado = await showMenu<String>(
+                            context: context,
+                            position: const RelativeRect.fromLTRB(100, 100, 100, 100),
+                            items: const [
+                              PopupMenuItem(value: 'Solicitado', child: Text('Solicitado')),
+                              PopupMenuItem(value: 'Diligenciado', child: Text('Diligenciado')),
+                              PopupMenuItem(value: 'Revisado', child: Text('Revisado')),
+                              PopupMenuItem(value: 'Enviado', child: Text('Enviado')),
+                              PopupMenuItem(value: 'Concedido', child: Text('Concedido')),
+                              PopupMenuItem(value: 'Negado', child: Text('Negado')),
+                            ],
+                          );
+
+                          if (seleccionado != null) {
+                            setState(() {
+                              _filtroEstado = seleccionado;
+                            });
+                          }
+                        },
+                      ),
+                  ],
                 ),
                 Expanded(
                   child: ListView.builder(
