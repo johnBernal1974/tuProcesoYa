@@ -240,13 +240,13 @@ class _CheckoutPageState extends State<CheckoutPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
+              const SizedBox(height: 5),
               const Text("Gracias por confiar en nosotros. Esta herramienta está diseñada para brindarte apoyo real y facilitar el ejercicio de tus derechos. Estamos contigo en cada paso.",
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, height: 1.2), textAlign: TextAlign.center),
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, height: 1.2), textAlign: TextAlign.center),
               const SizedBox(height: 10),
               const Text(
                 "Para acceder a todos nuestros servicios a precios justos, necesitas una suscripción activa. Esta se renueva cada 6 meses y te permite usar la plataforma sin límites, enviar solicitudes legales, hacer seguimiento detallado y recibir notificaciones sobre tus trámites. Además, toda tu información estará protegida y respaldada.",
-                style: TextStyle(fontSize: 14, height: 1.2),
+                style: TextStyle(fontSize: 12, height: 1.2),
                 textAlign: TextAlign.center,
               ),
 
@@ -264,7 +264,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 )
               else
                 const CircularProgressIndicator(),
-              const SizedBox(height: 70),
+              const SizedBox(height: 50),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: primary),
                 onPressed: _pagarSuscripcion,

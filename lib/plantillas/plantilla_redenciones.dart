@@ -86,6 +86,10 @@ Así mismo, en aplicación del <b>principio de favorabilidad penal</b> consagrad
       CC: $identificacionPpl<br>
       TD: $td<br>
       NUI: $nui<br><br><br>
+      
+      <div style="margin-top: 40px;">
+      <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="160" height="50"/>
+    </div>
 
       <div style="margin-top: 40px; color: #444; font-size: 12px;">
   <b style="color: black;">NOTA IMPORTANTE</b><br>

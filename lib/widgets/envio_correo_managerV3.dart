@@ -189,6 +189,14 @@ class EnvioCorreoManagerV3 {
           );
         }
 
+        await _guardarCorreoDestinoEnDoc(
+          nombreColeccionFirestore: nombreColeccionFirestore,
+          idDocumentoSolicitud: idDocumentoSolicitud,
+          tipoEnvio: "principal",
+          correoDestino: correoDestinoPrincipal,
+          esPrimerEnvioPosible: true,
+        );
+
         Navigator.of(loaderCtx!).pop();
 
         // ✅ Mostrar éxito principal
@@ -577,7 +585,12 @@ ${ultimoHtmlEnviado ?? htmlFinal}
         nombreColeccionFirestore: nombreColeccionFirestore, // usado solo en Firestore
       );
 
-
+      await _guardarCorreoDestinoEnDoc(
+        nombreColeccionFirestore: nombreColeccionFirestore,
+        idDocumentoSolicitud: idDocumentoSolicitud,
+        tipoEnvio: tipoEnvio,           // "centro_reclusion" o "reparto"
+        correoDestino: correoDestino,
+      );
 
       // 🔹 Cerrar el diálogo de carga
       Navigator.of(loaderCtx!).pop();
@@ -612,6 +625,54 @@ ${ultimoHtmlEnviado ?? htmlFinal}
       }
     }
   }
+
+  Future<void> _guardarCorreoDestinoEnDoc({
+    required String nombreColeccionFirestore,
+    required String idDocumentoSolicitud,
+    required String tipoEnvio,      // "principal" | "centro_reclusion" | "reparto"
+    required String correoDestino,
+    bool esPrimerEnvioPosible = false, // true solo para el envío principal inicial si quieres marcarlo
+  }) async {
+    // Mapea a una segunda ruta opcional "destinatarios.*" por si luego lo usas en UI
+    String? keyDest;
+    switch (tipoEnvio) {
+      case 'principal':
+        keyDest = 'principal';
+        break;
+      case 'centro_reclusion':
+        keyDest = 'centro_reclusion';
+        break;
+      case 'reparto':
+        keyDest = 'reparto';
+        break;
+    }
+
+    final docRef = FirebaseFirestore.instance
+        .collection(nombreColeccionFirestore)
+        .doc(idDocumentoSolicitud);
+
+    final update = <String, dynamic>{
+      // nuevo mapa de correos, paralelo a fechaHtmlCorreo.*
+      'correoHtmlCorreo.$tipoEnvio': correoDestino,
+
+      // opcional: guardar también en un nodo "destinatarios"
+      if (keyDest != null) 'destinatarios.$keyDest': correoDestino,
+
+      // útil para UI
+      'ultimoEnvio': FieldValue.serverTimestamp(),
+
+      // historial opcional
+      'correoHtmlCorreo_historial.$tipoEnvio': FieldValue.arrayUnion([correoDestino]),
+    };
+
+    // marca primera fecha de envío si te sirve (solo para principal)
+    if (esPrimerEnvioPosible && tipoEnvio == 'principal') {
+      update['fechaEnvioInicial'] = FieldValue.serverTimestamp();
+    }
+
+    await docRef.set(update, SetOptions(merge: true));
+  }
+
 
 
 

@@ -541,17 +541,14 @@ class _HistorialSolicitudesDomiciliariaAdminPageState extends State<HistorialSol
     try {
       // 🔹 Obtener el primer documento (con ID aleatorio) de la colección "configuraciones"
       QuerySnapshot configCollection = await FirebaseFirestore.instance.collection("configuraciones").get();
-      print("📁 Documentos encontrados en 'configuraciones': ${configCollection.docs.length}");
 
       if (configCollection.docs.isNotEmpty) {
         DocumentSnapshot configDoc = configCollection.docs.first;
         final data = configDoc.data() as Map<String, dynamic>;
-        print("📄 Datos del primer documento: $data");
 
         // 🔥 Extraer el valor del tiempo de respuesta
         if (data.containsKey("tiempo_respuesta_prision_domiciliaria")) {
           final valor = (data["tiempo_respuesta_prision_domiciliaria"] as num).toInt();
-          print("✅ Tiempo configurado: $valor días");
           return valor;
         } else {
           print("⚠️ Nodo 'tiempo_respuesta_prision_domiciliaria' no encontrado.");

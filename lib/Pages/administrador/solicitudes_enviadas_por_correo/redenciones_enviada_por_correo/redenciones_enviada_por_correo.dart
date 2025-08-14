@@ -1,4 +1,6 @@
 
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -12,13 +14,17 @@ import 'dart:io'; // Necesario para manejar archivos en almacenamiento local
 import 'package:universal_html/html.dart' as html;
 
 import '../../../../commons/admin_provider.dart';
-import '../../../../commons/archivoViewerWeb.dart';
-import '../../../../commons/archivoViewerWeb2.dart';
 import '../../../../commons/main_layaout.dart';
 import '../../../../models/ppl.dart';
+import '../../../../plantillas/plantilla_impulso_procesal.dart';
 import '../../../../src/colors/colors.dart';
 import '../../../../widgets/boton_notificar_respuesta_correo.dart';
 import '../../../../widgets/email_status_widget.dart';
+import 'package:tuprocesoya/widgets/impulsos.dart' as imp;
+
+import '../../../../widgets/impulso_correo_managerV1.dart';
+import 'package:http/http.dart' as http;
+
 
 
 class SolicitudesRedencionPenaPorCorreoPage extends StatefulWidget {
@@ -74,6 +80,16 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
 
   List<PlatformFile> _selectedFiles = [];
   Map<String, dynamic>? solicitudData;
+
+  String? pplNui;
+  String? pplTd;
+  String? pplDocumento;
+  String? pplCentro;
+  String? pplPatio;
+  String? pplJuzgadoEP;
+
+  final _impMgr = ImpulsoCorreoManagerV1();
+
 
 
   @override
@@ -195,6 +211,8 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                                       seguimiento: widget.numeroSeguimiento,
                                       seccionHistorial: "Solicitud redenciones",
                                     ),
+                                    const SizedBox(height: 20),
+                                    _buildImpulsoBanner(),
                                   ],
                                 ),
                               ),
@@ -242,6 +260,8 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                                     seguimiento: widget.numeroSeguimiento,
                                     seccionHistorial: "Solicitud redenciones",
                                   ),
+                                  const SizedBox(height: 20),
+                                  _buildImpulsoBanner(),
                                 ],
                               ),
                             ),
@@ -258,6 +278,325 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
       ),
     );
   }
+
+  ///PARA IMPULSO
+
+  List<imp.CorreoDestino> _obtenerCorreosDestinatarios() {
+    final list = <imp.CorreoDestino>[];
+    final seen = <String>{};
+    void add(String? e, String tag) {
+      final s = (e ?? '').trim();
+      if (s.isEmpty || !s.contains('@')) return;
+      if (seen.add(s)) list.add(imp.CorreoDestino(s, tag));
+    }
+
+    // ✅ leemos del mapa normalizado por fetchUserData()
+    final m = solicitudData?['__correosImpulso'];
+    if (m is Map) {
+      add(m['principal']?.toString(), 'Principal');
+      add(m['centro_reclusion']?.toString(), 'Centro reclusión');
+      add(m['reparto']?.toString(), 'Reparto');
+    }
+
+    debugPrint('[Impulso] correos extraídos: '
+        '${list.map((c) => '${c.etiqueta}:${c.email}').join(', ')}');
+    return list;
+  }
+
+  Widget _buildImpulsoBanner() {
+    // 🔎 LOG 1: entrada
+    debugPrint('[Gate] entra _buildImpulsoBanner '
+        'status=${widget.status} sinResp=${widget.sinRespuesta} fechaEnvio=$fechaEnvio');
+
+    // 1) Debe estar Enviado + sinRespuesta
+    final estEnviado = widget.status.trim().toLowerCase() == 'enviado';
+    if (!(estEnviado && widget.sinRespuesta)) {
+      debugPrint('[Gate] oculto: condiciones estado/sinRespuesta no cumplen '
+          '(estEnviado=$estEnviado sinResp=${widget.sinRespuesta})');
+      return const SizedBox.shrink();
+    }
+
+    // 2) Debe existir fechaEnvio
+    if (fechaEnvio == null) {
+      debugPrint('[Gate] oculto: fechaEnvio == null');
+      return const SizedBox.shrink();
+    }
+
+    // 3) Correos disponibles
+    final correos = _obtenerCorreosDestinatarios();
+    if (correos.isEmpty) {
+      debugPrint('[Gate] oculto: correos vacíos');
+      return const SizedBox.shrink();
+    }
+
+    // 4) Plazo y flag de impulso ya enviado
+    final int diasPlazo = (solicitudData?['plazoImpulsoDias'] as int?) ?? 15;
+    final bool yaSeEnvioImpulso = (solicitudData?['yaSeEnvioImpulso'] == true);
+    final int diasTranscurridos = DateTime.now().difference(fechaEnvio!).inDays;
+
+    debugPrint('[Gate] listo para montar banner: '
+        'fechaEnvio=$fechaEnvio diasTranscurridos=$diasTranscurridos '
+        'diasPlazo=$diasPlazo correos=${correos.length} yaSeEnvio=$yaSeEnvioImpulso');
+
+    // 5) Montar el banner
+    return imp.ImpulsoProcesalBanner(
+      fechaUltimoEnvio: fechaEnvio!.toLocal(),
+      diasPlazo: diasPlazo,
+      correos: correos,
+      yaSeEnvioImpulso: yaSeEnvioImpulso,
+
+      // ---------- PREVIEW HTML ----------
+      buildPreviewHtml: (correoSeleccionado) async {
+        // 1) Resolución de saludo y entidad según el correo destino
+        final c = _obtenerCorreosDestinatarios()
+            .firstWhere((x) => x.email == correoSeleccionado);
+
+        final dirigido = _resolverSaludo(c);
+        final entidad  = _resolverEntidad(c);
+
+        // 2) Traer "el correo anterior" exactamente para ese destinatario
+        String? htmlAnterior = await _buscarHtmlAnteriorPorDestino(correoSeleccionado);
+
+        // 3) Construir la plantilla con el htmlAnterior incrustado
+        final tpl = ImpulsoProcesalTemplate(
+          dirigido: dirigido,
+          entidad: entidad,
+          servicio: widget.subcategoria,
+          numeroSeguimiento: widget.numeroSeguimiento,
+          fechaEnvioInicial: fechaEnvio,
+          diasPlazo: (solicitudData?['plazoImpulsoDias'] as int?) ?? 15,
+          nombrePpl: userData?.nombrePpl ?? '',
+          apellidoPpl: userData?.apellidoPpl ?? '',
+          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+          centroPenitenciario: (userData?.centroReclusion ?? '').toString(),
+          nui: userData?.nui ?? '',
+          td: userData?.td ?? '',
+          patio: userData?.patio ?? '',
+          htmlAnterior: htmlAnterior, // ⬅️ aquí va el correo anterior (en texto o fallback con link)
+          logoUrl: "https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635",
+        );
+
+        return tpl.generarHtml();
+      },
+
+
+      // ---------- ENVÍO (Storage + Cloud Function) ----------
+      enviarImpulso: ({required String correoDestino, required String html}) async {
+        final firestore = FirebaseFirestore.instance;
+        final docRef = firestore
+            .collection('redenciones_solicitados')
+            .doc(widget.idDocumento);
+
+        final now = DateTime.now();
+        final ts = now.millisecondsSinceEpoch;
+
+        // 1) Subir HTML a Storage
+        final storage = FirebaseStorage.instance;
+        final pathHtml = 'redenciones_solicitados/${widget.idDocumento}/impulsos/$ts.html';
+        final refHtml  = storage.ref().child(pathHtml);
+
+        await refHtml.putString(
+          html,
+          format: PutStringFormat.raw,
+          metadata: SettableMetadata(
+            contentType: 'text/html; charset=utf-8',
+            cacheControl: 'public, max-age=31536000',
+          ),
+        );
+        final htmlUrl = await refHtml.getDownloadURL();
+
+        // 2) Log preliminar en Firestore
+        final subject = 'Impulso procesal – ${widget.subcategoria} – ${widget.numeroSeguimiento}';
+        final logRef = await docRef.collection('log_correos').add({
+          'to': [correoDestino],
+          'subject': subject,
+          'html_url': htmlUrl,
+          'html_len': html.length,
+          'timestamp': FieldValue.serverTimestamp(),
+          'tipo': 'impulso_procesal',
+        });
+
+        // 3) Llamar Cloud Function (Resend)
+        final urlCF = Uri.parse(
+          "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend",
+        );
+
+        final cc = ['peticiones@tuprocesoya.com']; // opcional
+
+        final payload = {
+          'to': [correoDestino],
+          'cc': cc,
+          'subject': subject,
+          'html': html, // enviamos el mismo HTML que subimos
+          'archivos': [], // si adjuntas, usa [{'name': '...', 'url': '...'}]
+          'idDocumento': widget.idDocumento,
+          'enviadoPor': FirebaseAuth.instance.currentUser?.phoneNumber ??
+              FirebaseAuth.instance.currentUser?.email ??
+              'app',
+          'tipo': 'impulso_procesal',
+          'extras': {
+            'logId': logRef.id,
+            'htmlUrl': htmlUrl,
+            'collection': 'redenciones_solicitados',
+          }
+        };
+
+        final resp = await http.post(
+          urlCF,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode(payload),
+        );
+
+        if (resp.statusCode < 200 || resp.statusCode >= 300) {
+          await logRef.update({
+            'envio_error': true,
+            'envio_status': resp.statusCode,
+            'envio_body': resp.body,
+            'envio_at': FieldValue.serverTimestamp(),
+          });
+          throw Exception('CF respondió ${resp.statusCode}: ${resp.body}');
+        }
+
+        // 4) Marcar solicitud
+        await docRef.update({
+          'yaSeEnvioImpulso': true,
+          'impulso': {
+            'fechaEnvio': FieldValue.serverTimestamp(),
+            'destinatario': correoDestino,
+            'htmlUrl': htmlUrl,
+            'subject': subject,
+            'logId': logRef.id,
+          }
+        });
+
+        // 5) Confirmar log
+        await logRef.update({
+          'enviado_ok': true,
+          'enviado_at': FieldValue.serverTimestamp(),
+        });
+      },
+
+      onEnviado: () => fetchUserData(),
+    );
+  }
+
+
+  ///helper para la entidad de los impulsos
+  String? _soloDespuesDeGuion(String? s) {
+    if (s == null) return null;
+    final i = s.indexOf('-');
+    return (i >= 0) ? s.substring(i + 1).trim() : s.trim();
+  }
+
+  String _resolverSaludo(imp.CorreoDestino c) {
+    final etq = c.etiqueta.toLowerCase();
+    if (etq.contains('centro')) return 'Señor(a) Director(a)';
+    if (etq.contains('reparto')) return 'Señores Oficina de Reparto';
+    return 'Señor(a) Juez';
+  }
+
+  String _resolverEntidad(imp.CorreoDestino c) {
+    final etq = c.etiqueta.toLowerCase();
+
+    if (etq.contains('centro')) {
+      // desde userData
+      return _soloDespuesDeGuion(userData?.centroReclusion)
+          ?? 'Centro de reclusión';
+    }
+
+    if (etq.contains('reparto')) {
+      // si guardas el nombre exacto cuando seleccionas reparto
+      final repartoNombre = (solicitudData?['entidadRepartoNombre'] as String?)?.trim();
+      return _soloDespuesDeGuion(repartoNombre) ?? 'Oficina de Reparto';
+    }
+
+    // principal / juez (EPMS) — desde userData
+    return _soloDespuesDeGuion(userData?.juzgadoEjecucionPenas)
+        ?? 'Juzgado de Ejecución de Penas';
+  }
+
+  /// Busca en log_correos el último correo NO-impulso enviado al `emailDestino`.
+  /// Devuelve el HTML en texto, o si no existe, intenta devolver un fallback con el `html_url`.
+  Future<String?> _buscarHtmlAnteriorPorDestino(String emailDestino) async {
+    final col = FirebaseFirestore.instance
+        .collection('redenciones_solicitados')
+        .doc(widget.idDocumento)
+        .collection('log_correos');
+
+    try {
+      // Trae los 20 más recientes dirigidos a ese email
+      final qs = await col
+          .where('to', arrayContains: emailDestino)
+          .orderBy('timestamp', descending: true)
+          .limit(20)
+          .get();
+
+      // 1) preferimos el último que NO sea impulso y que tenga 'html' en texto
+      for (final d in qs.docs) {
+        final data = d.data();
+        final tipo = (data['tipo'] ?? '').toString().trim();
+        if (tipo == 'impulso_procesal') continue; // saltamos impulsos
+
+        final h = (data['html'] as String?)?.trim();
+        if (h != null && h.isNotEmpty) return h;
+      }
+
+      // 2) si no hubo 'html' en texto, intentamos con 'html_url' para armar un fallback (enlace)
+      for (final d in qs.docs) {
+        final data = d.data();
+        final tipo = (data['tipo'] ?? '').toString().trim();
+        if (tipo == 'impulso_procesal') continue;
+
+        final htmlUrl = (data['html_url'] as String?)?.trim();
+        if (htmlUrl != null && htmlUrl.isNotEmpty) {
+          // Fallback: muchos clientes bloquean iframes, así que dejamos un link claro
+          return """
+<div style="font-size:13px;color:#555;">
+  <p><b>Correo enviado inicialmente (ver en línea):</b></p>
+  <p>
+    <a href="$htmlUrl" target="_blank" rel="noopener noreferrer">$htmlUrl</a>
+  </p>
+  <p style="margin-top:8px;">
+    <i>(Nota: para poder incrustar aquí el contenido completo, guarda también el campo <code>html</code> plano en log_correos al momento del primer envío.)</i>
+  </p>
+</div>
+""";
+        }
+      }
+
+      // 3) si no hay nada dirigido a ese correo, intentamos el último no-impulso cualquiera
+      final qs2 = await col.orderBy('timestamp', descending: true).limit(20).get();
+      for (final d in qs2.docs) {
+        final data = d.data();
+        final tipo = (data['tipo'] ?? '').toString().trim();
+        if (tipo == 'impulso_procesal') continue;
+
+        final h = (data['html'] as String?)?.trim();
+        if (h != null && h.isNotEmpty) return h;
+
+        final htmlUrl = (data['html_url'] as String?)?.trim();
+        if (htmlUrl != null && htmlUrl.isNotEmpty) {
+          return """
+<div style="font-size:13px;color:#555;">
+  <p><b>Correo enviado inicialmente (ver en línea):</b></p>
+  <p>
+    <a href="$htmlUrl" target="_blank" rel="noopener noreferrer">$htmlUrl</a>
+  </p>
+  <p style="margin-top:8px;">
+    <i>(Nota: para poder incrustar aquí el contenido completo, guarda también el campo <code>html</code> plano en log_correos al momento del primer envío.)</i>
+  </p>
+</div>
+""";
+        }
+      }
+    } catch (e) {
+      // Si Firestore te pide índice por el where+orderBy, verás un link en la consola.
+      debugPrint('[Impulso] _buscarHtmlAnteriorPorDestino error: $e');
+    }
+    return null;
+  }
+
+
 
   Widget _buildTutelaButton(BuildContext context) {
     return ElevatedButton(
@@ -326,26 +665,6 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
         ],
       ),
     );
-  }
-
-  Future<void> pickFiles() async {
-    try {
-      // Permitir selección múltiple de archivos
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        allowMultiple: false, // Permitir selección múltiple
-      );
-
-      if (result != null) {
-        setState(() {
-          // Agregar los archivos seleccionados a la lista existente
-          _selectedFiles.addAll(result.files);
-        });
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error al seleccionar archivos: $e");
-      }
-    }
   }
 
   /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
@@ -423,8 +742,6 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
       ],
     );
   }
-
-
 
   Widget infoReparacionVictima({required String reparacion}) {
     final descripciones = {
@@ -592,71 +909,113 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
     return DateFormat(formato, 'es').format(fecha);
   }
 
+
+
   void fetchUserData() async {
     try {
-      // 🧑‍💻 Obtener datos del usuario
-      Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
+      // 1) PPL por provider
+      final fetchedData = await _pplProvider.getById(widget.idUser);
 
-      // 🔥 Obtener documento de Firestore
-      DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
+      // 2) Documento de la solicitud
+      final docRef = FirebaseFirestore.instance
           .collection('redenciones_solicitados')
-          .doc(widget.idDocumento)
-          .get();
-
-      // ✅ Verificar si el documento existe
-      if (documentSnapshot.exists) {
-        Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
-
-        // 🔍 Verificar si `data` no es nulo
-        if (data != null) {
-          if (mounted) {
-            setState(() {
-              userData = fetchedData;
-              solicitudData = data;
-              isLoading = false;
-
-              // ✅ Asignar valores de Firestore o definir valores por defecto si no existen
-              consideraciones = data['consideraciones_revisado'] ?? 'Sin consideraciones';
-              fundamentosDeDerecho = data['fundamentos_de_derecho_revisado'] ?? 'Sin fundamentos';
-              peticionConcreta = data['peticion_concreta_revisado'] ?? 'Sin petición concreta';
-
-              // 🆕 Cargar nuevos nodos
-              diligencio = data['diligencio'] ?? 'No registrado';
-              reviso = data['reviso'] ?? 'No registrado';
-              envio = data['envió'] ?? 'No registrado';
-              fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
-              fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
-              fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
-            });
-          } else {
-            if (kDebugMode) {
-              print("⚠️ El widget ya no está montado, no se actualizó el estado.");
-            }
-          }
-        } else {
-          if (kDebugMode) {
-            print("⚠️ Los datos en Firestore son nulos.");
-          }
-        }
-      } else {
-        if (kDebugMode) {
-          print("⚠️ Documento no encontrado en Firestore");
-        }
-
-        // Si no existe el documento, igualmente actualizamos `userData` y quitamos el loader
+          .doc(widget.idDocumento);
+      final snap = await docRef.get();
+      if (!snap.exists) {
         if (mounted) {
           setState(() {
             userData = fetchedData;
             isLoading = false;
           });
         }
+        debugPrint('⚠️ Documento no encontrado');
+        return;
       }
+      final data = (snap.data() as Map<String, dynamic>?) ?? {};
+
+      // 3) (Opcional) Trae el doc de Ppl directo por si el modelo no trae todos los campos
+      final pplSnap = await FirebaseFirestore.instance
+          .collection('Ppl') // <- usa el nombre exacto de tu colección
+          .doc(widget.idUser)
+          .get();
+      final pplMap = (pplSnap.data() as Map<String, dynamic>?) ?? {};
+
+      // 4) Toma de PplProvider si existe; si no, cae al mapa de Firestore
+      String? getStr(dynamic v) =>
+          (v is String && v.trim().isNotEmpty) ? v.trim() : null;
+
+      final _nui = getStr(fetchedData?.nui) ?? getStr(pplMap['nui']);
+      final _td  = getStr(fetchedData?.td) ??
+          getStr(pplMap['td']) ??
+          getStr(pplMap['tipo_documento']) ?? getStr(pplMap['tipoDocumento']);
+      final _doc = getStr(fetchedData?.numeroDocumentoPpl) ??
+          getStr(pplMap['documento']) ?? getStr(pplMap['cedula']);
+      final _jep = getStr(fetchedData?.juzgadoEjecucionPenas) ??
+          getStr(pplMap['juzgado_ejecucion_penas']) ?? getStr(pplMap['Juzgado de ejecución de penas']);
+      final _centro = getStr(fetchedData?.centroReclusion) ??
+          getStr(pplMap['centro_penitenciario']) ??
+          getStr(pplMap['establecimiento']);
+      final _patio = getStr(fetchedData?.patio) ?? getStr(pplMap['patio']);
+
+      // ---- (tu normalización de correos como ya la tienes) ----
+      String? _getStrKey(String dottedPath) {
+        try {
+          final v = snap.get(dottedPath);
+          if (v is String && v.trim().isNotEmpty) return v.trim();
+        } catch (_) {}
+        final raw = data[dottedPath];
+        if (raw is String && raw.trim().isNotEmpty) return raw.trim();
+        return null;
+      }
+
+      final principal = _getStrKey('correoHtmlCorreo.principal') ??
+          _getStrKey('destinatarios.principal');
+      final centro   = _getStrKey('correoHtmlCorreo.centro_reclusion') ??
+          _getStrKey('destinatarios.centro_reclusion');
+      final reparto  = _getStrKey('correoHtmlCorreo.reparto') ??
+          _getStrKey('destinatarios.reparto');
+
+      final correosImpulso = <String, String>{};
+      if (principal != null) correosImpulso['principal'] = principal;
+      if (centro != null)    correosImpulso['centro_reclusion'] = centro;
+      if (reparto != null)   correosImpulso['reparto'] = reparto;
+
+      final dataMerged = {...data, '__correosImpulso': correosImpulso};
+
+      final DateTime? _fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
+
+      if (!mounted) return;
+      setState(() {
+        userData = fetchedData;
+        solicitudData = dataMerged;
+        isLoading = false;
+
+        // lo que ya tenías
+        consideraciones      = data['consideraciones_revisado'] ?? 'Sin consideraciones';
+        fundamentosDeDerecho = data['fundamentos_de_derecho_revisado'] ?? 'Sin fundamentos';
+        peticionConcreta     = data['peticion_concreta_revisado'] ?? 'Sin petición concreta';
+        diligencio           = data['diligencio'] ?? 'No registrado';
+        reviso               = data['reviso'] ?? 'No registrado';
+        envio                = data['envió'] ?? 'No registrado';
+        fechaEnvio           = _fechaEnvio;
+        fechaDiligenciamiento= (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
+        fechaRevision        = (data['fecha_revision'] as Timestamp?)?.toDate();
+
+        // ✅ guarda los campos del PPL en estado
+        pplNui        = _nui;
+        pplTd         = _td;
+        pplDocumento  = _doc;
+        pplCentro     = _centro;
+        pplPatio      = _patio;
+        pplJuzgadoEP      = _jep;
+      });
+
+      debugPrint('✅ PPL nui=$_nui td=$_td doc=$_doc centro=$_centro patio=$_patio');
     } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al obtener datos de Firestore: $e");
-      }
+      debugPrint('❌ Error Firestore: $e');
     }
   }
+
 
   /// 📄 Abrir HTML en nueva pestaña para que el usuario pueda imprimir/guardar como PDF
   void abrirHtmlParaImprimir(String url) {
@@ -793,3 +1152,5 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
   }
 
 }
+
+
