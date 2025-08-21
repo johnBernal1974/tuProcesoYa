@@ -307,6 +307,7 @@ exports.sendEmailWithResend = onRequest({
       attachments
     };
 
+    // Enviar con Resend
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -322,19 +323,32 @@ exports.sendEmailWithResend = onRequest({
     let result = {};
     try { result = JSON.parse(raw); } catch {}
 
+    // ---------- Guardar HTML y PDF en Storage con token ----------
     const bucket = admin.storage().bucket();
     const timestamp = new Date().toISOString();
 
-    const htmlPath = `${tipo}/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
-    await bucket.file(htmlPath).save(Buffer.from(html, "utf-8"), {
-      metadata: { contentType: "text/html; charset=utf-8" }
-    });
-    await bucket.file(htmlPath).makePublic();
-    const htmlUrl = `https://storage.googleapis.com/${bucket.name}/${htmlPath}`;
+    // HTML
+    const htmlPath  = `${tipo}/${idDocumento}/correos_enviados/correo-${timestamp}.html`;
+    const htmlToken = crypto.randomUUID();
 
+    await bucket.file(htmlPath).save(Buffer.from(html, "utf-8"), {
+      resumable: false,
+      metadata: {
+        contentType: "text/html; charset=utf-8",
+        cacheControl: "public, max-age=31536000",
+        metadata: { firebaseStorageDownloadTokens: htmlToken },
+      },
+    });
+
+    const htmlUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(htmlPath)}?alt=media&token=${htmlToken}`;
+
+    // PDF (opcional)
     let pdfUrl = null;
     try {
-      const fechaEnvioTexto = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const fechaEnvioTexto = new Date().toLocaleString('es-CO', {
+        timeZone: 'America/Bogota',
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
       const listaAdjuntos = archivos?.length
         ? `<div class="adjuntos"><b>Archivos adjuntos:</b><ul>${archivos.map(a => `<li>${a.nombre}</li>`).join('')}</ul></div>`
         : "";
@@ -344,57 +358,17 @@ exports.sendEmailWithResend = onRequest({
         <head>
           <meta charset="utf-8" />
           <style>
-            @page {
-              margin: 100px 100px 120px 100px;
-            }
-            body {
-              font-family: Arial, sans-serif;
-              font-size: 13px;
-              color: #333;
-              line-height: 1.6;
-              padding-top: 20px;
-            }
-            .header {
-              margin-bottom: 30px;
-            }
-            .dato {
-              font-size: 12px;
-              font-weight: bold;
-              margin-bottom: 4px;
-            }
-            .dato span {
-              font-weight: normal;
-            }
-            .asunto {
-              font-size: 15px;
-              font-weight: bold;
-              margin: 6px 0;
-            }
-            .fecha {
-              color: #444;
-              font-size: 12px;
-            }
-            .divider {
-              border-bottom: 1px solid #ccc;
-              margin: 15px 0;
-            }
-            .adjuntos {
-              margin-top: 10px;
-              font-size: 13px;
-            }
-            .adjuntos ul {
-              padding-left: 20px;
-              margin-top: 4px;
-            }
-            footer {
-              font-size: 11px;
-              color: #666;
-              text-align: center;
-              position: fixed;
-              bottom: 30px;
-              left: 60px;
-              right: 60px;
-            }
+            @page { margin: 100px 100px 120px 100px; }
+            body { font-family: Arial, sans-serif; font-size: 13px; color: #333; line-height: 1.6; padding-top: 20px; }
+            .header { margin-bottom: 30px; }
+            .dato { font-size: 12px; font-weight: bold; margin-bottom: 4px; }
+            .dato span { font-weight: normal; }
+            .asunto { font-size: 15px; font-weight: bold; margin: 6px 0; }
+            .fecha { color: #444; font-size: 12px; }
+            .divider { border-bottom: 1px solid #ccc; margin: 15px 0; }
+            .adjuntos { margin-top: 10px; font-size: 13px; }
+            .adjuntos ul { padding-left: 20px; margin-top: 4px; }
+            footer { font-size: 11px; color: #666; text-align: center; position: fixed; bottom: 30px; left: 60px; right: 60px; }
           </style>
         </head>
         <body>
@@ -414,14 +388,25 @@ exports.sendEmailWithResend = onRequest({
       `;
 
       const pdfBuffer = await pdf.generatePdf({ content: styledHtml }, { format: 'Legal' });
-      const pdfPath = `${tipo}/${idDocumento}/correos_enviados/correo-${timestamp}.pdf`;
-      await bucket.file(pdfPath).save(pdfBuffer, { metadata: { contentType: "application/pdf" } });
-      await bucket.file(pdfPath).makePublic();
-      pdfUrl = `https://storage.googleapis.com/${bucket.name}/${pdfPath}`;
+
+      const pdfPath  = `${tipo}/${idDocumento}/correos_enviados/correo-${timestamp}.pdf`;
+      const pdfToken = crypto.randomUUID();
+
+      await bucket.file(pdfPath).save(pdfBuffer, {
+        resumable: false,
+        metadata: {
+          contentType: "application/pdf",
+          cacheControl: "public, max-age=31536000",
+          metadata: { firebaseStorageDownloadTokens: pdfToken },
+        },
+      });
+
+      pdfUrl = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(pdfPath)}?alt=media&token=${pdfToken}`;
     } catch (err) {
       console.warn("⚠️ PDF error:", err);
     }
 
+    // ---------- Log en Firestore ----------
     await db
       .collection(`${tipo}_solicitados`)
       .doc(idDocumento)
@@ -430,21 +415,23 @@ exports.sendEmailWithResend = onRequest({
         to: toList,
         cc: ccList,
         subject,
-        html,
-        htmlUrl,
+        html,                  // guarda el HTML plano (sirve para impulsos)
+        htmlUrl,               // camelCase
+        html_url: htmlUrl,     // snake_case (compatibilidad)
         pdfUrl,
         archivos: archivos?.map(a => ({ nombre: a.nombre })),
         enviadoPor,
         messageId: result.id || null,
-        timestamp: admin.firestore.FieldValue.serverTimestamp()
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-    return res.status(200).json({ success: true });
+    return res.status(200).json({ success: true, htmlUrl, pdfUrl });
   } catch (err) {
     console.error("❌ Error:", err);
     return res.status(500).json({ error: "Error enviando correo" });
   }
 });
+
 
 
 exports.generarTextoIAExtendido = onRequest({

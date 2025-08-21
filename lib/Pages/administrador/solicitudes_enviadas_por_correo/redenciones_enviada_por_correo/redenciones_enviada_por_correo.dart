@@ -25,6 +25,8 @@ import 'package:tuprocesoya/widgets/impulsos.dart' as imp;
 import '../../../../widgets/impulso_correo_managerV1.dart';
 import 'package:http/http.dart' as http;
 
+import '../../../../widgets/impulsos.dart';
+
 
 
 class SolicitudesRedencionPenaPorCorreoPage extends StatefulWidget {
@@ -280,27 +282,99 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
   }
 
   ///PARA IMPULSO
+  ///
+
+  Map<String, String> _leerDestinatarios(Map<String, dynamic>? data) {
+    final out = <String, String>{};
+
+    String? pick(String? a, String? b) {
+      final s = (a ?? '').trim();
+      if (s.isNotEmpty && s.contains('@')) return s;
+      final t = (b ?? '').trim();
+      return (t.isNotEmpty && t.contains('@')) ? t : null;
+    }
+
+    final d = (data?['destinatarios'] as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
+    final c = (data?['correoHtmlCorreo'] as Map?)?.map((k, v) => MapEntry(k.toString(), v.toString()));
+
+    final principal = pick(d?['principal'],        c?['principal']);
+    final centro    = pick(d?['centro_reclusion'], c?['centro_reclusion']);
+    final reparto   = pick(d?['reparto'],          c?['reparto']);
+
+    if (principal != null) out['principal'] = principal;
+    if (centro    != null) out['centro_reclusion'] = centro;
+    if (reparto   != null) out['reparto'] = reparto;
+
+    return out;
+  }
+
 
   List<imp.CorreoDestino> _obtenerCorreosDestinatarios() {
     final list = <imp.CorreoDestino>[];
     final seen = <String>{};
+
     void add(String? e, String tag) {
       final s = (e ?? '').trim();
       if (s.isEmpty || !s.contains('@')) return;
       if (seen.add(s)) list.add(imp.CorreoDestino(s, tag));
     }
 
-    // ✅ leemos del mapa normalizado por fetchUserData()
-    final m = solicitudData?['__correosImpulso'];
-    if (m is Map) {
-      add(m['principal']?.toString(), 'Principal');
-      add(m['centro_reclusion']?.toString(), 'Centro reclusión');
-      add(m['reparto']?.toString(), 'Reparto');
+    // 1) Leer el mapa canónico normalizado por fetchUserData()
+    final raw = solicitudData?['__correosImpulso'];
+    Map<String, String> m = {};
+    if (raw is Map) {
+      // fuerza a String->String de forma segura
+      m = raw.map((k, v) => MapEntry(k.toString(), (v ?? '').toString()));
+    }
+
+    debugPrint('[Impulso] __correosImpulso (tipo=${raw.runtimeType}): $raw');
+
+    add(m['principal'], 'Principal');
+    add(m['centro_reclusion'], 'Centro reclusión');
+    add(m['reparto'], 'Reparto');
+
+    // 2) Fallback: si por cualquier razón sigue vacío, intenta desde otros nodos
+    if (list.isEmpty) {
+      // a) destinatarios.*
+      final dest = solicitudData?['destinatarios'];
+      if (dest is Map) {
+        add(dest['principal']?.toString(), 'Principal');
+        add(dest['centro_reclusion']?.toString(), 'Centro reclusión');
+        add(dest['reparto']?.toString(), 'Reparto');
+      }
+
+      // b) correoHtmlCorreo.*
+      final chc = solicitudData?['correoHtmlCorreo'];
+      if (chc is Map) {
+        add(chc['principal']?.toString(), 'Principal');
+        add(chc['centro_reclusion']?.toString(), 'Centro reclusión');
+        add(chc['reparto']?.toString(), 'Reparto');
+      }
+
+      // c) historial (toma el último de cada array)
+      String? lastOf(List? arr) =>
+          (arr != null && arr.isNotEmpty) ? arr.last?.toString() : null;
+
+      final histP = lastOf(solicitudData?['correoHtmlCorreo_historial.principal'] as List?);
+      final histC = lastOf(solicitudData?['correoHtmlCorreo_historial.centro_reclusion'] as List?);
+      final histR = lastOf(solicitudData?['correoHtmlCorreo_historial.reparto'] as List?);
+
+      add(histP, 'Principal');
+      add(histC, 'Centro reclusión');
+      add(histR, 'Reparto');
     }
 
     debugPrint('[Impulso] correos extraídos: '
         '${list.map((c) => '${c.etiqueta}:${c.email}').join(', ')}');
     return list;
+  }
+
+  // Helper: convierte la etiqueta visible a la key estándar del documento
+  String _etiquetaToKey(String etq) {
+    final e = etq.toLowerCase();
+    if (e.contains('centro')) return 'centro_reclusion';
+    if (e.contains('reparto')) return 'reparto';
+    return 'principal';
   }
 
   Widget _buildImpulsoBanner() {
@@ -329,42 +403,50 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
       return const SizedBox.shrink();
     }
 
-    // 4) Plazo y flag de impulso ya enviado
+    // 4) Plazo
     final int diasPlazo = (solicitudData?['plazoImpulsoDias'] as int?) ?? 15;
-    final bool yaSeEnvioImpulso = (solicitudData?['yaSeEnvioImpulso'] == true);
     final int diasTranscurridos = DateTime.now().difference(fechaEnvio!).inDays;
+
+    // 5) NUEVO: Estado por correo leído del mapa estable por ETIQUETA
+    final Map<String, dynamic> impulsoMap =
+        (solicitudData?['impulso'] as Map?)
+            ?.map((k, v) => MapEntry(k.toString(), v)) ?? {};
+
+    final estadoPorCorreo = <String, dynamic>{};
+    for (final c in correos) {
+      final key = _etiquetaToKey(c.etiqueta);
+      estadoPorCorreo[c.email] = impulsoMap[key]; // será null si está pendiente
+    }
 
     debugPrint('[Gate] listo para montar banner: '
         'fechaEnvio=$fechaEnvio diasTranscurridos=$diasTranscurridos '
-        'diasPlazo=$diasPlazo correos=${correos.length} yaSeEnvio=$yaSeEnvioImpulso');
+        'diasPlazo=$diasPlazo correos=${correos.length}');
 
-    // 5) Montar el banner
+    // 6) Montar el banner
     return imp.ImpulsoProcesalBanner(
       fechaUltimoEnvio: fechaEnvio!.toLocal(),
       diasPlazo: diasPlazo,
       correos: correos,
-      yaSeEnvioImpulso: yaSeEnvioImpulso,
+      estadoPorCorreo: estadoPorCorreo,
 
       // ---------- PREVIEW HTML ----------
       buildPreviewHtml: (correoSeleccionado) async {
-        // 1) Resolución de saludo y entidad según el correo destino
-        final c = _obtenerCorreosDestinatarios()
-            .firstWhere((x) => x.email == correoSeleccionado);
+        final c = correos.firstWhere((x) => x.email == correoSeleccionado);
 
         final dirigido = _resolverSaludo(c);
         final entidad  = _resolverEntidad(c);
 
-        // 2) Traer "el correo anterior" exactamente para ese destinatario
-        String? htmlAnterior = await _buscarHtmlAnteriorPorDestino(correoSeleccionado);
+        // Traer el correo anterior de ese mismo destinatario
+        final htmlAnterior = await _buscarHtmlAnteriorPorDestino(correoSeleccionado);
 
-        // 3) Construir la plantilla con el htmlAnterior incrustado
+        // Plantilla tal cual la tienes
         final tpl = ImpulsoProcesalTemplate(
           dirigido: dirigido,
           entidad: entidad,
           servicio: widget.subcategoria,
           numeroSeguimiento: widget.numeroSeguimiento,
           fechaEnvioInicial: fechaEnvio,
-          diasPlazo: (solicitudData?['plazoImpulsoDias'] as int?) ?? 15,
+          diasPlazo: diasPlazo,
           nombrePpl: userData?.nombrePpl ?? '',
           apellidoPpl: userData?.apellidoPpl ?? '',
           identificacionPpl: userData?.numeroDocumentoPpl ?? '',
@@ -372,16 +454,25 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
           nui: userData?.nui ?? '',
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
-          htmlAnterior: htmlAnterior, // ⬅️ aquí va el correo anterior (en texto o fallback con link)
+          htmlAnterior: htmlAnterior,
           logoUrl: "https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635",
+          ocultarSegundaLineaSiRedundante: true,
         );
 
-        return tpl.generarHtml();
+        final htmlBase = tpl.generarHtml();
+        // 👇 Envolvemos con De/Para/Fecha para la PREVIEW
+        return _wrapEnvelopePreview(
+          para: correoSeleccionado,
+          contenidoHtml: htmlBase,
+        );
       },
 
-
       // ---------- ENVÍO (Storage + Cloud Function) ----------
-      enviarImpulso: ({required String correoDestino, required String html}) async {
+      enviarImpulso: ({
+        required String correoDestino,
+        required String html,
+        required String etiqueta,
+      }) async {
         final firestore = FirebaseFirestore.instance;
         final docRef = firestore
             .collection('redenciones_solicitados')
@@ -390,30 +481,44 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
         final now = DateTime.now();
         final ts = now.millisecondsSinceEpoch;
 
+        // Idempotencia simple (por día)
+        final hoy0 = DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+        final rawToken = '$correoDestino|$hoy0|${html.hashCode}';
+        final idempotencyToken = rawToken.hashCode.toString();
+
+        // 👇 AQUI declaras el asunto (ANTES de usarlo)
+        final subject = 'Impulso procesal – ${widget.subcategoria} – ${widget.numeroSeguimiento}';
+
+        final htmlParaEnviar = _isWrapped(html)
+            ? html
+            : _wrapEnvelopeSend(para: correoDestino, contenidoHtml: html);
+
         // 1) Subir HTML a Storage
         final storage = FirebaseStorage.instance;
-        final pathHtml = 'redenciones_solicitados/${widget.idDocumento}/impulsos/$ts.html';
+        final pathHtml = 'redenciones/${widget.idDocumento}/impulsos/$ts.html';
         final refHtml  = storage.ref().child(pathHtml);
 
         await refHtml.putString(
-          html,
+          htmlParaEnviar,
           format: PutStringFormat.raw,
           metadata: SettableMetadata(
             contentType: 'text/html; charset=utf-8',
             cacheControl: 'public, max-age=31536000',
+            contentLanguage: 'es',
           ),
         );
         final htmlUrl = await refHtml.getDownloadURL();
 
-        // 2) Log preliminar en Firestore
-        final subject = 'Impulso procesal – ${widget.subcategoria} – ${widget.numeroSeguimiento}';
+        // 2) Log preliminar
         final logRef = await docRef.collection('log_correos').add({
           'to': [correoDestino],
           'subject': subject,
-          'html_url': htmlUrl,
-          'html_len': html.length,
+          'htmlUrl': htmlUrl,
+          'html_len': htmlParaEnviar.length,
           'timestamp': FieldValue.serverTimestamp(),
-          'tipo': 'impulso_procesal',
+          'tipo': 'redenciones', /// aca va como esta en la coleccion
+          'etiqueta': etiqueta,
+          'idempotency': idempotencyToken,
         });
 
         // 3) Llamar Cloud Function (Resend)
@@ -421,19 +526,17 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
           "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend",
         );
 
-        final cc = ['peticiones@tuprocesoya.com']; // opcional
-
         final payload = {
           'to': [correoDestino],
-          'cc': cc,
-          'subject': subject,
-          'html': html, // enviamos el mismo HTML que subimos
-          'archivos': [], // si adjuntas, usa [{'name': '...', 'url': '...'}]
+          'subject': subject,            // <-- ya existe
+          'html': htmlParaEnviar,
+          'archivos': [],
           'idDocumento': widget.idDocumento,
-          'enviadoPor': FirebaseAuth.instance.currentUser?.phoneNumber ??
-              FirebaseAuth.instance.currentUser?.email ??
-              'app',
-          'tipo': 'impulso_procesal',
+          'enviadoPor': FirebaseAuth.instance.currentUser?.phoneNumber
+              ?? FirebaseAuth.instance.currentUser?.email
+              ?? 'app',
+          'tipo': 'redenciones',
+          'idempotency': idempotencyToken,
           'extras': {
             'logId': logRef.id,
             'htmlUrl': htmlUrl,
@@ -457,16 +560,16 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
           throw Exception('CF respondió ${resp.statusCode}: ${resp.body}');
         }
 
-        // 4) Marcar solicitud
+        // 4) Guardar estado por EMAIL (nuevo esquema)
         await docRef.update({
-          'yaSeEnvioImpulso': true,
-          'impulso': {
+          'impulso.$correoDestino': {
             'fechaEnvio': FieldValue.serverTimestamp(),
             'destinatario': correoDestino,
             'htmlUrl': htmlUrl,
-            'subject': subject,
+            'subject': subject,          // <-- ya existe
             'logId': logRef.id,
-          }
+            'etiqueta': etiqueta,
+          },
         });
 
         // 5) Confirmar log
@@ -479,6 +582,164 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
       onEnviado: () => fetchUserData(),
     );
   }
+
+
+  /// Quita <html>, <head>, <body> para poder incrustar el correo anterior
+  String _sanitizeInlineEmailHtml(String html) {
+    var s = html;
+
+    // Elimina DOCTYPE si viene
+    s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
+
+    // Quita <head>...</head> (insensible a mayúsculas y abarca saltos de línea)
+    s = s.replaceAll(
+      RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true),
+      '',
+    );
+
+    // Quita <html ...> y </html>
+    s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
+
+    // Quita <body ...> y </body>
+    s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
+
+    // (Opcional) quitar comentarios HTML
+    s = s.replaceAll(RegExp(r'<!--.*?-->', caseSensitive: false, dotAll: true), '');
+
+    return s.trim();
+  }
+  bool _isAlreadyWrapped(String html) {
+    return html.contains('<!--TPY:ENVELOPE-->');
+  }
+
+  bool _isWrapped(String html) => html.contains('TPY:ENV:');
+
+// SOLO PARA LA VISTA PREVIA (bonito, centrado y con ancho limitado)
+  String _wrapEnvelopePreview({
+    required String para,
+    required String contenidoHtml,
+    String de = 'peticiones@tuprocesoya.com',
+  }) {
+    final inner = _sanitizeInlineEmailHtml(contenidoHtml);
+    final fecha = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+
+    return '''
+<!--TPY:ENV:PREVIEW-->
+<meta charset="UTF-8">
+<div style="width:100%;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#111;">
+  <div style="max-width: 780px; margin: 0 auto; padding: 16px;">
+    <p style="margin:0;"><strong>De:</strong> $de</p>
+    <p style="margin:0;"><strong>Para:</strong> $para</p>
+    <p style="margin:0 0 10px 0;"><strong>Fecha de Envío:</strong> $fecha</p>
+    <hr style="margin:12px 0; border:0; border-top:1px solid #ccc;">
+    $inner
+  </div>
+</div>
+''';
+  }
+
+// SOLO PARA ENVIAR (ocupando todo el ancho, alineado a la izquierda)
+  String _wrapEnvelopeSend({
+    required String para,
+    required String contenidoHtml,
+    String de = 'peticiones@tuprocesoya.com',
+  }) {
+    final inner = _sanitizeInlineEmailHtml(contenidoHtml);
+    final fecha = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+
+    return '''
+<!--TPY:ENV:SEND-->
+<meta charset="UTF-8">
+<div style="width:100%;margin:0;padding:12px 8px;font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#111;">
+  <p style="margin:0;"><strong>De:</strong> $de</p>
+  <p style="margin:0;"><strong>Para:</strong> $para</p>
+  <p style="margin:0 0 10px 0;"><strong>Fecha de Envío:</strong> $fecha</p>
+  <hr style="margin:12px 0; border:0; border-top:1px solid #ccc;">
+  $inner
+</div>
+''';
+  }
+
+
+  /// Prefiere `html` plano; si no hay, intenta descargar `html_url`.
+  Future<String?> _buscarHtmlAnteriorPorDestino(String emailDestino) async {
+    final col = FirebaseFirestore.instance
+        .collection('redenciones_solicitados')
+        .doc(widget.idDocumento)
+        .collection('log_correos');
+
+    try {
+      final qs = await col
+          .where('to', arrayContains: emailDestino)
+          .orderBy('timestamp', descending: true)
+          .limit(20)
+          .get();
+
+      // 1) Preferir html plano
+      for (final d in qs.docs) {
+        final data = d.data();
+        final tipo = (data['tipo'] ?? '').toString().trim();
+        if (tipo == 'impulso_procesal') continue;
+        final h = (data['html'] as String?)?.trim();
+        if (h != null && h.isNotEmpty) return _sanitizeInlineEmailHtml(h);
+      }
+
+      // 2) Intentar descargar html_url
+      for (final d in qs.docs) {
+        final data = d.data();
+        final tipo = (data['tipo'] ?? '').toString().trim();
+        if (tipo == 'impulso_procesal') continue;
+        final url = (data['htmlUrl'] ?? data['html_url'])?.toString().trim();
+        if (url != null && url.isNotEmpty) {
+          try {
+            final r = await http.get(Uri.parse(url));
+            if (r.statusCode == 200) {
+              final body = r.body.trim();
+              if (body.isNotEmpty) return _sanitizeInlineEmailHtml(body);
+            }
+          } catch (_) { /* seguimos */ }
+          // Fallback: deja un link si no se pudo incrustar
+          return """
+<div style="font-size:13px;color:#555;">
+  <p><b>Correo enviado inicialmente (ver en línea):</b></p>
+  <p><a href="$url" target="_blank" rel="noopener noreferrer">$url</a></p>
+</div>
+""";
+        }
+      }
+
+      // 3) Último recurso: cualquiera no-impulso
+      final qs2 = await col.orderBy('timestamp', descending: true).limit(20).get();
+      for (final d in qs2.docs) {
+        final data = d.data();
+        final tipo = (data['tipo'] ?? '').toString().trim();
+        if (tipo == 'impulso_procesal') continue;
+        final h = (data['html'] as String?)?.trim();
+        if (h != null && h.isNotEmpty) return _sanitizeInlineEmailHtml(h);
+        final url = (data['htmlUrl'] ?? data['html_url'])?.toString().trim();
+        if (url != null && url.isNotEmpty) {
+          try {
+            final r = await http.get(Uri.parse(url));
+            if (r.statusCode == 200 && r.body.trim().isNotEmpty) {
+              return _sanitizeInlineEmailHtml(r.body);
+            }
+          } catch (_) {}
+          return """
+<div style="font-size:13px;color:#555;">
+  <p><b>Correo enviado inicialmente (ver en línea):</b></p>
+  <p><a href="$url" target="_blank" rel="noopener noreferrer">$url</a></p>
+</div>
+""";
+        }
+      }
+    } catch (e) {
+      debugPrint('[Impulso] _buscarHtmlAnteriorPorDestino error: $e');
+    }
+    return null;
+  }
+
 
 
   ///helper para la entidad de los impulsos
@@ -515,86 +776,10 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
         ?? 'Juzgado de Ejecución de Penas';
   }
 
-  /// Busca en log_correos el último correo NO-impulso enviado al `emailDestino`.
-  /// Devuelve el HTML en texto, o si no existe, intenta devolver un fallback con el `html_url`.
-  Future<String?> _buscarHtmlAnteriorPorDestino(String emailDestino) async {
-    final col = FirebaseFirestore.instance
-        .collection('redenciones_solicitados')
-        .doc(widget.idDocumento)
-        .collection('log_correos');
 
-    try {
-      // Trae los 20 más recientes dirigidos a ese email
-      final qs = await col
-          .where('to', arrayContains: emailDestino)
-          .orderBy('timestamp', descending: true)
-          .limit(20)
-          .get();
-
-      // 1) preferimos el último que NO sea impulso y que tenga 'html' en texto
-      for (final d in qs.docs) {
-        final data = d.data();
-        final tipo = (data['tipo'] ?? '').toString().trim();
-        if (tipo == 'impulso_procesal') continue; // saltamos impulsos
-
-        final h = (data['html'] as String?)?.trim();
-        if (h != null && h.isNotEmpty) return h;
-      }
-
-      // 2) si no hubo 'html' en texto, intentamos con 'html_url' para armar un fallback (enlace)
-      for (final d in qs.docs) {
-        final data = d.data();
-        final tipo = (data['tipo'] ?? '').toString().trim();
-        if (tipo == 'impulso_procesal') continue;
-
-        final htmlUrl = (data['html_url'] as String?)?.trim();
-        if (htmlUrl != null && htmlUrl.isNotEmpty) {
-          // Fallback: muchos clientes bloquean iframes, así que dejamos un link claro
-          return """
-<div style="font-size:13px;color:#555;">
-  <p><b>Correo enviado inicialmente (ver en línea):</b></p>
-  <p>
-    <a href="$htmlUrl" target="_blank" rel="noopener noreferrer">$htmlUrl</a>
-  </p>
-  <p style="margin-top:8px;">
-    <i>(Nota: para poder incrustar aquí el contenido completo, guarda también el campo <code>html</code> plano en log_correos al momento del primer envío.)</i>
-  </p>
-</div>
-""";
-        }
-      }
-
-      // 3) si no hay nada dirigido a ese correo, intentamos el último no-impulso cualquiera
-      final qs2 = await col.orderBy('timestamp', descending: true).limit(20).get();
-      for (final d in qs2.docs) {
-        final data = d.data();
-        final tipo = (data['tipo'] ?? '').toString().trim();
-        if (tipo == 'impulso_procesal') continue;
-
-        final h = (data['html'] as String?)?.trim();
-        if (h != null && h.isNotEmpty) return h;
-
-        final htmlUrl = (data['html_url'] as String?)?.trim();
-        if (htmlUrl != null && htmlUrl.isNotEmpty) {
-          return """
-<div style="font-size:13px;color:#555;">
-  <p><b>Correo enviado inicialmente (ver en línea):</b></p>
-  <p>
-    <a href="$htmlUrl" target="_blank" rel="noopener noreferrer">$htmlUrl</a>
-  </p>
-  <p style="margin-top:8px;">
-    <i>(Nota: para poder incrustar aquí el contenido completo, guarda también el campo <code>html</code> plano en log_correos al momento del primer envío.)</i>
-  </p>
-</div>
-""";
-        }
-      }
-    } catch (e) {
-      // Si Firestore te pide índice por el where+orderBy, verás un link en la consola.
-      debugPrint('[Impulso] _buscarHtmlAnteriorPorDestino error: $e');
-    }
-    return null;
-  }
+  /// ACA TERMINA ELM TEMA DE IMPULSOSS
+  ///
+  ///
 
 
 
@@ -913,13 +1098,14 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
 
   void fetchUserData() async {
     try {
-      // 1) PPL por provider
+      // 👤 Datos del usuario
       final fetchedData = await _pplProvider.getById(widget.idUser);
 
-      // 2) Documento de la solicitud
+      // 🔥 Documento Firestore
       final docRef = FirebaseFirestore.instance
           .collection('redenciones_solicitados')
           .doc(widget.idDocumento);
+
       final snap = await docRef.get();
       if (!snap.exists) {
         if (mounted) {
@@ -931,34 +1117,13 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
         debugPrint('⚠️ Documento no encontrado');
         return;
       }
+
       final data = (snap.data() as Map<String, dynamic>?) ?? {};
 
-      // 3) (Opcional) Trae el doc de Ppl directo por si el modelo no trae todos los campos
-      final pplSnap = await FirebaseFirestore.instance
-          .collection('Ppl') // <- usa el nombre exacto de tu colección
-          .doc(widget.idUser)
-          .get();
-      final pplMap = (pplSnap.data() as Map<String, dynamic>?) ?? {};
+      // ---------- Helpers locales ----------
+      bool _isEmail(String? s) => (s != null && s.contains('@'));
 
-      // 4) Toma de PplProvider si existe; si no, cae al mapa de Firestore
-      String? getStr(dynamic v) =>
-          (v is String && v.trim().isNotEmpty) ? v.trim() : null;
-
-      final _nui = getStr(fetchedData?.nui) ?? getStr(pplMap['nui']);
-      final _td  = getStr(fetchedData?.td) ??
-          getStr(pplMap['td']) ??
-          getStr(pplMap['tipo_documento']) ?? getStr(pplMap['tipoDocumento']);
-      final _doc = getStr(fetchedData?.numeroDocumentoPpl) ??
-          getStr(pplMap['documento']) ?? getStr(pplMap['cedula']);
-      final _jep = getStr(fetchedData?.juzgadoEjecucionPenas) ??
-          getStr(pplMap['juzgado_ejecucion_penas']) ?? getStr(pplMap['Juzgado de ejecución de penas']);
-      final _centro = getStr(fetchedData?.centroReclusion) ??
-          getStr(pplMap['centro_penitenciario']) ??
-          getStr(pplMap['establecimiento']);
-      final _patio = getStr(fetchedData?.patio) ?? getStr(pplMap['patio']);
-
-      // ---- (tu normalización de correos como ya la tienes) ----
-      String? _getStrKey(String dottedPath) {
+      String? _getStrPath(String dottedPath) {
         try {
           final v = snap.get(dottedPath);
           if (v is String && v.trim().isNotEmpty) return v.trim();
@@ -968,49 +1133,150 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
         return null;
       }
 
-      final principal = _getStrKey('correoHtmlCorreo.principal') ??
-          _getStrKey('destinatarios.principal');
-      final centro   = _getStrKey('correoHtmlCorreo.centro_reclusion') ??
-          _getStrKey('destinatarios.centro_reclusion');
-      final reparto  = _getStrKey('correoHtmlCorreo.reparto') ??
-          _getStrKey('destinatarios.reparto');
+      String? _pickNonEmpty(String? a, String? b) {
+        final x = (a ?? '').trim();
+        final y = (b ?? '').trim();
+        return x.isNotEmpty ? x : (y.isNotEmpty ? y : null);
+      }
+
+      String _inferEtiquetaKey(Map<String, dynamic> log) {
+        final e = (log['etiqueta'] ?? '').toString().toLowerCase();
+        final t = (log['tipo'] ?? '').toString().toLowerCase();
+        final s = (log['subject'] ?? '').toString().toLowerCase();
+
+        if (e.contains('centro')) return 'centro_reclusion';
+        if (e.contains('reparto')) return 'reparto';
+        if (t == 'centro_reclusion') return 'centro_reclusion';
+        if (t == 'reparto') return 'reparto';
+        if (s.contains('reparto')) return 'reparto';
+        // por defecto
+        return 'principal';
+      }
+      // --------------------------------------
+
+      // 1) Correos desde nodos principales
+      String? p = _pickNonEmpty(
+        _getStrPath('correoHtmlCorreo.principal'),
+        _getStrPath('destinatarios.principal'),
+      );
+      String? c = _pickNonEmpty(
+        _getStrPath('correoHtmlCorreo.centro_reclusion'),
+        _getStrPath('destinatarios.centro_reclusion'),
+      );
+      String? r = _pickNonEmpty(
+        _getStrPath('correoHtmlCorreo.reparto'),
+        _getStrPath('destinatarios.reparto'),
+      );
+
+      // 2) Si faltan, intenta desde historial (toma el último)
+      if (!_isEmail(p)) {
+        final arr = data['correoHtmlCorreo_historial.principal'];
+        if (arr is List && arr.isNotEmpty) {
+          final last = arr.last?.toString();
+          if (_isEmail(last)) p = last;
+        }
+      }
+      if (!_isEmail(c)) {
+        final arr = data['correoHtmlCorreo_historial.centro_reclusion'];
+        if (arr is List && arr.isNotEmpty) {
+          final last = arr.last?.toString();
+          if (_isEmail(last)) c = last;
+        }
+      }
+      if (!_isEmail(r)) {
+        final arr = data['correoHtmlCorreo_historial.reparto'];
+        if (arr is List && arr.isNotEmpty) {
+          final last = arr.last?.toString();
+          if (_isEmail(last)) r = last;
+        }
+      }
+
+      // 3) Si aún faltan, intenta con log_correos (últimos 30)
+      final needed = <String>[];
+      if (!_isEmail(p)) needed.add('principal');
+      if (!_isEmail(c)) needed.add('centro_reclusion');
+      if (!_isEmail(r)) needed.add('reparto');
+
+      if (needed.isNotEmpty) {
+        try {
+          final qs = await docRef
+              .collection('log_correos')
+              .orderBy('timestamp', descending: true)
+              .limit(30)
+              .get();
+
+          // recopilamos por clave inferida la primera ocurrencia válida
+          final found = <String, String>{};
+
+          for (final d in qs.docs) {
+            final log = d.data();
+            // Array "to" o string suelto
+            String? email;
+            final to = log['to'];
+            if (to is List && to.isNotEmpty) {
+              final s = to.first?.toString();
+              if (_isEmail(s)) email = s!;
+            } else if (to is String && _isEmail(to)) {
+              email = to;
+            } else if (_isEmail(log['destinatario']?.toString())) {
+              email = log['destinatario'].toString();
+            }
+
+            if (email == null) continue;
+
+            final key = _inferEtiquetaKey(log); // principal | centro_reclusion | reparto
+            if (!found.containsKey(key)) {
+              found[key] = email;
+            }
+
+            // si ya llenamos todos los que faltaban, rompemos
+            if ((_isEmail(p) ? 0 : 1) +
+                (_isEmail(c) ? 0 : 1) +
+                (_isEmail(r) ? 0 : 1) ==
+                0) break;
+          }
+
+          p = _isEmail(p) ? p : found['principal'];
+          c = _isEmail(c) ? c : found['centro_reclusion'];
+          r = _isEmail(r) ? r : found['reparto'];
+        } catch (e) {
+          debugPrint('[Impulso] error consultando log_correos: $e');
+        }
+      }
 
       final correosImpulso = <String, String>{};
-      if (principal != null) correosImpulso['principal'] = principal;
-      if (centro != null)    correosImpulso['centro_reclusion'] = centro;
-      if (reparto != null)   correosImpulso['reparto'] = reparto;
+      if (_isEmail(p)) correosImpulso['principal'] = p!;
+      if (_isEmail(c)) correosImpulso['centro_reclusion'] = c!;
+      if (_isEmail(r)) correosImpulso['reparto'] = r!;
 
-      final dataMerged = {...data, '__correosImpulso': correosImpulso};
+      debugPrint('✅ __correosImpulso normalizado: $correosImpulso');
 
+      // fecha base para el banner
       final DateTime? _fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
 
       if (!mounted) return;
       setState(() {
         userData = fetchedData;
-        solicitudData = dataMerged;
+        solicitudData = {
+          ...data,
+          '__correosImpulso': correosImpulso, // <- lo que usa _obtenerCorreosDestinatarios()
+        };
         isLoading = false;
 
-        // lo que ya tenías
         consideraciones      = data['consideraciones_revisado'] ?? 'Sin consideraciones';
         fundamentosDeDerecho = data['fundamentos_de_derecho_revisado'] ?? 'Sin fundamentos';
         peticionConcreta     = data['peticion_concreta_revisado'] ?? 'Sin petición concreta';
-        diligencio           = data['diligencio'] ?? 'No registrado';
-        reviso               = data['reviso'] ?? 'No registrado';
-        envio                = data['envió'] ?? 'No registrado';
-        fechaEnvio           = _fechaEnvio;
-        fechaDiligenciamiento= (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
-        fechaRevision        = (data['fecha_revision'] as Timestamp?)?.toDate();
 
-        // ✅ guarda los campos del PPL en estado
-        pplNui        = _nui;
-        pplTd         = _td;
-        pplDocumento  = _doc;
-        pplCentro     = _centro;
-        pplPatio      = _patio;
-        pplJuzgadoEP      = _jep;
+        diligencio = data['diligencio'] ?? 'No registrado';
+        reviso     = data['reviso'] ?? 'No registrado';
+        envio      = data['envió'] ?? 'No registrado';
+
+        fechaEnvio            = _fechaEnvio;
+        fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
+        fechaRevision         = (data['fecha_revision'] as Timestamp?)?.toDate();
       });
 
-      debugPrint('✅ PPL nui=$_nui td=$_td doc=$_doc centro=$_centro patio=$_patio');
+      debugPrint('✅ fechaEnvio: $_fechaEnvio');
     } catch (e) {
       debugPrint('❌ Error Firestore: $e');
     }
