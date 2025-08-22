@@ -21,6 +21,7 @@ import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/manager_correo_sin_reclusion.dart';
+import '../../../widgets/manager_correo_sin_reclusion2.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -87,6 +88,9 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
   late CalculoCondenaController _calculoCondenaController;
   final TextEditingController _radicadoAcumularController = TextEditingController();
   final TextEditingController _juzgadoAcumularController = TextEditingController();
+  String? ultimoHtmlEnviado;
+  final List<_ProcesoAcumular> _procesos = [];
+
 
 
   @override
@@ -104,7 +108,65 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
         print("❌ No se pudo obtener el nombre del administrador.");
       }
     }
+    _procesos.add(_ProcesoAcumular(
+      radicado: _radicadoAcumularController.text,
+      juzgado: _juzgadoAcumularController.text,
+    ));
+    _cargarProcesosGuardados();
   }
+
+  Future<void> _cargarProcesosGuardados() async {
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('acumulacion_solicitados')
+          .doc(widget.idDocumento)
+          .get();
+
+      if (!snap.exists) return;
+      final data = snap.data() as Map<String, dynamic>;
+
+      // Liberar controladores actuales
+      for (final p in _procesos) { p.dispose(); }
+      _procesos.clear();
+
+      // Arreglo nuevo (recomendado)
+      final List<dynamic>? arr = data['procesosAcumular'] as List?;
+      if (arr != null && arr.isNotEmpty) {
+        for (final e in arr) {
+          final m = (e as Map).map(
+                (k, v) => MapEntry(k.toString(), (v ?? '').toString()),
+          );
+          _procesos.add(
+            _ProcesoAcumular(
+              radicado: m['radicado'] ?? '',
+              juzgado : m['juzgado']  ?? '',
+            ),
+          );
+        }
+      } else {
+        // Compatibilidad con los campos antiguos singulares
+        final r = (data['radicadoAcumular'] ?? '').toString();
+        final j = (data['juzgadoAcumular']  ?? '').toString();
+        _procesos.add(_ProcesoAcumular(radicado: r, juzgado: j));
+      }
+
+      if (_procesos.isEmpty) _procesos.add(_ProcesoAcumular());
+
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Error cargando procesos guardados: $e');
+    }
+  }
+
+
+  @override
+  void dispose() {
+    for (final p in _procesos) {
+      p.dispose();
+    }
+    super.dispose();
+  }
+
 
   String obtenerNombreArchivo(String url) {
     // Decodifica la URL para que %2F se convierta en "/"
@@ -114,6 +176,21 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
     // El nombre real del archivo es la última parte después de la última "/"
     return partes.last.split('?').first; // Quita cualquier parámetro después de "?"
   }
+
+  // void _cargarProcesosDesdeDoc(Map<String, dynamic> data) {
+  //   _procesos.clear();
+  //   final list = data['procesosAcumular'];
+  //   if (list is List) {
+  //     for (final e in list) {
+  //       if (e is Map) _procesos.add(_ProcesoAcumular.fromMap(e));
+  //     }
+  //   }
+  //   if (_procesos.isEmpty) {
+  //     _procesos.add(_ProcesoAcumular()); // al menos una fila
+  //   }
+  //   setState(() {});
+  // }
+
 
   @override
   Widget build(BuildContext context) {
@@ -203,46 +280,97 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
               const SizedBox(height: 15),
               _buildDetallesSolicitud(),
               const SizedBox(height: 20),
-              TextField(
-                controller: _radicadoAcumularController,
-                decoration: const InputDecoration(
-                  labelText: "Radicado del proceso a acumular",
-                  floatingLabelBehavior: FloatingLabelBehavior.always,
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
+
+              // ---------------- Procesos a acumular (dinámico) ----------------
+              const Text("Procesos a acumular", style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+
+              Column(
+                children: [
+                  for (int i = 0; i < _procesos.length; i++)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Radicado
+                          Expanded(
+                            child: TextField(
+                              controller: _procesos[i].radicadoCtrl,
+                              decoration: const InputDecoration(
+                                labelText: "Radicado del proceso",
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          // Juzgado
+                          Expanded(
+                            child: TextField(
+                              controller: _procesos[i].juzgadoCtrl,
+                              decoration: const InputDecoration(
+                                labelText: "Juzgado de conocimiento",
+                                floatingLabelBehavior: FloatingLabelBehavior.always,
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          // Eliminar fila
+                          IconButton(
+                            tooltip: "Eliminar",
+                            onPressed: () {
+                              setState(() {
+                                _procesos.removeAt(i);
+                                if (_procesos.isEmpty) _procesos.add(_ProcesoAcumular());
+                              });
+                            },
+                            icon: const Icon(Icons.delete_outline),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // Agregar fila
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        setState(() => _procesos.add(_ProcesoAcumular()));
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text("Agregar proceso"),
+                    ),
                   ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
+
+                  const SizedBox(height: 8),
+
+                  // Guardar todos los procesos en Firestore
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: ElevatedButton.icon(
+                      onPressed: _guardarProcesosAcumular, // ← guarda array + compat del primero
+                      icon: const Icon(Icons.save_outlined),
+                      label: const Text("Guardar procesos"),
+                      style: ElevatedButton.styleFrom(
+                        side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                      ),
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                ),
+                ],
               ),
-
-              const SizedBox(height: 12),
-
-              TextField(
-                controller: _juzgadoAcumularController,
-                decoration: const InputDecoration(
-                  labelText: "Juzgado de conocimiento del proceso a acumular",
-                  floatingLabelBehavior: FloatingLabelBehavior.always,
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                ),
-              ),
-
+              // ---------------- /Procesos a acumular ----------------
             ],
           ),
         ),
@@ -277,6 +405,36 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
       ],
     );
   }
+
+
+  Future<void> _guardarProcesosAcumular() async {
+    // Construye la lista filtrando vacíos
+    final items = _procesos
+        .map((p) => p.toMap())
+        .where((m) => (m['radicado']?.isNotEmpty ?? false) || (m['juzgado']?.isNotEmpty ?? false))
+        .toList();
+
+    // (Opcional) asegúrate de mantener compatibilidad con el template actual (toma el primero)
+    final String? firstRadicado = items.isNotEmpty ? items.first['radicado'] : null;
+    final String? firstJuzgado  = items.isNotEmpty ? items.first['juzgado']  : null;
+
+    await FirebaseFirestore.instance
+        .collection('acumulacion_solicitados')
+        .doc(widget.idDocumento)
+        .set({
+      'procesosAcumular': items,                // ⬅️ TODOS los pares
+      'radicadoAcumular': firstRadicado,        // ⬅️ compat (si tu template usa solo uno)
+      'juzgadoAcumular':  firstJuzgado,         // ⬅️ compat
+      'procesosAcumular_updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Procesos guardados")),
+      );
+    }
+  }
+
 
   String obtenerTituloCorreo(String? nombreCorreo) {
     switch (nombreCorreo) {
@@ -1178,6 +1336,15 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
   }
 
   Widget vistaPreviaSolicitudAcumulacion({required Ppl? userData}) {
+    // Si usas filas dinámicas (_procesos), tomamos en caliente lo escrito.
+    final List<Map<String, String>> procesosUI = (_procesos)
+        .map((p) => {
+      'radicado': p.radicadoCtrl.text.trim(),
+      'juzgado' : p.juzgadoCtrl.text.trim(),
+    })
+        .where((m) => m['radicado']!.isNotEmpty || m['juzgado']!.isNotEmpty)
+        .toList();
+
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
           .collection('acumulacion_solicitados')
@@ -1212,10 +1379,12 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
           nui: userData?.nui ?? "",
           td: userData?.td ?? "",
           patio: userData?.patio ?? "",
-          radicadoAcumular: _radicadoAcumularController.text.trim(), // 🆕
-          juzgadoAcumular: _juzgadoAcumularController.text.trim(),   // 🆕
+          // Singulares (compat)
+          radicadoAcumular: _radicadoAcumularController.text.trim(),
+          juzgadoAcumular : _juzgadoAcumularController.text.trim(),
+          // Lista dinámica (si hay)
+          procesosAcumular: procesosUI.isEmpty ? null : procesosUI,
         );
-
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1234,6 +1403,8 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
               child: Html(data: plantilla.generarTextoHtml()),
             ),
             const SizedBox(height: 50),
+
+            // 👇 Tus botones, sin cambios
             Wrap(
               children: [
                 if (widget.status == "Solicitado")
@@ -1246,12 +1417,14 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
                 ],
               ],
             ),
+
             const SizedBox(height: 150),
           ],
         );
       },
     );
   }
+
 
   String convertirSaltosDeLinea(String texto) {
     return texto.replaceAll('\n', '<br>');
@@ -1261,8 +1434,11 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
     required String correoDestino,
     String? asuntoPersonalizado,
     String? prefacioHtml,
+    String? htmlCuerpo, // viene de la vista previa
   }) async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
+    final url = Uri.parse(
+      "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend",
+    );
 
     final doc = await FirebaseFirestore.instance
         .collection('acumulacion_solicitados')
@@ -1272,55 +1448,84 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-    // ✅ Entidad desde el correo seleccionado (fallback a JEP del usuario)
-    final entidadSeleccionada =
-        obtenerEntidad(nombreCorreoSeleccionado ?? "") ??
-            (userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas");
+    final fechaEnvioFormateada =
+    DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+    final correoRemitente =
+        FirebaseAuth.instance.currentUser?.email ?? adminFullName;
+    final correoDestinatario = correoDestino;
 
-    final acumulacion = SolicitudAcumulacionTemplate(
-      dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidadSeleccionada, // ⬅️ antes: entidad ?? ""
-      referencia: "Solicitudes varias - Solicitud acumulación",
-      nombrePpl: userData?.nombrePpl.trim() ?? "",
-      apellidoPpl: userData?.apellidoPpl.trim() ?? "",
-      identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-      centroPenitenciario: userData?.centroReclusion ?? "",
-      emailUsuario: userData?.email.trim() ?? "",
-      emailAlternativo: "peticiones@tuprocesoya.com",
-      radicado: userData?.radicado ?? "",
-      jdc: userData?.juzgadoQueCondeno ?? "",
-      juzgadoEjecucion: userData?.juzgadoEjecucionPenas ?? "",
-      numeroSeguimiento: widget.numeroSeguimiento,
-      situacion: userData?.situacion ?? 'En Reclusión',
-      nui: userData?.nui ?? "",
-      td: userData?.td ?? "",
-      patio: userData?.patio ?? "",
-      radicadoAcumular: _radicadoAcumularController.text.trim(),
-      juzgadoAcumular: _juzgadoAcumularController.text.trim(),
-    );
+    // 👉 Lee lo escrito en las filas dinámicas (por si no viene htmlCuerpo)
+    final List<Map<String, String>> procesosUI = _procesos
+        .map((p) => {
+      'radicado': p.radicadoCtrl.text.trim(),
+      'juzgado':  p.juzgadoCtrl.text.trim(),
+    })
+        .where((m) => m['radicado']!.isNotEmpty || m['juzgado']!.isNotEmpty)
+        .toList();
+    final Map<String, String>? first = procesosUI.isNotEmpty ? procesosUI.first : null;
 
-    // Principal: si llamas con prefacioHtml=null, solo va el body
-    final mensajeHtml = "${prefacioHtml ?? ''}${acumulacion.generarTextoHtml()}";
+    // 👉 Resuelve la entidad destino con fallback
+    final entidadSel = obtenerEntidad(nombreCorreoSeleccionado ?? "");
+    final entidadFinal = entidadSel.isNotEmpty
+        ? entidadSel
+        : (userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas");
+
+    // ⚠️ Usa el HTML EXACTO de la vista previa si llega; si no, genera uno con la lista
+    final String cuerpoBase = htmlCuerpo ??
+        SolicitudAcumulacionTemplate(
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: entidadFinal,
+          referencia: "Solicitudes varias - Solicitud acumulación",
+          nombrePpl: userData?.nombrePpl.trim() ?? "",
+          apellidoPpl: userData?.apellidoPpl.trim() ?? "",
+          identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+          centroPenitenciario: userData?.centroReclusion ?? "",
+          emailUsuario: userData?.email.trim() ?? "",
+          emailAlternativo: "peticiones@tuprocesoya.com",
+          radicado: userData?.radicado ?? "",
+          jdc: userData?.juzgadoQueCondeno ?? "",
+          juzgadoEjecucion: userData?.juzgadoEjecucionPenas ?? "",
+          numeroSeguimiento: widget.numeroSeguimiento,
+          situacion: userData?.situacion ?? 'En Reclusión',
+          nui: userData?.nui ?? "",
+          td: userData?.td ?? "",
+          patio: userData?.patio ?? "",
+          // compat + lista dinámica
+          radicadoAcumular: first?['radicado'] ?? _radicadoAcumularController.text.trim(),
+          juzgadoAcumular:  first?['juzgado']  ?? _juzgadoAcumularController.text.trim(),
+          procesosAcumular: procesosUI.isEmpty ? null : procesosUI,
+        ).generarTextoHtml();
+
+    final mensajeHtml = """
+<html>
+  <body style="font-family: Arial, sans-serif; font-size: 10pt; color: #000; text-align:left;">
+    <p style="margin: 2px 0;">De: peticiones@tuprocesoya.com</p>
+    <p style="margin: 2px 0;">Para: $correoDestinatario</p>
+    <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
+    <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
+    ${prefacioHtml ?? ''}$cuerpoBase
+  </body>
+</html>
+""";
+
+    // Guarda para el manager (copias/Storage)
+    ultimoHtmlEnviado = mensajeHtml;
 
     final archivosBase64 = <Map<String, String>>[];
 
-    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud de Acumulación de penas - ${widget.numeroSeguimiento}";
-    final currentUser = FirebaseAuth.instance.currentUser;
-    final enviadoPor = currentUser?.email ?? adminFullName;
-
-    final correosCC = <String>[];
-    if (userData?.email != null && userData!.email.trim().isNotEmpty) {
-      correosCC.add(userData!.email.trim());
-    }
+    final asuntoCorreo = asuntoPersonalizado ??
+        "Solicitud de Acumulación de penas – ${widget.numeroSeguimiento}";
 
     final body = jsonEncode({
       "to": correoDestino,
-      "cc": correosCC,
+      "cc": (userData?.email?.trim().isNotEmpty ?? false)
+          ? [userData!.email.trim()]
+          : [],
       "subject": asuntoCorreo,
       "html": mensajeHtml,
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
-      "enviadoPor": enviadoPor,
+      "enviadoPor": correoRemitente,
       "tipo": "acumulacion",
     });
 
@@ -1339,7 +1544,6 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
       });
-
       await ResumenSolicitudesHelper.actualizarResumen(
         idOriginal: widget.idDocumento,
         nuevoStatus: "Enviado",
@@ -1351,6 +1555,7 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
       }
     }
   }
+
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1378,13 +1583,16 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
           return;
         }
 
-        // 1) Dirigido + Entidad
+        // 1) Dirigido + Entidad (según chip/selector)
         final String dirigido = obtenerTituloCorreo(nombreCorreoSeleccionado);
         final String entidadDestino =
             obtenerEntidad(nombreCorreoSeleccionado ?? "") ??
                 (userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas");
 
-        // 2) Refresca el template ANTES de generar HTML
+        final procesosUI = _leerProcesosUI();
+        final first = (procesosUI.isNotEmpty) ? procesosUI.first : null;
+
+        // 2) Generar el HTML BASE (solo el cuerpo; el “sobre” lo añade enviarCorreoResend)
         final acumulacion = SolicitudAcumulacionTemplate(
           dirigido: dirigido,
           entidad: entidadDestino,
@@ -1403,19 +1611,22 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
           nui: userData?.nui ?? "",
           td: userData?.td ?? "",
           patio: userData?.patio ?? "",
-          radicadoAcumular: _radicadoAcumularController.text.trim(),
-          juzgadoAcumular: _juzgadoAcumularController.text.trim(),
+          // compat: si no hay lista, usa los singulares
+          radicadoAcumular: first?['radicado'] ?? _radicadoAcumularController.text.trim(),
+          juzgadoAcumular:  first?['juzgado']  ?? _juzgadoAcumularController.text.trim(),
+          // lista dinámica
+          procesosAcumular: procesosUI.isEmpty ? null : procesosUI,
         );
 
         final String htmlActual = acumulacion.generarTextoHtml();
 
         // 3) Manager V4
-        final envioCorreoManager = EnvioCorreoManagerV4();
+        final envioCorreoManager = EnvioCorreoManagerV5();
 
         await envioCorreoManager.enviarCorreoCompleto(
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
-          html: htmlActual,
+          html: htmlActual, // cuerpo base
           numeroSeguimiento: acumulacion.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
@@ -1426,7 +1637,7 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
           idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: widget.idUser,
 
-          // Compat por firma (el manager V4 no los usa)
+          // Compat por firma (el V4 no los usa, se pasan vacíos o con defaults)
           centroPenitenciario: userData?.centroReclusion ?? '',
           nombrePpl: userData?.nombrePpl ?? '',
           apellidoPpl: userData?.apellidoPpl ?? '',
@@ -1441,20 +1652,23 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
           nombrePathStorage: "acumulacion",
           nombreColeccionFirestore: "acumulacion_solicitados",
 
-          // Principal: SIN prefacio; Reparto: el manager te enviará el prefacio y lo propagas
+          // ⬇️ Firma ACTUALIZADA: acepta htmlCuerpo y lo propaga
           enviarCorreoResend: ({
             required String correoDestino,
             String? asuntoPersonalizado,
             String? prefacioHtml,
+            String? htmlCuerpo, // <-- NUEVO EN LA FIRMA
           }) async {
             await enviarCorreoResend(
               correoDestino: correoDestino,
-              asuntoPersonalizado: asuntoPersonalizado,
-              prefacioHtml: prefacioHtml, // 👈 PROPAGA lo que manda el manager
+              asuntoPersonalizado: asuntoPersonalizado ??
+                  "Solicitud de Acumulación de penas – ${widget.numeroSeguimiento}",
+              prefacioHtml: prefacioHtml,
+              htmlCuerpo: htmlCuerpo ?? htmlActual, // usa el de vista previa por defecto
             );
           },
 
-          // Guardado por tipo
+          // Guardado por tipo. OJO: tu helper usa "htmlContent"
           subirHtml: ({
             required String tipoEnvio,
             required String htmlFinal,
@@ -1468,9 +1682,10 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
             );
           },
 
+          // El manager puede citar esto en “reparto”
           ultimoHtmlEnviado: htmlActual,
 
-          // Compat: centro (no usado)
+          // Centro NO aplica aquí (el V4 no lo usa)
           buildSelectorCorreoCentroReclusion: ({
             required Function(String correo, String nombreCentro) onEnviarCorreo,
             required Function() onOmitir,
@@ -1478,7 +1693,7 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
             return const SizedBox.shrink();
           },
 
-          // Reparto
+          // Reparto (selector manual flexible)
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -1506,19 +1721,24 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
     required String tipoEnvio, // "principal" | "reparto"
   }) async {
     try {
+      // ✅ Forzar UTF-8 (tildes/ñ)
       final contenidoFinal = htmlUtf8Compatible(htmlContent);
       final bytes = utf8.encode(contenidoFinal);
 
-      final fileName = "correo_$tipoEnvio.html";
+      // 📁 Mismo patrón que Redenciones: un único archivo "correo.html"
+      const fileName = "correo.html";
       final filePath = "acumulacion/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
 
+      // ⬆️ Subir archivo
       await ref.putData(Uint8List.fromList(bytes), metadata);
 
+      // 🔗 URL pública
       final downloadUrl = await ref.getDownloadURL();
 
+      // 🗃️ Guardar URL + fecha por tipo en Firestore (igual que Redenciones)
       await FirebaseFirestore.instance
           .collection("acumulacion_solicitados")
           .doc(idDocumento)
@@ -1527,13 +1747,26 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
         "fechaHtmlCorreo.$tipoEnvio": FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      // ignore: avoid_print
-      print("✅ HTML $tipoEnvio guardado en: $downloadUrl");
+      if (kDebugMode) {
+        print("✅ HTML $tipoEnvio guardado en: $downloadUrl");
+      }
     } catch (e) {
-      // ignore: avoid_print
-      print("❌ Error al subir HTML $tipoEnvio: $e");
+      if (kDebugMode) {
+        print("❌ Error al subir HTML $tipoEnvio: $e");
+      }
     }
   }
+
+  List<Map<String, String>> _leerProcesosUI() {
+    return _procesos
+        .map((p) => {
+      'radicado': p.radicadoCtrl.text.trim(),
+      'juzgado':  p.juzgadoCtrl.text.trim(),
+    })
+        .where((m) => m['radicado']!.isNotEmpty || m['juzgado']!.isNotEmpty)
+        .toList();
+  }
+
 
 
   /// 💡 Corrige el HTML para asegurar que tenga codificación UTF-8
@@ -1698,3 +1931,29 @@ class _AtenderSolicitudAcumulacionPageState extends State<AtenderSolicitudAcumul
   }
 
 }
+
+class _ProcesoAcumular {
+  final TextEditingController radicadoCtrl;
+  final TextEditingController juzgadoCtrl;
+
+  _ProcesoAcumular({String? radicado, String? juzgado})
+      : radicadoCtrl = TextEditingController(text: radicado ?? ''),
+        juzgadoCtrl = TextEditingController(text: juzgado ?? '');
+
+  Map<String, String> toMap() => {
+    'radicado': radicadoCtrl.text.trim(),
+    'juzgado': juzgadoCtrl.text.trim(),
+  };
+
+  factory _ProcesoAcumular.fromMap(Map<String, dynamic> m) =>
+      _ProcesoAcumular(
+        radicado: m['radicado']?.toString(),
+        juzgado: m['juzgado']?.toString(),
+      );
+
+  void dispose() {
+    radicadoCtrl.dispose();
+    juzgadoCtrl.dispose();
+  }
+}
+

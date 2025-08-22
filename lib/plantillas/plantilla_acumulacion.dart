@@ -18,8 +18,12 @@ class SolicitudAcumulacionTemplate {
   final String nui;
   final String td;
   final String patio;
-  final String radicadoAcumular; // 🆕
-  final String juzgadoAcumular;  // 🆕
+  final String radicadoAcumular; // 🆕 (singular, compat)
+  final String juzgadoAcumular;  // 🆕 (singular, compat)
+
+  // 🆕 OPCIONAL: lista de procesos a acumular
+  // Cada item: {"radicado": "...", "juzgado": "..."}
+  final List<Map<String, String>>? procesosAcumular;
 
   SolicitudAcumulacionTemplate({
     required this.dirigido,
@@ -39,11 +43,35 @@ class SolicitudAcumulacionTemplate {
     required this.nui,
     required this.td,
     required this.patio,
-    required this.radicadoAcumular, // 🆕
-    required this.juzgadoAcumular,  // 🆕
+    required this.radicadoAcumular, // compat
+    required this.juzgadoAcumular,  // compat
+    this.procesosAcumular,          // 🆕 opcional
   });
 
   String generarTextoHtml() {
+    // 🆕 Bloque dinámico para 1..N procesos a acumular
+    final bool hayLista =
+    (procesosAcumular != null && procesosAcumular!.isNotEmpty);
+
+    final String bloqueProcesos = hayLista
+        ? """
+Procesos cuya pena se solicita acumular:
+<ul style="margin-top:8px; padding-left:18px;">
+${procesosAcumular!.map((p) {
+      final r = (p['radicado'] ?? '').trim();
+      final j = (p['juzgado']  ?? '').trim();
+      if (r.isEmpty && j.isEmpty) return '';
+      if (r.isEmpty) return "<li>$j.</li>";
+      if (j.isEmpty) return "<li>Radicado <b>$r</b>.</li>";
+      return "<li>Radicado <b>$r</b>, $j.</li>";
+    }).where((li) => li.isNotEmpty).join('\n')}
+</ul>
+<br><br>
+"""
+        : """
+Proceso cuya pena se solicita acumular: Radicado <b>$radicadoAcumular</b>, $juzgadoAcumular.<br><br><br>
+""";
+
     final buffer = StringBuffer();
 
     buffer.writeln("""
@@ -70,8 +98,7 @@ los siguientes:<br><br>
 En razón de distintas sentencias condenatorias me encuentro condenado a las siguientes penas:<br><br>
 
 Actualmente me encuentro purgando la pena bajo el radicado <b>$radicado</b>, tramitado en <b>$juzgadoEjecucion.</b><br><br>
-Proceso cuya pena se solicita acumular: Radicado <b>$radicadoAcumular</b>, $juzgadoAcumular.<br><br><br>
-
+$bloqueProcesos
      <span style="font-size: 16px;"><b>II. FUNDAMENTOS DE DERECHO</b></span><br><br>
 
 Conforme al artículo 460 de la Ley 906 de 2004, debe aplicarse el instituto de la <b>acumulación jurídica de penas</b>, el cual dispone:<br><br>

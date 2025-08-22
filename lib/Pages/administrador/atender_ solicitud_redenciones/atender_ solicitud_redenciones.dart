@@ -1265,8 +1265,6 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
     }
   }
 
-
-
   Widget botonEnviarCorreo() {
     return ElevatedButton(
       style: ElevatedButton.styleFrom(

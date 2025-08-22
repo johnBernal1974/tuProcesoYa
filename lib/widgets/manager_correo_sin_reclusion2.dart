@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../services/whatsapp_service.dart';
 
-class EnvioCorreoManagerV4 {
+class EnvioCorreoManagerV5 {
   // 🔹 Guardar HTML en Storage y registrar en Firestore
   Future<void> _guardarHtmlCorreo({
     required String idDocumento,
@@ -74,6 +74,7 @@ class EnvioCorreoManagerV4 {
     required String correoDestino,
     String? asuntoPersonalizado,
     String? prefacioHtml,
+    String? htmlCuerpo,
     }) enviarCorreoResend,
     required Future<void> Function({
     required String tipoEnvio,
@@ -163,6 +164,7 @@ class EnvioCorreoManagerV4 {
       try {
         await enviarCorreoResend(
           correoDestino: correoDestinoPrincipal,
+          htmlCuerpo: html, // 👈 usa EXACTAMENTE el HTML de la vista previa
         );
 
 
@@ -418,6 +420,7 @@ class EnvioCorreoManagerV4 {
     required String correoDestino,
     String? asuntoPersonalizado,
     String? prefacioHtml,
+    String? htmlCuerpo,
     }) enviarCorreoResend,
     required String htmlFinal,
     String? asunto,
@@ -467,6 +470,7 @@ ${ultimoHtmlEnviado ?? htmlFinal}
         correoDestino: correoDestino,
         asuntoPersonalizado: asunto,
         prefacioHtml: prefacio,
+        htmlCuerpo: (ultimoHtmlEnviado ?? htmlFinal),
       );
 
 
