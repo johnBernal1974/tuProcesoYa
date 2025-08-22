@@ -673,9 +673,6 @@ ${ultimoHtmlEnviado ?? htmlFinal}
     await docRef.set(update, SetOptions(merge: true));
   }
 
-
-
-
   String _generarHtmlUniforme({
     required String correoDestino,
     required String contenidoHtml,
@@ -684,19 +681,22 @@ ${ultimoHtmlEnviado ?? htmlFinal}
 
     return """
 <meta charset="UTF-8">
-<div style="max-width: 750px; margin: auto; padding: 20px; 
-            font-family: Arial, sans-serif; font-size: 11px; line-height: 1.5;">  
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
+  <tr>
+    <td align="left" style="padding:20px; font-family:Arial, sans-serif; font-size:13px; line-height:1.5; color:#333;">
+      <p style="margin:0;"><strong>De:</strong> peticiones@tuprocesoya.com</p>
+      <p style="margin:0;"><strong>Para:</strong> $correoDestino</p>
+      <p style="margin:0 0 10px 0;"><strong>Fecha de Envío:</strong> $fechaEnvioFormateada</p>
 
-  <p style="margin: 0;"><strong>De:</strong> peticiones@tuprocesoya.com</p>
-  <p style="margin: 0;"><strong>Para:</strong> $correoDestino</p>
-  <p style="margin: 0 0 10px 0;"><strong>Fecha de Envío:</strong> $fechaEnvioFormateada</p>
+      <div style="border-top:1px solid #ccc; margin:12px 0;"></div>
 
-  <hr style="margin: 12px 0; border: 0; border-top: 1px solid #ccc;">
-
-  $contenidoHtml
-</div>
+      $contenidoHtml
+    </td>
+  </tr>
+</table>
 """;
   }
+
 
   String htmlUtf8Compatible(String html) {
     final bytes = utf8.encode(html);
