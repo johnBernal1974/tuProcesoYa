@@ -1,4 +1,5 @@
-String generarPrefacioCentroReclusion({
+String generarPrefacioCentroReclusionPorAcudiente({
+  // Datos del centro / asunto (igual que tu base)
   required String centroPenitenciario,
   required String nombrePpl,
   required String apellidoPpl,
@@ -7,6 +8,13 @@ String generarPrefacioCentroReclusion({
   required String td,
   required String patio,
   required String beneficioPenitenciario,
+
+  // 🔹 Datos del acudiente (de tu BD)
+  required String parentescoAcudiente,   // parentesco_representante
+  required String nombreAcudiente,       // nombre_acudiente
+  required String apellidoAcudiente,     // apellido_acudiente
+  required String celularAcudiente,      // celular
+  required String whatsappAcudiente,     // celularWhatsapp
 }) {
   return """
 <div style="font-family: Arial, sans-serif; font-size: 15px;">
@@ -22,15 +30,18 @@ String generarPrefacioCentroReclusion({
   </p>
 
   <p>
-    Yo, <b>$nombrePpl $apellidoPpl</b>, identificado con cédula <b>$identificacionPpl</b>, actualmente recluido en la <b>$centroPenitenciario</b>, con el NUI: <b>$nui</b> y TD: <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.
+    Quien suscribe, <b>$nombreAcudiente $apellidoAcudiente</b>, en calidad de <b>$parentescoAcudiente</b> del privado de la libertad
+    <b>$nombrePpl $apellidoPpl</b> (CC <b>$identificacionPpl</b>, NUI <b>$nui</b>, TD <b>$td</b>), recluido en <b>$centroPenitenciario</b>,
+    Patio No. <b>$patio</b>, presento respetuosamente la siguiente solicitud:
   </p>
 
   <p>
-    Me permito informar que el día de hoy ha sido presentada ante el Juzgado de Ejecución de Penas la solicitud de <b>$beneficioPenitenciario</b>. Con el fin de que dicho despacho pueda resolver adecuadamente, respetuosamente solicito que se remitan con carácter urgente los siguientes documentos:
+    Me permito informar que el día de hoy ha sido presentada ante el Juzgado de Ejecución de Penas la solicitud de <b>$beneficioPenitenciario</b>.
+    Con el fin de que dicho despacho pueda resolver adecuadamente, respetuosamente solicito que se remitan con carácter urgente los siguientes documentos:
   </p><br>
 
   <ol>
-    <li><b>Mi Cartilla biográfica actualizada:</b> incluyendo datos personales, judiciales, penitenciarios, conducta y redenciones acumuladas.</li>
+    <li><b>Cartilla biográfica actualizada:</b> incluyendo datos personales, judiciales, penitenciarios, conducta y redenciones acumuladas.</li>
     <li><b>Certificación de tiempo redimido:</b> con detalle de días, tipo de actividad, fechas y modalidad.</li>
     <li><b>Certificado de buena conducta:</b> conforme al artículo 147 de la Ley 65 de 1993.</li>
     <li><b>Concepto del Consejo de Evaluación y Tratamiento:</b> sobre la solicitud y el proceso de resocialización.</li>
@@ -43,11 +54,10 @@ String generarPrefacioCentroReclusion({
   <p>Cordialmente,</p><br><br>
 
   <p>
-    <b>$nombrePpl $apellidoPpl</b><br>
-    C.C. $identificacionPpl<br>
-    TD: $td<br>
-    NUI: $nui<br>
-    Patio: $patio
+    <b>$nombreAcudiente $apellidoAcudiente</b><br>
+    <i>$parentescoAcudiente del interno $nombrePpl $apellidoPpl</i><br>
+    Tel: $celularAcudiente<br>
+    WhatsApp: $whatsappAcudiente
   </p><br><br>
 
   <div style="margin-top: 40px; color: #444; font-size: 12px;">

@@ -1874,13 +1874,19 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
           correoDestinoPrincipal: correoSeleccionado!,
           html: extincionPena.generarTextoHtml(),
           numeroSeguimiento: extincionPena.numeroSeguimiento,
-          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+
+          // 👇 Datos del acudiente (nuevos)
+          parentescoAcudiente: userData?.parentescoRepresentante ?? '',
+          nombreAcudiente: userData?.nombreAcudiente ?? 'Usuario',
+          apellidoAcudiente: userData?.apellidoAcudiente ?? '',
+          celularAcudiente: userData?.celular ?? '',
           celularWhatsapp: userData?.celularWhatsapp,
+
           rutaHistorial: 'historial_solicitudes_extincion_pena_admin',
-          nombreServicio: "Extinción de la Pena",
+          nombreServicio: 'Extinción de la Pena',
           idDocumentoPpl: widget.idUser,
 
-          // Nuevos campos requeridos
+          // Datos del PPL / contexto
           centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
           nombrePpl: userData?.nombrePpl ?? '',
           apellidoPpl: userData?.apellidoPpl ?? '',
@@ -1888,7 +1894,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
           nui: userData?.nui ?? '',
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Extinción de la pena",
+          beneficioPenitenciario: 'Extinción de la pena',
 
           enviarCorreoResend: ({
             required String correoDestino,
@@ -1901,12 +1907,14 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
               prefacioHtml: prefacioHtml,
             );
           },
+
           subirHtml: () async {
             await subirHtmlCorreoADocumentoExtincionPena(
               idDocumento: widget.idDocumento,
               htmlContent: extincionPena.generarTextoHtml(),
             );
           },
+
           buildSelectorCorreoCentroReclusion: ({
             required Function(String correo, String nombreCentro) onEnviarCorreo,
             required Function() onOmitir,
@@ -1917,6 +1925,7 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
               onOmitir: onOmitir,
             );
           },
+
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -1924,13 +1933,11 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
             required Function() onOmitir,
           }) {
             return SelectorCorreoManualFlexible(
-              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas',
               onCorreoValidado: onCorreoValidado,
               onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
               onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () {
-                Navigator.of(context).pop();
-              },
+              onOmitir: () => Navigator.of(context).pop(),
             );
           },
         );

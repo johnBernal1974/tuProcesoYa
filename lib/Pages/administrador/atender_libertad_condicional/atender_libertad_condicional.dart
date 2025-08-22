@@ -24,6 +24,7 @@ import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV2.dart';
 import '../../../widgets/envio_correo_managerV3.dart';
+import '../../../widgets/envio_correo_managerV6.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -2526,94 +2527,119 @@ La Corte Suprema de Justicia ha sostenido que el juez está facultado para aplic
         // ✅ HTML actualizado con entidad/dirigido correctos
         final ultimoHtmlEnviado = libertadCondicional.generarTextoHtml();
 
-        final envioCorreoManager = EnvioCorreoManagerV3();
+        final envioCorreoManager = EnvioCorreoManagerV6();
 
-        await envioCorreoManager.enviarCorreoCompleto(
-          context: context,
-          correoDestinoPrincipal: correoSeleccionado!,
-          html: ultimoHtmlEnviado,
-          numeroSeguimiento: libertadCondicional.numeroSeguimiento,
-          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
-          celularWhatsapp: userData?.celularWhatsapp,
-          rutaHistorial: 'historial_solicitudes_libertad_condicional_admin',
-          nombreServicio: "Libertad Condicional",
-          idDocumentoSolicitud: widget.idDocumento,
-          idDocumentoPpl: widget.idUser,
+        // Lee la solicitud para obtener la cédula del acudiente
+        final snap = await FirebaseFirestore.instance
+            .collection("condicional_solicitados")        // usa la colección que corresponda a esa página
+            .doc(widget.idDocumento)
+            .get();
 
-          // 🔹 nombres dinámicos (Firestore y Storage)
-          nombreColeccionFirestore: "condicional_solicitados",
-          nombrePathStorage: "condicional",
+        final dataSol = snap.data() ?? {};
+        final String identificacionAcudiente =
+        (dataSol['cedula_responsable'] ?? '').toString().trim();
 
-          // Campos adicionales para el prefacio del centro de reclusión
-          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
-          nombrePpl: userData?.nombrePpl ?? '',
-          apellidoPpl: userData?.apellidoPpl ?? '',
-          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
-          nui: userData?.nui ?? '',
-          td: userData?.td ?? '',
-          patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Libertad condicional",
-          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
 
-          // 🔹 función que realmente envía el correo (tu cloud function Resend)
-          enviarCorreoResend: ({
-            required String correoDestino,
-            String? asuntoPersonalizado,
-            String? prefacioHtml,
-          }) async {
-            await enviarCorreoResend(
-              correoDestino: correoDestino,
-              asuntoPersonalizado: asuntoPersonalizado,
-              prefacioHtml: prefacioHtml,
-            );
-          },
+        if(context.mounted){
+          await envioCorreoManager.enviarCorreoCompleto(
+            context: context,
+            correoDestinoPrincipal: correoSeleccionado!,
+            html: ultimoHtmlEnviado,
+            numeroSeguimiento: libertadCondicional.numeroSeguimiento,
 
-          // 🔹 guarda HTML por tipo ("principal", "centro_reclusion", "reparto")
-          subirHtml: ({
-            required String tipoEnvio,
-            required String htmlFinal,
-            required String nombreColeccionFirestore,
-            required String nombrePathStorage,
-          }) async {
-            // Usa tu helper de condicional que soporte (idDocumento, htmlFinal, tipoEnvio)
-            await subirHtmlCorreoADocumentoCondicional(
-              idDocumento: widget.idDocumento,
-              htmlFinal: htmlFinal,
-              tipoEnvio: tipoEnvio,
-            );
-          },
+            // 👤 Acudiente
+            nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+            apellidoAcudiente: userData?.apellidoAcudiente ?? "",
+            parentescoAcudiente: userData?.parentescoRepresentante ?? "Familiar",
+            identificacionAcudiente: identificacionAcudiente,
+            celularAcudiente: userData?.celular,
 
-          // selector correo centro
-          buildSelectorCorreoCentroReclusion: ({
-            required Function(String correo, String nombreCentro) onEnviarCorreo,
-            required Function() onOmitir,
-          }) {
-            return SeleccionarCorreoCentroReclusionV2(
-              idUser: widget.idUser,
-              onEnviarCorreo: onEnviarCorreo,
-              onOmitir: onOmitir,
-            );
-          },
+            // 📲 Notificación
+            celularWhatsapp: userData?.celularWhatsapp,
 
-          // selector correo reparto
-          buildSelectorCorreoReparto: ({
-            required Function(String correo, String entidad) onCorreoValidado,
-            required Function(String nombreCiudad) onCiudadNombreSeleccionada,
-            required Function(String correo, String entidad) onEnviarCorreoManual,
-            required Function() onOmitir,
-          }) {
-            return SelectorCorreoManualFlexible(
-              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
-              onCorreoValidado: onCorreoValidado,
-              onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
-              onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () => Navigator.of(context).pop(),
-            );
-          },
+            // 🧭 Navegación / etiquetas
+            rutaHistorial: 'historial_solicitudes_libertad_condicional_admin',
+            nombreServicio: "Libertad Condicional",
 
-          // 🔹 para que el manager guarde exactamente el HTML que salió
-          ultimoHtmlEnviado: ultimoHtmlEnviado,
-        );
+            // IDs
+            idDocumentoSolicitud: widget.idDocumento,
+            idDocumentoPpl: widget.idUser,
+
+            // 🔹 nombres dinámicos (Firestore y Storage)
+            nombreColeccionFirestore: "condicional_solicitados",
+            nombrePathStorage: "condicional",
+
+            // 🏛️ Datos PPL / Centro
+            centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+            nombrePpl: userData?.nombrePpl ?? '',
+            apellidoPpl: userData?.apellidoPpl ?? '',
+            identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+            nui: userData?.nui ?? '',
+            td: userData?.td ?? '',
+            patio: userData?.patio ?? '',
+            beneficioPenitenciario: "Libertad condicional",
+            juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
+
+            // ✉️ Envío (Resend)
+            enviarCorreoResend: ({
+              required String correoDestino,
+              String? asuntoPersonalizado,
+              String? prefacioHtml,
+            }) async {
+              await enviarCorreoResend(
+                correoDestino: correoDestino,
+                asuntoPersonalizado: asuntoPersonalizado,
+                prefacioHtml: prefacioHtml,
+              );
+            },
+
+            // 💾 Guardado HTML por tipo
+            subirHtml: ({
+              required String tipoEnvio,
+              required String htmlFinal,
+              required String nombreColeccionFirestore,
+              required String nombrePathStorage,
+            }) async {
+              await subirHtmlCorreoADocumentoCondicional(
+                idDocumento: widget.idDocumento,
+                htmlFinal: htmlFinal,
+                tipoEnvio: tipoEnvio, // "principal" | "centro_reclusion" | "reparto"
+              );
+            },
+
+            // 🏢 Selector centro reclusión
+            buildSelectorCorreoCentroReclusion: ({
+              required Function(String correo, String nombreCentro) onEnviarCorreo,
+              required Function() onOmitir,
+            }) {
+              return SeleccionarCorreoCentroReclusionV2(
+                idUser: widget.idUser,
+                onEnviarCorreo: onEnviarCorreo,
+                onOmitir: onOmitir,
+              );
+            },
+
+            // 📨 Selector reparto
+            buildSelectorCorreoReparto: ({
+              required Function(String correo, String entidad) onCorreoValidado,
+              required Function(String nombreCiudad) onCiudadNombreSeleccionada,
+              required Function(String correo, String entidad) onEnviarCorreoManual,
+              required Function() onOmitir,
+            }) {
+              return SelectorCorreoManualFlexible(
+                entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+                onCorreoValidado: onCorreoValidado,
+                onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
+                onEnviarCorreoManual: onEnviarCorreoManual,
+                onOmitir: () => Navigator.of(context).pop(),
+              );
+            },
+
+            // 🧾 El manager usará esto para citar/guardar
+            ultimoHtmlEnviado: ultimoHtmlEnviado,
+          );
+        }
+
       },
       child: const Text("Enviar por correo"),
     );

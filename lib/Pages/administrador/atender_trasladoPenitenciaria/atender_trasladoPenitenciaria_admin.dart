@@ -1263,13 +1263,19 @@ class _AtenderSolicitudTrasladoPenitenciariaPageState extends State<AtenderSolic
           correoDestinoPrincipal: correoSeleccionado!,
           html: redenciones.generarTextoHtml(),
           numeroSeguimiento: redenciones.numeroSeguimiento,
-          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+
+          // 👇 Datos del acudiente (nuevos requeridos)
+          parentescoAcudiente: userData?.parentescoRepresentante ?? '',
+          nombreAcudiente: userData?.nombreAcudiente ?? 'Usuario',
+          apellidoAcudiente: userData?.apellidoAcudiente ?? '',
+          celularAcudiente: userData?.celular ?? '',
           celularWhatsapp: userData?.celularWhatsapp,
+
           rutaHistorial: 'historial_solicitudes_trasladoPenitenciaria_admin',
-          nombreServicio: "Traslado de penitenciaría",
+          nombreServicio: 'Traslado de penitenciaría',
           idDocumentoPpl: widget.idUser,
 
-          // Nuevos campos requeridos
+          // Datos del PPL / contexto
           centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
           nombrePpl: userData?.nombrePpl ?? '',
           apellidoPpl: userData?.apellidoPpl ?? '',
@@ -1277,7 +1283,7 @@ class _AtenderSolicitudTrasladoPenitenciariaPageState extends State<AtenderSolic
           nui: userData?.nui ?? '',
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Traslado de penitenciaría",
+          beneficioPenitenciario: 'Traslado de penitenciaría',
 
           enviarCorreoResend: ({
             required String correoDestino,
@@ -1290,12 +1296,14 @@ class _AtenderSolicitudTrasladoPenitenciariaPageState extends State<AtenderSolic
               prefacioHtml: prefacioHtml,
             );
           },
+
           subirHtml: () async {
             await subirHtmlCorreoADocumentoSolicitudRedenciones(
               idDocumento: widget.idDocumento,
               htmlContent: redenciones.generarTextoHtml(),
             );
           },
+
           buildSelectorCorreoCentroReclusion: ({
             required Function(String correo, String nombreCentro) onEnviarCorreo,
             required Function() onOmitir,
@@ -1306,6 +1314,7 @@ class _AtenderSolicitudTrasladoPenitenciariaPageState extends State<AtenderSolic
               onOmitir: onOmitir,
             );
           },
+
           buildSelectorCorreoReparto: ({
             required Function(String correo, String entidad) onCorreoValidado,
             required Function(String nombreCiudad) onCiudadNombreSeleccionada,
@@ -1313,13 +1322,11 @@ class _AtenderSolicitudTrasladoPenitenciariaPageState extends State<AtenderSolic
             required Function() onOmitir,
           }) {
             return SelectorCorreoManualFlexible(
-              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas',
               onCorreoValidado: onCorreoValidado,
               onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
               onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () {
-                Navigator.of(context).pop();
-              },
+              onOmitir: () => Navigator.of(context).pop(),
             );
           },
         );

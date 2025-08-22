@@ -15,8 +15,13 @@ class EnvioCorreoManagerV2 {
     required String correoDestinoPrincipal,
     required String html,
     required String numeroSeguimiento,
+    // 🔽 acudiente
+    required String parentescoAcudiente,
     required String nombreAcudiente,
+    required String apellidoAcudiente,
+    required String celularAcudiente,
     required String? celularWhatsapp,
+    // 🔼 acudiente
     required String rutaHistorial,
     required String nombreServicio,
     required String idDocumentoPpl,
@@ -44,8 +49,7 @@ class EnvioCorreoManagerV2 {
     required Function(String correo, String entidad) onEnviarCorreoManual,
     required Function() onOmitir,
     }) buildSelectorCorreoReparto,
-  })
-  async {
+  }) async {
     // 1️⃣ Confirmar envío principal
     final confirmacion = await showDialog<bool>(
       context: context,
@@ -164,7 +168,7 @@ class EnvioCorreoManagerV2 {
                       correoDestino: correoCentro,
                       enviarCorreoResend: enviarCorreoResend,
                       asunto: "Solicitud de documentos para $nombreServicio - $numeroSeguimiento",
-                      prefacio: generarPrefacioCentroReclusion(
+                      prefacio: generarPrefacioCentroReclusionPorAcudiente(
                         centroPenitenciario: centroPenitenciario,
                         nombrePpl: nombrePpl,
                         apellidoPpl: apellidoPpl,
@@ -173,7 +177,14 @@ class EnvioCorreoManagerV2 {
                         td: td,
                         patio: patio,
                         beneficioPenitenciario: beneficioPenitenciario,
+                        // 🔽 datos del acudiente
+                        parentescoAcudiente: parentescoAcudiente,
+                        nombreAcudiente: nombreAcudiente,
+                        apellidoAcudiente: apellidoAcudiente,
+                        celularAcudiente: celularAcudiente,
+                        whatsappAcudiente: celularWhatsapp ?? '',
                       ),
+
                       mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
                     );
 
