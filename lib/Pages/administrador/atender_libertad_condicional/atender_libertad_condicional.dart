@@ -8,9 +8,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
-import '../../../commons/archivoViewerWeb.dart';
 import '../../../commons/archivoViewerWeb2.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
@@ -21,11 +19,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
-import '../../../widgets/envio_correo_manager.dart';
-import '../../../widgets/envio_correo_managerV2.dart';
-import '../../../widgets/envio_correo_managerV3.dart';
 import '../../../widgets/envio_correo_managerV6.dart';
-import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
@@ -2639,7 +2633,6 @@ La Corte Suprema de Justicia ha sostenido que el juez está facultado para aplic
             ultimoHtmlEnviado: ultimoHtmlEnviado,
           );
         }
-
       },
       child: const Text("Enviar por correo"),
     );

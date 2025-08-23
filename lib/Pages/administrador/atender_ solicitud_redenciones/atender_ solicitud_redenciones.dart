@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
@@ -19,10 +18,7 @@ import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
-import '../../../widgets/envio_correo_manager.dart';
-import '../../../widgets/envio_correo_managerV2.dart';
-import '../../../widgets/envio_correo_managerV3.dart';
-import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
+import '../../../widgets/envio_correo_managerV6.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_redenciones_admin/historial_solicitudes_redenciones_admin.dart';
@@ -1314,99 +1310,123 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
         // 2) HTML principal (servirá también como "ultimoHtmlEnviado" para las copias)
         final String ultimoHtmlEnviado = redencionesTemplate.generarTextoHtml();
 
-        // 3) Manager V3
-        final envioCorreoManager = EnvioCorreoManagerV3();
+        // 3) Manager V6
+        final envioCorreoManager = EnvioCorreoManagerV6();
 
-        await envioCorreoManager.enviarCorreoCompleto(
-          context: context,
-          correoDestinoPrincipal: correoSeleccionado!,
-          html: ultimoHtmlEnviado,
-          numeroSeguimiento: redenciones.numeroSeguimiento,
-          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
-          celularWhatsapp: userData?.celularWhatsapp,
-          rutaHistorial: 'historial_solicitudes_redenciones_admin',
-          nombreServicio: "Cómputo de Redención",
+// Lee la solicitud para obtener la cédula del acudiente
+        final snap = await FirebaseFirestore.instance
+            .collection("redenciones_solicitados") // colección de esta página
+            .doc(widget.idDocumento)
+            .get();
 
-          // IDs
-          idDocumentoSolicitud: widget.idDocumento,
-          idDocumentoPpl: widget.idUser,
+        final dataSol = snap.data() ?? {};
+        final String identificacionAcudiente =
+        (dataSol['cedula_responsable'] ?? '').toString().trim();
 
-          // Datos PPL / Centro
-          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
-          nombrePpl: userData?.nombrePpl ?? '',
-          apellidoPpl: userData?.apellidoPpl ?? '',
-          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
-          nui: userData?.nui ?? '',
-          td: userData?.td ?? '',
-          patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Redención de pena",
-          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+        if(context.mounted){
+          await envioCorreoManager.enviarCorreoCompleto(
+            context: context,
+            correoDestinoPrincipal: correoSeleccionado!,
+            html: ultimoHtmlEnviado, // o (ultimoHtmlEnviado ?? redenciones.generarTextoHtml())
+            numeroSeguimiento: redenciones.numeroSeguimiento,
 
-          // Rutas de guardado (ajústalas si usas otras)
-          nombrePathStorage: "redenciones",
-          nombreColeccionFirestore: "redenciones_solicitados",
+            // 👤 Acudiente (V6)
+            nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+            apellidoAcudiente: userData?.apellidoAcudiente ?? "",
+            parentescoAcudiente: userData?.parentescoRepresentante ?? "Familiar",
+            identificacionAcudiente: identificacionAcudiente,
+            celularAcudiente: userData?.celular,
 
-          // Wrapper de Resend (asunto/prefacio los maneja el manager; aquí consolidamos el asunto)
-          enviarCorreoResend: ({
-            required String correoDestino,
-            String? asuntoPersonalizado,
-            String? prefacioHtml,
-          }) async {
-            await enviarCorreoResend(
-              correoDestino: correoDestino,
-              asuntoPersonalizado: asuntoPersonalizado ?? "Cómputo de Redención – ${redenciones.numeroSeguimiento}",
-              prefacioHtml: prefacioHtml,
-            );
-          },
+            // 📲 Notificación
+            celularWhatsapp: userData?.celularWhatsapp,
 
-          // Guardado HTML (adapter a tu función existente)
-          subirHtml: ({
-            required String tipoEnvio,
-            required String htmlFinal,
-            required String nombreColeccionFirestore,
-            required String nombrePathStorage,
-          }) async {
-            await subirHtmlCorreoADocumentoSolicitudRedenciones(
-              idDocumento: widget.idDocumento,
-              htmlFinal: htmlFinal,
-              tipoEnvio: tipoEnvio,
-            );
-          },
+            // 🧭 Navegación / etiquetas
+            rutaHistorial: 'historial_solicitudes_redenciones_admin',
+            nombreServicio: "Cómputo de Redención",
 
-          // Este HTML se usará como "citado" en Centro/Reparto
-          ultimoHtmlEnviado: ultimoHtmlEnviado,
+            // IDs
+            idDocumentoSolicitud: widget.idDocumento,
+            idDocumentoPpl: widget.idUser,
 
-          // Selector Centro de Reclusión
-          buildSelectorCorreoCentroReclusion: ({
-            required Function(String correo, String nombreCentro) onEnviarCorreo,
-            required Function() onOmitir,
-          }) {
-            return SeleccionarCorreoCentroReclusionV2(
-              idUser: widget.idUser,
-              onEnviarCorreo: onEnviarCorreo,
-              onOmitir: onOmitir,
-            );
-          },
+            // 🔹 nombres dinámicos (Firestore y Storage)
+            nombrePathStorage: "redenciones",
+            nombreColeccionFirestore: "redenciones_solicitados",
 
-          // Selector Reparto
-          buildSelectorCorreoReparto: ({
-            required Function(String correo, String entidad) onCorreoValidado,
-            required Function(String nombreCiudad) onCiudadNombreSeleccionada,
-            required Function(String correo, String entidad) onEnviarCorreoManual,
-            required Function() onOmitir,
-          }) {
-            return SelectorCorreoManualFlexible(
-              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
-              onCorreoValidado: onCorreoValidado,
-              onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
-              onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () => Navigator.of(context).pop(),
-            );
-          },
+            // 🏛️ Datos PPL / Centro
+            centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+            nombrePpl: userData?.nombrePpl ?? '',
+            apellidoPpl: userData?.apellidoPpl ?? '',
+            identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+            nui: userData?.nui ?? '',
+            td: userData?.td ?? '',
+            patio: userData?.patio ?? '',
+            beneficioPenitenciario: "Redención de pena",
+            juzgadoEp: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
 
-          // 👉 Permitir omitir el envío principal y continuar el flujo
-          permitirOmitirPrincipal: true,
-        );
+            // ✉️ Envío (Resend)
+            enviarCorreoResend: ({
+              required String correoDestino,
+              String? asuntoPersonalizado,
+              String? prefacioHtml,
+            }) async {
+              await enviarCorreoResend(
+                correoDestino: correoDestino,
+                asuntoPersonalizado:
+                asuntoPersonalizado ?? "Cómputo de Redención – ${redenciones.numeroSeguimiento}",
+                prefacioHtml: prefacioHtml,
+              );
+            },
+
+            // 💾 Guardado HTML por tipo
+            subirHtml: ({
+              required String tipoEnvio,
+              required String htmlFinal,
+              required String nombreColeccionFirestore,
+              required String nombrePathStorage,
+            }) async {
+              await subirHtmlCorreoADocumentoSolicitudRedenciones(
+                idDocumento: widget.idDocumento,
+                htmlFinal: htmlFinal,
+                tipoEnvio: tipoEnvio, // "principal" | "centro_reclusion" | "reparto"
+              );
+            },
+
+            // Este HTML se citará/guardará en copias
+            ultimoHtmlEnviado: ultimoHtmlEnviado,
+
+            // 🏢 Selector centro reclusión
+            buildSelectorCorreoCentroReclusion: ({
+              required Function(String correo, String nombreCentro) onEnviarCorreo,
+              required Function() onOmitir,
+            }) {
+              return SeleccionarCorreoCentroReclusionV2(
+                idUser: widget.idUser,
+                onEnviarCorreo: onEnviarCorreo,
+                onOmitir: onOmitir,
+              );
+            },
+
+            // 📨 Selector reparto
+            buildSelectorCorreoReparto: ({
+              required Function(String correo, String entidad) onCorreoValidado,
+              required Function(String nombreCiudad) onCiudadNombreSeleccionada,
+              required Function(String correo, String entidad) onEnviarCorreoManual,
+              required Function() onOmitir,
+            }) {
+              return SelectorCorreoManualFlexible(
+                entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+                onCorreoValidado: onCorreoValidado,
+                onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
+                onEnviarCorreoManual: onEnviarCorreoManual,
+                onOmitir: () => Navigator.of(context).pop(),
+              );
+            },
+
+            // 👉 Permitir omitir el envío principal y continuar con Centro/Reparto
+            permitirOmitirPrincipal: true,
+          );
+        }
+
       },
       child: const Text("Enviar por correo"),
     );

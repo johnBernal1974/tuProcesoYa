@@ -24,6 +24,7 @@ import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV2.dart';
 import '../../../widgets/envio_correo_managerV3.dart';
+import '../../../widgets/envio_correo_managerV6.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -2487,86 +2488,122 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
 // ✅ HTML actualizado con la entidad y dirigido correctos
         final ultimoHtmlEnviado = prisionDomiciliaria.generarTextoHtml();
 
-        final envioCorreoManager = EnvioCorreoManagerV3();
+        final envioCorreoManager = EnvioCorreoManagerV6();
 
-        await envioCorreoManager.enviarCorreoCompleto(
-          context: context,
-          correoDestinoPrincipal: correoSeleccionado!,
-          html: ultimoHtmlEnviado,
-          numeroSeguimiento: prisionDomiciliaria.numeroSeguimiento,
-          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
-          celularWhatsapp: userData?.celularWhatsapp,
-          rutaHistorial: 'historial_solicitudes_prision_domiciliaria_admin',
-          nombreServicio: "Prisión Domiciliaria",
-          idDocumentoSolicitud: widget.idDocumento,
-          idDocumentoPpl: widget.idUser,
-          nombreColeccionFirestore: "domiciliaria_solicitados",
-          nombrePathStorage: "domiciliaria",
+        // Lee la solicitud para obtener la cédula del acudiente
+        final snap = await FirebaseFirestore.instance
+            .collection("domiciliaria_solicitados")        // usa la colección que corresponda a esa página
+            .doc(widget.idDocumento)
+            .get();
 
-          // Campos adicionales necesarios para la plantilla
-          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
-          nombrePpl: userData?.nombrePpl ?? '',
-          apellidoPpl: userData?.apellidoPpl ?? '',
-          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
-          nui: userData?.nui ?? '',
-          td: userData?.td ?? '',
-          patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Prisión domiciliaria",
-          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
+        final dataSol = snap.data() ?? {};
+        final String identificacionAcudiente =
+        (dataSol['cedula_responsable'] ?? '').toString().trim();
 
-          enviarCorreoResend: ({
-            required String correoDestino,
-            String? asuntoPersonalizado,
-            String? prefacioHtml,
-          }) async {
-            await enviarCorreoResend(
-              correoDestino: correoDestino,
-              asuntoPersonalizado: asuntoPersonalizado,
-              prefacioHtml: prefacioHtml,
-            );
-          },
+        if(context.mounted){
+          await envioCorreoManager.enviarCorreoCompleto(
+            context: context,
+            correoDestinoPrincipal: correoSeleccionado!,
+            html: ultimoHtmlEnviado,
+            numeroSeguimiento: prisionDomiciliaria.numeroSeguimiento,
 
-          subirHtml: ({
-            required String tipoEnvio,
-            required String htmlFinal,
-            required String nombreColeccionFirestore,
-            required String nombrePathStorage,
-          }) async {
-            await subirHtmlCorreoADocumentoDomiciliaria(
-              idDocumento: widget.idDocumento,
-              htmlFinal: htmlFinal,
-              tipoEnvio: tipoEnvio,
-            );
-          },
+            // 👤 Datos del acudiente (V6)
+            nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+            apellidoAcudiente: userData?.apellidoAcudiente ?? "",
+            parentescoAcudiente: userData?.parentescoRepresentante ?? "Familiar",
+            identificacionAcudiente: identificacionAcudiente,
+            celularAcudiente: userData?.celular,
 
-          buildSelectorCorreoCentroReclusion: ({
-            required Function(String correo, String nombreCentro) onEnviarCorreo,
-            required Function() onOmitir,
-          }) {
-            return SeleccionarCorreoCentroReclusionV2(
-              idUser: widget.idUser,
-              onEnviarCorreo: onEnviarCorreo,
-              onOmitir: onOmitir,
-            );
-          },
+            // 📲 Notificación
+            celularWhatsapp: userData?.celularWhatsapp,
 
-          buildSelectorCorreoReparto: ({
-            required Function(String correo, String entidad) onCorreoValidado,
-            required Function(String nombreCiudad) onCiudadNombreSeleccionada,
-            required Function(String correo, String entidad) onEnviarCorreoManual,
-            required Function() onOmitir,
-          }) {
-            return SelectorCorreoManualFlexible(
-              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
-              onCorreoValidado: onCorreoValidado,
-              onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
-              onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: onOmitir,
-            );
-          },
+            // 🧭 Navegación / etiquetas
+            rutaHistorial: 'historial_solicitudes_prision_domiciliaria_admin',
+            nombreServicio: "Prisión Domiciliaria",
 
-          ultimoHtmlEnviado: ultimoHtmlEnviado,
-        );
+            // IDs
+            idDocumentoSolicitud: widget.idDocumento,
+            idDocumentoPpl: widget.idUser,
+
+            // 🔹 Nombres dinámicos (Firestore y Storage)
+            nombreColeccionFirestore: "domiciliaria_solicitados",
+            nombrePathStorage: "domiciliaria",
+
+            // 🏛️ Datos PPL / Centro
+            centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+            nombrePpl: userData?.nombrePpl ?? '',
+            apellidoPpl: userData?.apellidoPpl ?? '',
+            identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+            nui: userData?.nui ?? '',
+            td: userData?.td ?? '',
+            patio: userData?.patio ?? '',
+            beneficioPenitenciario: "Prisión domiciliaria",
+            juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
+
+            // ✉️ Envío (Resend)
+            enviarCorreoResend: ({
+              required String correoDestino,
+              String? asuntoPersonalizado,
+              String? prefacioHtml,
+            }) async {
+              await enviarCorreoResend(
+                correoDestino: correoDestino,
+                asuntoPersonalizado: asuntoPersonalizado ??
+                    "Prisión Domiciliaria – ${prisionDomiciliaria.numeroSeguimiento}",
+                prefacioHtml: prefacioHtml,
+              );
+            },
+
+            // 💾 Guardado HTML por tipo
+            subirHtml: ({
+              required String tipoEnvio,
+              required String htmlFinal,
+              required String nombreColeccionFirestore,
+              required String nombrePathStorage,
+            }) async {
+              await subirHtmlCorreoADocumentoDomiciliaria(
+                idDocumento: widget.idDocumento,
+                htmlFinal: htmlFinal,
+                tipoEnvio: tipoEnvio, // "principal" | "centro_reclusion" | "reparto"
+              );
+            },
+
+            // 🏢 Selector centro de reclusión
+            buildSelectorCorreoCentroReclusion: ({
+              required Function(String correo, String nombreCentro) onEnviarCorreo,
+              required Function() onOmitir,
+            }) {
+              return SeleccionarCorreoCentroReclusionV2(
+                idUser: widget.idUser,
+                onEnviarCorreo: onEnviarCorreo,
+                onOmitir: onOmitir,
+              );
+            },
+
+            // 📨 Selector reparto
+            buildSelectorCorreoReparto: ({
+              required Function(String correo, String entidad) onCorreoValidado,
+              required Function(String nombreCiudad) onCiudadNombreSeleccionada,
+              required Function(String correo, String entidad) onEnviarCorreoManual,
+              required Function() onOmitir,
+            }) {
+              return SelectorCorreoManualFlexible(
+                entidadSeleccionada:
+                userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+                onCorreoValidado: onCorreoValidado,
+                onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
+                onEnviarCorreoManual: onEnviarCorreoManual,
+                onOmitir: onOmitir,
+              );
+            },
+
+            // 🧾 El manager guardará/citará exactamente esto
+            ultimoHtmlEnviado: ultimoHtmlEnviado,
+
+            // (opcional) permitir saltar el envío principal
+            permitirOmitirPrincipal: true,
+          );
+        }
       },
       child: const Text("Enviar por correo"),
     );
