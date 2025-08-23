@@ -63,6 +63,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   /// controllers para el acudiente
   final _nombreAcudienteController = TextEditingController();
   final _apellidosAcudienteController = TextEditingController();
+  final _numeroDocumentoAcudienteController = TextEditingController();
   final _parentescoAcudienteController = TextEditingController();
   final _celularAcudienteController = TextEditingController();
   final _celularWhatsappController = TextEditingController();
@@ -125,6 +126,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
   late String _tipoDocumento;
+  String? _tipoDocumentoAcudiente;
   late PplProvider _pplProvider;
   int? _tiempoDePruebaDias;
 
@@ -764,6 +766,10 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
           nombreAcudiente(),
           const SizedBox(height: 15),
           apellidosAcudiente(),
+          const SizedBox(height: 15),
+          tipoDocumentoAcudiente(),
+          const SizedBox(height: 15),
+          numeroDocumentoAcudiente(),
           const SizedBox(height: 15),
           parentescoAcudiente(),
           const SizedBox(height: 15),
@@ -3065,6 +3071,15 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     _patioController.text = data['patio'] ?? "";
     _nombreAcudienteController.text = data['nombre_acudiente'] ?? "";
     _apellidosAcudienteController.text = data['apellido_acudiente'] ?? "";
+    _numeroDocumentoAcudienteController.text =
+        (data.containsKey('cedula_responsable') ? data['cedula_responsable'] : '')?.toString() ?? '';
+    final String? tipoDocAcud = data.containsKey('tipo_documento_acudiente')
+        ? data['tipo_documento_acudiente'] as String?
+        : null;
+    // Solo asigna si está dentro de las opciones; si no, déjalo en null
+    _tipoDocumentoAcudiente = (tipoDocAcud != null && _opciones.contains(tipoDocAcud))
+        ? tipoDocAcud
+        : null;
     _parentescoAcudienteController.text = data['parentesco_representante'] ?? "";
     _celularAcudienteController.text = data['celular'] ?? "";
 
@@ -3341,6 +3356,24 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
+
+  Widget numeroDocumentoAcudiente() {
+    return textFormField(
+      controller: _numeroDocumentoAcudienteController,
+      labelText: 'Número de documento del acudiente',
+      keyboardType: TextInputType.number,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return 'Por favor ingresa el número de documento del acudiente';
+        }
+        if (!RegExp(r'^\d{6,12}$').hasMatch(value.trim())) {
+          return 'Debe tener entre 6 y 12 dígitos';
+        }
+        return null;
+      },
+    );
+  }
+
 
   Widget parentescoAcudiente(){
     return textFormField(
@@ -4012,7 +4045,18 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                   'celular': _celularAcudienteController.text,
                   'celularWhatsapp': _celularWhatsappController.text,
                   'email': _emailAcudienteController.text,
+
                 };
+
+                final String docAcud = _numeroDocumentoAcudienteController.text.trim();
+                final String tipoDocAcud = (_tipoDocumentoAcudiente ?? '').trim();
+
+                if (docAcud.isNotEmpty) {
+                  datosActualizados['cedula_responsable'] = docAcud;
+                }
+                if (tipoDocAcud.isNotEmpty) {
+                  datosActualizados['tipo_documento_acudiente'] = tipoDocAcud;
+                }
 
                 await widget.doc.reference.update(datosActualizados);
 
@@ -4657,6 +4701,32 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  Widget tipoDocumentoAcudiente() {
+    return DropdownButtonFormField<String>(
+      value: _tipoDocumentoAcudiente,                 // <- puede ser null sin romper
+      hint: const Text('Selecciona un tipo'),
+      items: _opciones
+          .map((o) => DropdownMenuItem(value: o, child: Text(o, style: const TextStyle(fontWeight: FontWeight.bold))))
+          .toList(),
+      onChanged: (String? newValue) {
+        setState(() => _tipoDocumentoAcudiente = newValue); // <- sin "!"
+      },
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Por favor selecciona un tipo de documento';
+        }
+        return null;
+      },
+      decoration: InputDecoration(
+        labelText: 'Tipo de Documento',
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+
   Future<void> enviarMensajeWhatsApp(String whatsApp, String docId) async {
     if (whatsApp.isEmpty) {
       if (kDebugMode) {
@@ -4987,8 +5057,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         SnackBar(content: Text('Error enviando mensaje: $e')),
       );
     }
-  }
-}
+  }}
 
 
 
