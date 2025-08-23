@@ -26,7 +26,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
 
   late MyAuthProvider _myAuthProvider;
-  late String _uid;
+  String _uid = '';
   Ppl? _ppl;
   final PplProvider _pplProvider = PplProvider();
   int diasEjecutado = 0;
@@ -56,6 +56,16 @@ class _HomePageState extends State<HomePage> {
   int? _valorConDescuento;
   int? _porcentajeDescuentoPersonalizado;
   bool _mostrarBanner = false;
+
+  bool _faltanNodosAcudiente(Map<String, dynamic>? data) {
+    final faltan =
+        data == null ||
+            (data['cedula_responsable'] == null ||
+                data['cedula_responsable'].toString().trim().isEmpty) ||
+            (data['tipo_documento_acudiente'] == null ||
+                data['tipo_documento_acudiente'].toString().trim().isEmpty);
+    return faltan;
+  }
 
 
 
@@ -312,72 +322,88 @@ class _HomePageState extends State<HomePage> {
               _ppl = Ppl.fromDocumentSnapshot(snapshot.data!);
               _isPaid = _ppl?.isPaid ?? false;
 
-              return SingleChildScrollView(
-                child: SizedBox(
-                  width: MediaQuery.of(context).size.width >= 1000 ? 800 : double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          "Versión: ${_ppl?.version ?? ""}",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                      ),
-                      Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
-                      Text(
-                        'Hoy es: ${DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now())}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      const SizedBox(height: 10),
-                      if (_isTrial && !_isPaid) _buildTrialCard(context),
-
-                      _isPaid
-                          ? Column(
+              return Stack(
+                children: [
+                  // 👇 Tu contenido actual tal cual
+                  SingleChildScrollView(
+                    child: SizedBox(
+                      width: MediaQuery.of(context).size.width >= 1000 ? 800 : double.infinity,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                            margin: const EdgeInsets.only(bottom: 12),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.green.shade600),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.verified, color: Colors.black, size: 20),
-                                SizedBox(width: 8),
-                                Text(
-                                  "Suscripción activa",
-                                  style: TextStyle(
-                                    color: Colors.black,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14
-                                  ),
-                                ),
-                              ],
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              "Versión: ${_ppl?.version ?? ""}",
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                           ),
-                          _buildPaidContent(),
-                        ],
-                      )
-                          : _isTrial
-                          ? _buildPaidContent()
-                          : _buildUnpaidContent(),
+                          Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
+                          Text(
+                            'Hoy es: ${DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now())}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                          const SizedBox(height: 10),
+                          if (_isTrial && !_isPaid) _buildTrialCard(context),
 
-                      const SizedBox(height: 20),
-                    ],
+                          _isPaid
+                              ? Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.green.shade600),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.verified, color: Colors.black, size: 20),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      "Suscripción activa",
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _buildPaidContent(),
+                            ],
+                          )
+                              : _isTrial
+                              ? _buildPaidContent()
+                              : _buildUnpaidContent(),
+
+                          const SizedBox(height: 20),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+
+                  // 👇 Overlay bloqueante si faltan nodos
+                  if (_faltanNodosAcudiente(snapshot.data!.data()))
+                    ForzarCapturaAcudienteDoc(
+                      pplDocRef: FirebaseFirestore.instance.collection('Ppl').doc(_uid),
+                      initialNumero: snapshot.data!.data()!['cedula_responsable']?.toString(),
+                      initialTipo: snapshot.data!.data()!['tipo_documento_acudiente']?.toString(),
+                    ),
+                ],
               );
+
             },
           );
         },
       ),
     );
   }
+
+
 
   Future<void> _consultarYMostrarBanner() async {
     final prefs = await SharedPreferences.getInstance();
@@ -2123,3 +2149,213 @@ class _HomePageState extends State<HomePage> {
   }
 
 }
+
+class ForzarCapturaAcudienteDoc extends StatefulWidget {
+  const ForzarCapturaAcudienteDoc({
+    super.key,
+    required this.pplDocRef,
+    this.initialNumero,
+    this.initialTipo,
+  });
+
+  final DocumentReference pplDocRef;
+  final String? initialNumero;
+  final String? initialTipo;
+
+  @override
+  State<ForzarCapturaAcudienteDoc> createState() => _ForzarCapturaAcudienteDocState();
+}
+
+class _ForzarCapturaAcudienteDocState extends State<ForzarCapturaAcudienteDoc> {
+  final _formKey = GlobalKey<FormState>();
+  final _numeroCtrl = TextEditingController();
+  String? _tipoSeleccionado;
+  bool _guardando = false;
+
+  final List<String> _tipoDocumentoOptions = const [
+    'Cédula de Ciudadanía',
+    'Tarjeta de Identidad',
+    'Cédula de extranjería',
+    'Pasaporte',
+    'Otro',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _numeroCtrl.text = widget.initialNumero?.trim() ?? '';
+    _tipoSeleccionado = (widget.initialTipo?.trim().isEmpty ?? true)
+        ? null
+        : widget.initialTipo!.trim();
+  }
+
+  @override
+  void dispose() {
+    _numeroCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _guardar() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final doc = _numeroCtrl.text.trim();
+    final tipo = _tipoSeleccionado!.trim();
+
+    setState(() => _guardando = true);
+    try {
+      await widget.pplDocRef.set({
+        'cedula_responsable': doc,
+        'tipo_documento_acudiente': tipo,
+        'updated_at': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Datos del acudiente actualizados.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      // No se hace pop: el StreamBuilder de Home se re-renderiza y deja de mostrar este overlay.
+    } catch (e) {
+      if (mounted) {
+        setState(() => _guardando = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al guardar: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async => false, // 🔒 Bloquea el botón atrás
+      child: AbsorbPointer(
+        absorbing: _guardando,
+        child: Container(
+          color: Colors.black54, // Capa oscura
+          alignment: Alignment.center,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Card(
+              elevation: 6,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(18.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const Text(
+                        "Datos del acudiente requeridos",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Para continuar, completa y guarda esta información.\n\n"
+                            "Estos datos son necesarios para la plena identificación del acudiente y para el uso adecuado de su información en las solicitudes y comunicaciones oficiales que se generen.",
+                        style: TextStyle(fontSize: 13),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      TextFormField(
+                        controller: _numeroCtrl,
+                        keyboardType: TextInputType.number,
+                        maxLength: 10,
+                        decoration: InputDecoration(
+                          labelText: 'Número de documento',
+                          counterText: '',
+                          filled: true,
+                          fillColor: blanco,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          border: _bordeGris(),
+                          enabledBorder: _bordeGris(),
+                          focusedBorder: _bordeGris(),
+                          errorBorder: _bordeGris(),
+                          focusedErrorBorder: _bordeGris(),
+                        ),
+                        validator: (v) {
+                          final value = (v ?? '').trim();
+                          if (value.isEmpty) return 'Ingresa el número de documento';
+                          if (!RegExp(r'^\d{6,10}$').hasMatch(value)) {
+                            return 'Debe tener entre 6 y 10 dígitos numéricos';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+
+                      DropdownButtonFormField<String>(
+                        dropdownColor: blanco,
+                        value: _tipoSeleccionado,
+                        items: _tipoDocumentoOptions
+                            .map((o) => DropdownMenuItem(value: o, child: Text(o)))
+                            .toList(),
+                        onChanged: (v) => setState(() => _tipoSeleccionado = v),
+                        decoration: InputDecoration(
+                          labelText: 'Tipo de documento',
+                          filled: true,
+                          fillColor: blanco,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          border: _bordeGris(),
+                          enabledBorder: _bordeGris(),
+                          focusedBorder: _bordeGris(),
+                          errorBorder: _bordeGris(),
+                          focusedErrorBorder: _bordeGris(),
+                        ),
+                        validator: (v) => (v == null || v.trim().isEmpty) ? 'Selecciona un tipo' : null,
+                      ),
+                      const SizedBox(height: 16),
+
+                      SizedBox(
+                        height: 44,
+                        child: FilledButton(
+                          onPressed: _guardando ? null : _guardar,
+                          child: _guardando
+                              ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                              : const Text('Guardar'),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        "Este formulario es obligatorio. No podrás cerrar esta ventana hasta guardar los datos.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  OutlineInputBorder _bordeGris() => const OutlineInputBorder(
+    borderRadius: BorderRadius.all(Radius.circular(10)),
+    borderSide: BorderSide(color: Colors.grey, width: 1),
+  );
+}
+

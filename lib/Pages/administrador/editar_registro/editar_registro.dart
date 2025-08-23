@@ -3898,22 +3898,28 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 if (_patioController.text.trim().isEmpty) camposFaltantes.add("Patio");
               }
 
-              if ((selectedRegional ?? widget.doc['regional'])?.toString().trim().isEmpty ?? true)
+              if ((selectedRegional ?? widget.doc['regional'])?.toString().trim().isEmpty ?? true) {
                 camposFaltantes.add("Regional");
-              if ((selectedCiudad ?? widget.doc['ciudad'])?.toString().trim().isEmpty ?? true)
+              }
+              if ((selectedCiudad ?? widget.doc['ciudad'])?.toString().trim().isEmpty ?? true) {
                 camposFaltantes.add("Ciudad");
-              if ((selectedDelito ?? widget.doc['delito'])?.toString().trim().isEmpty ?? true)
+              }
+              if ((selectedDelito ?? widget.doc['delito'])?.toString().trim().isEmpty ?? true) {
                 camposFaltantes.add("Delito");
-              if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'])?.toString().trim().isEmpty ?? true)
+              }
+              if ((selectedJuzgadoEjecucionPenas ?? widget.doc['juzgado_ejecucion_penas'])?.toString().trim().isEmpty ?? true) {
                 camposFaltantes.add("Juzgado de Ejecución de Penas");
-              if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'])?.toString().trim().isEmpty ?? true)
+              }
+              if ((selectedJuzgadoNombre ?? widget.doc['juzgado_que_condeno'])?.toString().trim().isEmpty ?? true) {
                 camposFaltantes.add("Juzgado que Condenó");
+              }
               if (_radicadoController.text.trim().isEmpty) camposFaltantes.add("Radicado");
               if (_nombreController.text.trim().isEmpty) camposFaltantes.add("Nombre");
               if (_apellidoController.text.trim().isEmpty) camposFaltantes.add("Apellido");
               if (_numeroDocumentoController.text.trim().isEmpty) camposFaltantes.add("Número de Documento");
-              if ((int.tryParse(_mesesCondenaController.text) ?? 0) <= 0)
+              if ((int.tryParse(_mesesCondenaController.text) ?? 0) <= 0) {
                 camposFaltantes.add("Meses de condena (debe ser mayor a 0)");
+              }
               if (_celularWhatsappController.text.trim().isEmpty) camposFaltantes.add("Número de WhatsApp");
 
               bool tieneEvento = await tieneEventoEspecial(widget.doc.reference);
