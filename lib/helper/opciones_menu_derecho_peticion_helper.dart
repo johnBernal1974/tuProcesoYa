@@ -1,8 +1,14 @@
 class MenuOptionsDerechoPeticionHelper {
   /// Devuelve un mapa con las categorías y sus respectivas subcategorías
   static final Map<String, List<String>> menuOptions = {
-    "Beneficios Penitenciarios": [
-      "Redención de pena",
+    "Actualización de datos": [
+      "Actualización de hoja de vida del Ppl",
+    ],
+    "Cartilla biográfica": [
+      "Solicitud de cartilla biográfica",
+    ],
+    "Cursos transversales cambio de fase": [
+      "Solicitud de cursos transversales",
     ],
     "Salud y Atención Médica": [
       "Atención médica oportuna y adecuada",

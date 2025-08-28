@@ -9,26 +9,24 @@ class PreguntasDerechoPeticionHelper {
     }
 
     Map<String, Map<String, List<String>>> preguntasPorCategoria = {
-      "Beneficios Penitenciarios": {
-        "Libertad condicional": [
-          "¿Cuánto tiempo de condena se ha cumplido hasta ahora?",
-          "¿Se ha mantenido buena conducta dentro del centro penitenciario?",
+      "Actualización de datos": {
+        "Actualización de hoja de vida del Ppl": [
+          "¿Explica porqué necesitas actualizar los datos, que información actualmente esta errónea y puede perjudicar o ha perjudicado al Ppl?",
+          "¿Se ha hecho anteriormente la misma solicitud?, A quien se hizo la solicitud y que respuesta se ha obtenido?",
         ],
-        "Prisión domiciliaria": [
-          "¿Existe alguna condición médica o situación familiar que justifique la solicitud?",
-          "¿Se cuenta con documentos que demuestren arraigo, como residencia o vínculos familiares?",
+      },
+
+      "Cartilla biográfica": {
+        "Solicitud de cartilla biográfica": [
+          "¿Para que se solicita la cartilla biográfica?",
+          "¿Se ha hecho anteriormente la misma solicitud?, A quien se hizo la solicitud y que respuesta se ha obtenido?",
         ],
-        "Permiso administrativo hasta de 72 horas": [
-          "¿Cuál es el motivo por el que se necesita el permiso?",
-          "¿Se tienen pruebas o documentos que respalden la solicitud?",
-        ],
-        "Redención de pena": [
-          "¿Se ha participado en programas de estudio o trabajo dentro del penal?",
-          "¿Se cuenta con documentos que certifiquen la redención de pena?",
-        ],
-        "Extinción de la sanción penal": [
-          "¿En qué etapa del proceso judicial se encuentra actualmente?",
-          "¿Se cuenta con documentos legales que respalden la solicitud?",
+      },
+
+      "Cursos transversales cambio de fase": {
+        "Solicitud de cursos transversales": [
+          "¿Que solicitud especifica desea realizar?",
+          "¿Se ha hecho anteriormente la misma solicitud?, A quien se hizo la solicitud y que respuesta se ha obtenido?",
         ],
       },
       "Salud y Atención Médica": {
