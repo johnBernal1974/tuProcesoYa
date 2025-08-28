@@ -6,67 +6,41 @@ class PreguntasTutelaHelper {
     if (categoria == null || subcategoria == null) return [];
 
     switch (categoria) {
-      case "Salud":
+      case 'Salud':
         return [
-          "¿Cuál es la necesidad médica o tratamiento que requiere la persona privada de la libertad?",
-          "¿Qué servicio, medicamento o atención ha sido negado, omitido o retrasado?",
-          "¿Sanidad del penal, ESE o entidad de salud fue informada sobre esta situación? ¿Qué respuesta dieron?",
-          "¿La persona ha sido valorada por personal médico dentro del penal o en hospital externo?",
-          "¿Esta situación afecta su salud o pone en riesgo su vida o integridad física?"
+          'Redacta un relato claro y cronológico sobre tu necesidad o situación de salud. Incluye, en lo posible: qué requieres o qué se te negó/omitió/retrasó; fechas y, si puedes, lugares; entidades o personas involucradas (Sanidad del penal, ESE/EPS u hospital); cuéntanos si realizaste gestiones previas y si tuviste respuesta o no; cómo impacta en tu salud o pone en riesgo tu vida o integridad. Entre más completo el relato, mejor.'
         ];
 
-      case "Vida":
+      case 'Vida':
         return [
-          "¿Qué situación representa una amenaza real o grave contra la vida de la persona privada de la libertad?",
-          "¿Se ha informado a funcionarios del penal o se han realizado denuncias?",
-          "¿Qué medidas de protección se han solicitado o se espera que se adopten?",
-          "¿La persona ha sido objeto de violencia, amenazas o negligencia reiterada?",
-          "¿Existe evidencia o testigos de la situación de riesgo?"
+          'Redacta un relato claro y cronológico sobre la situación que amenaza tu vida. Incluye, en lo posible: en qué consiste la amenaza (si es actual, inminente o reiterada); fechas y, si puedes, lugares; personas o entidades involucradas (otros internos, funcionarios o grupos); si informaste a funcionarios del penal o presentaste denuncias y qué respuesta hubo (o si no hubo); medidas de protección solicitadas o esperadas; antecedentes de violencia, amenazas o negligencia; y si cuentas con evidencia o testigos. Entre más completo el relato, mejor.'
         ];
 
-      case "Integridad personal":
+      case 'Integridad personal':
         return [
-          "¿Qué hechos o condiciones han afectado la integridad física, mental o emocional de la persona privada de la libertad?",
-          "¿Ha recibido tratos crueles, inhumanos o degradantes por parte del personal penitenciario o de otros internos?",
-          "¿Recibió atención médica o psicológica tras los hechos?",
-          "¿Se informó a las autoridades penitenciarias o se presentó alguna queja?",
-          "¿Los hechos han sido reiterados o no han recibido respuesta adecuada?"
+          'Redacta un relato claro y cronológico sobre los hechos que afectan tu integridad personal (física, mental o emocional). Incluye, en lo posible: qué ocurrió y cómo te afectó; si hubo tratos crueles, inhumanos o degradantes y por parte de quién; fechas y, si puedes, lugares; si recibiste atención médica o psicológica y qué diagnóstico o recomendaciones hubo; si informaste a las autoridades penitenciarias o presentaste quejas y cuál fue la respuesta (o si no hubo); si los hechos han sido reiterados o continúan; y qué medidas u órdenes solicitas al juez. Entre más completo el relato, mejor.'
         ];
 
-      case "Dignidad humana":
+      case 'Dignidad humana':
         return [
-          "¿Qué condiciones materiales o trato dentro del penal considera indignas para la persona privada de la libertad?",
-          "¿Se han vulnerado derechos como acceso a agua, salud, alimentación, higiene o descanso?",
-          "¿Se han realizado solicitudes ante la dirección del penal para mejorar dichas condiciones?",
-          "¿Qué consecuencias ha tenido esta situación en la persona afectada?",
-          "¿Se cuenta con pruebas como fotografías, testimonios o documentos?"
+          'Redacta un relato claro y cronológico sobre la situación que afecta tu dignidad humana dentro del penal. Incluye, en lo posible: las condiciones materiales o tratos que consideras indignos (acceso a agua, salud, alimentación, higiene, descanso, saneamiento, hacinamiento, entre otros); fechas y, si puedes, lugares o pabellones; personas o autoridades involucradas; solicitudes o quejas presentadas ante la dirección del penal u otras entidades y la respuesta (o si no hubo); las consecuencias para tu salud física, mental o emocional; y si cuentas con evidencia (fotografías, testimonios o documentos). Entre más completo el relato, mejor.'
         ];
 
-      case "Debido proceso":
+      case 'Debido proceso':
         return [
-          "¿Qué actuación administrativa o judicial se surtió sin conocimiento o participación del PPL?",
-          "¿La persona fue notificada debidamente de la decisión que le afectó?",
-          "¿Tuvo acceso a abogado o defensor para ejercer su defensa?",
-          "¿Se presentó algún recurso, solicitud o reclamación frente a la situación?",
-          "¿Qué derecho considera que fue vulnerado y por qué?"
+          'Redacta un relato claro y cronológico sobre la situación que vulnera tu derecho al debido proceso. Incluye, en lo posible: qué actuación administrativa o judicial se surtió sin tu conocimiento o participación; si te notificaron la decisión que te afectó y cuándo, o si hubo decisiones judiciales no notificadas; recursos, solicitudes o reclamaciones presentadas y su respuesta; autoridad o despacho involucrado; fechas y, si puedes, lugares; y qué orden solicitas al juez (por ejemplo, notificar formalmente, reponer términos, declarar nulidad o practicar pruebas). Entre más completo el relato, mejor.'
         ];
 
-      case "Intimidad":
+
+      case 'Intimidad':
         return [
-          "¿Qué situación considera que vulneró la privacidad personal o familiar del PPL?",
-          "¿Quién accedió a correspondencia, información médica o llamadas privadas de la persona privada de la libertad?",
-          "¿El hecho ocurrió en un espacio íntimo como la celda o durante visitas? ¿Hubo grabaciones?",
-          "¿Fue una situación reiterada o aislada? ¿Se denunció?",
-          "¿Qué consecuencias tuvo esta intromisión en su vida privada?"
+          'Redacta un relato claro y cronológico sobre la situación que afectó tu intimidad personal o familiar. Incluye, en lo posible: qué hecho vulneró tu privacidad (acceso a correspondencia, historias clínicas, llamadas o registros); quién lo realizó; si ocurrió en espacios íntimos (celda, visitas) y si hubo grabaciones; si fue aislado o reiterado; si denunciaste o informaste a autoridades y qué respuesta hubo; consecuencias para ti y, si cuentas con evidencia o testigos, menciónalos; y qué medidas u órdenes solicitas al juez para proteger tu intimidad. Entre más completo el relato, mejor.'
         ];
 
-      case "Educación":
+
+      case 'Educación':
         return [
-          "¿Se ha solicitado acceso a programas educativos dentro del centro penitenciario?",
-          "¿Qué obstáculos ha enfrentado la persona privada de la libertad para acceder a educación (materiales, profesores, cupos)?",
-          "¿La negativa fue debidamente justificada o fue arbitraria?",
-          "¿Qué tipo de formación se desea cursar (básica, media, técnica, superior)?",
-          "¿Se cuenta con constancia de la solicitud o de la negativa por parte de la institución?"
+          'Redacta un relato claro y cronológico sobre tu necesidad o situación frente al acceso a la educación. Incluye, en lo posible: solicitudes hechas para ingresar o continuar en programas educativos dentro del establecimiento; obstáculos enfrentados (materiales, profesores, cupos, traslados, conectividad); si la negativa fue justificada o arbitraria y por quién; el tipo de formación que deseas cursar (básica, media, técnica o superior); constancias o respuestas de la institución; fechas y, si puedes, lugares; y qué orden solicitas al juez (por ejemplo, acceso, inscripción o suministro de materiales). Entre más completo el relato, mejor.'
         ];
 
       default:

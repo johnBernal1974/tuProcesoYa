@@ -266,8 +266,8 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
 
         const Text(
           "Para facilitar la comprensión y garantizar la precisión, por favor proporciona "
-              "respuestas claras, concisas, detalladas y veraces a cada una de las siguientes preguntas:",
-          style: TextStyle(fontSize: 14),
+              "datos claros, concisos, detallados y veraces.",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
 
         const SizedBox(height: 15),
@@ -282,7 +282,7 @@ class _TutelaSolicitudPageState extends State<TutelaSolicitudPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  "Pregunta ${index + 1}: ${preguntas[index]}", // Muestra la pregunta
+                  preguntas[index], // Muestra la pregunta
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                 ),
                 const SizedBox(height: 10),

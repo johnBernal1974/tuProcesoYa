@@ -43,8 +43,6 @@ class MenuOptionsTutelaHelper {
     ],
     "Debido proceso": [
       "Falta de notificación de decisiones",
-      "Negación del derecho a defensa",
-      "Falta de acceso a expediente judicial",
       "Demora injustificada en decisiones judiciales",
     ],
     "Intimidad": [
