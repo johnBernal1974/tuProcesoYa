@@ -1515,7 +1515,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   }
 
 
-
   String formatearFechaCaptura(String fechaString) {
     try {
       final fecha = DateTime.parse(fechaString); // convierte el string en DateTime
