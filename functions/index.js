@@ -1068,6 +1068,106 @@ exports.sendNewRedencionMessage = functions.https.onRequest(async (req, res) => 
   }
 });
 
+exports.sendCambioEstadoMessage = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.status(204).send("");
+    return;
+  }
+
+  if (req.method !== "POST") {
+    return res.status(405).send("Method Not Allowed");
+  }
+
+  const { to, docId } = req.body;
+
+  if (!to || !docId) {
+    return res.status(400).json({ error: "Debe proporcionar 'to' y 'docId'" });
+  }
+
+  // 🔹 1️⃣ Leer datos de Firestore
+  let acudienteNombre = "";
+  let pplNombre = "";
+
+  try {
+    const docRef = admin.firestore().collection("Ppl").doc(docId);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) {
+      return res.status(404).json({ error: "Documento no encontrado en Firestore" });
+    }
+
+    const data = docSnap.data();
+    acudienteNombre = data.nombre_acudiente || "";
+    pplNombre = data.nombre_ppl || "";
+
+  } catch (err) {
+    console.error("Error leyendo Firestore:", err);
+    return res.status(500).json({ error: "Error leyendo Firestore" });
+  }
+
+  // 🔹 2️⃣ Construir el body del mensaje
+  const body = {
+    messaging_product: "whatsapp",
+    to: to,                       // E.164, p.ej. 57XXXXXXXXXX
+    type: "template",
+    template: {
+      name: "cambio_estado",      // nombre exacto de la plantilla
+      language: { code: "es_CO" },// o "es" si así la registraste
+      components: [
+        {
+          type: "header",
+          parameters: [
+            {
+              type: "image",
+              image: {
+                link: "https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635"
+              }
+            }
+          ]
+        },
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: acudienteNombre }, // {{1}}
+            { type: "text", text: pplNombre }        // {{2}}
+          ]
+        }
+      ]
+    }
+  };
+
+  const url = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${ACCESS_TOKEN}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Error de la API:", result);
+      return res.status(500).json({ error: "Error al enviar el mensaje", details: result });
+    }
+
+    console.log("Mensaje de cambio estado enviado correctamente:", result);
+    return res.json({ success: true, result });
+
+  } catch (error) {
+    console.error("Error en la función:", error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 //Funcion para notificar el envio del correo de la solicitud
 exports.sendNewSolicitudMessage = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");

@@ -349,6 +349,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if ((widget.doc["celularWhatsapp"] ?? "").toString().trim().isNotEmpty)
+            botonEnviarCambioEstado(widget.doc["celularWhatsapp"], widget.doc.id),
+          const SizedBox(height: 15),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -849,12 +852,16 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                             // Estado del usuario
                             estadoUsuarioWidget(widget.doc["status"]),
 
+
                             // Estado de notificación
                             estadoNotificacionWidget(
                               widget.doc["isNotificatedActivated"],
                               widget.doc["celularWhatsapp"],
                               widget.doc.id,
                             ),
+                            if ((widget.doc["celularWhatsapp"] ?? "").toString().trim().isNotEmpty)
+                              botonEnviarCambioEstado(widget.doc["celularWhatsapp"], widget.doc.id),
+
 
                             // Tarjeta de activación (condicional)
                             if (_docEditable!["status"] == "registrado" ||
@@ -5063,10 +5070,126 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         SnackBar(content: Text('Error enviando mensaje: $e')),
       );
     }
-  }}
+  }
+
+  //boton para iniciar converzacion en apiwhatsapp
+
+  Widget botonEnviarCambioEstado(String celular, String docId) {
+    return ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.green.shade700,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+      onPressed: () async {
+        final confirmar = await showDialog<bool>(
+          context: context,
+          builder: (_) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: const Text("Confirmar envío"),
+            content: const Text(
+              "Se enviará por WhatsApp al acudiente un mensaje para iniciar conversación. ¿Deseas continuar?",
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancelar")),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+                child: const Text("Enviar", style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+        if (confirmar != true) return;
+
+        await _enviarCambioEstado(celular, docId);
+      },
+      icon: const Icon(Icons.campaign),
+      label: const Text("Iniciar conversación"),
+    );
+  }
+
+  Future<void> _enviarCambioEstado(String celular, String docId) async {
+    if (celular.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El número de WhatsApp no está disponible')),
+      );
+      return;
+    }
+
+    String to = celular.trim();
+    if (!to.startsWith("57")) {
+      to = "57$to";
+    }
+
+    // Loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final resp = await http.post(
+        Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendCambioEstadoMessage"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"to": to, "docId": docId}),
+      );
+
+      if (mounted) Navigator.of(context).pop(); // cerrar loader
+
+      if (resp.statusCode == 200) {
+        if (!mounted) return;
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            backgroundColor: Colors.white,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset('assets/images/icono_whatsapp.png', width: 48, height: 48),
+                const SizedBox(height: 16),
+                const Text(
+                  'La notificación de inicio de conversación fue enviada exitosamente.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.black87),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Cerrar', style: TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      } else {
+        debugPrint('Error cambio_estado: ${resp.body}');
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error enviando mensaje (${resp.statusCode}): ${resp.body}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) Navigator.of(context).pop(); // cerrar loader si hay error
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error enviando mensaje: $e')),
+      );
+    }
+  }
 
 
 
+}
 
 class MostrarTiempoBeneficioCard extends StatelessWidget {
   final String idPpl;

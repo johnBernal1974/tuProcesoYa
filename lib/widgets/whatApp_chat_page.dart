@@ -292,6 +292,34 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                             ),
                           ),
                         ),
+
+                      // 🔹 Botón para enviar plantilla "cambio_estado"
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: MediaQuery.of(context).size.width < 600
+                            ? IconButton(
+                          tooltip: 'Notificar cambio de estado',
+                          icon: const Icon(Icons.campaign, color: Colors.green),
+                          onPressed: (!estaRegistrado || idUsuario.isEmpty)
+                              ? null
+                              : () => _enviarCambioEstado(numero, idUsuario),
+                        )
+                            : ElevatedButton.icon(
+                          onPressed: (!estaRegistrado || idUsuario.isEmpty)
+                              ? null
+                              : () => _enviarCambioEstado(numero, idUsuario),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          ),
+                          icon: const Icon(Icons.campaign),
+                          label: const Text('Notificar'),
+                        ),
+                      ),
+
+
                     ],
                   ),
                 ),
@@ -1024,9 +1052,8 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
                 builder: (context, value, _) {
                   return TextField(
                     controller: _searchController,
-                    onChanged: (value) {
-                      _searchTerm.value = value.trim().toLowerCase();
-                    },
+                    onChanged: _onSearchChanged,
+
                     decoration: InputDecoration(
                       hintText: 'Buscar por nombre o apellido',
                       prefixIcon: const Icon(Icons.search),
@@ -1058,6 +1085,95 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
                 },
               ),
             ),
+
+            // ===== Resultados de búsqueda en Ppl =====
+            if (_cargandoPpl)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+            if (!_cargandoPpl && _pplResults.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+                child: Row(
+                  children: const [
+                    Icon(Icons.person_search, size: 18, color: Colors.deepPurple),
+                    SizedBox(width: 6),
+                    Text('Resultados en Ppl', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              ),
+            if (!_cargandoPpl && _pplResults.isNotEmpty)
+              SizedBox(
+                height: 220, // scroll propio para no empujar todo
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  itemCount: _pplResults.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, i) {
+                    final d = _pplResults[i];
+                    final data = d.data();
+                    final acudiente = '${data['nombre_acudiente'] ?? ''} ${data['apellido_acudiente'] ?? ''}'.trim();
+                    final ppl = '${data['nombre_ppl'] ?? ''} ${data['apellido_ppl'] ?? ''}'.trim();
+                    final cel = (data['celularWhatsapp'] ?? '').toString();
+                    final e164 = _toE164(cel);
+
+                    return ListTile(
+                      dense: true,
+                      leading: const CircleAvatar(child: Icon(Icons.person)),
+                      title: Text(acudiente.isEmpty ? '(Sin acudiente)' : acudiente,
+                          overflow: TextOverflow.ellipsis),
+                      subtitle: Text(
+                        [
+                          if (ppl.isNotEmpty) ppl,
+                          if (cel.isNotEmpty) '📞 $cel'
+                        ].join(' · '),
+                      ),
+                      trailing: Wrap(
+                        spacing: 8,
+                        children: [
+                          // Abrir chat
+                          IconButton(
+                            tooltip: 'Abrir chat',
+                            icon: const Icon(Icons.chat_bubble_outline, color: Colors.blue),
+                            onPressed: cel.isEmpty
+                                ? null
+                                : () async {
+                              await _ensureConversationDoc(e164);
+                              selectedNumeroCliente.value = e164;
+                              // Si estás en pantalla pequeña, navega al detalle
+                              if (esPantallaPequena(context)) {
+                                // Reutiliza tu navegación actual
+                                Navigator.of(context).push(MaterialPageRoute(
+                                  builder: (_) => Scaffold(
+                                    appBar: AppBar(
+                                      backgroundColor: Colors.green,
+                                      iconTheme: const IconThemeData(color: Colors.white),
+                                      title: const Text("Conversación", style: TextStyle(color: Colors.white)),
+                                    ),
+                                    body: _buildChatConversacion(e164, true),
+                                  ),
+                                ));
+                              }
+                            },
+                          ),
+                          // Enviar plantilla cambio_estado
+                          IconButton(
+                            tooltip: 'Enviar cambio de estado',
+                            icon: const Icon(Icons.campaign, color: Colors.green),
+                            onPressed: (cel.isEmpty)
+                                ? null
+                                : () => _enviarCambioEstado(e164, d.id),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            if (!_cargandoPpl && _pplResults.isNotEmpty)
+              const Divider(height: 1),
+
 
 
             // 🔽 Lista desplazable
@@ -1576,6 +1692,50 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
   }
 
 
+  Future<void> _enviarCambioEstado(String numero, String docId) async {
+    // Normaliza a E.164 para CO
+    String to = numero.trim();
+    if (!to.startsWith('57')) to = '57$to';
+
+    // Loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final resp = await http.post(
+        Uri.parse('https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendCambioEstadoMessage'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'to': to, 'docId': docId}),
+      );
+
+      if (context.mounted) Navigator.of(context).pop(); // cierra loader
+
+      if (resp.statusCode == 200) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Mensaje de cambio de estado enviado ✅')),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error enviando mensaje: ${resp.statusCode} - ${resp.body}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) Navigator.of(context).pop(); // cierra loader
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error enviando mensaje: $e')),
+        );
+      }
+    }
+  }
+
 
   Widget _buildImagePlaceholder() {
     return Container(
@@ -1726,4 +1886,167 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
         return 'application/octet-stream';
     }
   }
+
+  //para barra de busqueda general
+
+// ---- BUSQUEDA PPL ----
+  Timer? _debouncePpl;
+  bool _cargandoPpl = false;
+  List<QueryDocumentSnapshot<Map<String, dynamic>>> _pplResults = [];
+
+  String _toE164(String numero) {
+    var n = numero.trim();
+    if (n.startsWith('+')) n = n.substring(1);
+    if (!n.startsWith('57')) n = '57$n';
+    return n;
+  }
+
+// Normaliza: minúsculas + sin acentos
+  String _normalize(String s) {
+    final lower = s.toLowerCase();
+    const from = 'áàäâãéèëêíìïîóòöôõúùüûñç';
+    const to   = 'aaaaaeeeeiiiiooooouuuunc';
+    var out = StringBuffer();
+    for (final ch in lower.characters) {
+      final i = from.indexOf(ch);
+      out.write(i >= 0 ? to[i] : ch);
+    }
+    return out.toString();
+  }
+
+// Ejecuta una consulta por prefijo en un campo lower
+  Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>> _prefixQuery(
+      CollectionReference<Map<String, dynamic>> col,
+      String field,
+      String q,
+      {int limit = 25}
+      ) async {
+    try {
+      final snap = await col
+          .orderBy(field)
+          .startAt([q])
+          .endAt(['$q\uf8ff'])
+          .limit(limit)
+          .get();
+      return snap.docs;
+    } on FirebaseException catch (e) {
+      // Si falta índice o el campo no existe, devolvemos vacío y luego haremos fallback
+      debugPrint('prefixQuery($field) fallback -> $e');
+      return [];
+    }
+  }
+
+  Future<void> _buscarEnPpl(String term) async {
+    term = term.trim();
+    if (term.isEmpty) {
+      setState(() {
+        _pplResults = [];
+        _cargandoPpl = false;
+      });
+      return;
+    }
+
+    setState(() => _cargandoPpl = true);
+
+    final col = FirebaseFirestore.instance.collection('Ppl').withConverter<Map<String, dynamic>>(
+      fromFirestore: (s, _) => s.data() ?? {},
+      toFirestore: (m, _) => m,
+    );
+
+    try {
+      final esNumero = RegExp(r'^\d+$').hasMatch(term);
+      // ---- Búsqueda por número exacto en celularWhatsapp ----
+      if (esNumero && term.length >= 7) {
+        final snap = await col.where('celularWhatsapp', isEqualTo: term).limit(5).get();
+        setState(() {
+          _pplResults = snap.docs;
+          _cargandoPpl = false;
+        });
+        return;
+      }
+
+      // ---- Texto: primero intentamos prefijos en campos *_lower ----
+      final q = _normalize(term);
+      final futures = <Future<List<QueryDocumentSnapshot<Map<String, dynamic>>>>>[
+        _prefixQuery(col, 'nombre_acudiente_lower', q),
+        _prefixQuery(col, 'apellido_acudiente_lower', q),
+        _prefixQuery(col, 'nombre_ppl_lower', q),
+        _prefixQuery(col, 'apellido_ppl_lower', q),
+      ];
+
+      final results = await Future.wait(futures);
+      // Unir y quitar duplicados por id
+      final Map<String, QueryDocumentSnapshot<Map<String, dynamic>>> merged = {};
+      for (final list in results) {
+        for (final d in list) {
+          merged[d.id] = d;
+        }
+      }
+
+      // Si conseguimos algo, listo
+      if (merged.isNotEmpty) {
+        setState(() {
+          _pplResults = merged.values.toList();
+          _cargandoPpl = false;
+        });
+        return;
+      }
+
+      // ---- Fallback: traer más docs y filtrar en cliente (normalizando acentos) ----
+      // Sube este límite si tu dataset es grande, o pagina si hace falta.
+      final snapAll = await col.limit(1000).get();
+      final nq = _normalize(term);
+
+      bool matchDoc(Map<String, dynamic> m) {
+        final a = _normalize((m['nombre_acudiente'] ?? '').toString());
+        final b = _normalize((m['apellido_acudiente'] ?? '').toString());
+        final c = _normalize((m['nombre_ppl'] ?? '').toString());
+        final e = _normalize((m['apellido_ppl'] ?? '').toString());
+        final joined = '$a $b $c $e';
+        // Permite buscar por varias palabras en cualquier orden
+        final tokens = nq.split(RegExp(r'\s+')).where((t) => t.isNotEmpty);
+        for (final t in tokens) {
+          if (!joined.contains(t)) return false;
+        }
+        return true;
+      }
+
+      final filtered = snapAll.docs.where((d) => matchDoc(d.data())).take(100).toList();
+
+      setState(() {
+        _pplResults = filtered;
+        _cargandoPpl = false;
+      });
+    } catch (e) {
+      setState(() {
+        _pplResults = [];
+        _cargandoPpl = false;
+      });
+      debugPrint('Error buscando en Ppl: $e');
+    }
+  }
+
+// Debounce al escribir en el buscador
+  void _onSearchChanged(String v) {
+    _searchTerm.value = v.trim().toLowerCase();
+    _debouncePpl?.cancel();
+    _debouncePpl = Timer(const Duration(milliseconds: 350), () {
+      _buscarEnPpl(v);
+    });
+  }
+
+// Asegura que exista el doc de conversación para mostrar en la lista
+  Future<void> _ensureConversationDoc(String e164) async {
+    final ref = FirebaseFirestore.instance.collection('whatsapp_conversations').doc(e164);
+    final snap = await ref.get();
+    if (!snap.exists) {
+      await ref.set({
+        'conversationId': e164,
+        'lastMessage': '',
+        'lastMessageAt': FieldValue.serverTimestamp(),
+        'hasUnread': false,
+      }, SetOptions(merge: true));
+    }
+  }
+
 }
