@@ -74,7 +74,7 @@ class ApelacionTemplate {
         Delito: <b>$delito</b>.<br>
         Asunto: <b>Presentación de recurso de apelación - $numeroSeguimiento</b><br><br>
 
-        “Me amparo en el artículo 29 de la Constitución Política de Colombia y las normas procesales vigentes.”<br><br>
+        “Me amparo en el artículo 85 de la Constitución Política de Colombia y art 14 de ley 1437/2011.”<br><br>
         E.S.D<br><br>
 
         Yo, <b>$nombrePpl $apellidoPpl</b>, identificado con número de cédula <b>$identificacionPpl</b>, actualmente recluido en <b>$centroPenitenciario</b>, NUI: <b>$nui</b>, TD: <b>$td</b>, Patio No: <b>$patio</b>.<br><br>
@@ -94,10 +94,10 @@ class ApelacionTemplate {
         ${convertirParrafos(peticion)}<br><br>
 
         <span style="font-size: 16px;"><b>V. PRUEBAS</b></span><br>
-        ${convertirParrafos(pruebas)}<br><br>
+        ${convertirParrafos(pruebas)}<br><br><br>
        
 
-        Agradezco la atención prestada a esta solicitud.<br><br>
+        Agradezco la atención prestada a esta solicitud.<br><br><br>
         Por favor compulsar copia de esta comunicación a los siguientes correos:<br>
         $emailAlternativo<br>
         $emailUsuario<br><br>

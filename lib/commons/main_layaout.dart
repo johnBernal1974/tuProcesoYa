@@ -5,6 +5,7 @@ import 'package:tuprocesoya/commons/side_bar_menu.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
 import '../widgets/agenda_listener.dart';
+import '../widgets/agenda_viewer.dart';
 import '../widgets/tabla_tarifas.dart';
 import '../widgets/whatApp_chat_page.dart';
 import '../widgets/whatsapp_state.dart';
@@ -276,6 +277,17 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
               ),
             ),
+          const Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: EdgeInsets.only(bottom: 5, right: 80),
+              child: SizedBox(
+                width: 400,
+                child: AgendaViewerCompact(),
+              ),
+            ),
+          )
+
         ],
       ),
     );

@@ -553,12 +553,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                           child: WhatsAppChatWrapper(),
                                         ),
 
-                                      // Agendador
-                                      if (constraints.maxWidth >= 1200)
-                                        const SizedBox(
-                                          width: 400,
-                                          child: AgendaViewerCompact(),
-                                        ),
                                     ],
                                   );
                                 } else {

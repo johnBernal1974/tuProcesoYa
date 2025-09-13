@@ -307,36 +307,32 @@ class _AtenderApelacionPageState extends State<AtenderApelacionPage> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Si tienes el campo `archivo_decision` traído en `solicitudData`
-            if (solicitudData?['archivo_decision'] != null &&
-                solicitudData!['archivo_decision'].toString().isNotEmpty) ...[
-              const Text(
-                "📎 Auto que se va a apelar",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              ArchivoViewerWeb2(
-                archivos: [solicitudData!['archivo_decision']],
-              ),
-              const SizedBox(height: 20),
-            ],
+            // 📎 Auto (archivo_decision)
+            _buildArchivoSimple(
+              titulo: "📎 Auto que se va a apelar",
+              url: solicitudData?['archivo_decision']?.toString(),
+            ),
 
-            // Si también quieres mostrar otros adjuntos que vengan en widget.archivos
+            // 📎 Anexo (url único en el campo 'anexos')
+            _buildArchivoSimple(
+              titulo: "📎 Anexo",
+              url: solicitudData?['anexos']?.toString(),
+            ),
+
+            // 📄 Otros adjuntos que vienen desde widget.archivos (si los usas)
             if (widget.archivos.isNotEmpty) ...[
-              const Text(
-                "📄 Otros archivos adjuntos",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
+              const Text("📄 Otros archivos adjuntos",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
-              ArchivoViewerWeb2(
-                archivos: widget.archivos,
-              ),
+              ArchivoViewerWeb2(archivos: widget.archivos),
               const SizedBox(height: 20),
             ],
 
-            // Si ninguno de los dos tiene nada
+            // Si no hay ninguno
             if ((solicitudData?['archivo_decision'] == null ||
                 solicitudData!['archivo_decision'].toString().isEmpty) &&
+                (solicitudData?['anexos'] == null ||
+                    solicitudData!['anexos'].toString().isEmpty) &&
                 widget.archivos.isEmpty)
               const Text(
                 "El usuario no compartió ningún archivo",
@@ -344,6 +340,7 @@ class _AtenderApelacionPageState extends State<AtenderApelacionPage> {
               ),
           ],
         ),
+
         const SizedBox(height: 30),
         buildFechaYBeneficioSelector(),
         const SizedBox(height: 20),
@@ -447,6 +444,22 @@ class _AtenderApelacionPageState extends State<AtenderApelacionPage> {
       ],
     );
   }
+
+  Widget _buildArchivoSimple({required String titulo, String? url}) {
+    final u = url?.trim();
+    if (u == null || u.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
+        const SizedBox(height: 8),
+        ArchivoViewerWeb2(archivos: [u]),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
+
 
   Widget buildFechaYBeneficioSelector() {
     return Column(
@@ -1328,21 +1341,20 @@ class _AtenderApelacionPageState extends State<AtenderApelacionPage> {
       "Actualmente, me encuentro cumpliendo dicha condena bajo la modalidad de prisión domiciliaria.\n\n";
     }
 
-    texto +=
-    "Durante mi reclusión he mantenido un comportamiento respetuoso del reglamento penitenciario, evidenciado en mi participación constante en programas de formación académica, actividades laborales y procesos de reflexión personal orientados a la resocialización.\n\n";
+    texto += """
+He cumplido las tres quintas (3/5) partes de la pena —hecho reconocido por el despacho— y mantengo conducta intramuros buena/ejemplar con concepto disciplinario favorable.
 
-    texto +=
-    "Mi trayectoria personal se ha desarrollado en un contexto de importantes carencias económicas y sociales, circunstancias que, si bien no excusan el hecho cometido, contribuyeron a su configuración.\n\n";
+La negativa se basó, esencialmente, en la revocatoria de mi prisión domiciliaria por una salida del domicilio el 20/07/2024. Dicha salida obedeció a <b>una necesidad familiar inmediata y comprobable</b>: la compra de medicamentos para mi madre, BLANCA CECILIA MONTENEGRO (72 años), quien cursa patología ginecológica oncológica en control (resección de masas anexiales; informe de patología con cistoadenofibroma seroso y seguimientos de oncología). El desplazamiento fue a pocas cuadras de mi domicilio.
 
-    texto +=
-    "La decisión recurrida fundamentó la negativa en el numeral 5º del artículo 199 de la Ley 1098 de 2006.\n\n";
+Lejos de sustraerme de la autoridad, <b>me presenté voluntariamente</b> en la Penitenciaría el 12/11/2024 a las 11:30 a. m., en compañía de mi esposa Marcela Ramírez y de mi madre, siendo atendidos hasta las 2:00 p. m. por un funcionario del INPEC de apellido Rodríguez, quien me entregó la boleta de citación.
 
-    texto +=
-    "Este recurso se dirige contra dicha determinación, por existir razones de hecho y de derecho que sustentan su reconsideración por la instancia superior.";
+Cuento con arraigo familiar reforzado: además del cuidado de mi madre adulta mayor, tengo un hijo de 13 años a mi cargo.
+
+No existen nuevos incumplimientos ni anotaciones negativas posteriores por mi parte; por el contrario, mantengo buen desempeño, disposición a reparar y someterme a condiciones estrictas.
+""";
 
     return texto;
   }
-
 
 
   String generarTextoManifestacionPerdonYCompromiso() {
@@ -1457,51 +1469,50 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
 """;
   }
 
-
-
-
   void fetchDocumentoApelacion() async {
     try {
-      DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
+      final snap = await FirebaseFirestore.instance
           .collection('apelacion_solicitados')
           .doc(widget.idDocumento)
           .get();
 
-      if (documentSnapshot.exists) {
-        Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
+      if (!snap.exists) {
+        if (kDebugMode) print("⚠️ Documento no encontrado en Firestore");
+        return;
+      }
 
-        solicitudData = data;
+      final data = snap.data() as Map<String, dynamic>?;
+      solicitudData = data;
 
-        if (data != null && mounted) {
-          setState(() {
-            diligencio = data['diligencio'] ?? 'No Diligenciado';
-            reviso = data['reviso'] ?? 'No Revisado';
-            envio = data['envió'] ?? 'No enviado';
-            fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
-            fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
-            fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
-            asignadoA_P2 = data['asignadoA_P2'] ?? '';
-            asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
-            fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+      if (data != null && mounted) {
+        // --- datos cabecera ---
+        setState(() {
+          diligencio = data['diligencio'] ?? 'No Diligenciado';
+          reviso = data['reviso'] ?? 'No Revisado';
+          envio = data['envió'] ?? 'No enviado';
+          fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
+          fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
+          fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
+          asignadoA_P2 = data['asignadoA_P2'] ?? '';
+          asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
+          fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
 
-            // 🔹 Guardar el archivo individual en la lista de adjuntos
-            if (data['archivo_decision'] != null && data['archivo_decision'].toString().isNotEmpty) {
-              archivosFirestore = [data['archivo_decision'].toString()];
-            }
-          });
-        }
-      } else {
-        if (kDebugMode) {
-          print("⚠️ Documento no encontrado en Firestore");
-        }
+          // --- adjuntos ---
+          final List<String> adjuntos = [];
+
+          final archDecision = data['archivo_decision']?.toString().trim();
+          if (archDecision != null && archDecision.isNotEmpty) adjuntos.add(archDecision);
+
+          final anexoUnico = data['anexos']?.toString().trim(); // ← un solo URL
+          if (anexoUnico != null && anexoUnico.isNotEmpty) adjuntos.add(anexoUnico);
+
+          archivosFirestore = adjuntos; // para tu UI
+        });
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al obtener datos de Firestore: $e");
-      }
+      if (kDebugMode) print("❌ Error al obtener datos de Firestore: $e");
     }
   }
-
 
 
   //Para los tiempos de los beneficios
@@ -2039,10 +2050,31 @@ Lo anterior con el fin de valorar de manera integral mi situación y sustentar l
       }
     }
 
-    // 🔹 Archivos principales
-    for (String archivoUrl in widget.archivos) {
-      await procesarArchivo(archivoUrl);
+    // 🔹 Reunir TODAS las URLs de adjuntos (UI + Firestore) y deduplicar
+    final Set<String> urlsAdjuntas = {};
+
+// 1) Lo que llegó a esta pantalla (posibles adjuntos del flujo)
+    urlsAdjuntas.addAll(
+      widget.archivos.where((e) => e.trim().isNotEmpty),
+    );
+
+// 2) Lo que cargaste desde el doc (archivo_decision y anexos ya unidos en fetchDocumentoApelacion)
+    urlsAdjuntas.addAll(
+      archivosFirestore.where((e) => e.trim().isNotEmpty),
+    );
+
+// 3) Fallback directo por si archivosFirestore aún no estaba poblado en este instante
+    final dec = solicitudData?['archivo_decision']?.toString().trim();
+    if (dec != null && dec.isNotEmpty) urlsAdjuntas.add(dec);
+
+    final anex = solicitudData?['anexos']?.toString().trim();
+    if (anex != null && anex.isNotEmpty) urlsAdjuntas.add(anex);
+
+// 4) Descargar y adjuntar cada URL
+    for (final urlAdj in urlsAdjuntas) {
+      await procesarArchivo(urlAdj);
     }
+
 
     final asuntoCorreo = asuntoPersonalizado ?? "Solicitud Apelación - ${widget.numeroSeguimiento}";
     final currentUser = FirebaseAuth.instance.currentUser;

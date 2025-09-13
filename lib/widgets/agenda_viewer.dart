@@ -591,9 +591,13 @@ class _AgendaViewerCompactState extends State<AgendaViewerCompact> {
       borderRadius: BorderRadius.circular(12),
       child: Card(
         elevation: 2,
-        color: Colors.white,
-        surfaceTintColor: blanco,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        color: Colors.amber.shade50,
+        surfaceTintColor: Colors.amber.shade50,
+        clipBehavior: Clip.antiAlias, // para respetar el radio en el contenido
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Colors.white, width: 5), // ⬅️ borde blanco 5px
+        ),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Column(
