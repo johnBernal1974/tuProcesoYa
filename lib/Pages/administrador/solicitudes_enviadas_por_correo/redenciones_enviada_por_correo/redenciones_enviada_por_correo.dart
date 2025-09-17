@@ -282,8 +282,7 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
   }
 
   ///PARA IMPULSO
-  ///
-  ///
+
 
   Widget _fallbackAbrirEnPestana(String url) {
     return Column(
@@ -652,8 +651,6 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
 ''';
   }
 
-
-
   /// Prefiere `html` plano; si no hay, intenta descargar `html_url`.
   Future<String?> _buscarHtmlAnteriorPorDestino(String emailDestino) async {
     final col = FirebaseFirestore.instance
@@ -730,7 +727,6 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
     }
     return null;
   }
-
 
   ///helper para la entidad de los impulsos
   String? _soloDespuesDeGuion(String? s) {
@@ -816,12 +812,7 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
     return (m != null ? m.group(1)! : html).trim();
   }
 
-
   /// ACA TERMINA ELM TEMA DE IMPULSOSS
-  ///
-
-
-
 
 
   Widget _buildTutelaButton(BuildContext context) {
