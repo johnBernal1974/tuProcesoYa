@@ -147,7 +147,6 @@ class ImpulsoProcesalTemplate {
   </div>
 
   $pieLegal
-</div>
 </body>
 </html>
 """;

@@ -181,7 +181,7 @@ class _MainLayoutState extends State<MainLayout> {
             Align(
               alignment: Alignment.bottomRight,
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.only(bottom: 120, right: 16),
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('whatsapp_conversations')
@@ -277,10 +277,11 @@ class _MainLayoutState extends State<MainLayout> {
                 ),
               ),
             ),
+          if (_isAdmin)
           const Align(
             alignment: Alignment.bottomRight,
             child: Padding(
-              padding: EdgeInsets.only(bottom: 5, right: 80),
+              padding: EdgeInsets.only(bottom: 15, right: 16),
               child: SizedBox(
                 width: 400,
                 child: AgendaViewerCompact(),
