@@ -57,6 +57,9 @@ class ImpulsoProcesalTemplate {
   String _row(String label, String value) =>
       value.trim().isEmpty ? '' : '$label: <b>$value</b><br>';
 
+  String _diasTxt(int n) => n == 1 ? '1 día' : '$n días';
+  String _hanHa(int n) => n == 1 ? 'ha transcurrido' : 'han transcurrido';
+
   String generarHtml() {
     final entidadMostrar = _entidadVisible(entidad);
     final entidadLower = entidadMostrar.toLowerCase();
@@ -69,7 +72,21 @@ class ImpulsoProcesalTemplate {
         dirigidoLower.contains('oficina de reparto'));
 
     final fechaEnvioTxt = (fechaEnvioInicial != null) ? _fmtFecha(fechaEnvioInicial!) : null;
-    final plazoTxt = (diasPlazo != null && diasPlazo! > 0) ? "$diasPlazo días" : "el término legal";
+
+    // === DÍAS TRANSCURRIDOS DINÁMICOS ===
+    int? _diasTranscurridos;
+    if (fechaEnvioInicial != null) {
+      final diff = DateTime.now().difference(fechaEnvioInicial!).inDays;
+      _diasTranscurridos = diff < 0 ? 0 : diff; // evita negativos si la fecha es futura por error
+    }
+
+    // Frase completa del bloque dinámico
+    final String? _fraseTranscurridos = (fechaEnvioTxt != null && _diasTranscurridos != null)
+        ? "Consta que la petición inicial fue enviada el <b>$fechaEnvioTxt</b> y "
+        "${_hanHa(_diasTranscurridos)} <b>${_diasTxt(_diasTranscurridos)}</b> "
+        "sin que se haya obtenido respuesta alguna."
+        : null;
+
 
     final pieLegal = """
 <div style="margin-top: 24px; color: #444; font-size: 12px;">
@@ -117,9 +134,9 @@ class ImpulsoProcesalTemplate {
     el estado actual de la actuación y las gestiones realizadas hasta la fecha.
   </p>
 
-  ${ (fechaEnvioTxt != null) ? """
+  ${ (_fraseTranscurridos != null) ? """
   <p style="margin:0 0 12px 0">
-    Consta que la petición inicial fue enviada el <b>$fechaEnvioTxt</b> y ha transcurrido <b>$plazoTxt</b> sin que se haya obtenido respuesta de fondo.
+    $_fraseTranscurridos
   </p>
   """ : "" }
 
