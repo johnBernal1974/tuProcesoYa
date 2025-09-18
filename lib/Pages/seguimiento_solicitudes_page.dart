@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../src/colors/colors.dart';
 import '../widgets/email_status_widget.dart';
+import 'package:http/http.dart' as http;
 
 class ResumenSolicitudesWidget extends StatefulWidget {
   final String idPpl;
@@ -146,6 +147,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
     );
   }
 
+  // Requiere: import 'package:http/http.dart' as http;
   void _mostrarDetalleCorreo({
     required String correoId,
     required String solicitudId,
@@ -182,22 +184,22 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
 
                   final data = snapshot.data!.data() as Map<String, dynamic>;
 
+                  // Para / CC / De
                   final toList = (data['to'] as List?)?.whereType<String>().toList();
-                  final destinatario = data['destinatario'] as String?;
-
-                  final to = toList != null && toList.isNotEmpty
+                  final destinatario = (data['destinatario'] as String?)?.trim();
+                  final to = (toList != null && toList.isNotEmpty)
                       ? toList.join(', ')
-                      : (destinatario?.isNotEmpty == true ? destinatario : '(sin destinatario)');
-                  final cc = (data['cc'] as List?)?.join(', ') ?? '';
-                  final subject = data['subject'] ?? '(sin asunto)';
-                  final htmlContent = data['cuerpoHtml'] ?? data['html'] ?? data['text'] ?? '(sin contenido)';
+                      : (destinatario?.isNotEmpty == true ? destinatario! : '(sin destinatario)');
+
+                  final cc = (data['cc'] as List?)?.whereType<String>().join(', ') ?? '';
 
                   final fromList = (data['from'] as List?)?.whereType<String>().toList();
-                  final remitente = data['remitente'] as String?;
-
-                  final from = fromList != null && fromList.isNotEmpty
+                  final remitente = (data['remitente'] as String?)?.trim();
+                  final from = (fromList != null && fromList.isNotEmpty)
                       ? fromList.join(', ')
-                      : (remitente?.isNotEmpty == true ? remitente : 'peticiones@tuprocesoya.com');
+                      : (remitente?.isNotEmpty == true ? remitente! : 'peticiones@tuprocesoya.com');
+
+                  final subject = (data['subject'] ?? data['asunto'] ?? '(sin asunto)').toString();
 
                   final archivos = data['archivos'] as List? ?? [];
 
@@ -205,6 +207,12 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                   final fechaEnvio = timestamp != null
                       ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
                       : 'Fecha no disponible';
+
+                  // 👇 Cuerpo: inline / url
+                  final String htmlInline =
+                  (data['html'] ?? data['cuerpoHtml'] ?? data['text'] ?? '').toString().trim();
+                  final String htmlUrl =
+                  (data['htmlUrl'] ?? data['html_url'] ?? '').toString().trim();
 
                   return SingleChildScrollView(
                     child: Column(
@@ -216,14 +224,122 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                         if (cc.isNotEmpty)
                           Text("📋 CC: $cc", style: const TextStyle(fontSize: 13)),
                         const SizedBox(height: 10),
-                        Text("📌 Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text("📅 Fecha de envío: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                        Text("📌 Asunto: $subject",
+                            style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text("📅 Fecha de envío: $fechaEnvio",
+                            style: const TextStyle(color: Colors.black87, fontSize: 12)),
                         const Divider(),
-                        Html(data: htmlContent),
+
+                        // ====== Render robusto del cuerpo ======
+                        if (htmlInline.isNotEmpty) ...[
+                          Html(data: _sanitizeInlineEmailHtml(_stripEnvelopeHtml(htmlInline))),
+                        ] else if (htmlUrl.isNotEmpty) ...[
+                          FutureBuilder<http.Response>(
+                            future: http.get(Uri.parse(htmlUrl)),
+                            builder: (context, resp) {
+                              if (resp.connectionState == ConnectionState.waiting) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  child: LinearProgressIndicator(),
+                                );
+                              }
+                              if (!resp.hasData ||
+                                  resp.data!.statusCode != 200 ||
+                                  resp.data!.body.trim().isEmpty) {
+                                return _fallbackAbrirEnPestana(htmlUrl);
+                              }
+                              final body = _sanitizeInlineEmailHtml(_stripEnvelopeHtml(resp.data!.body));
+                              return Html(data: body);
+                            },
+                          ),
+                        ] else ...[
+                          // 🔎 Fallback: buscar en el nodo padre "impulso" del mismo nombreColeccion
+                          FutureBuilder<DocumentSnapshot>(
+                            future: FirebaseFirestore.instance
+                                .collection(nombreColeccion)
+                                .doc(solicitudId)
+                                .get(),
+                            builder: (context, parentSnap) {
+                              if (parentSnap.connectionState == ConnectionState.waiting) {
+                                return const Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 12),
+                                  child: LinearProgressIndicator(),
+                                );
+                              }
+                              if (!parentSnap.hasData || !parentSnap.data!.exists) {
+                                return const Text("(Sin contenido disponible)");
+                              }
+
+                              final parent = parentSnap.data!.data() as Map<String, dynamic>?;
+                              final imp = parent?['impulso'];
+
+                              if (imp is! Map) {
+                                return const Text("(Sin contenido disponible)");
+                              }
+
+                              // Etiqueta registrada en el log
+                              final etiquetaDoc = (data['etiqueta'] ?? '').toString();
+                              final keyByEtiqueta =
+                              etiquetaDoc.isNotEmpty ? _etiquetaToKey(etiquetaDoc) : null;
+
+                              String? url2;
+                              Map<String, dynamic>? nodo;
+
+                              // A) Si coincide por etiqueta directa
+                              if (keyByEtiqueta != null && imp[keyByEtiqueta] is Map) {
+                                nodo = Map<String, dynamic>.from(imp[keyByEtiqueta]);
+                              }
+
+                              // B) Búsqueda recursiva por email/subject si no hubo suerte
+                              nodo ??= _findImpulsoLeaf(
+                                Map<String, dynamic>.from(imp),
+                                emailKey: (toList != null && toList.isNotEmpty)
+                                    ? toList.first
+                                    : destinatario,
+                                subject: subject,
+                              );
+
+                              if (nodo != null) {
+                                url2 = (nodo['htmlUrl'] ?? nodo['html_url'])?.toString();
+                              }
+
+                              if (url2 == null || url2!.isEmpty) {
+                                return const Text("(Sin contenido disponible)");
+                              }
+
+                              return FutureBuilder<http.Response>(
+                                future: http.get(Uri.parse(url2!)),
+                                builder: (context, respImp) {
+                                  if (respImp.connectionState == ConnectionState.waiting) {
+                                    return const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 12),
+                                      child: LinearProgressIndicator(),
+                                    );
+                                  }
+                                  if (!respImp.hasData ||
+                                      respImp.data!.statusCode != 200 ||
+                                      respImp.data!.body.trim().isEmpty) {
+                                    return _fallbackAbrirEnPestana(url2!);
+                                  }
+                                  final body =
+                                  _sanitizeInlineEmailHtml(_stripEnvelopeHtml(respImp.data!.body));
+                                  return Html(data: body);
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                        // ====== /Render cuerpo ======
+
                         if (archivos.isNotEmpty) ...[
                           const Divider(),
-                          const Text("📎 Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ...archivos.map((a) => Text("- ${a['nombre']}")).toList(),
+                          const Text("📎 Archivos adjuntos:",
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          ...archivos.map((a) {
+                            final nombre = (a is Map ? a['nombre'] : null)?.toString() ?? 'Archivo';
+                            final url = (a is Map ? a['url'] : null)?.toString() ?? '';
+                            return Text("- $nombre${url.isNotEmpty ? " ($url)" : ""}");
+                          }),
                         ],
                         const SizedBox(height: 20),
                         Align(
@@ -244,6 +360,105 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
       ),
     );
   }
+
+/* ================= Helpers locales ================= */
+
+  Widget _fallbackAbrirEnPestana(String url) {
+    // Usamos flutter_html para renderizar un link clickeable sin url_launcher
+    return Html(
+      data:
+      '<p style="color:#b00020;margin:0 0 6px 0;">No se pudo cargar el cuerpo del correo.</p>'
+          '<p><a href="$url" target="_blank" rel="noopener noreferrer">Abrir contenido en una pestaña</a></p>',
+    );
+  }
+
+  bool _isPreviewWrapped(String html) => html.contains('TPY:ENV:PREVIEW');
+  bool _isSendWrapped(String html) => html.contains('TPY:ENV:SEND');
+
+  /// Quita el “sobre” de PREVIEW/SEND y devuelve solo el contenido del correo.
+  String _stripEnvelopeHtml(String html) {
+    var s = html;
+
+    // 1) Si es PREVIEW, tomar lo que va después del <hr>
+    if (_isPreviewWrapped(s)) {
+      final m = RegExp(r'<hr[^>]*>(.*)$', caseSensitive: false, dotAll: true).firstMatch(s);
+      s = (m != null ? m.group(1)! : s);
+    }
+
+    // 2) Si es SEND, tomar después del divisor (línea gris) o el interior del <td> como fallback
+    if (_isSendWrapped(s)) {
+      final mDiv = RegExp(
+        r'<div[^>]*?(height\s*:\s*1px|border-top\s*:\s*1px)[^>]*?></div>(.*)$',
+        caseSensitive: false,
+        dotAll: true,
+      ).firstMatch(s);
+      if (mDiv != null) {
+        s = mDiv.group(2)!;
+      } else {
+        final mTd = RegExp(r'<td[^>]*>(.*)</td>', caseSensitive: false, dotAll: true).firstMatch(s);
+        if (mTd != null) s = mTd.group(1)!;
+      }
+    }
+
+    // 3) Quitar metas sueltos
+    s = s.replaceAll(RegExp(r'<meta[^>]*>', caseSensitive: false), '');
+
+    return s.trim();
+  }
+
+  /// Limpia <html>, <head>, <body> y comentarios para incrustar de forma segura.
+  String _sanitizeInlineEmailHtml(String html) {
+    var s = html;
+    s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
+    s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'<!--.*?-->', caseSensitive: false, dotAll: true), '');
+    return s.trim();
+  }
+
+  /// Busca de forma recursiva un "leaf" de impulso que contenga payload (htmlUrl/html_url/destinatario)
+  Map<String, dynamic>? _findImpulsoLeaf(
+      Map<String, dynamic> obj, {
+        String? emailKey,
+        String? subject,
+      }) {
+    for (final entry in obj.entries) {
+      final v = entry.value;
+      if (v is Map) {
+        final hasPayload = v.containsKey('htmlUrl') ||
+            v.containsKey('html_url') ||
+            v.containsKey('destinatario');
+        if (hasPayload) {
+          final dest = (v['destinatario'] ?? '').toString();
+          final subj = (v['subject'] ?? '').toString();
+          if ((emailKey != null && dest == emailKey) ||
+              (subject != null && subj == subject) ||
+              (emailKey == null && subject == null)) {
+            return Map<String, dynamic>.from(v);
+          }
+        }
+        final r = _findImpulsoLeaf(
+          Map<String, dynamic>.from(v),
+          emailKey: emailKey,
+          subject: subject,
+        );
+        if (r != null) return r;
+      }
+    }
+    return null;
+  }
+
+  /// Convierte la etiqueta visible a la key estándar usada en el doc
+  String _etiquetaToKey(String etq) {
+    final e = etq.toLowerCase();
+    if (e.contains('centro')) return 'centro_reclusion';
+    if (e.contains('reparto')) return 'reparto';
+    return 'principal';
+  }
+
 
 
   Map<String, dynamic> _obtenerEstiloEstado(String status) {

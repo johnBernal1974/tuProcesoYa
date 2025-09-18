@@ -1397,9 +1397,112 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                       ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
                       : 'Fecha no disponible';
 
-                  // ✅ Cuerpo del mensaje: usar html o cuerpoHtml
-                  final htmlInline = (data['html'] ?? data['cuerpoHtml'] ?? '').toString().trim();
-                  final htmlUrl    = (data['htmlUrl'] ?? data['html_url'] ?? '').toString().trim();
+                  // ====== 👇 BLOQUE NUEVO: resolución robusta del cuerpo ======
+
+                  String _firstNonEmpty(List<String> keys) {
+                    for (final k in keys) {
+                      final v = data[k];
+                      if (v is String && v.trim().isNotEmpty) return v.trim();
+                    }
+                    return '';
+                  }
+
+                  String _escapeHtml(String s) => s
+                      .replaceAll('&', '&amp;')
+                      .replaceAll('<', '&lt;')
+                      .replaceAll('>', '&gt;');
+
+                  bool _isPreviewWrapped(String html) => html.contains('TPY:ENV:PREVIEW');
+                  bool _isSendWrapped(String html) => html.contains('TPY:ENV:SEND');
+
+                  String _stripEnvelopeHtml(String html) {
+                    var s = html;
+                    if (_isPreviewWrapped(s)) {
+                      final m = RegExp(r'<hr[^>]*>(.*)$', caseSensitive: false, dotAll: true).firstMatch(s);
+                      s = (m != null ? m.group(1)! : s);
+                    }
+                    if (_isSendWrapped(s)) {
+                      final mDiv = RegExp(
+                        r'<div[^>]*?(height\s*:\s*1px|border-top\s*:\s*1px)[^>]*?></div>(.*)$',
+                        caseSensitive: false,
+                        dotAll: true,
+                      ).firstMatch(s);
+                      if (mDiv != null) {
+                        s = mDiv.group(2)!;
+                      } else {
+                        final mTd = RegExp(r'<td[^>]*>(.*)</td>', caseSensitive: false, dotAll: true).firstMatch(s);
+                        if (mTd != null) s = mTd.group(1)!;
+                      }
+                    }
+                    s = s.replaceAll(RegExp(r'<meta[^>]*>', caseSensitive: false), '');
+                    return s.trim();
+                  }
+
+                  String _sanitizeInlineEmailHtml(String html) {
+                    var s = html;
+                    s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
+                    s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<!--.*?-->', caseSensitive: false, dotAll: true), '');
+                    return s.trim();
+                  }
+
+                  // 1) HTML inline con alias típicos
+                  final String htmlInline = _firstNonEmpty(['html', 'cuerpoHtml', 'htmlBody', 'bodyHtml', 'mensajeHtml']);
+                  // 2) URL del HTML (storage)
+                  final String htmlUrl = _firstNonEmpty(['htmlUrl', 'html_url']);
+                  // 3) Texto plano (respuestas)
+                  final String textPlain = _firstNonEmpty(['textPlain', 'text', 'plain', 'bodyText', 'snippet']);
+                  // 4) PDF opcional
+                  final String pdfUrl = _firstNonEmpty(['pdfUrl', 'pdf_url']);
+
+                  Widget _renderCuerpo() {
+                    if (htmlInline.isNotEmpty) {
+                      return Html(data: _sanitizeInlineEmailHtml(_stripEnvelopeHtml(htmlInline)));
+                    }
+                    if (htmlUrl.isNotEmpty) {
+                      return FutureBuilder<http.Response>(
+                        future: http.get(Uri.parse(htmlUrl)),
+                        builder: (context, resp) {
+                          if (resp.connectionState == ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: LinearProgressIndicator(),
+                            );
+                          }
+                          if (!resp.hasData ||
+                              resp.data!.statusCode != 200 ||
+                              resp.data!.body.trim().isEmpty) {
+                            if (textPlain.isNotEmpty) {
+                              return Html(data: '<pre style="white-space:pre-wrap">${_escapeHtml(textPlain)}</pre>');
+                            }
+                            if (pdfUrl.isNotEmpty) {
+                              return Html(data:
+                              '<p>No se pudo cargar el HTML.</p>'
+                                  '<p><a href="$pdfUrl" target="_blank" rel="noopener">Ver PDF</a></p>');
+                            }
+                            return const Text("No se pudo cargar el cuerpo del correo.");
+                          }
+                          final body = _sanitizeInlineEmailHtml(_stripEnvelopeHtml(resp.data!.body));
+                          return Html(data: body);
+                        },
+                      );
+                    }
+                    if (textPlain.isNotEmpty) {
+                      return Html(data: '<pre style="white-space:pre-wrap">${_escapeHtml(textPlain)}</pre>');
+                    }
+                    if (pdfUrl.isNotEmpty) {
+                      return Html(data:
+                      '<p>(Sin HTML disponible)</p>'
+                          '<p><a href="$pdfUrl" target="_blank" rel="noopener">Ver PDF</a></p>');
+                    }
+                    return const Text("(Sin contenido disponible)");
+                  }
+
+                  // ====== 👆 FIN BLOQUE NUEVO ======
 
                   return SingleChildScrollView(
                     child: Column(
@@ -1451,103 +1554,9 @@ class _SolicitudesPrisionDomiciliariaEnviadasPorCorreoPageState extends State<So
                         Text("📅 Fecha: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
                         const Divider(),
 
-                        // Render robusto del cuerpo del correo (inline -> url -> PADRE.impulso -> fallback)
-                        if (htmlInline.isNotEmpty) ...[
-                          Html(data: _sanitizeInlineEmailHtml(_stripEnvelopeHtml(htmlInline))),
-                        ] else if (htmlUrl.isNotEmpty) ...[
-                          FutureBuilder<http.Response>(
-                            future: http.get(Uri.parse(htmlUrl)),
-                            builder: (context, respUrl) {
-                              if (respUrl.connectionState == ConnectionState.waiting) {
-                                return const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: LinearProgressIndicator(),
-                                );
-                              }
-                              if (!respUrl.hasData ||
-                                  respUrl.data!.statusCode != 200 ||
-                                  respUrl.data!.body.trim().isEmpty) {
-                                return _fallbackAbrirEnPestana(htmlUrl);
-                              }
-                              final body = _sanitizeInlineEmailHtml(_stripEnvelopeHtml(respUrl.data!.body));
-                              return Html(data: body);
-                            },
-                          ),
-                        ] else ...[
-                          // 🔎 Fallback especial para IMPULSOS: tomar htmlUrl desde el nodo padre "impulso"
-                          FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance
-                                .collection('redenciones_solicitados')
-                                .doc(widget.idDocumento)
-                                .get(),
-                            builder: (context, parentSnap) {
-                              if (parentSnap.connectionState == ConnectionState.waiting) {
-                                return const Padding(
-                                  padding: EdgeInsets.symmetric(vertical: 12),
-                                  child: LinearProgressIndicator(),
-                                );
-                              }
-                              if (!parentSnap.hasData || !parentSnap.data!.exists) {
-                                return const Text("(Sin contenido disponible)");
-                              }
+                        // 👇 AQUÍ SOLO PONEMOS EL RENDER NUEVO
+                        _renderCuerpo(),
 
-                              final parent = parentSnap.data!.data() as Map<String, dynamic>?;
-                              final imp = parent?['impulso'];
-
-                              if (imp is! Map) {
-                                return const Text("(Sin contenido disponible)");
-                              }
-
-                              // 1) Intentar por etiqueta (nuevo esquema recomendado)
-                              final etiquetaDoc = (data['etiqueta'] ?? '').toString();
-                              final keyByEtiqueta = etiquetaDoc.isNotEmpty ? _etiquetaToKey(etiquetaDoc) : null;
-
-                              String? url2;
-                              Map<String, dynamic>? nodo;
-
-                              // A) Por etiqueta directa
-                              if (keyByEtiqueta != null && imp[keyByEtiqueta] is Map) {
-                                nodo = Map<String, dynamic>.from(imp[keyByEtiqueta]);
-                              }
-
-                              // B) Si no, búsqueda recursiva (soporta estructura anidada por email con '.')
-                              nodo ??= _findImpulsoLeaf(
-                                Map<String, dynamic>.from(imp),
-                                emailKey: (toList != null && toList!.isNotEmpty)
-                                    ? toList!.first
-                                    : (data['destinatario']?.toString()),
-                                subject: subject.toString(),
-                              );
-
-                              if (nodo != null) {
-                                url2 = (nodo['htmlUrl'] ?? nodo['html_url'])?.toString();
-                              }
-
-                              if (url2 == null || url2!.isEmpty) {
-                                return const Text("(Sin contenido disponible)");
-                              }
-
-                              return FutureBuilder<http.Response>(
-                                future: http.get(Uri.parse(url2!)),
-                                builder: (context, respImp) {
-                                  if (respImp.connectionState == ConnectionState.waiting) {
-                                    return const Padding(
-                                      padding: EdgeInsets.symmetric(vertical: 12),
-                                      child: LinearProgressIndicator(),
-                                    );
-                                  }
-                                  if (!respImp.hasData ||
-                                      respImp.data!.statusCode != 200 ||
-                                      respImp.data!.body.trim().isEmpty) {
-                                    return _fallbackAbrirEnPestana(url2!);
-                                  }
-                                  final body = _sanitizeInlineEmailHtml(_stripEnvelopeHtml(respImp.data!.body));
-                                  return Html(data: body);
-                                },
-                              );
-                            },
-                          ),
-                        ],
                         if (archivos != null && archivos.isNotEmpty) ...[
                           const Divider(),
                           const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
