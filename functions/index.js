@@ -602,13 +602,16 @@ exports.leerCorreosZoho = onSchedule(
       },
     };
 
-    function limpiarHtml(html) {
-      return html
+    // Limpia contenedores para incrustar el HTML dentro de tu UI
+    function limpiarHtml(html = "") {
+      return (html || "")
+        .replace(/<!DOCTYPE[^>]*>/gi, "")
+        .replace(/<\s*head[^>]*>.*?<\s*\/\s*head\s*>/gis, "")
         .replace(/<\s*html[^>]*>/gi, "")
         .replace(/<\s*\/\s*html\s*>/gi, "")
-        .replace(/<\s*head[^>]*>.*?<\s*\/\s*head\s*>/gis, "")
         .replace(/<\s*body[^>]*>/gi, "")
         .replace(/<\s*\/\s*body\s*>/gi, "")
+        .replace(/<!--.*?-->/gs, "")
         .trim();
     }
 
@@ -625,30 +628,31 @@ exports.leerCorreosZoho = onSchedule(
       const results = await connection.search(searchCriteria, fetchOptions);
 
       for (const item of results) {
-        const headerPart = item.parts.find(p => p.which.startsWith("HEADER"));
-        const fullPart = item.parts.find(p => p.which === "");
+        const headerPart = item.parts.find((p) => p.which.startsWith("HEADER"));
+        const fullPart   = item.parts.find((p) => p.which === "");
 
         if (!fullPart || !fullPart.body) continue;
 
-        const parsed = await simpleParser(fullPart.body);
+        const parsed  = await simpleParser(fullPart.body);
         const headers = headerPart?.body || {};
 
-        const remitente = parsed.from?.text || headers.from || "";
-        const destinatario = parsed.to?.text || headers.to || "";
-        const asunto = parsed.subject || headers.subject || "";
-        const cuerpoHtml = parsed.html ? limpiarHtml(parsed.html) : "";
-        const cuerpo = parsed.text?.trim() || "";
-        const timestamp = new Date();
-        const messageId = parsed.messageId || "";
+        const remitente   = parsed.from?.text || headers.from || "";
+        const destinatario= parsed.to?.text   || headers.to   || "";
+        const asunto      = parsed.subject    || headers.subject || "";
+        const cuerpoHtml  = parsed.html ? limpiarHtml(parsed.html) : "";
+        const cuerpo      = (parsed.text || "").trim();
+        const timestamp   = new Date();
+        const messageId   = parsed.messageId || "";
 
-        // ⚠️ Si no hay messageId, no guardar (opcional)
+        // Si no hay messageId, omitimos (evita duplicados difíciles de detectar)
         if (!messageId) {
           console.warn("❌ Correo sin messageId, se omite.");
           continue;
         }
 
-        // ✅ Verificar si ya existe
-        const yaExiste = await db.collection("respuestas_correos")
+        // Ya existe en respuestas_correos?
+        const yaExiste = await db
+          .collection("respuestas_correos")
           .where("messageId", "==", messageId)
           .limit(1)
           .get();
@@ -658,7 +662,7 @@ exports.leerCorreosZoho = onSchedule(
           continue;
         }
 
-        // 1. Guardar en colección general
+        // 1) Guardar SIEMPRE en la colección general
         await db.collection("respuestas_correos").add({
           remitente,
           destinatario,
@@ -666,46 +670,60 @@ exports.leerCorreosZoho = onSchedule(
           cuerpo,
           cuerpoHtml,
           recibidoEn: timestamp.toISOString(),
-          messageId, // 🔒 Para evitar duplicados en el futuro
+          messageId,
         });
 
-        // 2. Buscar código de seguimiento en el asunto
-        const regexCodigo = asunto.match(/-\s?(\d{6,})/);
-        const codigoSeguimiento = regexCodigo ? regexCodigo[1] : null;
+        // 2) Intentar extraer código de seguimiento del asunto:
+        //    toma el ÚLTIMO bloque de 6+ dígitos (más robusto)
+        const matches = (asunto || "").match(/\d{6,}/g);
+        const codigoSeguimiento = matches?.length ? matches[matches.length - 1] : null;
 
-        if (codigoSeguimiento) {
-          const posibles = await db.collectionGroup("log_correos").get();
-
-          const coincidencias = posibles.docs.filter(doc =>
-            typeof doc.data().subject === "string" &&
-            doc.data().subject.includes(codigoSeguimiento)
-          );
-
-          if (coincidencias.length > 0) {
-            const correoOriginal = coincidencias[0];
-            const pathSolicitud = correoOriginal.ref.parent.parent;
-
-            if (pathSolicitud) {
-              await pathSolicitud.collection("log_correos").add({
-                subject: "📩 Respuesta: " + asunto,
-                remitente,
-                destinatario,
-                cuerpoHtml,
-                timestamp,
-                esRespuesta: true,
-                messageId, // 🔒 También lo puedes registrar aquí
-              });
-
-              console.log(`✅ Respuesta archivada en log_correos de: ${pathSolicitud.id}`);
-            } else {
-              console.warn("❌ No se pudo obtener pathSolicitud para:", codigoSeguimiento);
-            }
-          } else {
-            console.warn("❌ No se encontró coincidencia para el código:", codigoSeguimiento);
-          }
-        } else {
+        if (!codigoSeguimiento) {
           console.warn("❌ No se encontró código de seguimiento en el asunto:", asunto);
+          continue;
         }
+
+        // 3) Buscar correo original: (simple, por subject que contenga el código)
+        const posibles = await db.collectionGroup("log_correos").get();
+
+        const coincidencias = posibles.docs.filter((doc) => {
+          const subj = doc.data()?.subject;
+          return typeof subj === "string" && subj.includes(codigoSeguimiento);
+        });
+
+        if (!coincidencias.length) {
+          console.warn("❌ No se encontró coincidencia para el código:", codigoSeguimiento);
+          continue;
+        }
+
+        const correoOriginal = coincidencias[0];
+        const pathSolicitud  = correoOriginal.ref.parent.parent;
+
+        if (!pathSolicitud) {
+          console.warn("❌ No se pudo obtener pathSolicitud para:", codigoSeguimiento);
+          continue;
+        }
+
+        // HTML final a mostrar en tu UI (clave: 'html')
+        const htmlFinal =
+          cuerpoHtml && cuerpoHtml.trim()
+            ? limpiarHtml(cuerpoHtml)
+            : (cuerpo ? `<p>${cuerpo.replace(/\n/g, "<br>")}</p>` : "");
+
+        // 4) Escribir la respuesta en el log_correos de ESA solicitud
+        await pathSolicitud.collection("log_correos").add({
+          subject: `📩 Respuesta: ${asunto || "(sin asunto)"}`,
+          remitente,
+          destinatario,
+          cuerpo,            // opcional: texto plano
+          cuerpoHtml,        // opcional: html original (limpio)
+          html: htmlFinal,   // 👈 lo que tu widget Html(data: ...) va a renderizar
+          esRespuesta: true,
+          messageId,
+          timestamp,
+        });
+
+        console.log(`✅ Respuesta archivada en log_correos de: ${pathSolicitud.id}`);
       }
 
       connection.end();
@@ -715,6 +733,7 @@ exports.leerCorreosZoho = onSchedule(
     }
   }
 );
+
 
 const VERIFY_TOKEN = "miverificatuproceso";
 
