@@ -29,6 +29,7 @@ class PreguntasDerechoPeticionHelper {
           "¿Se ha hecho anteriormente la misma solicitud?, A quien se hizo la solicitud y que respuesta se ha obtenido?",
         ],
       },
+
       "Salud y Atención Médica": {
         "Atención médica oportuna y adecuada": [
           "Indicar con claridad el problema de salud que padece y desde cuando se ha necesitado atención médica",

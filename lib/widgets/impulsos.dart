@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:ui' as ui; // para platformViewRegistry (web)
 import 'package:universal_html/html.dart' as html; // iframe
 
-
 class CorreoDestino {
   final String email;
   final String etiqueta;
@@ -143,6 +142,39 @@ class _ImpulsoProcesalBannerState extends State<ImpulsoProcesalBanner> {
   String _fmtFechaCorta(DateTime d) =>
       "${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}";
 
+  /// ============================
+  /// Helper: envolver HTML para envío de impulso
+  /// ============================
+  String wrapImpulsoHtmlForSend(String originalHtml, {String? subject, String fromLabel = 'Tu Proceso Ya <peticiones@tuprocesoya.com>'}) {
+    final safe = (originalHtml ?? '').trim();
+    if (safe.isEmpty) return '';
+
+    // Evitar dobles envolturas: si ya contiene nuestras marcas o un bloque gmail_quote
+    final already = RegExp(r'TPY:ENV:SEND|gmail_quote|El\s+.*?escribi[oó]\s*:|wrote\s*:', caseSensitive: false).hasMatch(safe);
+    if (already) return safe;
+
+    final fechaEnvioTexto = DateTime.now().toLocal().toString(); // literal simple; servidor puede reescribir si quiere formato
+    // Construimos un sobre sencillo que simula gmail_quote + blockquote
+    final wrapped = '''
+<!-- TPY:ENV:SEND -->
+<div class="tpy-envelope tpy-env-send" dir="ltr" style="font-family: Arial, sans-serif;">
+  <div style="font-size:12px;color:#666;margin-bottom:8px;">********************** CORREO ENVIADO TPY *************************</div>
+
+  <div class="gmail_quote gmail_quote_container">
+    <div dir="ltr" class="gmail_attr" style="font-size:12px;color:#666;margin-bottom:6px;">
+      El $fechaEnvioTexto, $fromLabel escribió:<br>
+    </div>
+
+    <blockquote class="gmail_quote" style="margin:0 0 0 0.8ex;border-left:1px solid #ccc;padding-left:1ex;">
+      $safe
+    </blockquote>
+  </div>
+</div>
+''';
+    return wrapped;
+  }
+  /// ============================
+
   Future<void> _abrirDialogoImpulso(CorreoDestino destino) async {
     _correoSeleccionado = destino.email;
     _htmlPreview = null;
@@ -168,9 +200,15 @@ class _ImpulsoProcesalBannerState extends State<ImpulsoProcesalBanner> {
               if (_correoSeleccionado == null || _htmlPreview == null) return;
               setState(() => _enviando = true);
               try {
+                // ============================
+                // Aquí usamos la envoltura SOLO para el envío.
+                // Preview sigue mostrando _htmlPreview (sin modificaciones).
+                // ============================
+                final wrapped = wrapImpulsoHtmlForSend(_htmlPreview! /*, subject: 'Impulso procesal' */);
+
                 await widget.enviarImpulso(
                   correoDestino: _correoSeleccionado!,
-                  html: _htmlPreview!,
+                  html: wrapped,
                   etiqueta: destino.etiqueta,
                 );
                 if (mounted) Navigator.of(context).pop();
@@ -238,7 +276,7 @@ class _ImpulsoProcesalBannerState extends State<ImpulsoProcesalBanner> {
                               "img": Style(
                                 width: Width(100, Unit.percent), // en lugar de Width.percentage(...)
                                 height: Height.auto(),
-                                display: Display.block,          // en lugar de Display.BLOCK
+                                display: Display.block,
                               ),
                             },
                           ),
@@ -320,4 +358,3 @@ class _WebHtmlPreviewState extends State<_WebHtmlPreview> {
     return HtmlElementView(viewType: _viewType);
   }
 }
-

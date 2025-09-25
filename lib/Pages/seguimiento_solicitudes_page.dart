@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 
 import '../src/colors/colors.dart';
 import '../widgets/email_status_widget.dart';
-import 'package:http/http.dart' as http;
 
 class ResumenSolicitudesWidget extends StatefulWidget {
   final String idPpl;
@@ -23,7 +23,6 @@ class ResumenSolicitudesWidget extends StatefulWidget {
 }
 
 class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
-
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<QuerySnapshot>(
@@ -83,39 +82,37 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                     onTap: () {
                       showDialog(
                         context: context,
-                          builder: (_) => AlertDialog(
-                            backgroundColor: blanco,
-                            title: const Text("Correos de la solicitud"),
-                            content: SizedBox(
-                              width: 600,
-                              height: 300,
-                              child: Scrollbar( // 🔹 Añadido scrollbar para mejor UX
-                                thumbVisibility: true,
-                                child: SingleChildScrollView(
-                                  child: ListaCorreosWidget(
-                                    solicitudId: idOriginal,
-                                    nombreColeccion: origen,
-                                    onTapCorreo: (correoId) {
-                                      Navigator.of(context).pop(); // Cierra el diálogo
-
-                                      _mostrarDetalleCorreo(
-                                        correoId: correoId,
-                                        solicitudId: idOriginal,
-                                        nombreColeccion: origen,
-                                      );
-                                    },
-                                  ),
+                        builder: (_) => AlertDialog(
+                          backgroundColor: blanco,
+                          title: const Text("Correos de la solicitud"),
+                          content: SizedBox(
+                            width: 600,
+                            height: 300,
+                            child: Scrollbar(
+                              thumbVisibility: true,
+                              child: SingleChildScrollView(
+                                child: ListaCorreosWidget(
+                                  solicitudId: idOriginal,
+                                  nombreColeccion: origen,
+                                  onTapCorreo: (correoId) {
+                                    Navigator.of(context).pop(); // Cierra el diálogo
+                                    _mostrarDetalleCorreo(
+                                      correoId: correoId,
+                                      solicitudId: idOriginal,
+                                      nombreColeccion: origen,
+                                    );
+                                  },
                                 ),
                               ),
                             ),
-                            actions: [
-                              TextButton(
-                                child: const Text("Cerrar"),
-                                onPressed: () => Navigator.of(context).pop(),
-                              ),
-                            ],
                           ),
-
+                          actions: [
+                            TextButton(
+                              child: const Text("Cerrar"),
+                              onPressed: () => Navigator.of(context).pop(),
+                            ),
+                          ],
+                        ),
                       );
                     },
                   ),
@@ -210,7 +207,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
 
                   // 👇 Cuerpo: inline / url
                   final String htmlInline =
-                  (data['html'] ?? data['cuerpoHtml'] ?? data['text'] ?? '').toString().trim();
+                  (data['html'] ?? data['cuerpoHtml'] ?? data['mensajeHtml'] ?? data['text'] ?? '').toString().trim();
                   final String htmlUrl =
                   (data['htmlUrl'] ?? data['html_url'] ?? '').toString().trim();
 
@@ -221,18 +218,17 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                         const SizedBox(height: 8),
                         Text("📤 De: $from", style: const TextStyle(fontSize: 13)),
                         Text("📥 Para: $to", style: const TextStyle(fontSize: 13)),
-                        if (cc.isNotEmpty)
-                          Text("📋 CC: $cc", style: const TextStyle(fontSize: 13)),
+                        if (cc.isNotEmpty) Text("📋 CC: $cc", style: const TextStyle(fontSize: 13)),
                         const SizedBox(height: 10),
-                        Text("📌 Asunto: $subject",
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                        Text("📅 Fecha de envío: $fechaEnvio",
-                            style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                        Text("📌 Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text("📅 Fecha de envío: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
                         const Divider(),
 
                         // ====== Render robusto del cuerpo ======
                         if (htmlInline.isNotEmpty) ...[
-                          Html(data: _sanitizeInlineEmailHtml(_stripEnvelopeHtml(htmlInline))),
+                          Html(
+                            data: _buildProcessedHtml(htmlInline),
+                          ),
                         ] else if (htmlUrl.isNotEmpty) ...[
                           FutureBuilder<http.Response>(
                             future: http.get(Uri.parse(htmlUrl)),
@@ -243,22 +239,17 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                                   child: LinearProgressIndicator(),
                                 );
                               }
-                              if (!resp.hasData ||
-                                  resp.data!.statusCode != 200 ||
-                                  resp.data!.body.trim().isEmpty) {
+                              if (!resp.hasData || resp.data!.statusCode != 200 || resp.data!.body.trim().isEmpty) {
                                 return _fallbackAbrirEnPestana(htmlUrl);
                               }
-                              final body = _sanitizeInlineEmailHtml(_stripEnvelopeHtml(resp.data!.body));
-                              return Html(data: body);
+                              final bodyProcessed = _buildProcessedHtml(resp.data!.body);
+                              return Html(data: bodyProcessed);
                             },
                           ),
                         ] else ...[
                           // 🔎 Fallback: buscar en el nodo padre "impulso" del mismo nombreColeccion
                           FutureBuilder<DocumentSnapshot>(
-                            future: FirebaseFirestore.instance
-                                .collection(nombreColeccion)
-                                .doc(solicitudId)
-                                .get(),
+                            future: FirebaseFirestore.instance.collection(nombreColeccion).doc(solicitudId).get(),
                             builder: (context, parentSnap) {
                               if (parentSnap.connectionState == ConnectionState.waiting) {
                                 return const Padding(
@@ -279,8 +270,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
 
                               // Etiqueta registrada en el log
                               final etiquetaDoc = (data['etiqueta'] ?? '').toString();
-                              final keyByEtiqueta =
-                              etiquetaDoc.isNotEmpty ? _etiquetaToKey(etiquetaDoc) : null;
+                              final keyByEtiqueta = etiquetaDoc.isNotEmpty ? _etiquetaToKey(etiquetaDoc) : null;
 
                               String? url2;
                               Map<String, dynamic>? nodo;
@@ -293,9 +283,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                               // B) Búsqueda recursiva por email/subject si no hubo suerte
                               nodo ??= _findImpulsoLeaf(
                                 Map<String, dynamic>.from(imp),
-                                emailKey: (toList != null && toList.isNotEmpty)
-                                    ? toList.first
-                                    : destinatario,
+                                emailKey: (toList != null && toList.isNotEmpty) ? toList.first : destinatario,
                                 subject: subject,
                               );
 
@@ -316,14 +304,11 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                                       child: LinearProgressIndicator(),
                                     );
                                   }
-                                  if (!respImp.hasData ||
-                                      respImp.data!.statusCode != 200 ||
-                                      respImp.data!.body.trim().isEmpty) {
+                                  if (!respImp.hasData || respImp.data!.statusCode != 200 || respImp.data!.body.trim().isEmpty) {
                                     return _fallbackAbrirEnPestana(url2!);
                                   }
-                                  final body =
-                                  _sanitizeInlineEmailHtml(_stripEnvelopeHtml(respImp.data!.body));
-                                  return Html(data: body);
+                                  final bodyProcessed = _buildProcessedHtml(respImp.data!.body);
+                                  return Html(data: bodyProcessed);
                                 },
                               );
                             },
@@ -333,8 +318,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
 
                         if (archivos.isNotEmpty) ...[
                           const Divider(),
-                          const Text("📎 Archivos adjuntos:",
-                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          const Text("📎 Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
                           ...archivos.map((a) {
                             final nombre = (a is Map ? a['nombre'] : null)?.toString() ?? 'Archivo';
                             final url = (a is Map ? a['url'] : null)?.toString() ?? '';
@@ -361,10 +345,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
     );
   }
 
-/* ================= Helpers locales ================= */
-
   Widget _fallbackAbrirEnPestana(String url) {
-    // Usamos flutter_html para renderizar un link clickeable sin url_launcher
     return Html(
       data:
       '<p style="color:#b00020;margin:0 0 6px 0;">No se pudo cargar el cuerpo del correo.</p>'
@@ -377,15 +358,12 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
 
   /// Quita el “sobre” de PREVIEW/SEND y devuelve solo el contenido del correo.
   String _stripEnvelopeHtml(String html) {
-    var s = html;
-
-    // 1) Si es PREVIEW, tomar lo que va después del <hr>
+    var s = html ?? '';
+    if (s.trim().isEmpty) return '';
     if (_isPreviewWrapped(s)) {
       final m = RegExp(r'<hr[^>]*>(.*)$', caseSensitive: false, dotAll: true).firstMatch(s);
       s = (m != null ? m.group(1)! : s);
     }
-
-    // 2) Si es SEND, tomar después del divisor (línea gris) o el interior del <td> como fallback
     if (_isSendWrapped(s)) {
       final mDiv = RegExp(
         r'<div[^>]*?(height\s*:\s*1px|border-top\s*:\s*1px)[^>]*?></div>(.*)$',
@@ -399,24 +377,113 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
         if (mTd != null) s = mTd.group(1)!;
       }
     }
-
-    // 3) Quitar metas sueltos
     s = s.replaceAll(RegExp(r'<meta[^>]*>', caseSensitive: false), '');
-
     return s.trim();
   }
 
-  /// Limpia <html>, <head>, <body> y comentarios para incrustar de forma segura.
+  /// Limpieza básica de etiquetas de documento y comentarios
   String _sanitizeInlineEmailHtml(String html) {
-    var s = html;
+    var s = html ?? '';
     s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
     s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
     s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
     s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
     s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
     s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
-    s = s.replaceAll(RegExp(r'<!--.*?-->', caseSensitive: false, dotAll: true), '');
+    s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->', caseSensitive: false), '');
     return s.trim();
+  }
+
+  /// Quita header de respuesta tipo "El ... escribió:" (sin tragar el blockquote)
+  String _removeReplyHeader(String raw) {
+    var s = raw ?? '';
+    try {
+      s = s.replaceAll(
+        RegExp(
+          r'<div[^>]*class=["\"]?gmail_attr[^>]*>[\s\S]*?escribi[oó]\s*:\s*<br\s*/?>\s*</div>\s*',
+        caseSensitive: false,
+          dotAll: true,
+        ),
+        '',
+      );
+
+      s = s.replaceAll(
+        RegExp(
+          r'<[^>]+?>[^<]{0,200}?escribi[oó]\s*:\s*</[^>]+?>',
+          caseSensitive: false,
+          dotAll: true,
+        ),
+        '',
+      );
+
+      s = s.replaceAll(
+        RegExp(
+          r'(^|\r?\n)[^\n]{0,250}?\bEl\s+\w{1,12}[^\n\r]{0,200}?escribi[oó]\s*:\s*(?=\r?\n|<blockquote|<div|$)',
+          caseSensitive: false,
+          dotAll: true,
+        ),
+        '\n',
+      );
+
+      s = s.replaceAll(
+        RegExp(
+          r'(^|\r?\n)[^\n]{0,250}?wrote\s*:\s*(?=\r?\n|<blockquote|<div|$)',
+          caseSensitive: false,
+          dotAll: true,
+        ),
+        '\n',
+      );
+
+      s = s.replaceAll(RegExp(r'(^|\r?\n).{0,200}?Enviado\s+el\s+.*', caseSensitive: false), '');
+    } catch (e) {
+      debugPrint('⚠️ _removeReplyHeader error: $e');
+      return raw ?? '';
+    }
+    return s;
+  }
+
+  /// Quita reglas CSS problemáticas para flutter_html
+  String _cleanForFlutterHtml(String html) {
+    if (html == null || html.trim().isEmpty) return '';
+    String s = html;
+
+    s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
+    s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
+    s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->', caseSensitive: false), '');
+
+    final cssPatterns = [
+      r'font-feature-settings\s*:\s*[^;>]+;?',
+      r'font-variation-settings\s*:\s*[^;>]+;?',
+      r'@font-face\s*{[^}]*}',
+      r'style\s*=\s*"(?:[^"]*font-feature-settings[^"]*)"',
+      r"style\s*=\s*'(?:[^']*font-feature-settings[^']*)'",
+    ];
+    for (final p in cssPatterns) {
+      try {
+        s = s.replaceAll(RegExp(p, caseSensitive: false, dotAll: true), '');
+      } catch (e) {
+        debugPrint('⚠️ cleanForFlutterHtml regex fail $p -> $e');
+      }
+    }
+
+    s = s.replaceAll(RegExp(r'\(\?[imsux-]+\)'), '');
+    s = s.replaceAll(RegExp(r'font-feature-settings\s*:\s*[^;>]+;?', caseSensitive: false), '');
+
+    return s.trim();
+  }
+
+  /// Pipeline completa para procesar HTML antes de pasarlo a flutter_html
+  String _buildProcessedHtml(String raw) {
+    if (raw == null || raw.trim().isEmpty) return '';
+    final stripped = _stripEnvelopeHtml(raw);
+    final withoutHeader = _removeReplyHeader(stripped);
+    final sanitized = _sanitizeInlineEmailHtml(withoutHeader);
+    final cleaned = _cleanForFlutterHtml(sanitized);
+    return cleaned;
   }
 
   /// Busca de forma recursiva un "leaf" de impulso que contenga payload (htmlUrl/html_url/destinatario)
@@ -428,9 +495,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
     for (final entry in obj.entries) {
       final v = entry.value;
       if (v is Map) {
-        final hasPayload = v.containsKey('htmlUrl') ||
-            v.containsKey('html_url') ||
-            v.containsKey('destinatario');
+        final hasPayload = v.containsKey('htmlUrl') || v.containsKey('html_url') || v.containsKey('destinatario');
         if (hasPayload) {
           final dest = (v['destinatario'] ?? '').toString();
           final subj = (v['subject'] ?? '').toString();
@@ -440,11 +505,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
             return Map<String, dynamic>.from(v);
           }
         }
-        final r = _findImpulsoLeaf(
-          Map<String, dynamic>.from(v),
-          emailKey: emailKey,
-          subject: subject,
-        );
+        final r = _findImpulsoLeaf(Map<String, dynamic>.from(v), emailKey: emailKey, subject: subject);
         if (r != null) return r;
       }
     }
@@ -458,8 +519,6 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
     if (e.contains('reparto')) return 'reparto';
     return 'principal';
   }
-
-
 
   Map<String, dynamic> _obtenerEstiloEstado(String status) {
     switch (status.toLowerCase()) {

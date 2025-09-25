@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
-import 'package:http/http.dart' as http; // 👈 NUEVO
+import 'package:http/http.dart' as http;
 
+/// Página para ver detalle de un correo (respuestas). Muestra solo la respuesta,
+/// quita la línea "El ... escribió:" y limpia CSS problemático para flutter_html.
 class DetalleCorreoRedencionesPage extends StatelessWidget {
   final String idDocumento;
   final String correoId;
@@ -48,8 +50,8 @@ class DetalleCorreoRedencionesPage extends StatelessWidget {
           final cc = (data['cc'] as List?)?.join(', ') ?? '';
           final subject = data['subject'] ?? data['asunto'] ?? 'Sin asunto';
 
-          // 👇 HTML inline y URL (si existe)
-          final String htmlInline = (data['html'] ?? data['cuerpoHtml'] ?? '').toString().trim();
+          // HTML inline y URL (si existe)
+          final String htmlInline = (data['html'] ?? data['cuerpoHtml'] ?? data['mensajeHtml'] ?? '').toString().trim();
           final String htmlUrl = (data['htmlUrl'] ?? data['html_url'] ?? '').toString().trim();
 
           final archivos = data['archivos'] as List? ?? [];
@@ -84,10 +86,10 @@ class DetalleCorreoRedencionesPage extends StatelessWidget {
                     const Divider(height: 1, color: Colors.black54),
                     const SizedBox(height: 12),
 
-                    // 👇 Render robusto: inline -> url -> fallback
+                    // Render robusto: inline -> url -> texto plano -> fallback
                     if (htmlInline.isNotEmpty) ...[
                       Html(
-                        data: _sanitizeInlineEmailHtml(_stripEnvelopeHtml(htmlInline)),
+                        data: _buildProcessedHtml(htmlInline),
                         style: {
                           "body": Style(
                             fontSize: FontSize(13),
@@ -111,9 +113,10 @@ class DetalleCorreoRedencionesPage extends StatelessWidget {
                           if (!resp.hasData || resp.data!.statusCode != 200 || resp.data!.body.trim().isEmpty) {
                             return const Text("No se pudo cargar el contenido del correo.");
                           }
-                          final body = _sanitizeInlineEmailHtml(_stripEnvelopeHtml(resp.data!.body));
+                          final bodyRaw = resp.data!.body;
+                          final bodyProcessed = _buildProcessedHtml(bodyRaw);
                           return Html(
-                            data: body,
+                            data: bodyProcessed,
                             style: {
                               "body": Style(
                                 fontSize: FontSize(13),
@@ -127,7 +130,17 @@ class DetalleCorreoRedencionesPage extends StatelessWidget {
                         },
                       ),
                     ] else ...[
-                      const Text("Este correo no tiene contenido HTML.", style: TextStyle(fontSize: 13)),
+                      // Si no hay HTML, mostrar texto plano si existe
+                      if ((data['textPlain'] ?? data['text'] ?? data['plain'] ?? data['bodyText'] ?? data['snippet']) != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            (data['textPlain'] ?? data['text'] ?? data['plain'] ?? data['bodyText'] ?? data['snippet']).toString(),
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                        )
+                      else
+                        const Text("Este correo no tiene contenido HTML.", style: TextStyle(fontSize: 13)),
                     ],
 
                     if (archivos.isNotEmpty) ...[
@@ -161,22 +174,19 @@ class DetalleCorreoRedencionesPage extends StatelessWidget {
   }
 }
 
-/// ========== Helpers ==========
+/// ----------------- Helpers (fuera de la clase) -----------------
 
 bool _isPreviewWrapped(String html) => html.contains('TPY:ENV:PREVIEW');
 bool _isSendWrapped(String html) => html.contains('TPY:ENV:SEND');
 
-/// Quita el “sobre” de PREVIEW/ SEND y devuelve el contenido real del correo.
+/// Extrae la parte útil si el HTML viene envuelto en PREVIEW/SEND
 String _stripEnvelopeHtml(String html) {
-  var s = html;
-
-  // 1) Si es PREVIEW, tomar después del <hr>
+  var s = html ?? '';
+  if (s.trim().isEmpty) return '';
   if (_isPreviewWrapped(s)) {
     final m = RegExp(r'<hr[^>]*>(.*)$', caseSensitive: false, dotAll: true).firstMatch(s);
     s = (m != null ? m.group(1)! : s);
   }
-
-  // 2) Si es SEND, tomar después del divisor (línea gris) o, fallback, el interior del <td>
   if (_isSendWrapped(s)) {
     final mDiv = RegExp(
       r'<div[^>]*?(height\s*:\s*1px|border-top\s*:\s*1px)[^>]*?></div>(.*)$',
@@ -190,22 +200,119 @@ String _stripEnvelopeHtml(String html) {
       if (mTd != null) s = mTd.group(1)!;
     }
   }
-
-  // 3) Quitar <meta ...> sueltos
   s = s.replaceAll(RegExp(r'<meta[^>]*>', caseSensitive: false), '');
-
   return s.trim();
 }
 
-/// Limpia <html>, <head>, <body> y comentarios para incrustar de forma segura
+/// Limpieza básica de etiquetas de documento y comentarios
 String _sanitizeInlineEmailHtml(String html) {
-  var s = html;
+  var s = html ?? '';
   s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
   s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
   s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
   s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
   s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
   s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
-  s = s.replaceAll(RegExp(r'<!--.*?-->', caseSensitive: false, dotAll: true), '');
+  s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->', caseSensitive: false), '');
   return s.trim();
+}
+
+/// Quita header de respuesta tipo "El jue, 25 sept ... escribió:" (sin tragar el blockquote)
+String _removeReplyHeader(String raw) {
+  var s = raw ?? '';
+  try {
+    // 1) <div class="gmail_attr"> ... escribió: <br></div>
+    s = s.replaceAll(
+      RegExp(
+        r'<div[^>]*class=["\"]?gmail_attr[^>]*>[\s\S]*?escribi[oó]\s*:\s*<br\s*/?>\s*</div>\s*',
+      caseSensitive: false,
+        dotAll: true,
+      ),
+      '',
+    );
+
+    // 2) etiquetas que contienen "escribió:" (elimina solo la etiqueta contenedora)
+    s = s.replaceAll(
+      RegExp(
+        r'<[^>]+?>[^<]{0,200}?escribi[oó]\s*:\s*</[^>]+?>',
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      '',
+    );
+
+    // 3) Texto plano: eliminar solo la línea "El ... escribió:" conservando lo posterior
+    s = s.replaceAll(
+      RegExp(
+        r'(^|\r?\n)[^\n]{0,250}?\bEl\s+\w{1,12}[^\n\r]{0,200}?escribi[oó]\s*:\s*(?=\r?\n|<blockquote|<div|$)',
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      '\n',
+    );
+
+    // 4) Inglés "wrote:"
+    s = s.replaceAll(
+      RegExp(
+        r'(^|\r?\n)[^\n]{0,250}?wrote\s*:\s*(?=\r?\n|<blockquote|<div|$)',
+        caseSensitive: false,
+        dotAll: true,
+      ),
+      '\n',
+    );
+
+    // 5) quitar líneas tipo "Enviado el ..." residuales
+    s = s.replaceAll(RegExp(r'(^|\r?\n).{0,200}?Enviado\s+el\s+.*', caseSensitive: false), '');
+  } catch (e) {
+    debugPrint('⚠️ _removeReplyHeader error: $e');
+    return raw ?? '';
+  }
+  return s;
+}
+
+/// Quita reglas CSS problemáticas para flutter_html
+String _cleanForFlutterHtml(String html) {
+  if (html == null || html.trim().isEmpty) return '';
+  String s = html;
+
+  // Quitar tags de documento y comentarios
+  s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
+  s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
+  s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
+  s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
+  s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
+  s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
+  s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->', caseSensitive: false), '');
+
+  // Patrones CSS problemáticos (sin usar flags inline)
+  final cssPatterns = [
+    r'font-feature-settings\s*:\s*[^;>]+;?',
+    r'font-variation-settings\s*:\s*[^;>]+;?',
+    r'@font-face\s*{[^}]*}',
+    r'style\s*=\s*"(?:[^"]*font-feature-settings[^"]*)"',
+    r"style\s*=\s*'(?:[^']*font-feature-settings[^']*)'",
+  ];
+  for (final p in cssPatterns) {
+    try {
+      s = s.replaceAll(RegExp(p, caseSensitive: false, dotAll: true), '');
+    } catch (e) {
+      debugPrint('⚠️ cleanForFlutterHtml regex fail $p -> $e');
+    }
+  }
+
+  // Quitar flags regex si aparecieron incrustadas
+  s = s.replaceAll(RegExp(r'\(\?[imsux-]+\)'), '');
+  s = s.replaceAll(RegExp(r'font-feature-settings\s*:\s*[^;>]+;?', caseSensitive: false), '');
+
+  return s.trim();
+}
+
+/// Pipeline completa para procesar HTML antes de pasarlo a flutter_html
+String _buildProcessedHtml(String raw) {
+  if (raw == null || raw.trim().isEmpty) return '';
+  final stripped = _stripEnvelopeHtml(raw);
+  final withoutHeader = _removeReplyHeader(stripped);
+  final sanitized = _sanitizeInlineEmailHtml(withoutHeader);
+  final cleaned = _cleanForFlutterHtml(sanitized);
+  return cleaned;
 }

@@ -766,44 +766,6 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
   bool _isPreviewWrapped(String html) => html.contains('TPY:ENV:PREVIEW');
   bool _isSendWrapped(String html) => html.contains('TPY:ENV:SEND');
 
-  /// Extrae el contenido real:
-  /// - de PREVIEW: lo que va después del <hr>
-  /// - de SEND: lo que va después del divisor (la línea gris)
-  String _stripEnvelopeHtml(String html) {
-    var s = html;
-
-    // 1) Si es PREVIEW, tomar después del <hr>
-    if (_isPreviewWrapped(s)) {
-      final m = RegExp(r'<hr[^>]*>(.*)$', caseSensitive: false, dotAll: true).firstMatch(s);
-      s = (m != null ? m.group(1)! : s);
-    }
-
-    // 2) Si es SEND, tomar después del divisor (línea gris)
-    if (_isSendWrapped(s)) {
-      // a) Caso típico: <div style="height:1px;background:#ccc;..."></div>
-      final mDiv = RegExp(
-        r'<div[^>]*?(height\s*:\s*1px|border-top\s*:\s*1px)[^>]*?></div>(.*)$',
-        caseSensitive: false,
-        dotAll: true,
-      ).firstMatch(s);
-
-      if (mDiv != null) {
-        s = mDiv.group(2)!;
-      } else {
-        // b) Fallback: si no encontramos el divisor, intenta tomar el contenido del <td>…</td>
-        final mTd = RegExp(r'<td[^>]*>(.*)</td>', caseSensitive: false, dotAll: true).firstMatch(s);
-        if (mTd != null) {
-          s = mTd.group(1)!;
-        }
-      }
-    }
-
-    // 3) Quitar <meta ...> que puedan quedar sueltos
-    s = s.replaceAll(RegExp(r'<meta[^>]*>', caseSensitive: false), '');
-
-    return s.trim();
-  }
-
 
 // Extrae el contenido real del preview (lo que va después del <hr>)
   String _extractInnerFromPreview(String html) {
@@ -1351,16 +1313,12 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
 
                   final data = snapshot.data!.data() as Map<String, dynamic>;
 
-                  // 📬 Para enviados
+                  // Campos básicos
                   final toList = data['to'] is List ? List<String>.from(data['to']) : null;
                   final ccList = data['cc'] is List ? List<String>.from(data['cc']) : null;
-
-                  // 📥 Para respuestas recibidas
                   final fromList = data['from'] is List ? List<String>.from(data['from']) : null;
                   final remitente = data['remitente'] as String?;
-
                   final esRespuesta = data['esRespuesta'] == true || data['EsRespuesta'] == true;
-
                   final subject = data['subject'] ?? '';
                   final archivos = data['archivos'] as List?;
                   final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
@@ -1368,7 +1326,7 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                       ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
                       : 'Fecha no disponible';
 
-                  // ====== 👇 BLOQUE NUEVO: resolución robusta del cuerpo ======
+                  // ---------------- helpers simples ----------------
 
                   String _firstNonEmpty(List<String> keys) {
                     for (final k in keys) {
@@ -1387,7 +1345,8 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                   bool _isSendWrapped(String html) => html.contains('TPY:ENV:SEND');
 
                   String _stripEnvelopeHtml(String html) {
-                    var s = html;
+                    var s = html ?? '';
+                    if (s.trim().isEmpty) return '';
                     if (_isPreviewWrapped(s)) {
                       final m = RegExp(r'<hr[^>]*>(.*)$', caseSensitive: false, dotAll: true).firstMatch(s);
                       s = (m != null ? m.group(1)! : s);
@@ -1409,8 +1368,95 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                     return s.trim();
                   }
 
+                  // Quita la línea del tipo "El jue, 25 sept ... escribió:" (sin tragar el blockquote)
+                  String _removeReplyHeader(String raw) {
+                    var s = raw ?? '';
+                    try {
+                      // 1) <div class="gmail_attr"> ... escribió: <br></div>
+                      s = s.replaceAll(
+                        RegExp(
+                          r'<div[^>]*class=["\"]?gmail_attr[^>]*>[\s\S]*?escribi[oó]\s*:\s*<br\s*/?>\s*</div>\s*',
+                        caseSensitive: false,
+                          dotAll: true,
+                        ),
+                        '',
+                      );
+
+                      // 2) etiquetas que contienen "escribió:" eliminar solo la etiqueta contenedora
+                      s = s.replaceAll(
+                        RegExp(
+                          r'<[^>]+?>[^<]{0,200}?escribi[oó]\s*:\s*</[^>]+?>',
+                          caseSensitive: false,
+                          dotAll: true,
+                        ),
+                        '',
+                      );
+
+                      // 3) Texto plano: eliminar sólo la línea "El ... escribió:" conservando lo posterior
+                      s = s.replaceAll(
+                        RegExp(
+                          r'(^|\r?\n)[^\n]{0,250}?\bEl\s+\w{1,12}[^\n\r]{0,200}?escribi[oó]\s*:\s*(?=\r?\n|<blockquote|<div|$)',
+                          caseSensitive: false,
+                          dotAll: true,
+                        ),
+                        '\n',
+                      );
+
+                      // 4) Inglés "wrote:" variantes
+                      s = s.replaceAll(
+                        RegExp(
+                          r'(^|\r?\n)[^\n]{0,250}?wrote\s*:\s*(?=\r?\n|<blockquote|<div|$)',
+                          caseSensitive: false,
+                          dotAll: true,
+                        ),
+                        '\n',
+                      );
+
+                      // 5) Quitar líneas tipo "Enviado el ..." residuales
+                      s = s.replaceAll(RegExp(r'(^|\r?\n).{0,200}?Enviado\s+el\s+.*', caseSensitive: false), '');
+                    } catch (e) {
+                      debugPrint('⚠️ _removeReplyHeader error: $e');
+                      return raw ?? '';
+                    }
+                    return s;
+                  }
+
+                  // Limpia HTML problemático para flutter_html
+                  String _cleanForFlutterHtml(String html) {
+                    if (html == null || html.trim().isEmpty) return '';
+                    String s = html;
+
+                    s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
+                    s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->', caseSensitive: false), '');
+
+                    final cssPatterns = [
+                      r'font-feature-settings\s*:\s*[^;>]+;?',
+                      r'font-variation-settings\s*:\s*[^;>]+;?',
+                      r'@font-face\s*{[^}]*}',
+                      r'style\s*=\s*"(?:[^"]*font-feature-settings[^"]*)"',
+                      r"style\s*=\s*'(?:[^']*font-feature-settings[^']*)'",
+                    ];
+                    for (final p in cssPatterns) {
+                      try {
+                        s = s.replaceAll(RegExp(p, caseSensitive: false, dotAll: true), '');
+                      } catch (e) {
+                        debugPrint('⚠️ cleanForFlutterHtml regex fail $p -> $e');
+                      }
+                    }
+
+                    s = s.replaceAll(RegExp(r'\(\?[imsux-]+\)'), '');
+                    s = s.replaceAll(RegExp(r'font-feature-settings\s*:\s*[^;>]+;?', caseSensitive: false), '');
+
+                    return s.trim();
+                  }
+
                   String _sanitizeInlineEmailHtml(String html) {
-                    var s = html;
+                    var s = html ?? '';
                     s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
                     s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
                     s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
@@ -1421,19 +1467,22 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                     return s.trim();
                   }
 
-                  // 1) HTML inline con alias típicos
+                  // ---------------- render del cuerpo simplificado ----------------
+
                   final String htmlInline = _firstNonEmpty(['html', 'cuerpoHtml', 'htmlBody', 'bodyHtml', 'mensajeHtml']);
-                  // 2) URL del HTML (storage)
                   final String htmlUrl = _firstNonEmpty(['htmlUrl', 'html_url']);
-                  // 3) Texto plano (respuestas)
                   final String textPlain = _firstNonEmpty(['textPlain', 'text', 'plain', 'bodyText', 'snippet']);
-                  // 4) PDF opcional
                   final String pdfUrl = _firstNonEmpty(['pdfUrl', 'pdf_url']);
 
                   Widget _renderCuerpo() {
+                    // 1) Inline HTML: mostrar respuesta (sin header "escribió")
                     if (htmlInline.isNotEmpty) {
-                      return Html(data: _sanitizeInlineEmailHtml(_stripEnvelopeHtml(htmlInline)));
+                      final withoutHeader = _removeReplyHeader(htmlInline);
+                      final processed = _cleanForFlutterHtml(_sanitizeInlineEmailHtml(_stripEnvelopeHtml(withoutHeader)));
+                      return Html(data: processed);
                     }
+
+                    // 2) HTML por URL
                     if (htmlUrl.isNotEmpty) {
                       return FutureBuilder<http.Response>(
                         future: http.get(Uri.parse(htmlUrl)),
@@ -1444,56 +1493,59 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                               child: LinearProgressIndicator(),
                             );
                           }
-                          if (!resp.hasData ||
-                              resp.data!.statusCode != 200 ||
-                              resp.data!.body.trim().isEmpty) {
+                          if (!resp.hasData || resp.data!.statusCode != 200 || resp.data!.body.trim().isEmpty) {
                             if (textPlain.isNotEmpty) {
                               return Html(data: '<pre style="white-space:pre-wrap">${_escapeHtml(textPlain)}</pre>');
                             }
                             if (pdfUrl.isNotEmpty) {
-                              return Html(data:
-                              '<p>No se pudo cargar el HTML.</p>'
-                                  '<p><a href="$pdfUrl" target="_blank" rel="noopener">Ver PDF</a></p>');
+                              return Html(
+                                  data:
+                                  '<p>No se pudo cargar el HTML.</p><p><a href="$pdfUrl" target="_blank" rel="noopener">Ver PDF</a></p>');
                             }
-                            return const Text("No se pudo cargar el cuerpo del correo.");
+                            return const Text("(Sin contenido disponible)");
                           }
-                          final body = _sanitizeInlineEmailHtml(_stripEnvelopeHtml(resp.data!.body));
-                          return Html(data: body);
+                          final bodyRaw = resp.data!.body;
+                          final withoutHeader = _removeReplyHeader(bodyRaw);
+                          final cleanBody = _cleanForFlutterHtml(_sanitizeInlineEmailHtml(_stripEnvelopeHtml(withoutHeader)));
+                          return Html(data: cleanBody);
                         },
                       );
                     }
+
+                    // 3) Texto plano
                     if (textPlain.isNotEmpty) {
                       return Html(data: '<pre style="white-space:pre-wrap">${_escapeHtml(textPlain)}</pre>');
                     }
+
+                    // 4) PDF fallback
                     if (pdfUrl.isNotEmpty) {
-                      return Html(data:
-                      '<p>(Sin HTML disponible)</p>'
-                          '<p><a href="$pdfUrl" target="_blank" rel="noopener">Ver PDF</a></p>');
+                      return Html(
+                          data: '<p>(Sin HTML disponible)</p><p><a href="$pdfUrl" target="_blank" rel="noopener">Ver PDF</a></p>');
                     }
+
+                    // nada disponible
                     return const Text("(Sin contenido disponible)");
                   }
 
-                  // ====== 👆 FIN BLOQUE NUEVO ======
+                  // ---------------- UI principal ----------------
 
                   return SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 8),
-
                         if (!esRespuesta && toList != null)
                           Row(
                             children: [
                               const Text("Para: ", style: TextStyle(fontSize: 13)),
                               Flexible(
-                                child: Text(toList.join(', '), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                child:
+                                Text(toList.join(', '), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                               ),
                             ],
                           ),
-
                         if (!esRespuesta && ccList != null && ccList.isNotEmpty)
                           Text("CC: ${ccList.join(', ')}", style: const TextStyle(fontSize: 13)),
-
                         if (esRespuesta) ...[
                           Row(
                             children: [
@@ -1524,16 +1576,15 @@ class _SolicitudesRedencionPenaPorCorreoPageState extends State<SolicitudesReden
                         Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
                         Text("📅 Fecha: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
                         const Divider(),
-
-                        // 👇 AQUÍ SOLO PONEMOS EL RENDER NUEVO
                         _renderCuerpo(),
-
                         if (archivos != null && archivos.isNotEmpty) ...[
                           const Divider(),
                           const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
-                          ...archivos.map((a) => Text("- ${a['nombre']}")),
+                          ...archivos.map((a) {
+                            final nombre = (a is Map ? a['nombre'] : null)?.toString() ?? 'Archivo';
+                            return Text("- $nombre");
+                          }),
                         ],
-
                         const SizedBox(height: 20),
                         Align(
                           alignment: Alignment.centerRight,
