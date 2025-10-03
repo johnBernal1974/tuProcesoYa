@@ -102,6 +102,13 @@ class HistorialSolicitudesPage extends StatelessWidget {
       "icon": Icons.assistant_direction_sharp,
       "route": "historial_solicitudes_asignacionJep",
     },
+
+    {
+      "collection": "desistimiento_apelacion_solicitados",
+      "title": "Desistimiento\nde Apelación",
+      "icon": Icons.cancel,
+      "route": "historial_solicitudes_desistimiento_apelacion",
+    },
   ];
 
   Future<List<Map<String, dynamic>>> _obtenerSolicitudes(String userId) async {

@@ -80,6 +80,7 @@ import 'Pages/client/historial_solicitudes_apelacion/historial_solicitudes_apela
 import 'Pages/client/historial_solicitudes_asignacionJep/historial_solicitudes_asignacionJep.dart';
 import 'Pages/client/historial_solicitudes_copiaSentencia/historial_solicitudes_copiaSentencia.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
+import 'Pages/client/historial_solicitudes_desistimiento_apelacion/historial_solicitudes_desistimiento_apelacion.dart';
 import 'Pages/client/historial_solicitudes_extincion_pena/historial_solicitudes_extincion_pena.dart';
 import 'Pages/client/historial_solicitudes_libertad_condicional/historial_solicitudes_libertad_condicional.dart';
 import 'Pages/client/historial_solicitudes_permiso_72h/historial_solicitudes_permiso_72h.dart';
@@ -97,6 +98,7 @@ import 'Pages/client/mis_datos/mis_datos.dart';
 import 'Pages/client/mis_redenciones/mis_redenciones.dart';
 import 'Pages/client/mis_referidos/mis_referidos.dart';
 import 'Pages/client/mis_transacciones/mis_transacciones.dart';
+import 'Pages/client/otras_solicitudes/desistimiento_apelación.dart';
 import 'Pages/client/otras_solicitudes/solicitud_acumulacion.dart';
 import 'Pages/client/otras_solicitudes/solicitud_apelacion.dart';
 import 'Pages/client/otras_solicitudes/solicitud_asignacion_jep.dart';
@@ -124,6 +126,7 @@ import 'Pages/detalle_de_correo_page/detalle_correo_apelacion.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_asignacionJep.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_condicional.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_copiaSentencia.dart';
+import 'Pages/detalle_de_correo_page/detalle_correo_desistimiento_apelacion.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_domiciliaria.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_extincion_pena.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_permiso_72horas.dart';
@@ -299,6 +302,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_trasladoPenitenciaria': (context) => const HistorialSolicitudesTrasladoPenitenciariaPage(),
         'historial_solicitudes_copiaSentencia': (context) => const HistorialSolicitudesCopiaSentenciaPage(),
         'historial_solicitudes_asignacionJep': (context) => const HistorialSolicitudesAsignacionJepPage(),
+        'historial_solicitudes_desistimiento_apelacion': (context) => const HistorialSolicitudesDesistimientoPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
@@ -319,6 +323,7 @@ class MyApp extends StatelessWidget {
         'solicitud_trasladoPenitenciaria_page': (context) => const SolicitudTrasladoPenitenciariaPage(),
         'solicitud_copia_sentencia_page': (context) => const SolicitudCopiaSentenciaPage(),
         'solicitud_asignacion_jep_page': (context) => const SolicitudAsignacionJepPage(),
+        'solicitud_desistimiento_apelacion_page': (context) => const SolicitudDesistimientoPage(),
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
         'info_previa_72h_page': (context) => const RequisitosPermiso72hPage(),
@@ -930,6 +935,15 @@ class MyApp extends StatelessWidget {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
               builder: (context) => DetalleCorreoRedencionesPage(
+                idDocumento: args['idDocumento'],
+                correoId: args['correoId'],
+              ),
+            );
+          }
+          else if (settings.name == 'detalle_correo_desistimientos') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => DetalleCorreoDesistimientoPage(
                 idDocumento: args['idDocumento'],
                 correoId: args['correoId'],
               ),

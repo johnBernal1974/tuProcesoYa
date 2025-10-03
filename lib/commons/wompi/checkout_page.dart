@@ -160,6 +160,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
       'trasladoPenitenciaria': 'Traslado de penitenciaría',
       'copiaSentencia': 'Copia de sentencia',
       'asignacionJep': 'Asignación de Juzgado de ejecución de penas',
+      'desistimientoApelacion': 'Desistimiento de apelación',
     };
 
     if (tiposPagos.containsKey(widget.tipoPago)) {

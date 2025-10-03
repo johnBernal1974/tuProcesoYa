@@ -47,6 +47,11 @@ class SolicitarServiciosPage extends StatelessWidget {
       "route": "solicitud_apelacion_page",
     },
     {
+      "title": "Solicitud de desistimiento de apelación",
+      "icon": Icons.cancel,
+      "route": "solicitud_desistimiento_apelacion_page",
+    },
+    {
       "title": "Solicitud traslado penitenciaría",
       "icon": Icons.door_back_door_outlined,
       "route": "solicitud_trasladoPenitenciaria_page",
