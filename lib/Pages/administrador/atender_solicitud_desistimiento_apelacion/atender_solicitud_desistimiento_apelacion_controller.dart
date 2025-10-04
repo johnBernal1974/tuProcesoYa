@@ -1,14 +1,15 @@
 
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class AtenderSolicitudRedencionesAdminController {
+class AtenderSolicitudDesistimientoApelacionAdminController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
 
   Future<void> actualizarSolicitud(BuildContext context, String docId, Map<String, dynamic> nuevosDatos) async {
     try {
-      await _firestore.collection('redenciones_solicitados').doc(docId).update(nuevosDatos);
+      await _firestore.collection('desistimiento_apelacion_solicitados').doc(docId).update(nuevosDatos);
       print("✅ Solicitud actualizada correctamente");
 
       // Mostrar mensaje de éxito

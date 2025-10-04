@@ -35,6 +35,7 @@ class _SideBarState extends State<SideBar> {
   int solicitudesPeticion = 0;
   int solicitudesAcumulacion = 0;
   int solicitudesApelacion = 0;
+  int solicitudesDesistimientoApelacion = 0;
   int solicitudesTrasladoPenitenciaria = 0;
   int solicitudesCopiaSentencia = 0;
   int solicitudesAsignacionJEP = 0;
@@ -57,6 +58,7 @@ class _SideBarState extends State<SideBar> {
     _fetchExtincionlicitados();
     _fetchAcumulacionlicitados();
     _fetchApelacionSolicitados();
+    _fetchDesistimientoApelacionSolicitados();
     _fetchReadecuacionRedencionesSolicitados();
     _fetchTraladoPenitenciariaSolicitados();
     _fetchCopiaSentenciaSolicitados();
@@ -351,6 +353,19 @@ class _SideBarState extends State<SideBar> {
       });
     }
   }
+
+  Future<void> _fetchDesistimientoApelacionSolicitados() async {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('desistimiento_apelacion_solicitados')
+        .where('status', isEqualTo: 'Solicitado')
+        .get();
+    if (mounted) {
+      setState(() {
+        solicitudesDesistimientoApelacion = querySnapshot.docs.length;
+      });
+    }
+  }
+
   Future<void> _fetchTraladoPenitenciariaSolicitados() async {
     final querySnapshot = await FirebaseFirestore.instance
         .collection('trasladoPenitenciaria_solicitados')
@@ -551,6 +566,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_apelacion_admin',
                   showBadge: solicitudesApelacion > 0,
                   contador: solicitudesApelacion,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Desistimiento de Apelación",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_desistimientoApelacion_admin',
+                  showBadge: solicitudesDesistimientoApelacion > 0,
+                  contador: solicitudesDesistimientoApelacion,
                 ),
               ),
 
@@ -802,6 +829,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_apelacion_admin',
                   showBadge: solicitudesApelacion > 0,
                   contador: solicitudesApelacion,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Desistimiento de Apelación",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_desistimientoApelacion_admin',
+                  showBadge: solicitudesDesistimientoApelacion > 0,
+                  contador: solicitudesDesistimientoApelacion,
                 ),
               ),
 

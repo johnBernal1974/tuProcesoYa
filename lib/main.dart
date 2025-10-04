@@ -26,6 +26,7 @@ import 'Pages/administrador/atender_permiso_72horas/atender_permiso_72horas.dart
 import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
 import 'Pages/administrador/atender_readecuacion/atender_readecuacion.dart';
 import 'Pages/administrador/atender_solicitud_acumulacion/atender_solicitud_acumulacion.dart';
+import 'Pages/administrador/atender_solicitud_desistimiento_apelacion/atender_solicitud_desistimiento_apelacion.dart';
 import 'Pages/administrador/atender_trasladoPenitenciaria/atender_trasladoPenitenciaria_admin.dart';
 import 'Pages/administrador/atender_traslado_proceso_admin/atender_traslado_proceso_admin.dart';
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
@@ -36,6 +37,7 @@ import 'Pages/administrador/historial_solicitudes_apelacion_admin/historial_soli
 import 'Pages/administrador/historial_solicitudes_asignacionJEP_admin/historial_solicitudes_asignacionJEP_admin.dart';
 import 'Pages/administrador/historial_solicitudes_copia_sentencia_admin/historial_solicitudes_copia_sentencia_admin.dart';
 import 'Pages/administrador/historial_solicitudes_derechos_peticion_admin/historial_solicitudes_derechos_peticion_admin.dart';
+import 'Pages/administrador/historial_solicitudes_desistimiento_apelacion_admin/historial_solicitudes_desistimiento_apelacion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
 import 'Pages/administrador/historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'Pages/administrador/historial_solicitudes_permiso_72horas_admin/historial_solicitudes_permiso_72horas_admin.dart';
@@ -270,6 +272,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_trasladoPenitenciaria_admin': (context) => const HistorialSolicitudesTrasladoPenitenciariaAdminPage(),
         'historial_solicitudes_copiaSentencia_admin': (context) => const HistorialSolicitudesCopiaSentenciaAdminPage(),
         'historial_solicitudes_asignacionJEP_admin': (context) => const HistorialSolicitudesAsignacionJEPAdminPage(),
+        'historial_solicitudes_desistimientoApelacion_admin': (context) => const HistorialSolicitudesDesistimientoApelacionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
@@ -863,6 +866,19 @@ class MyApp extends StatelessWidget {
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
                 fecha: args['fecha'],
                 idUser: args['idUser'], archivos: [],
+              ),
+            );
+          }
+
+          else if (settings.name == 'atender_desistimiento_apelacion_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+            return MaterialPageRoute(
+              builder: (context) => AtenderSolicitudDesistimientoApelacionPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
               ),
             );
           }

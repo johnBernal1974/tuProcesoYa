@@ -72,7 +72,7 @@ class _SolicitudDesistimientoPageState extends State<SolicitudDesistimientoPage>
                   '• Código General del Proceso y normas procesales aplicables sobre desistimiento y desistimiento tácito.\n'
                       '• Artículos y doctrina sobre efectos procesales del desistimiento en materia penal y de recursos.\n'
                       '• Jurisprudencia aplicable según el caso concreto y la materia penal.',
-                  textAlign: TextAlign.justify,
+                  textAlign: TextAlign.start,
                   style: textoNormal,
                 ),
                 const SizedBox(height: 20),
