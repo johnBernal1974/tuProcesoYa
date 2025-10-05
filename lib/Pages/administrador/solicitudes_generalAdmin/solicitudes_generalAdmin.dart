@@ -29,6 +29,7 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
     _FuenteColeccion(collection: 'readecuacion_solicitados',         tipoServicio: 'Readecuación de Redención',  pathStorage: 'readecuacion'),
     _FuenteColeccion(collection: 'permiso_solicitados',              tipoServicio: 'Permiso 72 horas',           pathStorage: 'permiso'),
     _FuenteColeccion(collection: 'apelacion_solicitados',            tipoServicio: 'Recurso de apelación',       pathStorage: 'apelacion'),
+    _FuenteColeccion(collection: 'desistimiento_apelacion_solicitados', tipoServicio: 'Desistimiento de apelación',       pathStorage: 'desistimientoApelacion'),
     _FuenteColeccion(collection: 'asignacionJEP_solicitados',        tipoServicio: 'Asignación JEP',             pathStorage: 'asignacionJEP'),
     _FuenteColeccion(collection: 'acumulacion_solicitados',          tipoServicio: 'Acumulación de penas',       pathStorage: 'acumulacion'),
     _FuenteColeccion(collection: 'condicional_solicitados',          tipoServicio: 'Libertad condicional',       pathStorage: 'condicional'),
@@ -61,6 +62,10 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
     'apelacion_solicitados': {
       'atender':  'atender_apelacion_page',
       'resultado':'solicitudes_apelacion_enviadas_por_correo',
+    },
+    'desistimiento_apelacion_solicitados': {
+      'atender':  'atender_desistimiento_apelacion_page',
+      'resultado':'desistimiento_enviados_por_correo',
     },
     'asignacionJEP_solicitados': {
       'atender':  'atender_asignacion_jep_page',
