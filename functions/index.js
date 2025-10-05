@@ -1338,6 +1338,9 @@ exports.sendRespuestaSolicitudMessage = functions.https.onRequest(async (req, re
      case "apelacion":
        collectionName = "apelacion_solicitados";
        break;
+     case "desistimiento apelacion":
+        collectionName = "desistimiento_apelacion_solicitados";
+        break;
      case "copia de sentencia":
        collectionName = "copiaSentencia_solicitados";
        break;

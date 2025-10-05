@@ -1,0 +1,941 @@
+
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:intl/intl.dart';
+import 'package:tuprocesoya/providers/ppl_provider.dart';
+import 'dart:io'; // Necesario para manejar archivos en almacenamiento local
+import 'package:universal_html/html.dart' as html;
+
+import '../../../../commons/admin_provider.dart';
+import '../../../../commons/main_layaout.dart';
+import '../../../../models/ppl.dart';
+import '../../../../plantillas/plantilla_impulso_procesal.dart';
+import '../../../../src/colors/colors.dart';
+import '../../../../widgets/boton_notificar_respuesta_correo.dart';
+import '../../../../widgets/email_status_widget.dart';
+import 'package:tuprocesoya/widgets/impulsos.dart' as imp;
+
+import '../../../../widgets/impulso_correo_managerV1.dart';
+import 'package:http/http.dart' as http;
+
+import '../../../../widgets/impulsos.dart';
+
+
+
+class SolicitudesDesistimientoApelacionEnviadosPage extends StatefulWidget {
+  final String status;
+  final String idDocumento;
+  final String numeroSeguimiento;
+  final String categoria;
+  final String subcategoria;
+  final String fecha;
+  final String idUser;
+  final bool sinRespuesta;
+
+  const SolicitudesDesistimientoApelacionEnviadosPage({
+    super.key,
+    required this.status,
+    required this.idDocumento,
+    required this.numeroSeguimiento,
+    required this.categoria,
+    required this.subcategoria,
+    required this.fecha,
+    required this.idUser,
+    required this.sinRespuesta,
+  });
+
+
+  @override
+  State<SolicitudesDesistimientoApelacionEnviadosPage> createState() => _SolicitudesDesistimientoApelacionEnviadosPageState();
+}
+
+class _SolicitudesDesistimientoApelacionEnviadosPageState extends State<SolicitudesDesistimientoApelacionEnviadosPage> {
+  late PplProvider _pplProvider;
+  Ppl? userData;
+  bool isLoading = true; // Bandera para controlar la carga
+  int diasEjecutado = 0;
+  int mesesEjecutado = 0;
+  int diasEjecutadoExactos = 0;
+  int diasRestante = 0;
+  int mesesRestante = 0;
+  int diasRestanteExactos = 0;
+  double porcentajeEjecutado =0;
+  int tiempoCondena =0;
+  List<String> archivos = [];
+  String consideraciones = "";
+  String fundamentosDeDerecho = "";
+  String peticionConcreta = "";
+  String diligencio = '';
+  String reviso = '';
+  String envio = '';
+  DateTime? fechaEnvio;
+  DateTime? fechaDiligenciamiento;
+  DateTime? fechaRevision;
+  String rol = AdminProvider().rol ?? "";
+
+  List<PlatformFile> _selectedFiles = [];
+  Map<String, dynamic>? solicitudData;
+
+  String? pplNui;
+  String? pplTd;
+  String? pplDocumento;
+  String? pplCentro;
+  String? pplPatio;
+  String? pplJuzgadoEP;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    _pplProvider = PplProvider();
+    fetchUserData();
+
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    final normalizedStatus = widget.status.trim().toLowerCase();
+    return MainLayout(
+      pageTitle: 'Desistimiento de apelación - ${normalizedStatus == "enviado"
+          ? "Enviado"
+          : normalizedStatus == "concedido"
+          ? "Concedido"
+          : normalizedStatus == "negado"
+          ? "Negado"
+          : widget.status}',
+      content: SingleChildScrollView(
+        child: Center(
+          child: SizedBox(
+            width: MediaQuery.of(context).size.width >= 1000
+                ? 1500
+                : double.infinity,
+            child: Padding(
+              padding: const EdgeInsets.all(5.0),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  bool isWide = constraints.maxWidth > 800;
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          bool isMobile = constraints.maxWidth < 800; // Detectar si es móvil
+
+                          return Column(
+                            children: [
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                child: isMobile
+                                    ? Column( // En móviles, disposición en columna
+                                  children: [
+                                    if (widget.sinRespuesta && widget.status == 'Enviado')
+                                      _buildWarningMessage(),
+                                    const SizedBox(height: 10),
+                                    //if (widget.sinRespuesta && rol != "pasante 1") _buildTutelaButton(context),
+                                    const SizedBox(height: 15)
+                                  ],
+                                )
+
+                                    : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    if (widget.sinRespuesta && widget.status == 'Enviado')
+                                      Flexible(child: _buildWarningMessage()),
+
+                                    const SizedBox(width: 50),
+
+                                    // if (widget.sinRespuesta && rol != "pasante 1")
+                                    //   SizedBox(width: 200, child: _buildTutelaButton(context)),
+                                    const Divider(color: Colors.red, height: 1),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 30),
+                      if (isWide)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(flex: 4, child: _buildMainContent()),
+                            const SizedBox(width: 50),
+                            Expanded(
+                              flex: 3,
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.shade300,
+                                    width: 1,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.1),
+                                      blurRadius: 10,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 30),
+                                    const Text(
+                                      "📡 Estado del envío",
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    ListaCorreosWidget(
+                                      solicitudId: widget.idDocumento,
+                                      nombreColeccion: "desistimiento_apelacion_solicitados",
+                                      onTapCorreo: _mostrarDetalleCorreo,
+                                    ),
+                                    const SizedBox(height: 30),
+                                    BotonNotificarRespuestaWhatsApp(
+                                      docId: widget.idDocumento,
+                                      servicio: "desistimiento apelación",
+                                      seguimiento: widget.numeroSeguimiento,
+                                      seccionHistorial: "Solicitud desistimiento apelación",
+                                    ),
+                                    const SizedBox(height: 20),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Column(
+                          children: [
+                            _buildMainContent(),
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.1),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  const SizedBox(height: 30),
+                                  const Text(
+                                    "📡 Estado del envío",
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  ListaCorreosWidget(
+                                    solicitudId: widget.idDocumento,
+                                    nombreColeccion: "desistimiento_apelacion_solicitados",
+                                    onTapCorreo: _mostrarDetalleCorreo,
+                                  ),
+                                  BotonNotificarRespuestaWhatsApp(
+                                    docId: widget.idDocumento,
+                                    servicio: "desistimiento apelación",
+                                    seguimiento: widget.numeroSeguimiento,
+                                    seccionHistorial: "Solicitud Desistimiento apelación",
+                                  ),
+                                  const SizedBox(height: 20),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTutelaButton(BuildContext context) {
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        side: const BorderSide(width: 1, color: Colors.red),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
+      onPressed: () async {
+        bool confirmarTutela = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            backgroundColor: Colors.white,
+            title: const Text(
+              "Confirmación",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            content: const Text("¿Está seguro de que desea enviar esta solicitud a Tutela?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Cancelar", style: TextStyle(color: Colors.black)),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
+                child: const Text("Sí, enviar", style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        );
+
+        if (confirmarTutela) {
+          print("📢 La solicitud ha sido enviada a Tutela.");
+        }
+      },
+      child: const Text("Iniciar Tutela"),
+    );
+  }
+
+  // Widget para el mensaje de advertencia
+  Widget _buildWarningMessage() {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      margin: const EdgeInsets.only(bottom: 10),
+      decoration: BoxDecoration(
+        color: Colors.red[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.red, width: 1.5),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.warning, color: Colors.red),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "Sin obtener respuesta de la autoridad competente.",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🖥️📱 Widget de contenido principal (sección izquierda en PC)
+  Widget _buildMainContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildFechaHoy(),
+        const SizedBox(height: 10),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+            final fontSize = isMobile ? 20.0 : 28.0;
+
+            return Row(
+              children: [
+                Container(
+                  width: 20,
+                  height: 20,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: widget.status == "Concedido"
+                        ? Colors.green
+                        : widget.status == "Negado"
+                        ? Colors.red
+                        : Colors.blue, // Azul para Enviado
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                Text(
+                  "Desistimiento de apelación - ${widget.status == "Enviado"
+                      ? "Enviado"
+                      : widget.status == "Concedido"
+                      ? "Concedido"
+                      : widget.status == "Negado"
+                      ? "Negado"
+                      : widget.status}",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: fontSize,
+                    color: widget.status == "Concedido"
+                        ? Colors.green
+                        : widget.status == "Negado"
+                        ? Colors.red
+                        : Colors.blue, // Mismo color del estado
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        Row(
+          children: [
+            Text(
+              "Solicitado por: ${userData?.nombreAcudiente ?? "Sin información"} ${userData?.apellidoAcudiente ?? "Sin información"}",
+              style: const TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Text(
+              "PPL: ${userData?.nombrePpl ?? "Sin información"} ${userData?.apellidoPpl ?? "Sin información"}",
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900),
+            ),
+          ],
+        ),
+        const SizedBox(height: 15),
+        _buildDetallesSolicitud(),
+        const SizedBox(height: 15),
+        const Divider(color: gris),
+        const SizedBox(height: 50),
+        datosDeLaborAdmin()
+
+      ],
+    );
+  }
+
+  /// 📅 Muestra la fecha de hoy en formato adecuado
+  Widget _buildFechaHoy() {
+    return Text(
+      'Hoy es: ${DateFormat('d \'de\' MMMM \'de\' y', 'es').format(DateTime.now())}',
+      style: const TextStyle(fontSize: 12),
+    );
+  }
+
+  /// 📌 Muestra detalles de la solicitud (seguimiento, categoría, fecha, subcategoría)
+  Widget _buildDetallesSolicitud() {
+    double fontSize = MediaQuery.of(context).size.width < 600 ? 10 : 12; // Tamaño más pequeño en móviles
+    bool isMobile = MediaQuery.of(context).size.width < 600; // Verifica si es móvil
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, // Asegurar alineación izquierda en móviles
+        children: [
+          isMobile
+              ? Column( // En móviles, mostrar en columnas
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Categoría", widget.categoria, fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
+              const SizedBox(height: 5),
+              _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
+            ],
+          )
+              : Row( // En PC, mantener filas
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetalleItem("Número de seguimiento", widget.numeroSeguimiento, fontSize),
+                  const SizedBox(height: 5),
+                  _buildDetalleItem("Categoría", widget.categoria, fontSize),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
+                  const SizedBox(height: 5),
+                  _buildDetalleItem("Subcategoría", widget.subcategoria, fontSize),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Método auxiliar para evitar repetir código
+  Widget _buildDetalleItem(String title, String value, double fontSize) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: TextStyle(fontSize: fontSize, color: Colors.black87)),
+        Text(value, style: TextStyle(fontWeight: FontWeight.bold, fontSize: fontSize + 2)),
+      ],
+    );
+  }
+  /// 🔹 Widget de fila con título y valor
+  Widget _buildRow(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 0),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 3,
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
+          Expanded(
+            flex: 4,
+            child: Text(value, style: const TextStyle(color: Colors.black87, fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget datosDeLaborAdmin() {
+    return Container(
+      margin: const EdgeInsets.only(top: 20),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "📝 Datos de la gestión administrativa",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+          const SizedBox(height: 15),
+
+          _buildRow("Diligenció:", diligencio),
+          _buildRow("Fecha de diligenciamiento:", _formatFecha(fechaDiligenciamiento)),
+          const Divider(color: Colors.grey),
+
+          _buildRow("Revisó:", reviso),
+          _buildRow("Fecha de revisión:", _formatFecha(fechaRevision)),
+          const Divider(color: Colors.grey),
+
+          _buildRow("Envió:", envio),
+          _buildRow("Fecha de envío:", _formatFecha(fechaEnvio)),
+        ],
+      ),
+    );
+  }
+
+  /// 📆 Función para manejar errores en la conversión de fechas
+  String _formatFecha(DateTime? fecha, {String formato = "dd 'de' MMMM 'de' yyyy - hh:mm a"}) {
+    if (fecha == null) return "";
+    return DateFormat(formato, 'es').format(fecha);
+  }
+
+
+  void fetchUserData() async {
+    try {
+      // 1) Traer datos del usuario
+      final fetchedData = await _pplProvider.getById(widget.idUser);
+
+      // 2) Traer documento Firestore
+      final docRef = FirebaseFirestore.instance
+          .collection('desistimiento_apelacion_solicitados')
+          .doc(widget.idDocumento);
+
+      final snap = await docRef.get();
+
+      // Si no existe el documento, cargar solo userData y terminar
+      if (!snap.exists) {
+        if (!mounted) return;
+        setState(() {
+          userData = fetchedData;
+          isLoading = false;
+        });
+        debugPrint('⚠️ Documento no encontrado: ${widget.idDocumento}');
+        return;
+      }
+
+      final data = (snap.data() as Map<String, dynamic>?) ?? {};
+
+      // 5) Fechas administrativas (pueden venir como Timestamp)
+      final DateTime? _fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
+      final DateTime? _fechaDilig = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
+      final DateTime? _fechaRev = (data['fecha_revision'] as Timestamp?)?.toDate();
+
+      // 6) Actualizar estado
+      if (!mounted) return;
+      setState(() {
+        userData = fetchedData;
+        solicitudData = data;
+        isLoading = false;
+
+        // estados / responsables
+        diligencio = data['diligencio'] ?? 'No registrado';
+        reviso = data['reviso'] ?? 'No registrado';
+        envio = data['envió'] ?? 'No registrado';
+
+        // fechas
+        fechaEnvio = _fechaEnvio;
+        fechaDiligenciamiento = _fechaDilig;
+        fechaRevision = _fechaRev;
+      });
+
+      debugPrint('✅ fetchUserData cargado para ${widget.idDocumento}');
+    } catch (e, st) {
+      debugPrint('❌ Error en fetchUserData: $e\n$st');
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
+  }
+
+
+
+  /// 📄 Abrir HTML en nueva pestaña para que el usuario pueda imprimir/guardar como PDF
+  void abrirHtmlParaImprimir(String url) {
+    html.window.open(url, '_blank');
+  }
+
+  void _mostrarDetalleCorreo(String correoId) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.white,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isMobile = constraints.maxWidth < 600;
+
+            return Container(
+              color: blanco,
+              width: isMobile ? double.infinity : 1000,
+              padding: const EdgeInsets.all(20),
+              child: FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('desistimiento_apelacion_solicitados')
+                    .doc(widget.idDocumento)
+                    .collection('log_correos')
+                    .doc(correoId)
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || !snapshot.data!.exists) {
+                    return const Text("No se encontró información del correo.");
+                  }
+
+                  final data = snapshot.data!.data() as Map<String, dynamic>;
+
+                  // Campos básicos
+                  final toList = data['to'] is List ? List<String>.from(data['to']) : null;
+                  final ccList = data['cc'] is List ? List<String>.from(data['cc']) : null;
+                  final fromList = data['from'] is List ? List<String>.from(data['from']) : null;
+                  final remitente = data['remitente'] as String?;
+                  final esRespuesta = data['esRespuesta'] == true || data['EsRespuesta'] == true;
+                  final subject = data['subject'] ?? '';
+                  final archivos = data['archivos'] as List?;
+                  final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+                  final fechaEnvio = timestamp != null
+                      ? DateFormat("dd MMM yyyy - hh:mm a", 'es').format(timestamp)
+                      : 'Fecha no disponible';
+
+                  // ---------------- helpers simples ----------------
+
+                  String _firstNonEmpty(List<String> keys) {
+                    for (final k in keys) {
+                      final v = data[k];
+                      if (v is String && v.trim().isNotEmpty) return v.trim();
+                    }
+                    return '';
+                  }
+
+                  String _escapeHtml(String s) => s
+                      .replaceAll('&', '&amp;')
+                      .replaceAll('<', '&lt;')
+                      .replaceAll('>', '&gt;');
+
+                  bool _isPreviewWrapped(String html) => html.contains('TPY:ENV:PREVIEW');
+                  bool _isSendWrapped(String html) => html.contains('TPY:ENV:SEND');
+
+                  String _stripEnvelopeHtml(String html) {
+                    var s = html ?? '';
+                    if (s.trim().isEmpty) return '';
+                    if (_isPreviewWrapped(s)) {
+                      final m = RegExp(r'<hr[^>]*>(.*)$', caseSensitive: false, dotAll: true).firstMatch(s);
+                      s = (m != null ? m.group(1)! : s);
+                    }
+                    if (_isSendWrapped(s)) {
+                      final mDiv = RegExp(
+                        r'<div[^>]*?(height\s*:\s*1px|border-top\s*:\s*1px)[^>]*?></div>(.*)$',
+                        caseSensitive: false,
+                        dotAll: true,
+                      ).firstMatch(s);
+                      if (mDiv != null) {
+                        s = mDiv.group(2)!;
+                      } else {
+                        final mTd = RegExp(r'<td[^>]*>(.*)</td>', caseSensitive: false, dotAll: true).firstMatch(s);
+                        if (mTd != null) s = mTd.group(1)!;
+                      }
+                    }
+                    s = s.replaceAll(RegExp(r'<meta[^>]*>', caseSensitive: false), '');
+                    return s.trim();
+                  }
+
+                  // Quita la línea del tipo "El jue, 25 sept ... escribió:" (sin tragar el blockquote)
+                  String _removeReplyHeader(String raw) {
+                    var s = raw ?? '';
+                    try {
+                      // 1) <div class="gmail_attr"> ... escribió: <br></div>
+                      s = s.replaceAll(
+                        RegExp(
+                          r'<div[^>]*class=["\"]?gmail_attr[^>]*>[\s\S]*?escribi[oó]\s*:\s*<br\s*/?>\s*</div>\s*',
+                          caseSensitive: false,
+                          dotAll: true,
+                        ),
+                        '',
+                      );
+
+                      // 2) etiquetas que contienen "escribió:" eliminar solo la etiqueta contenedora
+                      s = s.replaceAll(
+                        RegExp(
+                          r'<[^>]+?>[^<]{0,200}?escribi[oó]\s*:\s*</[^>]+?>',
+                          caseSensitive: false,
+                          dotAll: true,
+                        ),
+                        '',
+                      );
+
+                      // 3) Texto plano: eliminar sólo la línea "El ... escribió:" conservando lo posterior
+                      s = s.replaceAll(
+                        RegExp(
+                          r'(^|\r?\n)[^\n]{0,250}?\bEl\s+\w{1,12}[^\n\r]{0,200}?escribi[oó]\s*:\s*(?=\r?\n|<blockquote|<div|$)',
+                          caseSensitive: false,
+                          dotAll: true,
+                        ),
+                        '\n',
+                      );
+
+                      // 4) Inglés "wrote:" variantes
+                      s = s.replaceAll(
+                        RegExp(
+                          r'(^|\r?\n)[^\n]{0,250}?wrote\s*:\s*(?=\r?\n|<blockquote|<div|$)',
+                          caseSensitive: false,
+                          dotAll: true,
+                        ),
+                        '\n',
+                      );
+
+                      // 5) Quitar líneas tipo "Enviado el ..." residuales
+                      s = s.replaceAll(RegExp(r'(^|\r?\n).{0,200}?Enviado\s+el\s+.*', caseSensitive: false), '');
+                    } catch (e) {
+                      debugPrint('⚠️ _removeReplyHeader error: $e');
+                      return raw ?? '';
+                    }
+                    return s;
+                  }
+
+                  // Limpia HTML problemático para flutter_html
+                  String _cleanForFlutterHtml(String html) {
+                    if (html == null || html.trim().isEmpty) return '';
+                    String s = html;
+
+                    s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
+                    s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<!--[\s\S]*?-->', caseSensitive: false), '');
+
+                    final cssPatterns = [
+                      r'font-feature-settings\s*:\s*[^;>]+;?',
+                      r'font-variation-settings\s*:\s*[^;>]+;?',
+                      r'@font-face\s*{[^}]*}',
+                      r'style\s*=\s*"(?:[^"]*font-feature-settings[^"]*)"',
+                      r"style\s*=\s*'(?:[^']*font-feature-settings[^']*)'",
+                    ];
+                    for (final p in cssPatterns) {
+                      try {
+                        s = s.replaceAll(RegExp(p, caseSensitive: false, dotAll: true), '');
+                      } catch (e) {
+                        debugPrint('⚠️ cleanForFlutterHtml regex fail $p -> $e');
+                      }
+                    }
+
+                    s = s.replaceAll(RegExp(r'\(\?[imsux-]+\)'), '');
+                    s = s.replaceAll(RegExp(r'font-feature-settings\s*:\s*[^;>]+;?', caseSensitive: false), '');
+
+                    return s.trim();
+                  }
+
+                  String _sanitizeInlineEmailHtml(String html) {
+                    var s = html ?? '';
+                    s = s.replaceAll(RegExp(r'<!DOCTYPE[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<\s*head[^>]*>.*?</\s*head\s*>', caseSensitive: false, dotAll: true), '');
+                    s = s.replaceAll(RegExp(r'<\s*html[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'</\s*html\s*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<\s*body[^>]*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'</\s*body\s*>', caseSensitive: false), '');
+                    s = s.replaceAll(RegExp(r'<!--.*?-->', caseSensitive: false, dotAll: true), '');
+                    return s.trim();
+                  }
+
+                  // ---------------- render del cuerpo simplificado ----------------
+
+                  final String htmlInline = _firstNonEmpty(['html', 'cuerpoHtml', 'htmlBody', 'bodyHtml', 'mensajeHtml']);
+                  final String htmlUrl = _firstNonEmpty(['htmlUrl', 'html_url']);
+                  final String textPlain = _firstNonEmpty(['textPlain', 'text', 'plain', 'bodyText', 'snippet']);
+                  final String pdfUrl = _firstNonEmpty(['pdfUrl', 'pdf_url']);
+
+                  Widget _renderCuerpo() {
+                    // 1) Inline HTML: mostrar respuesta (sin header "escribió")
+                    if (htmlInline.isNotEmpty) {
+                      final withoutHeader = _removeReplyHeader(htmlInline);
+                      final processed = _cleanForFlutterHtml(_sanitizeInlineEmailHtml(_stripEnvelopeHtml(withoutHeader)));
+                      return Html(data: processed);
+                    }
+
+                    // 2) HTML por URL
+                    if (htmlUrl.isNotEmpty) {
+                      return FutureBuilder<http.Response>(
+                        future: http.get(Uri.parse(htmlUrl)),
+                        builder: (context, resp) {
+                          if (resp.connectionState == ConnectionState.waiting) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 12),
+                              child: LinearProgressIndicator(),
+                            );
+                          }
+                          if (!resp.hasData || resp.data!.statusCode != 200 || resp.data!.body.trim().isEmpty) {
+                            if (textPlain.isNotEmpty) {
+                              return Html(data: '<pre style="white-space:pre-wrap">${_escapeHtml(textPlain)}</pre>');
+                            }
+                            if (pdfUrl.isNotEmpty) {
+                              return Html(
+                                  data:
+                                  '<p>No se pudo cargar el HTML.</p><p><a href="$pdfUrl" target="_blank" rel="noopener">Ver PDF</a></p>');
+                            }
+                            return const Text("(Sin contenido disponible)");
+                          }
+                          final bodyRaw = resp.data!.body;
+                          final withoutHeader = _removeReplyHeader(bodyRaw);
+                          final cleanBody = _cleanForFlutterHtml(_sanitizeInlineEmailHtml(_stripEnvelopeHtml(withoutHeader)));
+                          return Html(data: cleanBody);
+                        },
+                      );
+                    }
+
+                    // 3) Texto plano
+                    if (textPlain.isNotEmpty) {
+                      return Html(data: '<pre style="white-space:pre-wrap">${_escapeHtml(textPlain)}</pre>');
+                    }
+
+                    // 4) PDF fallback
+                    if (pdfUrl.isNotEmpty) {
+                      return Html(
+                          data: '<p>(Sin HTML disponible)</p><p><a href="$pdfUrl" target="_blank" rel="noopener">Ver PDF</a></p>');
+                    }
+
+                    // nada disponible
+                    return const Text("(Sin contenido disponible)");
+                  }
+
+                  // ---------------- UI principal ----------------
+
+                  return SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        if (!esRespuesta && toList != null)
+                          Row(
+                            children: [
+                              const Text("Para: ", style: TextStyle(fontSize: 13)),
+                              Flexible(
+                                child:
+                                Text(toList.join(', '), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                              ),
+                            ],
+                          ),
+                        if (!esRespuesta && ccList != null && ccList.isNotEmpty)
+                          Text("CC: ${ccList.join(', ')}", style: const TextStyle(fontSize: 13)),
+                        if (esRespuesta) ...[
+                          Row(
+                            children: [
+                              const Text("De: ", style: TextStyle(fontSize: 13)),
+                              Flexible(
+                                child: Text(
+                                  fromList?.join(', ') ?? remitente ?? "Desconocido",
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          if ((data['destinatario'] ?? "").toString().trim().isNotEmpty)
+                            Row(
+                              children: [
+                                const Text("Para: ", style: TextStyle(fontSize: 13)),
+                                Flexible(
+                                  child: Text(
+                                    data['destinatario'],
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
+                        const SizedBox(height: 10),
+                        Text("Asunto: $subject", style: const TextStyle(fontWeight: FontWeight.bold)),
+                        Text("📅 Fecha: $fechaEnvio", style: const TextStyle(color: Colors.black87, fontSize: 12)),
+                        const Divider(),
+                        _renderCuerpo(),
+                        if (archivos != null && archivos.isNotEmpty) ...[
+                          const Divider(),
+                          const Text("Archivos adjuntos:", style: TextStyle(fontWeight: FontWeight.bold)),
+                          ...archivos.map((a) {
+                            final nombre = (a is Map ? a['nombre'] : null)?.toString() ?? 'Archivo';
+                            return Text("- $nombre");
+                          }),
+                        ],
+                        const SizedBox(height: 20),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            child: const Text("Cerrar"),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        )
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+}
+
+

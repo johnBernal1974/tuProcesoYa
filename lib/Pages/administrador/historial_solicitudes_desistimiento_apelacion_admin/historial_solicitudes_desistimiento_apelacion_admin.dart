@@ -525,8 +525,6 @@ class _HistorialSolicitudesDesistimientoApelacionAdminPageState extends State<Hi
     }
   }
 
-
-
   /// 🔹 Navegar a la página correspondiente
   void _navegarAPagina(Map<String, dynamic> latestData, String idDocumento) async {
     final String rutaDestino = obtenerRutaSegunStatus(latestData['status'] ?? "Pendiente");
@@ -544,22 +542,11 @@ class _HistorialSolicitudesDesistimientoApelacionAdminPageState extends State<Hi
           'idDocumento': idDocumento,
           'numeroSeguimiento': latestData['numero_seguimiento'] ?? "Sin número",
           'categoria': "Solicitudes varias",
-          'subcategoria': "Solicitud redenciones",
+          'subcategoria': "Desistimiento apelación",
           'fecha': latestData['fecha'] != null
               ? latestData['fecha'].toDate().toString()
               : "Fecha no disponible",
           'idUser': latestData['idUser'] ?? "Desconocido",
-          'diasTrabajados': latestData['dias_trabajados']?.toString() ?? "0",
-          'diasRedimidos': latestData['dias_redimidos']?.toString() ?? "0",
-          'categoriaRedencion': latestData['categoria'] ?? "",
-          'tipoActividad': latestData['tipo_actividad'] ?? "",
-          'trabajo': latestData['trabajo'] ?? "",
-          'fechaInicio': latestData['fecha_inicio'] != null
-              ? latestData['fecha_inicio'].toDate().toString()
-              : "",
-          'fechaFin': latestData['fecha_fin'] != null
-              ? latestData['fecha_fin'].toDate().toString()
-              : "",
           'sinRespuesta': sinRespuesta,
         },
       );
@@ -844,11 +831,11 @@ class _HistorialSolicitudesDesistimientoApelacionAdminPageState extends State<Hi
   String obtenerRutaSegunStatus(String status) {
     switch (status) {
       case "Enviado":
-        return 'solicitudes_redencion_enviadas_por_correo';//*************************************
+        return 'desistimiento_enviados_por_correo';
       case "Concedido":
-        return 'solicitudes_redencion_enviadas_por_correo';
+        return 'desistimiento_enviados_por_correo';
       case "Negado":
-        return 'solicitudes_redencion_enviadas_por_correo';
+        return 'desistimiento_enviados_por_correo';
       default:
         return 'atender_desistimiento_apelacion_page';
     }

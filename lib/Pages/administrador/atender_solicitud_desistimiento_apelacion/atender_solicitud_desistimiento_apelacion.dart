@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
+import 'package:tuprocesoya/Pages/administrador/historial_solicitudes_desistimiento_apelacion_admin/historial_solicitudes_desistimiento_apelacion_admin.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
@@ -97,8 +98,9 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
     super.initState();
     _pplProvider = PplProvider();
     _calculoCondenaController = CalculoCondenaController(_pplProvider);
-    fetchUserData();
+
     fetchDocumentoSolicitudDesistimientoApelacion();
+    fetchUserData();
     calcularTiempo(widget.idUser);
     adminFullName = AdminProvider().adminFullName ?? "";
     if (adminFullName.isEmpty && kDebugMode) {
@@ -234,6 +236,8 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
 
         // Campos nuevos solicitados por ti: entidad manual, nro proceso, fecha apelación, correo manual
         Card(
+          color: Colors.white,
+          surfaceTintColor: Colors.white,
           elevation: 2,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           child: Padding(
@@ -241,24 +245,47 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text("Enviar solicitud al tribunal", style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text(
+                  "Enviar solicitud al tribunal",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 const SizedBox(height: 8),
+
+                // --- ENTIDAD ---
                 TextField(
                   controller: entidadController,
                   decoration: const InputDecoration(
                     labelText: "Entidad (ej. Tribunal Superior de ...)",
                     hintText: "Ingresa la entidad manualmente si no aparece en opciones",
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey, width: 1.3),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
+
+                // --- NÚMERO DEL PROCESO ---
                 TextField(
                   controller: numeroProcesoController,
                   decoration: const InputDecoration(
                     labelText: "Número del proceso",
                     hintText: "Ej: 12345-2024",
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey, width: 1.3),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
+
+                // --- FECHA DE APELACIÓN ---
                 InkWell(
                   onTap: () async {
                     final now = DateTime.now();
@@ -271,23 +298,49 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
                     if (picked != null) setState(() => fechaApelacion = picked);
                   },
                   child: InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Fecha de envío de la apelación'),
-                    child: Text(fechaApelacion == null ? 'Seleccionar fecha' : DateFormat('yyyy-MM-dd').format(fechaApelacion!)),
+                    decoration: const InputDecoration(
+                      labelText: 'Fecha de envío de la apelación',
+                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: Colors.grey, width: 1.3),
+                      ),
+                    ),
+                    child: Text(
+                      fechaApelacion == null
+                          ? 'Seleccionar fecha'
+                          : DateFormat('yyyy-MM-dd').format(fechaApelacion!),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
+
+                // --- CORREO MANUAL ---
                 TextField(
                   controller: correoManualController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: "Correo destino (opcional)",
                     hintText: "Si lo completas, se usará este correo como destino principal",
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey, width: 1.3),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text("O elige uno de los correos guardados abajo:", style: TextStyle(fontSize: 12)),
+
+                const Text(
+                  "O elige uno de los correos guardados abajo:",
+                  style: TextStyle(fontSize: 12, color: Colors.black54),
+                ),
                 const SizedBox(height: 8),
-                // Aquí mostramos botones seleccionables (correoConBoton), ya definidos en extra widget
+                // Aquí van los botones de correos (correoConBoton)
               ],
             ),
           ),
@@ -310,7 +363,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
 
         const SizedBox(height: 20),
         if (_mostrarVistaPrevia)
-          vistaPreviaSolicitudRedenciones(
+          vistaPreviaSolicitudDesistimientoApelacion(
             userData: userData,
           ),
         const SizedBox(height: 100),
@@ -695,6 +748,12 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
 
     final Map<String, dynamic>? latestData = doc.data() as Map<String, dynamic>?;
 
+    /// DEBUG: descomenta si quieres ver el orden de carga en consola
+//  if (kDebugMode) {
+//    print("fetchUserData: latestData = $latestData");
+//    print("fetchUserData: controller values before load -> entidad=${entidadController.text}, nro=${numeroProcesoController.text}, correo=${correoManualController.text}");
+//  }
+
     if (fetchedData != null && mounted) {
       // Calcular tiempos (si aplica)
       await calcularTiempo(widget.idUser);
@@ -702,21 +761,36 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
 
       // Si el documento de solicitud tiene valores guardados, precargarlos en los controllers
       if (latestData != null) {
-        entidadController.text = (latestData['entidad_manual'] ?? '').toString();
-        numeroProcesoController.text = (latestData['numero_proceso'] ?? '').toString();
-        correoManualController.text = (latestData['correo_manual'] ?? '').toString();
+        // asignar solo si Firestore trae valor no vacío y el controller está vacío (evita sobreescritura)
+        final entidadFromDoc = (latestData['entidad_manual'] ?? '').toString().trim();
+        if (entidadFromDoc.isNotEmpty && entidadController.text.trim().isEmpty) {
+          entidadController.text = entidadFromDoc;
+        }
 
-        // fecha_apelacion puede venir como Timestamp
-        if (latestData['fecha_apelacion'] != null) {
+        final numeroProcesoFromDoc = (latestData['numero_proceso'] ?? '').toString().trim();
+        if (numeroProcesoFromDoc.isNotEmpty && numeroProcesoController.text.trim().isEmpty) {
+          numeroProcesoController.text = numeroProcesoFromDoc;
+        }
+
+        final correoManualFromDoc = (latestData['correo_manual'] ?? latestData['correo_manual_usado'] ?? '').toString().trim();
+        if (correoManualFromDoc.isNotEmpty && correoManualController.text.trim().isEmpty) {
+          correoManualController.text = correoManualFromDoc;
+        }
+
+        // fecha_apelacion: si no hay fecha seleccionada en el state, tomamos la del documento (si existe)
+        if (fechaApelacion == null && latestData['fecha_apelacion'] != null) {
           try {
+            // Si viene como Timestamp
             fechaApelacion = (latestData['fecha_apelacion'] as Timestamp).toDate();
           } catch (e) {
-            // si vino en otro formato, intentar parsear
+            // Intentar parsear string
             final s = (latestData['fecha_apelacion'] ?? '').toString();
             if (s.isNotEmpty) {
               try {
                 fechaApelacion = DateTime.parse(s);
-              } catch (_) {}
+              } catch (_) {
+                // dejar null si no se puede parsear
+              }
             }
           }
         }
@@ -725,13 +799,22 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
       setState(() {
         userData = fetchedData;
 
-        // Construir plantilla base (valores dinámicos más adelante se sobreescribirán en la vista previa)
+        // Construir plantilla base: prioridad -> controller (si tiene texto) -> documento -> datos del PPL
+        final entidadFinal = entidadController.text.trim().isNotEmpty
+            ? entidadController.text.trim()
+            : (latestData != null && (latestData['entidad_manual'] ?? '').toString().trim().isNotEmpty
+            ? latestData['entidad_manual'].toString().trim()
+            : (fetchedData.centroReclusion ?? ""));
+
+        final radicadoFinal = numeroProcesoController.text.trim().isNotEmpty
+            ? numeroProcesoController.text.trim()
+            : (latestData != null && (latestData['numero_proceso'] ?? '').toString().trim().isNotEmpty
+            ? latestData['numero_proceso'].toString().trim()
+            : (fetchedData.radicado ?? ""));
+
         desistimientoApelacion = SolicitudDesistimientoApelacionTemplate(
           dirigido: "", // se asignará en la vista previa según selection o fallback
-          entidad: entidadController.text.isNotEmpty
-              ? entidadController.text
-              : (latestData != null ? (latestData['entidad_manual'] ?? '') : '') ??
-              (fetchedData.centroReclusion ?? ""), // fallback al centro si no hay entidad manual
+          entidad: entidadFinal,
           referencia: "Solicitudes varias - Solicitud desistimiento de apelación",
           nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
           apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
@@ -739,9 +822,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
           centroPenitenciario: fetchedData.centroReclusion ?? "",
           emailUsuario: fetchedData.email?.trim() ?? "",
           emailAlternativo: "peticiones@tuprocesoya.com",
-          radicado: numeroProcesoController.text.isNotEmpty
-              ? numeroProcesoController.text
-              : (latestData != null ? (latestData['numero_proceso'] ?? '') : fetchedData.radicado ?? ""),
+          radicado: radicadoFinal,
           numeroSeguimiento: widget.numeroSeguimiento,
           situacion: fetchedData.situacion ?? 'En Reclusión',
           nui: fetchedData.nui ?? "",
@@ -752,13 +833,26 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
 
         isLoading = false;
       });
+
     } else if (mounted) {
       // si no hay fetchedData, igual intentar cargar campos manuales del documento (para verlos)
       if (latestData != null) {
-        entidadController.text = (latestData['entidad_manual'] ?? '').toString();
-        numeroProcesoController.text = (latestData['numero_proceso'] ?? '').toString();
-        correoManualController.text = (latestData['correo_manual'] ?? '').toString();
-        if (latestData['fecha_apelacion'] != null) {
+        final entidadFromDoc = (latestData['entidad_manual'] ?? '').toString().trim();
+        if (entidadFromDoc.isNotEmpty && entidadController.text.trim().isEmpty) {
+          entidadController.text = entidadFromDoc;
+        }
+
+        final nroFromDoc = (latestData['numero_proceso'] ?? '').toString().trim();
+        if (nroFromDoc.isNotEmpty && numeroProcesoController.text.trim().isEmpty) {
+          numeroProcesoController.text = nroFromDoc;
+        }
+
+        final correoFromDoc = (latestData['correo_manual'] ?? latestData['correo_manual_usado'] ?? '').toString().trim();
+        if (correoFromDoc.isNotEmpty && correoManualController.text.trim().isEmpty) {
+          correoManualController.text = correoFromDoc;
+        }
+
+        if (fechaApelacion == null && latestData['fecha_apelacion'] != null) {
           try {
             fechaApelacion = (latestData['fecha_apelacion'] as Timestamp).toDate();
           } catch (_) {}
@@ -771,7 +865,6 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
       });
     }
   }
-
 
   void fetchDocumentoSolicitudDesistimientoApelacion() async {
     try {
@@ -792,32 +885,42 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
 
       if (data != null && mounted) {
         setState(() {
-          diligencio = (data['diligencio'] ?? 'No Diligenciado').toString();
-          reviso = (data['reviso'] ?? 'No Revisado').toString();
-          envio = (data['envió'] ?? 'No enviado').toString();
-
+          diligencio = data['diligencio'] ?? 'No Diligenciado';
+          reviso = data['reviso'] ?? 'No Revisado';
+          envio = data['envió'] ?? 'No enviado';
           fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
           fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
           fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
-
-          asignadoA_P2 = (data['asignadoA_P2'] ?? '').toString();
-          asignadoNombreP2 = (data['asignado_para_revisar'] ?? 'No asignado').toString();
+          asignadoA_P2 = data['asignadoA_P2'] ?? '';
+          asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
           fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
 
-          // --- Cargar valores manuales en los controllers ---
-          entidadController.text = (data['entidad_manual'] ?? '').toString();
-          numeroProcesoController.text = (data['numero_proceso_manual'] ?? '').toString();
-          correoManualController.text = (data['correo_destino_manual'] ?? '').toString();
+          // --- Campos manuales guardados: asigna SOLO si Firestore trae valor no vacío
+          final entidadManual = (data['entidad_manual'] ?? '').toString().trim();
+          if (entidadManual.isNotEmpty && entidadController.text.trim().isEmpty) {
+            entidadController.text = entidadManual;
+          }
 
-          // Fecha apelación (si existe, puede venir como Timestamp)
-          final ts = data['fecha_apelacion'] as Timestamp?;
-          if (ts != null) {
-            fechaApelacion = ts.toDate();
-          } else {
-            fechaApelacion = null;
+          final numeroProcesoManual = (data['numero_proceso_manual'] ?? '').toString().trim();
+          if (numeroProcesoManual.isNotEmpty && numeroProcesoController.text.trim().isEmpty) {
+            numeroProcesoController.text = numeroProcesoManual;
+          }
+
+          final correoManualGuardado = (data['correo_destino_manual'] ?? '').toString().trim();
+          // Asignar si Firestore tiene valor y el controller está vacío (evita sobreescribir entrada del usuario)
+          if (correoManualGuardado.isNotEmpty && correoManualController.text.trim().isEmpty) {
+            correoManualController.text = correoManualGuardado;
+          }
+
+          // Fecha apelacion: solo asignar si no hay ya una seleccion en el controlador de UI
+          if (data['fecha_apelacion'] != null && fechaApelacion == null) {
+            try {
+              fechaApelacion = (data['fecha_apelacion'] as Timestamp).toDate();
+            } catch (_) {}
           }
         });
       }
+
     } catch (e) {
       if (kDebugMode) print("❌ Error al obtener datos de Firestore: $e");
     }
@@ -869,7 +972,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
     );
   }
 
-  Widget vistaPreviaSolicitudRedenciones({required Ppl? userData}) {
+  Widget vistaPreviaSolicitudDesistimientoApelacion({required Ppl? userData}) {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
           .collection('desistimiento_apelacion_solicitados')
@@ -880,25 +983,19 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
         if (!snapshot.hasData || !snapshot.data!.exists) return const Text("No se encontró la solicitud desistimiento de apelación.");
         final data = snapshot.data!.data() as Map<String, dynamic>;
 
-        // Determinamos entidad final a usar (prioriza el textfield, luego lo guardado en documento, luego centro)
+        // Determinamos entidad / radicado / correo destino (priorizando textfields)
         final entidadFinal = entidadController.text.isNotEmpty
             ? entidadController.text
             : (data['entidad_manual'] ?? userData?.centroReclusion ?? '');
 
-        // Determinamos radicado / numero de proceso final (prioriza textfield)
         final radicadoFinal = numeroProcesoController.text.isNotEmpty
             ? numeroProcesoController.text
             : (data['numero_proceso'] ?? userData?.radicado ?? '');
 
-        // Determinamos correo destino (si el usuario escribió uno manualmente en el textfield)
-        final correoDestinoManual = correoManualController.text.isNotEmpty ? correoManualController.text : (data['correo_manual'] ?? '');
-
-        // Si no se especificó dirigido por el selector, usar obtenerTituloCorreo(...) y fallback en la plantilla
         final dirigidoCalculado = (nombreCorreoSeleccionado != null && nombreCorreoSeleccionado!.isNotEmpty)
             ? obtenerTituloCorreo(nombreCorreoSeleccionado)
-            : ''; // la plantilla hace fallback a "Respetados Magistrados:"
+            : '';
 
-        // Construimos plantilla usando datos actuales (incluyendo fechaApelacion tomada del state.fechaApelacion)
         final plantilla = SolicitudDesistimientoApelacionTemplate(
           dirigido: dirigidoCalculado,
           entidad: entidadFinal,
@@ -909,15 +1006,45 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
           centroPenitenciario: userData?.centroReclusion ?? "",
           emailUsuario: userData?.email ?? "",
           emailAlternativo: "peticiones@tuprocesoya.com",
-          radicado: radicadoFinal ?? "",
+          radicado: radicadoFinal,
           numeroSeguimiento: data['numero_seguimiento'] ?? widget.numeroSeguimiento,
           situacion: userData?.situacion ?? 'En Reclusión',
           nui: userData?.nui ?? "",
           td: userData?.td ?? "",
           patio: userData?.patio ?? "",
-          fechaApelacion: fechaApelacion, // usa la variable del state (precargada en fetchUserData si existe)
+          fechaApelacion: fechaApelacion,
           motivoAdicional: data['motivo_adicional'] ?? '',
         );
+
+        // Fragmento que devuelve la plantilla (puede ser fragmento <div>..)
+        final fragmento = plantilla.generarTextoHtml();
+
+        // Envolvemos en HTML completo para que flutter_html renderice EXACTAMENTE como en correo.
+        final htmlParaPreview = '''
+<html>
+  <head>
+    <meta charset="utf-8">
+    <style>
+      /* Fuerza alineación izquierda y espaciado similar al correo */
+      body { font-family: Arial, Helvetica, sans-serif; color:#222; font-size:13px; line-height:1.6; text-align:left; margin:0; padding:12px; }
+      .container { max-width:900px; margin:0 auto; }
+      .dirigido { color: #222; font-weight: 600; font-size: 13px; margin-bottom:6px; }
+      .entidad { color: #111; font-weight: 800; font-size: 18px; margin-bottom:12px; }
+      .meta p { margin:4px 0; }
+      .firma { margin-top:22px; line-height:1.1; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      $fragmento
+    </div>
+  </body>
+</html>
+''';
+
+        if (kDebugMode) {
+          print("DEBUG - HTML vista previa (long):\n$htmlParaPreview");
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -927,7 +1054,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
-              child: Html(data: plantilla.generarTextoHtml()),
+              child: Html(data: htmlParaPreview),
             ),
             const SizedBox(height: 50),
             Wrap(
@@ -946,6 +1073,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
       },
     );
   }
+
 
   String convertirSaltosDeLinea(String texto) => texto.replaceAll('\n', '<br>');
 
@@ -1012,7 +1140,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
     ultimoHtmlEnviado = mensajeHtml;
 
     final archivosBase64 = <Map<String, String>>[];
-    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud desistimiento de apelación – ${widget.numeroSeguimiento}";
+    final asuntoCorreo = asuntoPersonalizado ?? "Desistimiento de apelación – ${widget.numeroSeguimiento}";
     final enviadoPor = correoRemitente;
 
     final correosCC = <String>[];
@@ -1026,7 +1154,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
       "archivos": archivosBase64,
       "idDocumento": widget.idDocumento,
       "enviadoPor": enviadoPor,
-      "tipo": "desistimientoApelacion",
+      "tipo": "desistimiento_apelacion",
     });
 
     final response = await http.post(url, headers: {"Content-Type": "application/json"}, body: body);
@@ -1047,13 +1175,27 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
-      style: ElevatedButton.styleFrom(side: BorderSide(width: 1, color: Theme.of(context).primaryColor), backgroundColor: Colors.white, foregroundColor: Colors.black),
+      style: ElevatedButton.styleFrom(
+        side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
       onPressed: () async {
         // Validaciones básicas
         final correoManual = correoManualController.text.trim();
         final correoDestino = correoManual.isNotEmpty ? correoManual : (correoSeleccionado ?? "");
         if (correoDestino.isEmpty) {
-          await showDialog(context: context, builder: (ctx) => AlertDialog(backgroundColor: Colors.white, title: const Text("Aviso"), content: const Text("No se ha indicado un correo destino. Ingresa uno manual o selecciona uno de la lista."), actions: [TextButton(child: const Text("OK"), onPressed: () => Navigator.of(ctx).pop())]));
+          await showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: Colors.white,
+              title: const Text("Aviso"),
+              content: const Text("No se ha indicado un correo destino. Ingresa uno manual o selecciona uno de la lista."),
+              actions: [
+                TextButton(child: const Text("OK"), onPressed: () => Navigator.of(ctx).pop()),
+              ],
+            ),
+          );
           return;
         }
 
@@ -1086,12 +1228,12 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
 
         if (confirmar != true) return;
 
-        // Construir prefacio html con los datos manuales para que se incluya en el correo
+        // Construir prefacio html con los datos manuales (solo para el manager si lo usa)
         final prefacioSb = StringBuffer();
         if (entidadController.text.isNotEmpty) prefacioSb.writeln('<p><strong>Entidad:</strong> ${entidadController.text}</p>');
         if (numeroProcesoController.text.isNotEmpty) prefacioSb.writeln('<p><strong>Número de proceso:</strong> ${numeroProcesoController.text}</p>');
         if (fechaApelacion != null) prefacioSb.writeln('<p><strong>Fecha de apelación:</strong> ${DateFormat('yyyy-MM-dd').format(fechaApelacion!)}</p>');
-        final prefacioHtml = prefacioSb.toString();
+        final prefacioHtmlStr = prefacioSb.toString();
 
         // Preparar plantilla principal (cuerpo html)
         final plantilla = SolicitudDesistimientoApelacionTemplate(
@@ -1110,19 +1252,24 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
           nui: userData?.nui ?? "",
           td: userData?.td ?? "",
           patio: userData?.patio ?? "",
+          fechaApelacion: fechaApelacion,
+          motivoAdicional: solicitudData?['motivo_adicional'] ?? '',
         );
 
+        // Cuerpo HTML (plantilla). IMPORTANTE: enviar un solo HTML completo (wrapper) para evitar duplicados/centrado.
         final cuerpoHtml = plantilla.generarTextoHtml();
+
+        // Guardamos último HTML que se usará para copias / almacenamientos
         ultimoHtmlEnviado = cuerpoHtml;
 
-        // Instanciar manager V7
+        // Instanciar manager V7 (asegúrate de que tu clase exista y acepte estos parámetros)
         final manager = EnvioCorreoManagerV7();
 
-        if(context.mounted){
+        if (context.mounted) {
           await manager.enviarCorreoCompleto(
             context: context,
             correoDestinoPrincipal: correoDestino,
-            html: cuerpoHtml,
+            html: cuerpoHtml, // cuerpo ya incluye encabezados / entidad / radicado en la plantilla
             numeroSeguimiento: widget.numeroSeguimiento,
             nombreAcudiente: userData?.nombreAcudiente ?? '',
             celularWhatsapp: userData?.celularWhatsapp,
@@ -1145,27 +1292,42 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
             celularAcudiente: userData?.celular,
             nombrePathStorage: "desistimientoApelacion",
             nombreColeccionFirestore: "desistimiento_apelacion_solicitados",
+
+            // enviarCorreoResend: usamos el método que ya tienes; PASAR el prefacio que creaste (prefacioHtmlStr)
             enviarCorreoResend: ({required String correoDestino, String? asuntoPersonalizado, String? prefacioHtml}) async {
-              // Reutilizo tu método interno (que hace POST a Resend)
-              await enviarCorreoResend(correoDestino: correoDestino, asuntoPersonalizado: asuntoPersonalizado, prefacioHtml: prefacioHtml ?? prefacioHtml);
+              // IMPORTANTE: aquí pasamos el prefacio recibido por el manager o el prefacio calculado
+              await enviarCorreoResend(
+                correoDestino: correoDestino,
+                asuntoPersonalizado: asuntoPersonalizado,
+                prefacioHtml: prefacioHtml ?? prefacioHtmlStr,
+              );
             },
+
+            // subirHtml: reusa tu método (asegúrate que el nombre y firma coincidan)
             subirHtml: ({required String tipoEnvio, required String htmlFinal, required String nombreColeccionFirestore, required String nombrePathStorage}) async {
-              await subirHtmlCorreoADocumentoSolicitudRedenciones(idDocumento: widget.idDocumento, htmlFinal: htmlFinal, tipoEnvio: tipoEnvio);
+              await subirHtmlCorreoADocumentoSolicitudRedenciones(
+                idDocumento: widget.idDocumento,
+                htmlFinal: htmlFinal,
+                tipoEnvio: tipoEnvio,
+              );
             },
+
             ultimoHtmlEnviado: ultimoHtmlEnviado,
           );
         }
 
         // Después del envío opcionalmente actualizar campos en doc con los datos manuales para trazabilidad
         try {
-          await FirebaseFirestore.instance.collection('desistimiento_apelacion_solicitados').doc(widget.idDocumento).set({
-            'entidad_manual': entidadController.text,
-            'numero_proceso': numeroProcesoController.text,
-            'fecha_apelacion': fechaApelacion != null ? Timestamp.fromDate(fechaApelacion!) : null,
-            'correo_manual_usado': correoManualController.text.trim().isNotEmpty ? correoManualController.text.trim() : null,
+          final Map<String, dynamic> toSave = {
             'ultimo_envio_por': adminFullName,
             'ultimo_envio_fecha': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
+          };
+          if (entidadController.text.isNotEmpty) toSave['entidad_manual'] = entidadController.text;
+          if (numeroProcesoController.text.isNotEmpty) toSave['numero_proceso'] = numeroProcesoController.text;
+          if (fechaApelacion != null) toSave['fecha_apelacion'] = Timestamp.fromDate(fechaApelacion!);
+          if (correoManual.isNotEmpty) toSave['correo_manual_usado'] = correoManual;
+
+          await FirebaseFirestore.instance.collection('desistimiento_apelacion_solicitados').doc(widget.idDocumento).set(toSave, SetOptions(merge: true));
         } catch (e) {
           if (kDebugMode) print("❌ Error guardando metadatos post-envío: $e");
         }
@@ -1173,6 +1335,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
       child: const Text("Enviar por correo"),
     );
   }
+
 
   Future<void> subirHtmlCorreoADocumentoSolicitudRedenciones({
     required String idDocumento,
@@ -1243,7 +1406,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
               final offsetAnimation = Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(animation);
               return SlideTransition(position: offsetAnimation, child: child);
             }, pageBuilder: (context, animation, secondaryAnimation) {
-              return const HistorialSolicitudesRedencionesAdminPage();
+              return const HistorialSolicitudesDesistimientoApelacionAdminPage();
             }));
           }
         } catch (e) {
@@ -1282,7 +1445,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
               final offsetAnimation = Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero).animate(animation);
               return SlideTransition(position: offsetAnimation, child: child);
             }, pageBuilder: (context, animation, secondaryAnimation) {
-              return const HistorialSolicitudesRedencionesAdminPage();
+              return const HistorialSolicitudesDesistimientoApelacionAdminPage();
             }));
           }
         } catch (e) {

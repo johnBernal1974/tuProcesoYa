@@ -60,6 +60,7 @@ import 'Pages/administrador/solicitudes_enviadas_por_correo/apelacion_enviadas_p
 import 'Pages/administrador/solicitudes_enviadas_por_correo/asignacion_JEP_enviadas_por_correo/asignacion_JEP_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/copiaSentencia_enviadas_por_correo/copiaSentencia_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/derechos_peticion_enviados_por_correo/derechos_peticion_enviados_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/desistimiento_apelacion_enviadas_por_correo/desistimiento_apelacion_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_enviada_por_correo/extincion_perna_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/libertad_condicional_enviada_por_correo/libertad_condicional_enviada_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/permiso_72horas_enviadas_por_correo/permiso_72horas_enviadas_por_correo.dart';
@@ -562,6 +563,22 @@ class MyApp extends StatelessWidget {
                 subcategoria: args['subcategoria'] ?? "Redención de pena",
                 fecha: args['fecha'],
                 idUser: args['idUser'],
+                sinRespuesta: args['sinRespuesta'] ?? false,
+              ),
+            );
+          }
+
+          else if (settings.name == 'desistimiento_enviados_por_correo') {
+            final args = settings.arguments as Map<String, dynamic>? ?? {};
+            return MaterialPageRoute(
+              builder: (context) => SolicitudesDesistimientoApelacionEnviadosPage(
+                status: args['status'] ?? "Diligenciado",
+                idDocumento: args['idDocumento'] ?? '',
+                numeroSeguimiento: args['numeroSeguimiento'] ?? '',
+                categoria: args['categoria'] ?? "Solicitudes varias",
+                subcategoria: args['subcategoria'] ?? "Desistimiento de apelación",
+                fecha: args['fecha'] ?? DateTime.now().toIso8601String(),
+                idUser: args['idUser'] ?? '',
                 sinRespuesta: args['sinRespuesta'] ?? false,
               ),
             );
