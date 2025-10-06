@@ -544,7 +544,7 @@ class _HistorialSolicitudesRedosificacionRedencionesAdminPageState extends State
           'idDocumento': idDocumento,
           'numeroSeguimiento': latestData['numero_seguimiento'] ?? "Sin número",
           'categoria': "Solicitudes varias",
-          'subcategoria': "Solicitud readecuación de redención",
+          'subcategoria': "Solicitud redosificación de redención",
           'fecha': latestData['fecha'] != null
               ? latestData['fecha'].toDate().toString()
               : "Fecha no disponible",
