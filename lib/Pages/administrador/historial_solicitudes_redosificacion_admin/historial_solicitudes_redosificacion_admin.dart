@@ -8,14 +8,14 @@ import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../src/colors/colors.dart';
 
-class HistorialSolicitudesReadecuacionRedencionesAdminPage extends StatefulWidget {
-  const HistorialSolicitudesReadecuacionRedencionesAdminPage({super.key});
+class HistorialSolicitudesRedosificacionRedencionesAdminPage extends StatefulWidget {
+  const HistorialSolicitudesRedosificacionRedencionesAdminPage({super.key});
 
   @override
-  State<HistorialSolicitudesReadecuacionRedencionesAdminPage> createState() => _HistorialSolicitudesReadecuacionRedencionesAdminPageState();
+  State<HistorialSolicitudesRedosificacionRedencionesAdminPage> createState() => _HistorialSolicitudesRedosificacionRedencionesAdminPageState();
 }
 
-class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<HistorialSolicitudesReadecuacionRedencionesAdminPage> {
+class _HistorialSolicitudesRedosificacionRedencionesAdminPageState extends State<HistorialSolicitudesRedosificacionRedencionesAdminPage> {
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
   String _filtroEstado = "Solicitado"; // Estado por defecto
   String rol = AdminProvider().rol ?? "";
@@ -49,7 +49,7 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
   @override
   Widget build(BuildContext context) {
     return MainLayout(
-      pageTitle: 'Solicitudes de readecuación de redencion',
+      pageTitle: 'Solicitudes de redosificación de redencion',
       content: Center(
         child: SizedBox(
           width: MediaQuery.of(context).size.width >= 1000 ? 1200 : double.infinity,
@@ -851,7 +851,7 @@ class _HistorialSolicitudesReadecuacionRedencionesAdminPageState extends State<H
       case "Negado":
         return 'solicitudes_readecuacion_redencion_enviadas_por_correo';
       default:
-        return 'atender_readecuacion_page';
+        return 'atender_redosificacion_page';
     }
   }
 }

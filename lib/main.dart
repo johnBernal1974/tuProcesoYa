@@ -24,7 +24,7 @@ import 'Pages/administrador/atender_extincion_pena/atender_extincion_pena.dart';
 import 'Pages/administrador/atender_libertad_condicional/atender_libertad_condicional.dart';
 import 'Pages/administrador/atender_permiso_72horas/atender_permiso_72horas.dart';
 import 'Pages/administrador/atender_prision_domiciliaria_admin/atender_prision_domiciliaria_admin.dart';
-import 'Pages/administrador/atender_readecuacion/atender_readecuacion.dart';
+import 'Pages/administrador/atender_redosificacion/atender_redosificacion.dart';
 import 'Pages/administrador/atender_solicitud_acumulacion/atender_solicitud_acumulacion.dart';
 import 'Pages/administrador/atender_solicitud_desistimiento_apelacion/atender_solicitud_desistimiento_apelacion.dart';
 import 'Pages/administrador/atender_trasladoPenitenciaria/atender_trasladoPenitenciaria_admin.dart';
@@ -42,8 +42,8 @@ import 'Pages/administrador/historial_solicitudes_extincion_pena_admin/historial
 import 'Pages/administrador/historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'Pages/administrador/historial_solicitudes_permiso_72horas_admin/historial_solicitudes_permiso_72horas_admin.dart';
 import 'Pages/administrador/historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
-import 'Pages/administrador/historial_solicitudes_readecuacion_admin/historial_solicitudes_readecuacion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_redenciones_admin/historial_solicitudes_redenciones_admin.dart';
+import 'Pages/administrador/historial_solicitudes_redosificacion_admin/historial_solicitudes_redosificacion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_trasladoPenitenciaria/historial_solicitudes_trasladoPenitenciaria.dart';
 import 'Pages/administrador/historial_solicitudes_tutela_admin/historial_solicitudes_tutela_admin.dart';
 import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
@@ -65,8 +65,8 @@ import 'Pages/administrador/solicitudes_enviadas_por_correo/extincion_pena_envia
 import 'Pages/administrador/solicitudes_enviadas_por_correo/libertad_condicional_enviada_por_correo/libertad_condicional_enviada_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/permiso_72horas_enviadas_por_correo/permiso_72horas_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/prision_domiciliaria_enviada_por_correo/prision_domiciliaria_enviada_por_correo.dart';
-import 'Pages/administrador/solicitudes_enviadas_por_correo/readecuacion_enviado_por_correo/readecuacion_enviado_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/redenciones_enviada_por_correo/redenciones_enviada_por_correo.dart';
+import 'Pages/administrador/solicitudes_enviadas_por_correo/redosificacion_enviado_por_correo/redosificacion_enviado_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/traslado_proceso_enviados_por_correo/traslado_proceso_enviados_por_correo.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/tutelas_enviadas_por_correo/tutelas_enviadas_por_correo.dart';
 import 'Pages/administrador/solicitudes_generalAdmin/solicitudes_generalAdmin.dart';
@@ -267,7 +267,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_extincion_pena_admin': (context) => const HistorialSolicitudesExtincionPenaAdminPage(),
         'historial_solicitudes_traslado_proceso_admin': (context) => const HistorialSolicitudesTrasladoProcesoAdminPage(),
         'historial_solicitudes_redenciones_admin': (context) => const HistorialSolicitudesRedencionesAdminPage(),
-        'historial_solicitudes_readecuacion_redenciones_admin': (context) => const HistorialSolicitudesReadecuacionRedencionesAdminPage(),
+        'historial_solicitudes_readecuacion_redenciones_admin': (context) => const HistorialSolicitudesRedosificacionRedencionesAdminPage(),
         'historial_solicitudes_acumulacion_admin': (context) => const HistorialSolicitudesAcumulacionAdminPage(),
         'historial_solicitudes_apelacion_admin': (context) => const HistorialSolicitudesApelacionAdminPage(),
         'historial_solicitudes_trasladoPenitenciaria_admin': (context) => const HistorialSolicitudesTrasladoPenitenciariaAdminPage(),
@@ -587,7 +587,7 @@ class MyApp extends StatelessWidget {
           else if (settings.name == 'solicitudes_readecuacion_redencion_enviadas_por_correo') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
-              builder: (context) => SolicitudesReadecuacionRedencionPenaPorCorreoPage(
+              builder: (context) => SolicitudesRedosificacionRedencionPenaPorCorreoPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'],
@@ -861,10 +861,10 @@ class MyApp extends StatelessWidget {
             );
           }
 
-          else if (settings.name == 'atender_readecuacion_page') {
+          else if (settings.name == 'atender_redosificacion_page') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(
-              builder: (context) => AtenderSolicitudReadecuacionRedencionesPage(
+              builder: (context) => AtenderSolicitudRedosificacionRedencionesPage(
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",

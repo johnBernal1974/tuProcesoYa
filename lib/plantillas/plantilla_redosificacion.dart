@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-class SolicitudReadecuacionRedencionTemplate {
+class SolicitudRedosificacionRedencionTemplate {
   final String dirigido;
   final String entidad;
   final String referencia;
@@ -18,7 +18,7 @@ class SolicitudReadecuacionRedencionTemplate {
   final String td;
   final String patio;
 
-  SolicitudReadecuacionRedencionTemplate({
+  SolicitudRedosificacionRedencionTemplate({
     required this.dirigido,
     required this.entidad,
     required this.referencia,
@@ -46,7 +46,7 @@ class SolicitudReadecuacionRedencionTemplate {
     <b>$dirigido</b><br>
     <b>$entidad</b><br><br>
 
-    Asunto: <b>Solicitud de Readecuación de Redención – $numeroSeguimiento</b><br>
+    Asunto: <b>Solicitud de Redosificación de Redención – $numeroSeguimiento</b><br>
     Radicado del proceso: <b>$radicado</b><br><br>
 
     Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.<br><br>
@@ -75,7 +75,7 @@ class SolicitudReadecuacionRedencionTemplate {
 
     <span style="font-size: 16px;"><b>III. PRETENSIONES</b></span><br><br>
 
-    <b>PRIMERO:</b> Que se dejen sin efecto los autos anteriores de redención de pena por trabajo ya proferidos, y se proceda a <b>readecuar</b> dichos reconocimientos conforme a lo establecido en el artículo 19 de la Ley 2466 de 2025, aplicando el principio de favorabilidad, y reconociendo en consecuencia un mayor número de días redimidos.<br><br>
+    <b>PRIMERO:</b> Que se dejen sin efecto los autos anteriores de redención de pena por trabajo ya proferidos, y se proceda a <b>redosificar</b> dichos reconocimientos conforme a lo establecido en el artículo 19 de la Ley 2466 de 2025, aplicando el principio de favorabilidad, y reconociendo en consecuencia un mayor número de días redimidos.<br><br>
 
     <b>SEGUNDO:</b> Que se requiera al establecimiento penitenciario <b>$centroPenitenciario</b> para que remita todos los certificados correspondientes a mis actividades de trabajo desde la fecha de inicio de mi condena.<br><br>
 

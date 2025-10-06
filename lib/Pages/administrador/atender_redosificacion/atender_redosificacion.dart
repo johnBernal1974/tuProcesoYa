@@ -7,34 +7,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
-import 'package:tuprocesoya/widgets/envio_correo_managerV2.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
 import '../../../helper/resumen_solicitudes_helper.dart';
 import '../../../models/ppl.dart';
-import '../../../plantillas/plantilla_readecuacion.dart';
-import '../../../plantillas/plantilla_redenciones.dart';
-import '../../../plantillas/plantilla_traslado_proceso.dart';
+import '../../../plantillas/plantilla_redosificacion.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/datos_ejecucion_condena.dart';
-import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV3.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
-import '../historial_solicitudes_readecuacion_admin/historial_solicitudes_readecuacion_admin.dart';
-import 'atender_readecuacion_controller.dart';
+import '../historial_solicitudes_redosificacion_admin/historial_solicitudes_redosificacion_admin.dart';
+import 'atender_redosificacion_controller.dart';
 
-class AtenderSolicitudReadecuacionRedencionesPage extends StatefulWidget {
+class AtenderSolicitudRedosificacionRedencionesPage extends StatefulWidget {
   final String status;
   final String idDocumento;
   final String numeroSeguimiento;
   final String fecha;
   final String idUser;
 
-  const AtenderSolicitudReadecuacionRedencionesPage({
+  const AtenderSolicitudRedosificacionRedencionesPage({
     super.key,
     required this.status,
     required this.idDocumento,
@@ -44,12 +40,12 @@ class AtenderSolicitudReadecuacionRedencionesPage extends StatefulWidget {
   });
 
   @override
-  State<AtenderSolicitudReadecuacionRedencionesPage> createState() =>
-      _AtenderSolicitudReadecuacionRedencionesPageState();
+  State<AtenderSolicitudRedosificacionRedencionesPage> createState() =>
+      _AtenderSolicitudRedosificacionRedencionesPageState();
 }
 
 
-class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSolicitudReadecuacionRedencionesPage> {
+class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderSolicitudRedosificacionRedencionesPage> {
   late PplProvider _pplProvider;
   Ppl? userData;
   bool isLoading = true; // Bandera para controlar la carga
@@ -61,7 +57,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
   int diasRestanteExactos = 0;
   double porcentajeEjecutado =0;
   int tiempoCondena =0;
-  final AtenderSolicitudReadecuacionRedencionesAdminController _controller = AtenderSolicitudReadecuacionRedencionesAdminController();
+  final AtenderSolicitudRedosificacionRedencionesAdminController _controller = AtenderSolicitudRedosificacionRedencionesAdminController();
   String sinopsis = "";
   String consideraciones = "";
   String fundamentosDeDerecho = "";
@@ -81,7 +77,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
   DateTime? fechaDiligenciamiento;
   DateTime? fechaRevision;
   String rol = AdminProvider().rol ?? "";
-  late SolicitudReadecuacionRedencionTemplate readecuacion;
+  late SolicitudRedosificacionRedencionTemplate redosificacion;
   String asignadoA_P2 = '';
   String asignadoNombreP2 = '';
   DateTime? fechaAsignadoP2;
@@ -101,7 +97,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     _pplProvider = PplProvider();
     _calculoCondenaController = CalculoCondenaController(_pplProvider);
     fetchUserData();
-    fetchDocumentoSolicitudReadecuacionRedenciones();
+    fetchDocumentoSolicitudRedosificacionRedenciones();
     calcularTiempo(widget.idUser);
     adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
     if (adminFullName.isEmpty) {
@@ -124,7 +120,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
   Widget build(BuildContext context) {
     final isWide = MediaQuery.of(context).size.width > 1000;
     return MainLayout(
-      pageTitle: 'Atender solicitud READECUACION DE REDENCION',
+      pageTitle: 'Atender solicitud REDOSIFICACIÓN DE REDENCION',
       content: isWide
           ? Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -198,7 +194,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                "Solicitud Readecuación de redencion - ${widget.status}",
+                "Solicitud Redosificación de redencion - ${widget.status}",
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 24,
@@ -238,7 +234,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
         const SizedBox(height: 20),
 
         if (_mostrarVistaPrevia)
-          vistaPreviaSolicitudReadecuacionRedenciones(
+          vistaPreviaSolicitudRedosificacionRedenciones(
             userData: userData,
           ),
 
@@ -355,7 +351,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
               const SizedBox(height: 5),
               _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
               const SizedBox(height: 5),
-              _buildDetalleItem("Subcategoría", "Readecuación de redencion", fontSize),
+              _buildDetalleItem("Subcategoría", "Redosificación de redencion", fontSize),
             ],
           )
               : Row( // En PC, mantener filas
@@ -374,7 +370,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
                 children: [
                   _buildDetalleItem("Fecha de solicitud", _formatFecha(DateTime.tryParse(widget.fecha)), fontSize),
                   const SizedBox(height: 5),
-                  _buildDetalleItem("Subcategoría", "Readecuación de redencion", fontSize),
+                  _buildDetalleItem("Subcategoría", "Redosificación de redencion", fontSize),
                 ],
               ),
             ],
@@ -926,10 +922,10 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
 
       setState(() {
         userData = fetchedData;
-        readecuacion = SolicitudReadecuacionRedencionTemplate(
+        redosificacion = SolicitudRedosificacionRedencionTemplate(
           dirigido: "", // Se llenará al elegir correo
           entidad: "",  // Se llenará al elegir correo
-          referencia: "Solicitudes varias - Solicitud Readecuación de redención",
+          referencia: "Solicitudes varias - Solicitud Redosificación de redención",
           nombrePpl: fetchedData.nombrePpl?.trim() ?? "",
           apellidoPpl: fetchedData.apellidoPpl?.trim() ?? "",
           identificacionPpl: fetchedData.numeroDocumentoPpl ?? "",
@@ -955,7 +951,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     }
   }
 
-  void fetchDocumentoSolicitudReadecuacionRedenciones() async {
+  void fetchDocumentoSolicitudRedosificacionRedenciones() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
           .collection('readecuacion_solicitados')
@@ -1079,7 +1075,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     );
   }
 
-  Widget vistaPreviaSolicitudReadecuacionRedenciones({required Ppl? userData}) {
+  Widget vistaPreviaSolicitudRedosificacionRedenciones({required Ppl? userData}) {
     return FutureBuilder<DocumentSnapshot>(
       future: FirebaseFirestore.instance
           .collection('readecuacion_solicitados')
@@ -1096,7 +1092,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
 
         final data = snapshot.data!.data() as Map<String, dynamic>;
 
-        final plantilla = SolicitudReadecuacionRedencionTemplate(
+        final plantilla = SolicitudRedosificacionRedencionTemplate(
           dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
           entidad: entidad,
           referencia: "Solicitudes varias - Solicitud Readecuación redención",
@@ -1177,10 +1173,10 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
     final correoDestinatario = correoDestino;
 
-    final readecuacion = SolicitudReadecuacionRedencionTemplate(
+    final redosificacion = SolicitudRedosificacionRedencionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
       entidad: entidadSeleccionada,
-      referencia: "Solicitudes varias - Solicitud readecuación redención",
+      referencia: "Solicitudes varias - Solicitud redosificación redención",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
@@ -1204,7 +1200,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
     <p style="margin: 2px 0;">Para: $correoDestinatario</p>
     <p style="margin: 2px 0;">Fecha de Envío: $fechaEnvioFormateada</p>
     <hr style="margin: 8px 0; border: 0; border-top: 1px solid #ccc;">
-    ${prefacioHtml ?? ''}${readecuacion.generarTextoHtml()}
+    ${prefacioHtml ?? ''}${redosificacion.generarTextoHtml()}
   </body>
 </html>
 """;
@@ -1214,7 +1210,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
 
     final archivosBase64 = <Map<String, String>>[];
     final asuntoCorreo = asuntoPersonalizado ??
-        "Solicitud de Readecuación de Redención - ${widget.numeroSeguimiento}";
+        "Solicitud de Redosificación de Redención - ${widget.numeroSeguimiento}";
     final enviadoPor = correoRemitente;
 
     final correosCC = <String>[];
@@ -1289,27 +1285,27 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
         }
 
         // 🔹 Antes de generar el HTML, actualizamos dirigido y entidad
-        readecuacion = SolicitudReadecuacionRedencionTemplate(
+        redosificacion = SolicitudRedosificacionRedencionTemplate(
           dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
           entidad: obtenerEntidad(nombreCorreoSeleccionado ?? ""),
-          referencia: readecuacion.referencia,
-          nombrePpl: readecuacion.nombrePpl,
-          apellidoPpl: readecuacion.apellidoPpl,
-          identificacionPpl: readecuacion.identificacionPpl,
-          centroPenitenciario: readecuacion.centroPenitenciario,
-          emailUsuario: readecuacion.emailUsuario,
-          emailAlternativo: readecuacion.emailAlternativo,
-          radicado: readecuacion.radicado,
-          jdc: readecuacion.jdc,
-          numeroSeguimiento: readecuacion.numeroSeguimiento,
-          situacion: readecuacion.situacion,
-          nui: readecuacion.nui,
-          td: readecuacion.td,
-          patio: readecuacion.patio,
+          referencia: redosificacion.referencia,
+          nombrePpl: redosificacion.nombrePpl,
+          apellidoPpl: redosificacion.apellidoPpl,
+          identificacionPpl: redosificacion.identificacionPpl,
+          centroPenitenciario: redosificacion.centroPenitenciario,
+          emailUsuario: redosificacion.emailUsuario,
+          emailAlternativo: redosificacion.emailAlternativo,
+          radicado: redosificacion.radicado,
+          jdc: redosificacion.jdc,
+          numeroSeguimiento: redosificacion.numeroSeguimiento,
+          situacion: redosificacion.situacion,
+          nui: redosificacion.nui,
+          td: redosificacion.td,
+          patio: redosificacion.patio,
         );
 
         // ✅ Ahora generas el HTML con la entidad y dirigido correctos
-        final ultimoHtmlEnviado = readecuacion.generarTextoHtml();
+        final ultimoHtmlEnviado = redosificacion.generarTextoHtml();
 
         final envioCorreoManager = EnvioCorreoManagerV3();
 
@@ -1317,11 +1313,11 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           context: context,
           correoDestinoPrincipal: correoSeleccionado!,
           html: ultimoHtmlEnviado,
-          numeroSeguimiento: readecuacion.numeroSeguimiento,
+          numeroSeguimiento: redosificacion.numeroSeguimiento,
           nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
           celularWhatsapp: userData?.celularWhatsapp,
           rutaHistorial: 'historial_solicitudes_readecuacion_redenciones_admin',
-          nombreServicio: "Readecuación de Redención",
+          nombreServicio: "Redosificación de Redención",
           idDocumentoSolicitud: widget.idDocumento,
           idDocumentoPpl: userData!.id,
           nombreColeccionFirestore: "readecuacion_solicitados",
@@ -1334,7 +1330,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           nui: userData?.nui ?? '',
           td: userData?.td ?? '',
           patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Readecuación de Redención",
+          beneficioPenitenciario: "Redosificación de Redención",
           juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
 
           enviarCorreoResend: ({
@@ -1355,7 +1351,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
             required String nombreColeccionFirestore,
             required String nombrePathStorage,
           }) async {
-            await subirHtmlCorreoADocumentoSolicitudReadecuacion(
+            await subirHtmlCorreoADocumentoSolicitudRedosificacion(
               idDocumento: widget.idDocumento,
               htmlFinal: htmlFinal,
               tipoEnvio: tipoEnvio,
@@ -1397,7 +1393,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
 
 
 
-  Future<void> subirHtmlCorreoADocumentoSolicitudReadecuacion({
+  Future<void> subirHtmlCorreoADocumentoSolicitudRedosificacion({
     required String idDocumento,
     required String htmlFinal,
     required String tipoEnvio, // 🔹 "principal", "centro_reclusion", "reparto"
@@ -1485,7 +1481,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
           await ResumenSolicitudesHelper.actualizarResumen(
             idOriginal: idDocumento,
             nuevoStatus: "Diligenciado",
-            origen: "redenciones_solicitados",
+            origen: "readecuacion_solicitados",
           );
 
           if (context.mounted) {
@@ -1505,7 +1501,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
                   return SlideTransition(position: offsetAnimation, child: child);
                 },
                 pageBuilder: (context, animation, secondaryAnimation) {
-                  return const HistorialSolicitudesReadecuacionRedencionesAdminPage();
+                  return const HistorialSolicitudesRedosificacionRedencionesAdminPage();
                 },
               ),
             );
@@ -1573,7 +1569,7 @@ class _AtenderSolicitudReadecuacionRedencionesPageState extends State<AtenderSol
                   return SlideTransition(position: offsetAnimation, child: child);
                 },
                 pageBuilder: (context, animation, secondaryAnimation) {
-                  return const HistorialSolicitudesReadecuacionRedencionesAdminPage();
+                  return const HistorialSolicitudesRedosificacionRedencionesAdminPage();
                 },
               ),
             );
