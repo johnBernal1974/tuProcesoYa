@@ -16,12 +16,19 @@ class ImpulsoProcesalTemplate {
   final String td;
   final String patio;
 
+  // --- NUEVOS campos del acudiente ---
+  final String acudienteNombre;
+  final String acudienteCedula;
+  final String acudienteParentesco;
+  final String acudienteCelular;
+  final String acudienteWhatsapp;
+  // ------------------------------------
+
   final String emailAlternativo;
   final String logoUrl;
   final bool mostrarEntidadSoloDespuesDeGuion;
   final String? htmlAnterior;
 
-  // NUEVO: si true, no imprime la 2ª línea si está repetida con el saludo
   final bool ocultarSegundaLineaSiRedundante;
 
   ImpulsoProcesalTemplate({
@@ -36,6 +43,12 @@ class ImpulsoProcesalTemplate {
     required this.nui,
     required this.td,
     required this.patio,
+    // nuevos (opcionales)
+    this.acudienteNombre = '',
+    this.acudienteCedula = '',
+    this.acudienteParentesco = '',
+    this.acudienteCelular = '',
+    this.acudienteWhatsapp = '',
     this.emailAlternativo = "peticiones@tuprocesoya.com",
     this.fechaEnvioInicial,
     this.diasPlazo,
@@ -64,31 +77,27 @@ class ImpulsoProcesalTemplate {
     final entidadMostrar = _entidadVisible(entidad);
     final entidadLower = entidadMostrar.toLowerCase();
     final dirigidoLower = dirigido.toLowerCase();
+    final servicioLower = servicio.toLowerCase();
 
-    // Evita duplicar “Oficina de Reparto”
-    final mostrarSegundaLinea =
-    !(ocultarSegundaLineaSiRedundante &&
+    final mostrarSegundaLinea = !(ocultarSegundaLineaSiRedundante &&
         entidadLower.contains('oficina de reparto') &&
         dirigidoLower.contains('oficina de reparto'));
 
     final fechaEnvioTxt = (fechaEnvioInicial != null) ? _fmtFecha(fechaEnvioInicial!) : null;
 
-    // === DÍAS TRANSCURRIDOS DINÁMICOS ===
     int? _diasTranscurridos;
     if (fechaEnvioInicial != null) {
       final diff = DateTime.now().difference(fechaEnvioInicial!).inDays;
-      _diasTranscurridos = diff < 0 ? 0 : diff; // evita negativos si la fecha es futura por error
+      _diasTranscurridos = diff < 0 ? 0 : diff;
     }
 
-    // Frase completa del bloque dinámico
     final String? _fraseTranscurridos = (fechaEnvioTxt != null && _diasTranscurridos != null)
         ? "Consta que la petición inicial fue enviada el <b>$fechaEnvioTxt</b> y "
         "${_hanHa(_diasTranscurridos)} <b>${_diasTxt(_diasTranscurridos)}</b> "
         "sin que se haya obtenido respuesta alguna."
         : null;
 
-
-    final pieLegal = """
+    const pieLegal = """
 <div style="margin-top: 24px; color: #444; font-size: 12px;">
   <b style="color: black;">NOTA IMPORTANTE</b><br>
   <p style="margin-top: 5px;">
@@ -109,30 +118,65 @@ class ImpulsoProcesalTemplate {
 """
         : "";
 
+    final String subjectLine = servicioLower.contains('recordatorio')
+        ? 'Recordatorio solicitud de documentación – $numeroSeguimiento'
+        : 'Impulso procesal – $servicio - $numeroSeguimiento';
+
+    final String parrafoPrincipal = servicioLower.contains('recordatorio')
+        ? """
+  <p style="margin:0 0 12px 0">
+    Me permito <b>recordar</b> a ese despacho la solicitud remitida con anterioridad y reiterar respetuosamente la solicitud de remitir la documentación requerida y la información pendiente, a fin de que se proceda a su evaluación o se informe el estado actual de la actuación y las gestiones realizadas hasta la fecha.
+  </p>
+  """
+        : """
+  <p style="margin:0 0 12px 0">
+    Me permito solicitar, muy respetuosamente, se <b>impulse el trámite</b> de la solicitud remitida con anterioridad, a fin de que se profiera decisión de fondo o, en su defecto, se informe el estado actual de la actuación y las gestiones realizadas hasta la fecha.
+  </p>
+  """;
+
+    // --- BLOQUE AÑADIDO: Datos del acudiente (solo si es CENTRO y es RECORDATORIO y hay nombre) ---
+    final bool esCentro = entidadLower.contains('centro');
+    final bool esRecordatorio = servicioLower.contains('recordatorio');
+
+    final String bloqueAcudiente = (esCentro && esRecordatorio && acudienteNombre.trim().isNotEmpty)
+        ? """
+<div style="margin-top:18px;padding:12px;border-radius:6px;background:#fafafa;border:1px solid #eee;font-size:13px;">
+  <b>${acudienteNombre}</b><br>
+  ${acudienteCedula.isNotEmpty ? 'C.C. ${acudienteCedula}<br>' : ''}
+  ${acudienteParentesco.isNotEmpty ? 'Parentesco: ${acudienteParentesco}<br>' : ''}
+  ${acudienteCelular.isNotEmpty ? 'Celular: ${acudienteCelular}<br>' : ''}
+  ${acudienteWhatsapp.isNotEmpty ? 'WhatsApp: ${acudienteWhatsapp}<br>' : ''}
+  <div style="margin-top:8px;color:#333;">
+    Solicito en nombre de:<br>
+    <b>$nombrePpl $apellidoPpl</b> – C.C. $identificacionPpl – TD: $td – NUI: $nui – Patio: $patio
+  </div>
+</div>
+"""
+        : '';
+    // ----------------------------------------------------------------------------------------
+
     return """
 <!DOCTYPE html>
 <html lang="es">
 <meta charset="UTF-8">
-<body style="margin:0;padding:0;background:#fff;">
+<body style="margin:0;padding:0;background:#fff; font-family: Arial, sans-serif; color:#111;">
 
-  <p style="margin:0 0 1px 0"><b>$dirigido</b></p>
+  <div style="margin:0 0 4px 0;">$dirigido</div>
+
   ${ mostrarSegundaLinea
         ? '<p style="margin:0 0 10px 0"><b>${entidadMostrar.isEmpty ? 'Autoridad competente' : entidadMostrar}</b></p>'
         : '' }
 
-  <p style="margin:8px 0 0 0; font-size:16px; line-height:1.3;">
+  <p style="margin:8px 0 10px 0; font-size:16px; line-height:1.3;">
     <span style="font-weight:900;">Asunto:</span>
-    <span style="font-weight:900;"> Impulso procesal – $servicio - $numeroSeguimiento</span>
-  </p><br><br>
+    <span style="font-weight:900;"> $subjectLine</span>
+  </p>
 
   <p style="margin:0 0 12px 0">E.S.D,</p>
 
   yo, <b>$nombrePpl $apellidoPpl</b>, identificado con el número de cédula <b>$identificacionPpl</b>, actualmente recluido en <b>$centroPenitenciario</b>, con el NUI : <b>$nui</b> y TD : <b>$td</b>, ubicado en el Patio No: <b>$patio</b>.<br><br>
 
-  <p style="margin:0 0 12px 0">
-    Me permito solicitar, muy respetuosamente, se <b>impulse el trámite</b> de la solicitud remitida con anterioridad, a fin de que se profiera decisión de fondo o, en su defecto, se informe
-    el estado actual de la actuación y las gestiones realizadas hasta la fecha.
-  </p>
+  $parrafoPrincipal
 
   ${ (_fraseTranscurridos != null) ? """
   <p style="margin:0 0 12px 0">
@@ -156,6 +200,8 @@ class ImpulsoProcesalTemplate {
   <b>$nombrePpl $apellidoPpl</b><br>
   CC: $identificacionPpl<br>
   ${_row('TD', td)}${_row('NUI', nui)}${_row('PATIO', patio)}<br>
+
+  $bloqueAcudiente
 
   $bloqueCorreoAnterior
 

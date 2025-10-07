@@ -1704,7 +1704,6 @@ La Corte Suprema de Justicia ha sostenido que el juez está facultado para aplic
   }
 
 
-
   void fetchDocumentoLibertadCondicional() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
@@ -2294,10 +2293,8 @@ La Corte Suprema de Justicia ha sostenido que el juez está facultado para aplic
     if (latestData == null || userData == null) return;
 
     final entidadSeleccionada = obtenerEntidad(nombreCorreoSeleccionado ?? "");
-    final fechaEnvioFormateada =
-    DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
-    final correoRemitente =
-        FirebaseAuth.instance.currentUser?.email ?? adminFullName;
+    final fechaEnvioFormateada = DateFormat("dd/MM/yyyy HH:mm").format(DateTime.now());
+    final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
     final correoDestinatario = correoDestino;
 
     // 🔹 Reconstituye la plantilla actualizando dirigido/entidad
