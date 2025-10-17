@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:diacritic/diacritic.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:tuprocesoya/commons/main_layaout.dart';
 import 'dart:html' as html;
+import '../../../commons/descargar_base_datos_ppl.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/agenda_listener.dart';
 import '../../../widgets/agenda_viewer.dart';
@@ -47,6 +49,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   late Future<Set<String>> _idsConSolicitudesFuture;
   bool filtrarPorExentos = false;
   String? _docIdSeleccionado;
+  final _pplRef = FirebaseFirestore.instance.collection('Ppl');
 
 
 
@@ -193,6 +196,113 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         });
       }
     });
+  }
+
+  Future<void> exportPplCsvWeb() async {
+    // Obtén los documentos (si la colección es grande, considera paginación)
+    final snapshot = await _pplRef.get();
+    final docs = snapshot.docs;
+
+    await _exportCsv(docs);
+  }
+
+  Future<void> _exportCsv(List<QueryDocumentSnapshot> docs) async {
+    // Cabeceras
+    final headers = [
+      'id',
+      'nombre_acudiente',
+      'apellido_acudiente',
+      'apellido_ppl',
+      'celular',
+      'celularWhatsapp',
+      'centro_reclusion',
+      'ciudad',
+      'nombre_completo_ppl'
+    ];
+
+    // Filas
+    final rows = <List<String>>[
+      headers,
+      ...docs.map((d) {
+        final x = d.data() as Map<String, dynamic>? ?? {};
+        final id = d.id;
+        final nombreAcud = (x['nombre_acudiente'] ?? '').toString();
+        final apellidoAcud = (x['apellido_acudiente'] ?? '').toString();
+        final apellidoPpl = (x['apellido_ppl'] ?? '').toString();
+        final celular = (x['celular'] ?? '').toString();
+        final celularWp = (x['celularWhatsapp'] ?? '').toString();
+        final centro = (x['centro_reclusion'] ?? '').toString();
+        final ciudad = (x['ciudad'] ?? '').toString();
+        final nombrePpl = (x['nombre_ppl'] ?? '').toString();
+        final nombreCompleto = ('$nombrePpl $apellidoPpl').trim();
+
+        return [
+          id,
+          nombreAcud,
+          apellidoAcud,
+          apellidoPpl,
+          celular,
+          celularWp,
+          centro,
+          ciudad,
+          nombreCompleto,
+        ];
+      }),
+    ];
+
+    const sep = ';';
+
+    String esc(String v) {
+      // limpiar ; y saltos de línea y escapar comillas dobles si existen
+      var out = v.replaceAll('\r', ' ').replaceAll('\n', ' ');
+      out = out.replaceAll(sep, ','); // no permitimos el separador en el contenido
+      // Escapar comillas dobles según CSV
+      final needsQuotes = out.contains('"') || out.contains(',');
+      final escaped = out.replaceAll('"', '""');
+      return needsQuotes ? '"$escaped"' : escaped;
+    }
+
+    final body = rows.map((r) => r.map(esc).join(sep)).join('\r\n');
+
+    // 'sep=;' ayuda a Excel a elegir el separador correcto
+    final content = 'sep=$sep\r\n$body';
+
+    // Codificar en UTF-16 LE con BOM (Excel lo interpreta perfecto)
+    final bytes = _utf16leWithBom(content);
+
+    final ts = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+    final fileName = 'Base_PPL_$ts.csv';
+
+    final blob = html.Blob([bytes], 'text/csv;charset=utf-16le');
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    final a = html.AnchorElement(href: url)
+      ..setAttribute('download', fileName)
+      ..click();
+    html.Url.revokeObjectUrl(url);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('CSV descargado como $fileName')),
+    );
+  }
+
+// Helper: convierte String a bytes UTF-16 LE con BOM
+  Uint8List _utf16leWithBom(String text) {
+    // BOM for UTF-16 LE
+    final bom = <int>[0xFF, 0xFE];
+
+    // Dart's codeUnits are UTF-16 code units (little-endian on most platforms)
+    final cu = text.codeUnits; // iterable de int (16-bit code units)
+    final bytes = BytesBuilder();
+    bytes.add(bom);
+
+    for (final unit in cu) {
+      final low = unit & 0xFF;
+      final high = (unit >> 8) & 0xFF;
+      bytes.addByte(low);
+      bytes.addByte(high);
+    }
+    return bytes.toBytes();
   }
 
   @override
@@ -552,6 +662,13 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                           width: 400,
                                           child: WhatsAppChatWrapper(),
                                         ),
+
+                                      ElevatedButton.icon(
+                                        icon: Icon(Icons.download),
+                                        label: Text('Descargar Base PPL (Excel)'),
+                                        onPressed: exportPplCsvWeb,
+                                      ),
+
 
                                     ],
                                   );
