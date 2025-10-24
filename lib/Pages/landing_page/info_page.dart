@@ -3,6 +3,7 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 
 import '../../widgets/html_video_player.dart';
 import '../../widgets/preguntas_expandibles.dart';
+import '../../widgets/red_ppl.dart';
 import '../../widgets/redes_sociales.dart';
 
 class InfoPage extends StatelessWidget {
@@ -49,7 +50,6 @@ class InfoPage extends StatelessWidget {
             const SizedBox(height: 30),
 
             /// tarjeta que habla de la ley 2466 de 2025
-            /// tarjeta que habla de la ley 2466 de 2025
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Center( // 🔹 Centra el contenido
@@ -74,7 +74,7 @@ class InfoPage extends StatelessWidget {
                             'Nuevo beneficio en vigor',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.deepPurple,
                             ),
@@ -83,7 +83,7 @@ class InfoPage extends StatelessWidget {
                             'Redención 2x3 según la Ley 2466 de 2025',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.black,
                             ),
@@ -94,7 +94,7 @@ class InfoPage extends StatelessWidget {
                                 'Aún falta reglamentación del Ministerio de Trabajo, pero puedes anticipar tu solicitud con base en el principio de favorabilidad.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: 12,
                               fontWeight: FontWeight.w500,
                               height: 1.5,
                             ),
@@ -119,7 +119,7 @@ class InfoPage extends StatelessWidget {
                                           Text(
                                             'Artículo 19 – Ley 2466 de 2025',
                                             style: TextStyle(
-                                              fontSize: 18,
+                                              fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                               color: Colors.deepPurple,
                                             ),
@@ -128,14 +128,14 @@ class InfoPage extends StatelessWidget {
                                           Text(
                                             'Desde el 25 de junio de 2025, está vigente un nuevo beneficio para personas condenadas. El artículo 19 permite redimir 2 días de la condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
                                                 'Aunque falta el decreto reglamentario del Ministerio de Trabajo (que debe expedirse antes de diciembre de 2025), ya puedes presentar tu solicitud anticipada bajo el principio de favorabilidad.',
-                                            style: TextStyle(fontSize: 16),
+                                            style: TextStyle(fontSize: 12),
                                             textAlign: TextAlign.justify,
                                           ),
                                           SizedBox(height: 16),
                                           Text(
                                             'Este es el momento de actuar. Regístrate en nuestra plataforma y deja constancia de tu intención de acogerte a este beneficio.',
                                             style: TextStyle(
-                                              fontSize: 16,
+                                              fontSize: 12,
                                               fontWeight: FontWeight.w500,
                                             ),
                                             textAlign: TextAlign.center,
@@ -193,70 +193,144 @@ class InfoPage extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  Center(
-                    child: ElevatedButton.icon(
-                      onPressed: () => Navigator.pushReplacementNamed(context, 'pagina_inicio_registro_page'),
-                      icon: const Icon(Icons.arrow_forward),
-                      label: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        child: Text(
-                          'Ingresar a la Aplicación',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: Colors.deepPurple,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 6,
-                      ),
-                    ),
-                  ),
+                  // Center(
+                  //   child: ElevatedButton.icon(
+                  //     onPressed: () => Navigator.pushReplacementNamed(context, 'pagina_inicio_registro_page'),
+                  //     icon: const Icon(Icons.arrow_forward),
+                  //     label: const Padding(
+                  //       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  //       child: Text(
+                  //         'Ingresar a la Aplicación',
+                  //         style: TextStyle(fontSize: 18),
+                  //       ),
+                  //     ),
+                  //     style: ElevatedButton.styleFrom(
+                  //       foregroundColor: Colors.white,
+                  //       backgroundColor: Colors.deepPurple,
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(12),
+                  //       ),
+                  //       elevation: 6,
+                  //     ),
+                  //   ),
+                  // ),
                   const SizedBox(height: 30),
                   Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            backgroundColor: blancoCards,
-                            contentPadding: const EdgeInsets.all(0),
-                            content: const HtmlVideoPlayer(
-                              videoUrl: 'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/video_introduccionTuProcesoYa.mp4?alt=media&token=319ca517-c558-4cee-8f8d-edd8c6264eea',
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isWide = constraints.maxWidth > 600; // PC/tablet → fila, móvil → columna
+
+                        Widget buildVideo({
+                          required String thumbnail,
+                          required String url,
+                          required String title,
+                        }) {
+                          return GestureDetector(
+                            onTap: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => AlertDialog(
+                                  backgroundColor: blancoCards,
+                                  contentPadding: const EdgeInsets.all(0),
+                                  content: HtmlVideoPlayer(videoUrl: url),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(context).pop(),
+                                      child: const Text('Cerrar'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                            child: Column(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.asset(
+                                    thumbnail,
+                                    width: 300,
+                                    height: 300,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  title,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Colors.deepPurple,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                child: const Text('Cerrar'),
+                          );
+                        }
+
+                        Widget buildRedPplCard(double width) {
+                          return Column(
+                            children: [
+                              SizedBox(
+                                width: width,
+                                child: const RedPplImageLink(
+                                  imageAsset: 'assets/images/imagen_red.png',
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                'Ingresa a la red, anímate a ser\nparte del cambio',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.deepPurple,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ],
-                          ),
+                          );
+                        }
+
+                        return isWide
+                            ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildVideo(
+                              thumbnail: 'assets/images/video_thumbnail2.jpeg',
+                              url:
+                              'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/video_privado_libertad_familias.mp4?alt=media&token=6b110ff8-9f1b-46d6-a735-907708007b0b',
+                              title: 'Su familia también paga una\ncondena silenciosa',
+                            ),
+                            const SizedBox(width: 24),
+                            buildVideo(
+                              thumbnail: 'assets/images/video_thumbnail.jpeg',
+                              url:
+                              'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/video_introduccionTuProcesoYa.mp4?alt=media&token=319ca517-c558-4cee-8f8d-edd8c6264eea',
+                              title: 'Conoce a ¡Tu Proceso Ya!\nen solo un minuto',
+                            ),
+                            const SizedBox(width: 24),
+                            buildRedPplCard(300),
+                          ],
+                        )
+                            : Column(
+                          children: [
+                            buildVideo(
+                              thumbnail: 'assets/images/video_thumbnail2.jpeg',
+                              url:
+                              'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/video_privado_libertad_familias.mp4?alt=media&token=6b110ff8-9f1b-46d6-a735-907708007b0b',
+                              title: 'Su familia también paga una\ncondena silenciosa',
+                            ),
+                            const SizedBox(height: 20),
+                            buildVideo(
+                              thumbnail: 'assets/images/video_thumbnail.jpeg',
+                              url:
+                              'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/video_introduccionTuProcesoYa.mp4?alt=media&token=319ca517-c558-4cee-8f8d-edd8c6264eea',
+                              title: 'Conoce a ¡Tu Proceso Ya!\nen solo un minuto',
+                            ),
+                            const SizedBox(height: 20),
+                            buildRedPplCard(400),
+                          ],
                         );
                       },
-                      child: Column(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: Image.asset(
-                              'assets/images/video_thumbnail.jpeg',
-                              width: 300,
-                              height: 300,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Conoce a ¡Tu Proceso Ya!\nen solo un minuto',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.deepPurple,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -353,6 +427,8 @@ class InfoPage extends StatelessWidget {
     );
   }
 
+
+
   // ... _buildValueCard, _buildCards, _buildSection, _buildCard (sin cambios)
 
   static Widget _buildValueCard(IconData icon, String title, String description) {
@@ -377,6 +453,8 @@ class InfoPage extends StatelessWidget {
       ),
     );
   }
+
+
 
   List<Widget> _buildCards({required int crossAxisCount}) {
     final List<Map<String, String>> data = [
