@@ -1,12 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:tuprocesoya/src/colors/colors.dart'; // Asegúrate de que el color primary esté definido aquí
 
 import '../../commons/admin_provider.dart';
 import '../../providers/auth_provider.dart';
+import 'package:http/http.dart' as http;
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -19,7 +22,7 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final TextEditingController _celularController = TextEditingController();
+  final TextEditingController _whatsAppController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
   final MyAuthProvider _authProvider = MyAuthProvider();
 
@@ -37,6 +40,36 @@ class _LoginPageState extends State<LoginPage> {
   Timer? _timer;
   bool _puedeReenviar = false;
   bool _tienesCuenta = false;
+
+
+
+  static const _baseUrl = 'https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net';
+
+  bool _otpEnviadoWA = false; // controla si ya enviamos código por WhatsApp
+
+  String _aE164SinMas(String celular10) {
+    // Espera 10 dígitos colombianos y retorna E.164 SIN '+', ej: 57XXXXXXXXXX
+    final onlyDigits = celular10.replaceAll(RegExp(r'\D'), '');
+    if (onlyDigits.length == 10) return '57$onlyDigits';
+    // si ya viene con 57 + 10 dígitos
+    if (onlyDigits.length == 12 && onlyDigits.startsWith('57')) return onlyDigits;
+    return onlyDigits; // fallback (evita crashear)
+  }
+
+  Future<Map<String, dynamic>> _postJson(String url, Map<String, dynamic> body) async {
+    final res = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    final text = res.body.isEmpty ? '{}' : res.body;
+    final data = jsonDecode(text) as Map<String, dynamic>;
+    if (res.statusCode >= 400) {
+      throw Exception(data['error'] ?? 'Error $url');
+    }
+    return data;
+  }
+
 
 
 
@@ -272,125 +305,121 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _loginConOTP() async {
-    String celular = _celularController.text.trim();
-    final codigo = _otpController.text.trim();
+    String whatsApp = _whatsAppController.text.trim();
 
-    // ✅ Validación del número
-    if (!celular.startsWith('+')) {
-      if (celular.length == 10 && RegExp(r'^\d{10}$').hasMatch(celular)) {
-        celular = '+57$celular';
-      } else {
-        _mostrarMensaje(
-          "Ingresa un número válido de 10 dígitos.",
-          color: Colors.red,
-        );
-        return;
-      }
-    }
-
-    // ✅ Validación del código si ya fue enviado
-    if (_confirmationResult != null && (codigo.isEmpty || codigo.length != 6)) {
-      _mostrarMensaje(
-        "El código debe tener 6 dígitos.",
-        color: Colors.red,
-      );
+    // validación 10 dígitos
+    if (!RegExp(r'^\d{10}$').hasMatch(whatsApp)) {
+      _mostrarMensaje("Ingresa un número válido de 10 dígitos.", color: Colors.red);
       return;
     }
 
+    final phoneE164SinMas = _aE164SinMas(whatsApp); // 👈 la función en backend espera E.164 SIN '+'
+
+    setState(() => _isLoadingOtp = true);
+
     try {
-      setState(() => _isLoadingOtp = true);
+      if (!_otpEnviadoWA) {
+        // 1) ENVIAR OTP POR WHATSAPP
+        await _postJson('$_baseUrl/sendOtpWhatsApp', {'phone': phoneE164SinMas});
+        setState(() {
+          _otpEnviadoWA = true;
+          _iniciarTemporizadorReenvio();
+        });
+        _mostrarMensaje("Código enviado por WhatsApp ✅", color: primary);
+        return;
+      }
 
-      // 🔵 Primer paso: Enviar el código
-      if (_confirmationResult == null) {
-        try {
-          final auth = FirebaseAuth.instance;
-          final confirmation = await auth.signInWithPhoneNumber(celular);
-          setState(() {
-            _confirmationResult = confirmation;
-            _iniciarTemporizadorReenvio();
-          });
+      // 2) VERIFICAR OTP
+      final codigo = _otpController.text.trim();
+      if (codigo.length != 6) {
+        _mostrarMensaje("El código debe tener 6 dígitos.", color: Colors.red);
+        return;
+      }
 
-          _mostrarMensaje(
-            "Código enviado correctamente. Por favor revisa tu SMS.",
-            color: primary,
-          );
-        } on FirebaseAuthException catch (e) {
-          String errorMsg;
-          switch (e.code) {
-            case 'invalid-phone-number':
-              errorMsg = "Número de teléfono inválido.";
-              break;
-            case 'network-request-failed':
-              errorMsg = "Error de conexión. Por favor verifica tu internet.";
-              break;
-            case 'too-many-requests':
-              errorMsg = "Demasiados intentos. Intenta más tarde.";
-              break;
-            default:
-              errorMsg = "Error al enviar el código: ${e.message}.";
+      final resp = await _postJson('$_baseUrl/verifyOtpWhatsApp', {
+        'phone': phoneE164SinMas,
+        'code': codigo,
+      });
+
+      final customToken = resp['customToken'] as String?;
+      if (customToken == null || customToken.isEmpty) {
+        _mostrarMensaje("No se pudo obtener el token. Intenta de nuevo.", color: Colors.red);
+        return;
+      }
+
+      // 3) LOGIN CON CUSTOM TOKEN
+      final cred = await FirebaseAuth.instance.signInWithCustomToken(customToken);
+      final uid = cred.user?.uid;
+
+      if (uid == null) {
+        _mostrarMensaje("No se pudo iniciar sesión.", color: Colors.red);
+        return;
+      }
+
+      // === NAVEGACIÓN EXACTA QUE YA TENÍAS ===
+      // Primero verifica Admin
+      final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(uid).get();
+      if (adminDoc.exists) {
+        final status = adminDoc.data()?['status']?.toString().trim();
+        if (status == 'bloqueado') {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
           }
-          _mostrarMensaje(errorMsg, color: Colors.red);
+          return;
         }
 
+        await AdminProvider().loadAdminData();
+        String role = AdminProvider().rol ?? "";
+        if (role == "pasante 1" || role == "pasante 2") {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, 'historial_solicitudes_derecho_peticion_admin', (route) => false);
+          }
+          return;
+        }
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
+        }
+        return;
+      }
+
+      // Luego Ppl
+      final pplDoc = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
+      if (pplDoc.exists) {
+        final status = pplDoc.data()?['status']?.toString().trim() ?? "";
+        if (status == 'bloqueado') {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
+          }
+          return;
+        }
+        if (status == 'registrado') {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (route) => false);
+          }
+        } else {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+          }
+        }
       } else {
-        // 🟢 Segundo paso: Confirmar el código
-        try {
-          final cred = await _confirmationResult!.confirm(codigo);
-          if (cred.user != null) {
-            final userDoc = await FirebaseFirestore.instance
-                .collection('Ppl')
-                .doc(cred.user!.uid)
-                .get();
-
-            if (!userDoc.exists) {
-              _mostrarMensaje(
-                "Usuario no encontrado. Por favor regístrate.",
-                color: Colors.red,
-              );
-              return;
-            }
-
-            final status = userDoc.data()?['status']?.toString().trim() ?? "";
-            switch (status) {
-              case 'bloqueado':
-                if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, 'bloqueo_page', (_) => false);
-                }
-                break;
-              case 'registrado':
-                if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, 'estamos_validando', (_) => false);
-                }
-                break;
-              default:
-                if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
-                      context, 'home', (_) => false);
-                }
-            }
-          }
-        } on FirebaseAuthException catch (e) {
-          String errorMsg;
-          switch (e.code) {
-            case 'invalid-verification-code':
-              errorMsg = "El código es incorrecto. Por favor verifica.";
-              break;
-            case 'session-expired':
-              errorMsg = "La sesión ha expirado. Por favor solicita un nuevo código.";
-              break;
-            case 'network-request-failed':
-              errorMsg = "Error de conexión. Revisa tu internet.";
-              break;
-            case 'too-many-requests':
-              errorMsg = "Has intentado demasiado. Espera unos segundos antes de intentar otra vez.";
-              break;
-            default:
-              errorMsg = "Error al verificar el código: ${e.message}.";
-          }
-          _mostrarMensaje(errorMsg, color: Colors.red);
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
         }
+      }
+
+    } on Exception catch (e) {
+      // mapeo de errores comunes del backend
+      final msg = e.toString();
+      if (msg.contains('OTP expirado')) {
+        _mostrarMensaje("El código expiró. Solicita uno nuevo.", color: Colors.red);
+      } else if (msg.contains('Código inválido')) {
+        _mostrarMensaje("El código es incorrecto.", color: Colors.red);
+      } else if (msg.contains('Demasiados intentos')) {
+        _mostrarMensaje("Demasiados intentos. Intenta más tarde.", color: Colors.red);
+      } else if (msg.contains('No OTP solicitado')) {
+        _mostrarMensaje("Primero solicita el código.", color: Colors.red);
+      } else {
+        _mostrarMensaje("Error: $msg", color: Colors.red);
       }
     } finally {
       setState(() => _isLoadingOtp = false);
@@ -569,10 +598,10 @@ class _LoginPageState extends State<LoginPage> {
 
         // CAMPO DE CELULAR
         TextFormField(
-          controller: _celularController,
+          controller: _whatsAppController,
           keyboardType: TextInputType.phone,
           decoration: InputDecoration(
-            labelText: "Número de celular",
+            labelText: "Número de WhatsApp",
             floatingLabelBehavior: FloatingLabelBehavior.always,
             labelStyle: const TextStyle(color: gris),
             floatingLabelStyle: const TextStyle(color: primary, fontSize: 14),
@@ -597,31 +626,39 @@ class _LoginPageState extends State<LoginPage> {
 
         const SizedBox(height: 20),
 
-        if (_confirmationResult != null)
+        if (_otpEnviadoWA)
           Column(
             children: [
-              TextFormField(
+              PinCodeTextField(
+                appContext: context,
+                length: 6,
                 controller: _otpController,
                 keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: "Código de verificación",
-                  floatingLabelBehavior: FloatingLabelBehavior.always,
-                  labelStyle: const TextStyle(color: gris),
-                  floatingLabelStyle: const TextStyle(color: primary, fontSize: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: gris, width: 1),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: gris, width: 1),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: const BorderSide(color: primary, width: 2),
-                  ),
-                  prefixIcon: const Icon(Icons.lock_clock),
+                animationType: AnimationType.fade,
+                autoDisposeControllers: false,
+                autoFocus: true,
+                enablePinAutofill: true,
+                cursorColor: primary,
+                textStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                pinTheme: PinTheme(
+                  shape: PinCodeFieldShape.box,
+                  borderRadius: BorderRadius.circular(10),
+                  fieldHeight: 50,
+                  fieldWidth: 44,
+                  inactiveColor: Colors.grey.shade400,
+                  activeColor: primary,
+                  selectedColor: primary,
+                  activeFillColor: Colors.white,
+                  selectedFillColor: Colors.white,
+                  inactiveFillColor: Colors.white,
                 ),
+                animationDuration: const Duration(milliseconds: 180),
+                enableActiveFill: true,
+                onChanged: (_) {},
+                onCompleted: (code) async {
+                  // Cuando el usuario termina los 6 dígitos, verificamos
+                  await _loginConOTP();
+                },
               ),
               const SizedBox(height: 20),
             ],
@@ -641,23 +678,22 @@ class _LoginPageState extends State<LoginPage> {
               backgroundColor: primary,
             ),
             onPressed: _isLoadingOtp || !_esNumeroCelularValido()
-                ? null // 🔥 Desactiva el botón si está vacío o no válido
+                ? null
                 : _loginConOTP,
             child: _isLoadingOtp
                 ? const CircularProgressIndicator(color: Colors.white)
                 : Text(
-              _confirmationResult == null ? "Enviar código" : "Verificar código",
+              _otpEnviadoWA ? "Verificar código" : "Solicitar código",
               style: const TextStyle(fontSize: 16, color: Colors.white),
             ),
           ),
         ),
-
-        if (_confirmationResult != null) ...[
+        if (_otpEnviadoWA) ...[
           const SizedBox(height: 10),
           _puedeReenviar
               ? TextButton(
             onPressed: () async {
-              setState(() => _confirmationResult = null); // Reiniciamos para enviar
+              setState(() => _otpEnviadoWA = false); // Reiniciamos para enviar
               await _loginConOTP();
             },
             child: const Text(
@@ -679,7 +715,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   bool _esNumeroCelularValido() {
-    final celular = _celularController.text.trim();
+    final celular = _whatsAppController.text.trim();
     return RegExp(r'^\d{10}$').hasMatch(celular);
   }
 

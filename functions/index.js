@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+
 //const cors = require("cors");
 const express = require("express");
 const crypto = require("crypto");
@@ -27,8 +28,8 @@ const cors = require("cors")({ origin: true });
 
 
 admin.initializeApp();
-
 const db = admin.firestore();
+
 
 // Firebase config secrets
 const FIREBASE_API_KEY = defineSecret("FB_API_KEY");
@@ -1655,3 +1656,295 @@ exports.uploadAndSendWhatsAppMedia = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+// -----------------------
+// OTP via WhatsApp (plantilla verify_code)
+// -----------------------
+
+/**
+ * Body /sendOtpWhatsApp:
+ * { phone: "57300...." }
+ *
+ * Body /verifyOtpWhatsApp:
+ * { phone: "57300....", code: "123456" }
+ *
+ * Recomendación:
+ * - phone en formato E.164 sin + (ej: 573001234567)
+ * - Asegúrate que tu plantilla se llame exactly "verify_code" y tenga 1 parámetro en el body.
+ */
+
+const OTP_COLLECTION = "otp_codes";
+const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutos
+const MAX_SENDS_PER_MINUTE = 1; // evita reenvíos masivos
+const MAX_ATTEMPTS = 5;
+
+function generateCode() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+function hashWithSalt(code, salt) {
+  return crypto.createHmac('sha256', salt).update(code).digest('hex');
+}
+
+const BUTTON_URL = "https://tuprocesoya.com";
+
+// sendOtpWhatsApp — intento inteligente con fallbacks para plantillas que tienen botón (copy code)
+exports.sendOtpWhatsApp = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") return res.status(204).send("");
+
+  try {
+    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+    let { phone } = req.body;
+    if (!phone) return res.status(400).json({ error: "phone required (E.164, sin +)" });
+    phone = String(phone).trim();
+
+    const docRef = db.collection(OTP_COLLECTION).doc(phone);
+    const docSnap = await docRef.get();
+    const now = Date.now();
+
+    // Rate limit simple
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      const lastSent = data?.lastSentAt?.toMillis ? data.lastSentAt.toMillis() : (data?.lastSentAt || 0);
+      if (lastSent && now - lastSent < 60 * 1000 && (data?.sendCountLastMinute || 0) >= MAX_SENDS_PER_MINUTE) {
+        return res.status(429).json({ error: "Too many requests. Espera un momento antes de reenviar." });
+      }
+    }
+
+    // Generar y guardar OTP
+    const code = generateCode();
+    const salt = crypto.randomBytes(16).toString("hex");
+    const codeHash = hashWithSalt(code, salt);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+    try {
+      console.log(`[OTP] Guardando doc en '${OTP_COLLECTION}/${phone}' ...`);
+      await docRef.set({
+        codeHash,
+        salt,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+        attempts: 0,
+        lastSentAt: admin.firestore.Timestamp.fromDate(new Date(now)),
+        sendCountLastMinute: (docSnap.exists ? (docSnap.data().sendCountLastMinute || 0) + 1 : 1)
+      }, { merge: true });
+      console.log(`[OTP] Guardado OK en '${OTP_COLLECTION}/${phone}'`);
+    } catch (fireErr) {
+      console.error("[OTP] Error guardando en Firestore:", fireErr);
+      return res.status(500).json({ error: "Error guardando OTP en Firestore", details: String(fireErr) });
+    }
+
+    const url = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
+
+    const doSend = async (payload) => {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${ACCESS_TOKEN}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      return { ok: response.ok, status: response.status, result };
+    };
+
+    const basePayload = {
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "template",
+      template: {
+        name: "verify_code",
+        language: { code: "es_CO" },
+        components: [
+          {
+            type: "body",
+            parameters: [{ type: "text", text: code }],
+          },
+        ],
+      },
+    };
+
+    let sendResp = await doSend(basePayload);
+
+    const needsButtonParam = (err) => {
+      const c = err?.error?.code;
+      const details = err?.error?.error_data?.details || "";
+      if (!err) return false;
+      if (c === 131008) return true;
+      if (c === 132018) return true;
+      if (typeof details === "string" && details.toLowerCase().includes("button")) return true;
+      if (typeof details === "string" && details.toLowerCase().includes("parameter")) return true;
+      return false;
+    };
+
+    if (!sendResp.ok && needsButtonParam(sendResp.result)) {
+      const attempts = [];
+      const codeStr = String(code).trim();
+      const code6 = codeStr.substring(0, 6);
+      const code15 = codeStr.substring(0, 15);
+
+      attempts.push({
+        desc: "button param as text (6 chars)",
+        payload: JSON.parse(JSON.stringify(basePayload)),
+      });
+      attempts[attempts.length - 1].payload.template.components.push({
+        type: "button",
+        sub_type: "quick_reply",
+        index: 0,
+        parameters: [{ type: "text", text: code6 }],
+      });
+
+      attempts.push({
+        desc: "button param as payload (6 chars)",
+        payload: JSON.parse(JSON.stringify(basePayload)),
+      });
+      attempts[attempts.length - 1].payload.template.components.push({
+        type: "button",
+        sub_type: "quick_reply",
+        index: 0,
+        parameters: [{ type: "payload", payload: code6 }],
+      });
+
+      attempts.push({
+        desc: "button param as text (15 chars)",
+        payload: JSON.parse(JSON.stringify(basePayload)),
+      });
+      attempts[attempts.length - 1].payload.template.components.push({
+        type: "button",
+        sub_type: "url",
+        index: 0,
+        parameters: [{ type: "text", text: code15 }],
+      });
+
+      attempts.push({
+        desc: "button param as payload (15 chars)",
+        payload: JSON.parse(JSON.stringify(basePayload)),
+      });
+      attempts[attempts.length - 1].payload.template.components.push({
+        type: "button",
+        sub_type: "url",
+        index: 0,
+        parameters: [{ type: "payload", payload: code15 }],
+      });
+
+      let ok = false;
+      for (const a of attempts) {
+        try {
+          console.log("[OTP] Reintentando plantilla:", a.desc);
+          const r = await doSend(a.payload);
+          if (r.ok) { sendResp = r; ok = true; break; }
+          console.warn("[OTP] Intento fallido:", a.desc, r.status, r.result);
+          sendResp = r;
+        } catch (e) {
+          console.error("[OTP] Error en fallback:", e);
+        }
+      }
+      if (!ok) console.error("[OTP] Ningún fallback funcionó. Último error:", sendResp.result);
+    }
+
+    if (!sendResp.ok) {
+      // OJO: ya escribimos el OTP; si no quieres que quede “huérfano” al fallar el envío, puedes borrar:
+      // await docRef.delete().catch(() => {});
+      return res.status(500).json({ error: "Failed sending OTP via WhatsApp", details: sendResp.result });
+    }
+
+    return res.status(200).json({ success: true, message: "OTP enviado", createdDoc: true });
+
+  } catch (err) {
+    console.error("sendOtpWhatsApp error:", err);
+    return res.status(500).json({ error: "Error interno" });
+  }
+});
+
+
+exports.verifyOtpWhatsApp = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") return res.status(204).send("");
+
+  try {
+    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+    const { phone, code } = req.body;
+    if (!phone || !code) return res.status(400).json({ error: "phone and code required" });
+
+    const docRef = db.collection(OTP_COLLECTION).doc(phone);
+    const docSnap = await docRef.get();
+
+    if (!docSnap.exists) return res.status(400).json({ error: "No OTP solicitado para este número" });
+
+    const data = docSnap.data();
+    const nowMs = Date.now();
+
+    // Normaliza expiresAt por si viniera como Date o Timestamp
+    const expMs = (() => {
+      const exp = data.expiresAt;
+      if (!exp) return 0;
+      if (typeof exp.toMillis === "function") return exp.toMillis();
+      try { return new Date(exp).getTime(); } catch { return 0; }
+    })();
+
+    if (expMs && nowMs > expMs) {
+      // Expirado -> borra y responde 400
+      await docRef.delete().catch(() => {});
+      return res.status(400).json({ error: "OTP expirado" });
+    }
+
+    // Intentos
+    const attempts = Number(data.attempts || 0);
+    if (attempts >= MAX_ATTEMPTS) {
+      await docRef.delete().catch(() => {});
+      return res.status(429).json({ error: "Demasiados intentos" });
+    }
+
+    // Verifica hash
+    const salt = data.salt;
+    const expectedHash = data.codeHash;
+    const providedHash = hashWithSalt(String(code), salt);
+
+    if (providedHash !== expectedHash) {
+      await docRef.update({ attempts: attempts + 1 }).catch(() => {});
+      return res.status(400).json({ error: "Código inválido" });
+    }
+
+    // ✅ Hasta aquí el código es correcto. NO borres el OTP aún.
+    const uid = `phone:${phone}`;
+
+    try {
+      // Asegura usuario
+      await admin.auth().getUser(uid).catch(async (e) => {
+        // si no existe, créalo
+        try {
+          await admin.auth().createUser({ uid, phoneNumber: `+${phone}` });
+        } catch (createErr) {
+          // Puede fallar (tel ya usado). Lo registramos y seguimos con token por uid.
+          console.warn("createUser warning:", createErr?.errorInfo || createErr?.message || createErr);
+        }
+      });
+
+      // Genera token
+      const customToken = await admin.auth().createCustomToken(uid, { provider: "whatsapp-otp" });
+
+      // 🔐 SOLO AHORA borra el OTP
+      await docRef.delete().catch(() => {});
+
+      return res.status(200).json({ success: true, customToken });
+    } catch (authErr) {
+      console.error("Auth/Token error:", authErr?.errorInfo || authErr?.message || authErr);
+      // No borres el OTP si falló generar el token: así puedes reintentar una vez más
+      return res.status(500).json({ error: "Error generando token" });
+    }
+  } catch (err) {
+    console.error("verifyOtpWhatsApp error:", err);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+

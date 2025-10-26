@@ -184,36 +184,86 @@ class InfoPage extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   Center(
-                    child: Image.asset(
-                      "assets/images/logo_tu_proceso_ya_transparente.png",
-                      height: 60,
-                      fit: BoxFit.contain,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final screenWidth = constraints.maxWidth;
+
+                        // 🔹 Ajuste dinámico del tamaño de fuente y padding según el ancho
+                        final fontSize = screenWidth > 1000
+                            ? 20.0
+                            : screenWidth > 600
+                            ? 18.0
+                            : 16.0;
+
+                        final buttonPadding = EdgeInsets.symmetric(
+                          horizontal: screenWidth > 1000
+                              ? 24
+                              : screenWidth > 600
+                              ? 20
+                              : 16,
+                          vertical: screenWidth > 600 ? 12 : 10,
+                        );
+
+                        final buttonWidth = screenWidth > 1000
+                            ? 250.0
+                            : screenWidth > 600
+                            ? 220.0
+                            : 180.0;
+
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // 🔹 Logo
+                            Flexible(
+                              flex: 1,
+                              child: Image.asset(
+                                "assets/images/logo_tu_proceso_ya_transparente.png",
+                                height: screenWidth > 1000
+                                    ? 80
+                                    : screenWidth > 600
+                                    ? 70
+                                    : 50,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            SizedBox(width: screenWidth > 600 ? 40 : 16), // Espaciado adaptable
+
+                            // 🔹 Botón responsivo
+                            Flexible(
+                              flex: 0,
+                              child: SizedBox(
+                                width: buttonWidth,
+                                child: ElevatedButton.icon(
+                                  onPressed: () => Navigator.pushReplacementNamed(
+                                      context, 'pagina_inicio_registro_page'),
+                                  icon: const Icon(Icons.arrow_forward, size: 20),
+                                  label: Padding(
+                                    padding: buttonPadding,
+                                    child: Text(
+                                      'Ir a la App',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: fontSize,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    backgroundColor: Colors.deepPurple,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 6,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
-
-                  const SizedBox(height: 30),
-
-                  // Center(
-                  //   child: ElevatedButton.icon(
-                  //     onPressed: () => Navigator.pushReplacementNamed(context, 'pagina_inicio_registro_page'),
-                  //     icon: const Icon(Icons.arrow_forward),
-                  //     label: const Padding(
-                  //       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  //       child: Text(
-                  //         'Ingresar a la Aplicación',
-                  //         style: TextStyle(fontSize: 18),
-                  //       ),
-                  //     ),
-                  //     style: ElevatedButton.styleFrom(
-                  //       foregroundColor: Colors.white,
-                  //       backgroundColor: Colors.deepPurple,
-                  //       shape: RoundedRectangleBorder(
-                  //         borderRadius: BorderRadius.circular(12),
-                  //       ),
-                  //       elevation: 6,
-                  //     ),
-                  //   ),
-                  // ),
                   const SizedBox(height: 30),
                   Center(
                     child: LayoutBuilder(
@@ -232,7 +282,10 @@ class InfoPage extends StatelessWidget {
                                 builder: (_) => AlertDialog(
                                   backgroundColor: blancoCards,
                                   contentPadding: const EdgeInsets.all(0),
-                                  content: HtmlVideoPlayer(videoUrl: url),
+                                  content: HtmlVideoPlayer(
+                                    key: ValueKey(url), // fuerza reconstrucción con otra URL
+                                    videoUrl: url,
+                                  ),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.of(context).pop(),
@@ -267,27 +320,27 @@ class InfoPage extends StatelessWidget {
                           );
                         }
 
-                        Widget buildRedPplCard(double width) {
-                          return Column(
-                            children: [
-                              SizedBox(
-                                width: width,
-                                child: const RedPplImageLink(
-                                  imageAsset: 'assets/images/imagen_red.png',
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Ingresa a la red, anímate a ser\nparte del cambio',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: Colors.deepPurple,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          );
-                        }
+                        // Widget buildRedPplCard(double width) {
+                        //   return Column(
+                        //     children: [
+                        //       SizedBox(
+                        //         width: width,
+                        //         child: const RedPplImageLink(
+                        //           imageAsset: 'assets/images/imagen_red.png',
+                        //         ),
+                        //       ),
+                        //       const SizedBox(height: 8),
+                        //       const Text(
+                        //         'Ingresa a la red, anímate a ser\nparte del cambio',
+                        //         textAlign: TextAlign.center,
+                        //         style: TextStyle(
+                        //           color: Colors.deepPurple,
+                        //           fontWeight: FontWeight.bold,
+                        //         ),
+                        //       ),
+                        //     ],
+                        //   );
+                        // }
 
                         return isWide
                             ? Row(
@@ -308,7 +361,7 @@ class InfoPage extends StatelessWidget {
                               title: 'Conoce a ¡Tu Proceso Ya!\nen solo un minuto',
                             ),
                             const SizedBox(width: 24),
-                            buildRedPplCard(300),
+                            //buildRedPplCard(300),
                           ],
                         )
                             : Column(
@@ -327,7 +380,7 @@ class InfoPage extends StatelessWidget {
                               title: 'Conoce a ¡Tu Proceso Ya!\nen solo un minuto',
                             ),
                             const SizedBox(height: 20),
-                            buildRedPplCard(400),
+                            //buildRedPplCard(400),
                           ],
                         );
                       },
@@ -403,7 +456,7 @@ class InfoPage extends StatelessWidget {
                       label: const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                         child: Text(
-                          'Ingresar a la Aplicación',
+                          'Ir a la App',
                           style: TextStyle(fontSize: 18),
                         ),
                       ),

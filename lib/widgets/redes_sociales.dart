@@ -7,6 +7,7 @@ class RedesSocialesWidget extends StatelessWidget {
   final String facebookUrl = 'https://www.facebook.com/profile.php?id=61575010985735';
   final String instagramUrl = 'https://www.instagram.com/tuprocesoya1?utm_source=qr';
   final String tiktokUrl = 'https://www.tiktok.com/@tuprocesoya2';
+  final String redPPlUrl = 'https://red-ppl-y-familias.web.app/';
 
   void _abrirUrl(String url) async {
     final uri = Uri.parse(url);
@@ -54,6 +55,16 @@ class RedesSocialesWidget extends StatelessWidget {
                   'assets/images/logo_tiktok.png',
                   height: 35,
                   width: 35,
+                  semanticLabel: 'TikTok',
+                ),
+              ),
+              const SizedBox(width: 80),
+              GestureDetector(
+                onTap: () => _abrirUrl(redPPlUrl),
+                child: Image.asset(
+                  'assets/images/icono_red_redes_sociales.png',
+                  height: 55,
+                  width: 80,
                   semanticLabel: 'TikTok',
                 ),
               ),

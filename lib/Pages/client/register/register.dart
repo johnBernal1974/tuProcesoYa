@@ -9,6 +9,7 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
+import '../../../services/whatsapp_otp_service.dart';
 import '../../administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import '../estamos_validando/estamos_validando.dart';
 import 'dart:html' as html;
@@ -161,6 +162,7 @@ class _RegistroPageState extends State<RegistroPage> {
   bool _recaptchaValidado = false;
   String? codigoReferido;
   bool _mismoNumero = false;
+  final WhatsAppOtpService _whatsappOtpService = WhatsAppOtpService();
 
   @override
   void initState() {
@@ -1630,13 +1632,17 @@ class _RegistroPageState extends State<RegistroPage> {
   }
 
   void _enviarCodigoOTP() async {
-    final celular = celularController.text.trim();
+    final whatsApp = whatsappController.text.trim();
 
-    if (!RegExp(r'^[0-9]{10}$').hasMatch(celular)) {
+    if (!RegExp(r'^[0-9]{10}$').hasMatch(whatsApp)) {
       _mostrarMensaje("Número de celular inválido. Debe tener 10 dígitos.");
       return;
     }
 
+    // Formatea a E.164 sin + (ej: 573001234567)
+    final phoneE164NoPlus = '57$whatsApp';
+
+    // Muestra loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1644,58 +1650,26 @@ class _RegistroPageState extends State<RegistroPage> {
     );
 
     try {
-      if (kIsWeb) {
-        // ✅ Crea el RecaptchaVerifier en web
-        recaptchaVerifier = RecaptchaVerifier(
-          auth: FirebaseAuthPlatform.instance,
-          container: 'recaptcha-container', // 👈 Aquí debe haber un div vacío en tu HTML
-          size: RecaptchaVerifierSize.normal,
-          theme: RecaptchaVerifierTheme.light,
-          onSuccess: () {
-            if (kDebugMode) print("✅ reCAPTCHA verificado correctamente");
-            html.document.getElementById('recaptcha-container')?.style.display = 'none';
-            setState(() {
-              _recaptchaValidado = true;
-            });
-          },
-          onError: (FirebaseAuthException e) {
-            Navigator.of(context).pop();
-            _mostrarMensaje("Error en reCAPTCHA: ${e.message}");
-          },
-          onExpired: () {
-            Navigator.of(context).pop();
-            _mostrarMensaje("El reCAPTCHA ha expirado");
-          },
-        );
-      }
+      // Llamada al servicio que acabas de crear
+      final sent = await _whatsappOtpService.sendOtp(phoneE164NoPlus);
 
-      // 🔥 Ahora sí enviamos el código usando el recaptchaVerifier
-      final confirmationResult = await FirebaseAuth.instance.signInWithPhoneNumber(
-        "+57$celular",
-        recaptchaVerifier,
-      );
+      Navigator.of(context).pop(); // cierra loading
 
-      if (context.mounted) {
-        Navigator.of(context).pop(); // Cierra el loading
-      }
-
-      setState(() {
-        _confirmationResult = confirmationResult;
-        _otpEnviado = true;
-        _recaptchaValidado = true;
-      });
-
-      if (kDebugMode) {
-        print("✅ Código enviado correctamente");
+      if (sent) {
+        setState(() {
+          _otpEnviado = true;
+          _recaptchaValidado = true; // para que muestre el campo de OTP como antes
+        });
+        _mostrarMensaje("Código enviado por WhatsApp ✅");
+        // Asegúrate que el usuario vea el campo de OTP (ya lo controlas por _recaptchaValidado)
+      } else {
+        _mostrarMensaje("No fue posible enviar el código por WhatsApp. Intenta de nuevo.");
       }
     } catch (e) {
-      if (context.mounted) {
-        Navigator.of(context).pop();
-        _mostrarMensaje("Error inesperado: ${e.toString()}");
-      }
+      Navigator.of(context).pop();
+      _mostrarMensaje("Error enviando el código: ${e.toString()}");
     }
   }
-
 
 
   void _guardarConPin() async {
@@ -1814,32 +1788,40 @@ class _RegistroPageState extends State<RegistroPage> {
       return;
     }
 
-    if (_confirmationResult == null) {
-      _mostrarMensaje("Primero solicita el código de verificación.");
+    final celular = celularController.text.trim();
+    if (!RegExp(r'^[0-9]{10}$').hasMatch(celular)) {
+      _mostrarMensaje("Número de celular inválido.");
       return;
     }
 
+    final phoneE164NoPlus = '57$celular';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
     try {
-      // Verifica el código ingresado
-      await _confirmationResult!.confirm(codigo);
-      uidAutenticado = FirebaseAuth.instance.currentUser!.uid;
+      final user = await _whatsappOtpService.verifyOtpAndSignIn(phoneE164NoPlus, codigo);
+      Navigator.of(context).pop();
 
-
-      if (kDebugMode) {
-        print("✅ Código verificado correctamente");
+      if (user != null) {
+        uidAutenticado = user.uid;
+        // Avanzar a la página del PIN (igual que lo hacías antes)
+        if (context.mounted) {
+          setState(() {
+            _currentPage = 16; // tu flujo prevé saltar a la página 16 para PIN
+          });
+          _pageController.jumpToPage(16);
+        }
+        _mostrarMensaje("Verificado. Bienvenido.");
+      } else {
+        _mostrarMensaje("Código inválido o expirado. Intenta nuevamente.");
       }
-
-      // Redirecciona a la siguiente página, como tenías
-      if (context.mounted) {
-        setState(() {
-          _currentPage = 16;
-        });
-        _pageController.jumpToPage(16);
-      }
-    } on FirebaseAuthException catch (_) {
-      _mostrarMensaje("Código inválido o expirado. Intenta nuevamente.");
     } catch (e) {
-      _mostrarMensaje("Error inesperado: ${e.toString()}");
+      Navigator.of(context).pop();
+      _mostrarMensaje("Error verificando el código: ${e.toString()}");
     }
   }
 
