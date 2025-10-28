@@ -1862,12 +1862,38 @@ exports.sendOtpWhatsApp = functions.https.onRequest(async (req, res) => {
   }
 });
 
+// --- helper verificar otp ---
+const { v4: uuidv4 } = require('uuid');
+
+// Mapea un teléfono (E.164 sin "+", como ya usas en OTP) a un UID estable.
+// Crea un UID aleatorio la 1ª vez y lo guarda en phones/{phone}.
+async function getOrCreateUidForPhone(phoneKey) {
+  const idxRef = admin.firestore().collection('phones').doc(phoneKey);
+  let uid;
+
+  await admin.firestore().runTransaction(async (tx) => {
+    const snap = await tx.get(idxRef);
+    if (snap.exists && snap.data()?.uid) {
+      uid = snap.data().uid;
+    } else {
+      uid = uuidv4(); // UID aleatorio/estable
+      tx.set(idxRef, {
+        uid,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+  });
+
+  return uid;
+}
+
+// --- fin de helpers ---
+
 
 exports.verifyOtpWhatsApp = functions.https.onRequest(async (req, res) => {
   res.set("Access-Control-Allow-Origin", "*");
   res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-
   if (req.method === "OPTIONS") return res.status(204).send("");
 
   try {
@@ -1876,15 +1902,17 @@ exports.verifyOtpWhatsApp = functions.https.onRequest(async (req, res) => {
     const { phone, code } = req.body;
     if (!phone || !code) return res.status(400).json({ error: "phone and code required" });
 
-    const docRef = db.collection(OTP_COLLECTION).doc(phone);
-    const docSnap = await docRef.get();
+    const phoneKey = String(phone).trim();                       // como guardaste el OTP (E.164 sin "+")
+    const phoneE164 = phoneKey.startsWith('+') ? phoneKey : `+${phoneKey}`;
 
+    // 1) Validación OTP
+    const docRef = db.collection(OTP_COLLECTION).doc(phoneKey);
+    const docSnap = await docRef.get();
     if (!docSnap.exists) return res.status(400).json({ error: "No OTP solicitado para este número" });
 
     const data = docSnap.data();
     const nowMs = Date.now();
 
-    // Normaliza expiresAt por si viniera como Date o Timestamp
     const expMs = (() => {
       const exp = data.expiresAt;
       if (!exp) return 0;
@@ -1893,53 +1921,91 @@ exports.verifyOtpWhatsApp = functions.https.onRequest(async (req, res) => {
     })();
 
     if (expMs && nowMs > expMs) {
-      // Expirado -> borra y responde 400
       await docRef.delete().catch(() => {});
       return res.status(400).json({ error: "OTP expirado" });
     }
 
-    // Intentos
     const attempts = Number(data.attempts || 0);
     if (attempts >= MAX_ATTEMPTS) {
       await docRef.delete().catch(() => {});
       return res.status(429).json({ error: "Demasiados intentos" });
     }
 
-    // Verifica hash
     const salt = data.salt;
     const expectedHash = data.codeHash;
-    const providedHash = hashWithSalt(String(code), salt);
-
+    const providedHash = require('crypto').createHmac('sha256', salt).update(String(code)).digest('hex');
     if (providedHash !== expectedHash) {
       await docRef.update({ attempts: attempts + 1 }).catch(() => {});
       return res.status(400).json({ error: "Código inválido" });
     }
 
-    // ✅ Hasta aquí el código es correcto. NO borres el OTP aún.
-    const uid = `phone:${phone}`;
+    // 2) Obtener/crear UID estable (no derivado del teléfono)
+    let uid = await getOrCreateUidForPhone(phoneKey);
 
     try {
-      // Asegura usuario
-      await admin.auth().getUser(uid).catch(async (e) => {
-        // si no existe, créalo
+      // 3) Asegurar usuario en Auth **con phoneNumber** para que aparezca en consola
+      //    a) Si el UID ya existe, intenta setear phoneNumber si aún no lo tiene.
+      //    b) Si no existe el UID, créalo con phoneNumber.
+      let userRecord = null;
+      try {
+        userRecord = await admin.auth().getUser(uid);
+      } catch {
+        // no existe el UID, intenta crear con phoneNumber
         try {
-          await admin.auth().createUser({ uid, phoneNumber: `+${phone}` });
+          userRecord = await admin.auth().createUser({
+            uid,
+            phoneNumber: phoneE164, // ✅ hará que aparezca en "Identificador" y proveedor "phone"
+          });
         } catch (createErr) {
-          // Puede fallar (tel ya usado). Lo registramos y seguimos con token por uid.
-          console.warn("createUser warning:", createErr?.errorInfo || createErr?.message || createErr);
+          if (createErr?.errorInfo?.code === 'auth/phone-number-already-exists') {
+            // El número ya pertenece a otra cuenta: usa ese UID
+            const existing = await admin.auth().getUserByPhoneNumber(phoneE164);
+            if (existing?.uid) {
+              uid = existing.uid;
+              userRecord = existing;
+              // sincroniza el índice para que apunte al UID verdadero
+              await admin.firestore().collection('phones').doc(phoneKey).set({
+                uid,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+              }, { merge: true });
+            }
+          } else {
+            console.error('[Auth] Error creando usuario:', createErr);
+            throw createErr;
+          }
         }
-      });
+      }
 
-      // Genera token
+      // Si el UID existía pero sin phoneNumber, intenta asignarlo
+      if (userRecord && !userRecord.phoneNumber) {
+        try {
+          await admin.auth().updateUser(uid, { phoneNumber: phoneE164 });
+        } catch (updErr) {
+          if (updErr?.errorInfo?.code !== 'auth/phone-number-already-exists') {
+            console.warn('[Auth] No se pudo asignar phoneNumber al UID existente:', updErr);
+          } else {
+            // si ya existe en otro UID, ya lo manejamos arriba; aquí lo ignoramos
+          }
+        }
+      }
+
+      // 4) Generar Custom Token para login
       const customToken = await admin.auth().createCustomToken(uid, { provider: "whatsapp-otp" });
 
-      // 🔐 SOLO AHORA borra el OTP
+      // 5) (Opcional) Actualizar perfil en users/{uid}
+      await admin.firestore().collection('users').doc(uid).set({
+        phone: phoneE164,
+        lastLoginAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      // 6) Borrar OTP ahora que todo salió bien
       await docRef.delete().catch(() => {});
 
       return res.status(200).json({ success: true, customToken });
     } catch (authErr) {
       console.error("Auth/Token error:", authErr?.errorInfo || authErr?.message || authErr);
-      // No borres el OTP si falló generar el token: así puedes reintentar una vez más
+      // No borrar OTP aquí para permitir un reintento controlado
       return res.status(500).json({ error: "Error generando token" });
     }
   } catch (err) {
@@ -1947,4 +2013,249 @@ exports.verifyOtpWhatsApp = functions.https.onRequest(async (req, res) => {
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 });
+
+async function findExistingAuthUidByPhone(phoneKey) {
+  const phoneNoPlus = String(phoneKey).replace(/^\+/, '').trim();
+  const phoneWithPlus = `+${phoneNoPlus}`;
+
+  // (1) ¿Hay usuario en Auth por phoneNumber?
+  try {
+    const rec = await admin.auth().getUserByPhoneNumber(phoneWithPlus);
+    if (rec?.uid) return rec.uid;
+  } catch (_) { /* no existe por phoneNumber */ }
+
+  // (2) ¿Hay doc en Ppl con celularWhatsapp == sin '+'?
+  try {
+    const snap = await admin.firestore()
+      .collection('Ppl')
+      .where('celularWhatsapp', '==', phoneNoPlus) // <- tu campo real
+      .limit(1)
+      .get();
+
+    if (!snap.empty) {
+      const uid = snap.docs[0].id;
+
+      // Verifica que ESE uid exista en Auth (si no, no emitimos token)
+      try {
+        await admin.auth().getUser(uid);
+        return uid; // existe en Auth -> OK
+      } catch (_) {
+        return null; // existe en Ppl pero NO en Auth -> NO crear en login
+      }
+    }
+  } catch (e) {
+    console.error('[LOGIN] findExistingAuthUidByPhone query error:', e);
+    throw e;
+  }
+
+  return null;
+}
+
+exports.sendOtpWhatsAppLogin = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") return res.status(204).send("");
+
+  try {
+    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+    let { phone } = req.body; // E.164 SIN '+', ej: 573001234567
+    if (!phone) return res.status(400).json({ error: "phone required (E.164 sin +)" });
+    phone = String(phone).trim();
+
+    // ✅ Debe existir en Auth (o en Ppl con uid que exista en Auth)
+    const uid = await findExistingAuthUidByPhone(phone);
+    if (!uid) {
+      return res.status(404).json({ error: "NOT_REGISTERED", message: "Número no registrado" });
+    }
+
+    // === Rate-limit + Guardado OTP ===
+    const docRef = db.collection(OTP_COLLECTION).doc(phone);
+    const docSnap = await docRef.get();
+    const now = Date.now();
+
+    if (docSnap.exists) {
+      const data = docSnap.data();
+      const lastSent = data?.lastSentAt?.toMillis ? data.lastSentAt.toMillis() : (data?.lastSentAt || 0);
+      const count = (data?.sendCountLastMinute || 0);
+      if (lastSent && now - lastSent < 60 * 1000 && count >= MAX_SENDS_PER_MINUTE) {
+        return res.status(429).json({ error: "Too many requests. Espera un momento antes de reenviar." });
+      }
+    }
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const salt = crypto.randomBytes(16).toString("hex");
+    const codeHash = crypto.createHmac('sha256', salt).update(code).digest('hex');
+    const expiresAt = new Date(Date.now() + OTP_TTL_MS);
+
+    await docRef.set({
+      codeHash,
+      salt,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+      attempts: 0,
+      lastSentAt: admin.firestore.Timestamp.fromDate(new Date(now)),
+      sendCountLastMinute: (docSnap.exists ? (docSnap.data().sendCountLastMinute || 0) + 1 : 1)
+    }, { merge: true });
+
+    // === Envío WhatsApp (plantilla verify_code con fallbacks) ===
+    const url = `https://graph.facebook.com/v20.0/${PHONE_NUMBER_ID}/messages`;
+    const doSend = async (payload) => {
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${ACCESS_TOKEN}` },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch(() => ({}));
+      return { ok: response.ok, status: response.status, result };
+    };
+
+    const basePayload = {
+      messaging_product: "whatsapp",
+      to: phone,
+      type: "template",
+      template: {
+        name: "verify_code",
+        language: { code: "es_CO" },
+        components: [{ type: "body", parameters: [{ type: "text", text: code }] }],
+      },
+    };
+
+    const needsButtonParam = (err) => {
+      const c = err?.error?.code;
+      const details = err?.error?.error_data?.details || "";
+      if (!err) return false;
+      if (c === 131008 || c === 132018) return true;
+      if (typeof details === "string" && (details.toLowerCase().includes("button") || details.toLowerCase().includes("parameter"))) return true;
+      return false;
+    };
+
+    let sendResp = await doSend(basePayload);
+    if (!sendResp.ok && needsButtonParam(sendResp.result)) {
+      const attempts = [];
+      const code6 = code.substring(0, 6), code15 = code.substring(0, 15);
+      const clone = () => JSON.parse(JSON.stringify(basePayload));
+
+      attempts.push({ payload: clone(), desc: "button quick_reply text 6" });
+      attempts[0].payload.template.components.push({
+        type: "button", sub_type: "quick_reply", index: 0,
+        parameters: [{ type: "text", text: code6 }],
+      });
+
+      attempts.push({ payload: clone(), desc: "button quick_reply payload 6" });
+      attempts[1].payload.template.components.push({
+        type: "button", sub_type: "quick_reply", index: 0,
+        parameters: [{ type: "payload", payload: code6 }],
+      });
+
+      attempts.push({ payload: clone(), desc: "button url text 15" });
+      attempts[2].payload.template.components.push({
+        type: "button", sub_type: "url", index: 0,
+        parameters: [{ type: "text", text: code15 }],
+      });
+
+      attempts.push({ payload: clone(), desc: "button url payload 15" });
+      attempts[3].payload.template.components.push({
+        type: "button", sub_type: "url", index: 0,
+        parameters: [{ type: "payload", payload: code15 }],
+      });
+
+      for (const a of attempts) {
+        const r = await doSend(a.payload);
+        if (r.ok) { sendResp = r; break; }
+      }
+    }
+
+    if (!sendResp.ok) {
+      console.error("[LOGIN][OTP] Falló envío WhatsApp:", sendResp.status, sendResp.result);
+      return res.status(500).json({ error: "WABA_SEND_FAILED", details: sendResp.result });
+    }
+
+    return res.status(200).json({ success: true, message: "OTP enviado (login)" });
+
+  } catch (err) {
+    console.error("sendOtpWhatsAppLogin error:", err);
+    return res.status(500).json({ error: "INTERNAL", details: String(err?.message || err) });
+  }
+});
+
+exports.verifyOtpWhatsAppLogin = functions.https.onRequest(async (req, res) => {
+  res.set("Access-Control-Allow-Origin", "*");
+  res.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") return res.status(204).send("");
+
+  try {
+    if (req.method !== "POST") return res.status(405).json({ error: "Method Not Allowed" });
+
+    const { phone, code } = req.body;
+    if (!phone || !code) return res.status(400).json({ error: "phone and code required" });
+
+    const phoneKey = String(phone).replace(/^\+/, '').trim();
+
+    // ✅ Debe existir en Auth; si no, NO generamos token
+    const uid = await findExistingAuthUidByPhone(phoneKey);
+    if (!uid) {
+      return res.status(404).json({ error: "NOT_REGISTERED", message: "Número no registrado" });
+    }
+
+    // === Validación OTP (mismo flujo que ya tenías) ===
+    const docRef = db.collection(OTP_COLLECTION).doc(phoneKey);
+    const docSnap = await docRef.get();
+    if (!docSnap.exists) return res.status(400).json({ error: "No OTP solicitado para este número" });
+
+    const data = docSnap.data();
+    const nowMs = Date.now();
+
+    const expMs = (() => {
+      const exp = data.expiresAt;
+      if (!exp) return 0;
+      if (typeof exp.toMillis === "function") return exp.toMillis();
+      try { return new Date(exp).getTime(); } catch { return 0; }
+    })();
+
+    if (expMs && nowMs > expMs) {
+      await docRef.delete().catch(() => {});
+      return res.status(400).json({ error: "OTP expirado" });
+    }
+
+    const attempts = Number(data.attempts || 0);
+    if (attempts >= MAX_ATTEMPTS) {
+      await docRef.delete().catch(() => {});
+      return res.status(429).json({ error: "Demasiados intentos" });
+    }
+
+    const expectedHash = data.codeHash;
+    const salt = data.salt;
+    const providedHash = crypto.createHmac('sha256', salt).update(String(code)).digest('hex');
+
+    if (providedHash !== expectedHash) {
+      await docRef.update({ attempts: attempts + 1 }).catch(() => {});
+      return res.status(400).json({ error: "Código inválido" });
+    }
+
+    // 🔒 Genera el custom token SOLO para uid que ya existe en Auth
+    try {
+      await admin.auth().getUser(uid); // seguridad adicional
+    } catch (_) {
+      return res.status(404).json({ error: "NOT_REGISTERED", message: "Número no registrado" });
+    }
+
+    const customToken = await admin.auth().createCustomToken(uid, { provider: "whatsapp-otp" });
+
+    // Limpia OTP
+    await docRef.delete().catch(() => {});
+
+    return res.status(200).json({ success: true, customToken });
+
+  } catch (err) {
+    console.error("verifyOtpWhatsAppLogin error:", err);
+    return res.status(500).json({ error: "INTERNAL", details: String(err?.message || err) });
+  }
+});
+
+
+
+
 

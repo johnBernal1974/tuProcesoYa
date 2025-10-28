@@ -70,6 +70,21 @@ class _LoginPageState extends State<LoginPage> {
     return data;
   }
 
+  Future<({int status, Map<String, dynamic> data})> _postJsonWithStatus(
+      String url,
+      Map<String, dynamic> body,
+      ) async {
+    final res = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    final text = res.body.isEmpty ? '{}' : res.body;
+    final data = jsonDecode(text) as Map<String, dynamic>;
+    return (status: res.statusCode, data: data);
+  }
+
+
 
 
 
@@ -305,71 +320,101 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _loginConOTP() async {
-    String whatsApp = _whatsAppController.text.trim();
+    final whatsApp = _whatsAppController.text.trim();
 
-    // validación 10 dígitos
+    // valida 10 dígitos
     if (!RegExp(r'^\d{10}$').hasMatch(whatsApp)) {
       _mostrarMensaje("Ingresa un número válido de 10 dígitos.", color: Colors.red);
       return;
     }
 
-    final phoneE164SinMas = _aE164SinMas(whatsApp); // 👈 la función en backend espera E.164 SIN '+'
-
+    final phoneE164SinMas = _aE164SinMas(whatsApp); // E.164 SIN '+'
     setState(() => _isLoadingOtp = true);
 
     try {
+      // 1) PRIMER CLICK: enviar OTP SOLO si el número existe (login)
       if (!_otpEnviadoWA) {
-        // 1) ENVIAR OTP POR WHATSAPP
-        await _postJson('$_baseUrl/sendOtpWhatsApp', {'phone': phoneE164SinMas});
+        final r = await _postJsonWithStatus(
+          '$_baseUrl/sendOtpWhatsAppLogin',   // <- endpoint de LOGIN
+          {'phone': phoneE164SinMas},
+        );
+
+        if (r.status == 404) {
+          _mostrarMensaje("Este número no está registrado. Crea tu cuenta primero.", color: Colors.red);
+          return;
+        }
+        if (r.status >= 400) {
+          final err = r.data['error']?.toString() ?? 'Error enviando OTP';
+          final det = r.data['details']?.toString();
+          _mostrarMensaje(det != null ? '$err: $det' : err, color: Colors.red);
+          return;
+        }
+
         setState(() {
           _otpEnviadoWA = true;
           _iniciarTemporizadorReenvio();
         });
         _mostrarMensaje("Código enviado por WhatsApp ✅", color: primary);
-        return;
+        return; // esperar a que el usuario escriba el OTP
       }
 
-      // 2) VERIFICAR OTP
+      // 2) SEGUNDO CLICK / onCompleted: verificar OTP (login)
       final codigo = _otpController.text.trim();
       if (codigo.length != 6) {
         _mostrarMensaje("El código debe tener 6 dígitos.", color: Colors.red);
         return;
       }
 
-      final resp = await _postJson('$_baseUrl/verifyOtpWhatsApp', {
-        'phone': phoneE164SinMas,
-        'code': codigo,
-      });
+      final r = await _postJsonWithStatus(
+        '$_baseUrl/verifyOtpWhatsAppLogin',  // <- endpoint de LOGIN
+        {'phone': phoneE164SinMas, 'code': codigo},
+      );
 
-      final customToken = resp['customToken'] as String?;
+      if (r.status == 404) {
+        _mostrarMensaje("Este número no está registrado.", color: Colors.red);
+        return;
+      }
+      if (r.status >= 400) {
+        final msg = r.data['error']?.toString() ?? 'Error verificando OTP';
+        if (msg.contains('OTP expirado')) {
+          _mostrarMensaje("El código expiró. Solicita uno nuevo.", color: Colors.red);
+        } else if (msg.contains('Demasiados intentos')) {
+          _mostrarMensaje("Demasiados intentos. Intenta más tarde.", color: Colors.red);
+        } else if (msg.contains('Código inválido')) {
+          _mostrarMensaje("El código es incorrecto.", color: Colors.red);
+        } else if (msg.contains('No OTP solicitado')) {
+          _mostrarMensaje("Primero solicita el código.", color: Colors.red);
+        } else {
+          final det = r.data['details']?.toString();
+          _mostrarMensaje(det != null ? '$msg: $det' : msg, color: Colors.red);
+        }
+        return;
+      }
+
+      // 3) LOGIN con Custom Token
+      final customToken = r.data['customToken'] as String?;
       if (customToken == null || customToken.isEmpty) {
         _mostrarMensaje("No se pudo obtener el token. Intenta de nuevo.", color: Colors.red);
         return;
       }
 
-      // 3) LOGIN CON CUSTOM TOKEN
       final cred = await FirebaseAuth.instance.signInWithCustomToken(customToken);
       final uid = cred.user?.uid;
-
       if (uid == null) {
         _mostrarMensaje("No se pudo iniciar sesión.", color: Colors.red);
         return;
       }
 
-      // === NAVEGACIÓN EXACTA QUE YA TENÍAS ===
-      // Primero verifica Admin
+      // === tu navegación existente ===
       final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(uid).get();
       if (adminDoc.exists) {
         final status = adminDoc.data()?['status']?.toString().trim();
         if (status == 'bloqueado') {
-          if (context.mounted) {
-            Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
-          }
+          if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
           return;
         }
-
         await AdminProvider().loadAdminData();
-        String role = AdminProvider().rol ?? "";
+        final role = AdminProvider().rol ?? "";
         if (role == "pasante 1" || role == "pasante 2") {
           if (context.mounted) {
             Navigator.pushNamedAndRemoveUntil(context, 'historial_solicitudes_derecho_peticion_admin', (route) => false);
@@ -382,51 +427,28 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
-      // Luego Ppl
       final pplDoc = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
       if (pplDoc.exists) {
         final status = pplDoc.data()?['status']?.toString().trim() ?? "";
         if (status == 'bloqueado') {
-          if (context.mounted) {
-            Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
-          }
+          if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
           return;
         }
         if (status == 'registrado') {
-          if (context.mounted) {
-            Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (route) => false);
-          }
+          if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (route) => false);
         } else {
-          if (context.mounted) {
-            Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-          }
+          if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
         }
       } else {
-        if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-        }
+        if (context.mounted) Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
       }
 
-    } on Exception catch (e) {
-      // mapeo de errores comunes del backend
-      final msg = e.toString();
-      if (msg.contains('OTP expirado')) {
-        _mostrarMensaje("El código expiró. Solicita uno nuevo.", color: Colors.red);
-      } else if (msg.contains('Código inválido')) {
-        _mostrarMensaje("El código es incorrecto.", color: Colors.red);
-      } else if (msg.contains('Demasiados intentos')) {
-        _mostrarMensaje("Demasiados intentos. Intenta más tarde.", color: Colors.red);
-      } else if (msg.contains('No OTP solicitado')) {
-        _mostrarMensaje("Primero solicita el código.", color: Colors.red);
-      } else {
-        _mostrarMensaje("Error: $msg", color: Colors.red);
-      }
+    } catch (e) {
+      _mostrarMensaje("Error: $e", color: Colors.red);
     } finally {
       setState(() => _isLoadingOtp = false);
     }
   }
-
-
 
   void _iniciarTemporizadorReenvio() {
     _contadorReenvio = 60;
