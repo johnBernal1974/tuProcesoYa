@@ -863,6 +863,42 @@ Gracias por tu paciencia.
 Puedes ingresar a la app en:
 https://www.tuprocesoya.com
 """),
+
+
+
+                              // 🔒 TARJETA 1 – Verificación de identidad (con confirmación)
+                              _buildQuickMessageCard(
+                                Icons.verified_user,
+                                "Verificar\nidentidad",
+                                _verificacionIdentidadMensaje(
+                                  numero,
+                                  nombre: primerNombre.isNotEmpty ? primerNombre : null,
+                                ),
+                                onTap: () => _confirmarEnvioMensaje(
+                                  _verificacionIdentidadMensaje(
+                                    numero,
+                                    nombre: primerNombre.isNotEmpty ? primerNombre : null,
+                                  ),
+                                  "verificación de identidad",
+                                ),
+                              ),
+
+// 🔒 TARJETA 2 – Consentimiento (con confirmación)
+                              _buildQuickMessageCard(
+                                Icons.privacy_tip,
+                                "Borrado/\nSuspensión",
+                                _consentimientoMensaje(
+                                  numero,
+                                  nombre: primerNombre.isNotEmpty ? primerNombre : null,
+                                ),
+                                onTap: () => _confirmarEnvioMensaje(
+                                  _consentimientoMensaje(
+                                    numero,
+                                    nombre: primerNombre.isNotEmpty ? primerNombre : null,
+                                  ),
+                                  "consentimiento de borrado/suspensión",
+                                ),
+                              ),
                               if (estaRegistrado && !isPaid)
                                 _buildQuickMessageCard(
                                   Icons.lock_outline,
@@ -931,6 +967,101 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
     );
   }
 
+  //helper consentimiento
+  // 🔒 CONSENTIMIENTO – Plantilla con número dinámico (y nombre opcional)
+  String _consentimientoMensaje(String numeroE164, {String? nombre}) {
+    // Muestra el número tal cual llega (E.164: 57XXXXXXXXXX).
+    // Si usas formato diferente, ajústalo aquí.
+    final saludo = (nombre != null && nombre.trim().isNotEmpty)
+        ? "Hola $nombre,\n\n"
+        : "Hola,\n\n";
+
+    return """
+${saludo}🟣 *Tu Proceso Ya* – Aviso sobre Protección de Datos Personales  
+
+De acuerdo con la *Ley 1581 de 2012* y el *Decreto 1377 de 2013*, tienes derecho a conocer, actualizar, rectificar, suspender o eliminar tus datos personales en cualquier momento.  
+
+📜 *Derechos del titular:*  
+• Conocer qué datos tenemos y con qué finalidad.  
+• Solicitar la corrección o actualización de tu información.  
+• Pedir la suspensión o eliminación definitiva de tus datos personales.  
+• Revocar en cualquier momento la autorización para el tratamiento de tus datos.  
+
+📱 *Verificación de identidad:*  
+Esta solicitud se gestiona mediante el número *$numeroE164*, el mismo con el cual fue creada tu cuenta y al que está vinculado tu usuario en *Tu Proceso Ya*.  
+
+⚖️ *Repercusiones de tu decisión:*  
+Si eliges eliminar tus datos, borraremos toda tu información registrada (historial, solicitudes, documentos y beneficios asociados).  
+Esta acción es **irreversible**; si deseas volver a usar el servicio, deberás registrarte nuevamente desde cero.  
+
+💬 Por favor escribe el número de la opción de tu respuesta:  
+1️⃣ *Sí, deseo eliminar definitivamente mis datos personales.*  
+2️⃣ *No, deseo conservar mi información y continuar vinculado(a) a la plataforma.*
+""";
+  }
+
+  // 🔒 VERIFICACIÓN – Plantilla con número dinámico y aclaración de vínculo
+  String _verificacionIdentidadMensaje(String numeroE164, {String? nombre}) {
+    final saludo = (nombre != null && nombre.trim().isNotEmpty)
+        ? "Hola $nombre,\n\n"
+        : "Hola,\n\n";
+
+    return """
+${saludo}🟣 *Tu Proceso Ya* – Verificación de identidad  
+
+Antes de continuar con tu solicitud de suspensión o eliminación de datos personales, queremos aclararte lo siguiente:  
+
+📱 Tu cuenta está directamente vinculada al número de WhatsApp *$numeroE164*, con el cual fue creada tu cuenta en la plataforma *Tu Proceso Ya*.  
+Por este motivo, entendemos que la persona que responde este mensaje es quien efectivamente abrió la cuenta o el acudiente autorizado.  
+
+Esta verificación es necesaria para poder continuar con el proceso de borrado o suspensión de tus datos personales conforme a la *Ley 1581 de 2012* y el *Decreto 1377 de 2013*.
+
+Para fines de verificación y registro, necesitamos que por favor nos confirmes a continuación tu *nombre completo*. 
+""";
+  }
+
+
+  // 🔔 CONFIRMACIÓN – Muestra un alert antes de enviar mensajes delicados
+  Future<void> _confirmarEnvioMensaje(String texto, String titulo) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: blancoCards,
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.deepPurple),
+            SizedBox(width: 8),
+            Text('Confirmar envío'),
+          ],
+        ),
+        content: Text(
+          '¿Estás seguro de que deseas enviar el mensaje de "$titulo"?\n\nEste mensaje tiene validez legal y será registrado en la conversación del usuario.',
+          style: const TextStyle(fontSize: 15, color: Colors.black87, height: 1.4),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.send),
+            label: const Text('Enviar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      _enviarMensajeRapido(texto);
+    }
+  }
+
+
   String formatFechaSolo(DateTime fecha) {
     final ahora = DateTime.now();
     final hoy = DateTime(ahora.year, ahora.month, ahora.day);
@@ -980,43 +1111,53 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
   }
 
 
-  Widget _buildQuickMessageCard(IconData icon, String titulo, String mensaje) {
+  Widget _buildQuickMessageCard(
+      IconData icon,
+      String titulo,
+      String mensaje, {
+        VoidCallback? onTap,
+      }) {
     return Builder(
       builder: (context) {
         final screenWidth = MediaQuery.of(context).size.width;
         final bool isMobile = screenWidth < 600;
-        final double cardWidth = isMobile ? 140 : 180; // Ancho fijo por tarjeta
+        final double cardWidth = isMobile ? 100 : 120;
+        final double iconSize = isMobile ? 14 : 16;
+        final double fontSize = isMobile ? 9 : 10;
 
         return GestureDetector(
-          onTap: () => _enviarMensajeRapido(mensaje),
+          onTap: onTap ?? () => _enviarMensajeRapido(mensaje),
           child: SizedBox(
             width: cardWidth,
             child: Card(
+              margin: EdgeInsets.zero, // 🚫 quita el margen externo
               surfaceTintColor: blanco,
               color: Colors.white,
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0.5, // 🔹 casi plano
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 8 : 12,
-                  vertical: isMobile ? 6 : 10,
+                  horizontal: isMobile ? 4 : 6,
+                  vertical: isMobile ? 4 : 6,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                      icon,
-                      color: Colors.deepPurple,
-                      size: isMobile ? 20 : 24,
-                    ),
-                    const SizedBox(height: 4),
+                    Icon(icon, color: Colors.deepPurple, size: iconSize),
+                    const SizedBox(height: 2),
                     Text(
                       titulo,
                       style: TextStyle(
-                        fontSize: isMobile ? 11 : 12,
+                        fontSize: fontSize,
                         fontWeight: FontWeight.w500,
+                        height: 1.0,
                       ),
                       textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -1027,6 +1168,8 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
       },
     );
   }
+
+
 
   Widget _buildListaConversaciones(bool esPequena) {
     return Container(
