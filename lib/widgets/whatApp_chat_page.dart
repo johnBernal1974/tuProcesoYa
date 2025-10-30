@@ -899,6 +899,27 @@ https://www.tuprocesoya.com
                                   "consentimiento de borrado/suspensión",
                                 ),
                               ),
+
+                              // ✅ Confirmación – Opción 1: Borrado definitivo (48h)
+                              _buildQuickMessageCard(
+                                Icons.delete_forever,
+                                "Confirmar\nBorrado (1)",
+                                _confirmacionBorradoMensaje(
+                                  nombre: primerNombre.isNotEmpty ? primerNombre : null,
+                                  numeroE164: numero,
+                                ),
+                              ),
+
+// ✅ Confirmación – Opción 2: Suspensión
+                              _buildQuickMessageCard(
+                                Icons.pause_circle_filled,
+                                "Confirmar\nSuspensión (2)",
+                                _confirmacionSuspensionMensaje(
+                                  nombre: primerNombre.isNotEmpty ? primerNombre : null,
+                                  numeroE164: numero,
+                                ),
+                              ),
+
                               if (estaRegistrado && !isPaid)
                                 _buildQuickMessageCard(
                                   Icons.lock_outline,
@@ -973,8 +994,8 @@ Sabemos lo importante que es apoyar a tu familiar en este momento, por eso quere
     // Muestra el número tal cual llega (E.164: 57XXXXXXXXXX).
     // Si usas formato diferente, ajústalo aquí.
     final saludo = (nombre != null && nombre.trim().isNotEmpty)
-        ? "Hola $nombre,\n\n"
-        : "Hola,\n\n";
+        ? "Continuemos $nombre,\n\n"
+        : "Continuemos,\n\n";
 
     return """
 ${saludo}🟣 *Tu Proceso Ya* – Aviso sobre Protección de Datos Personales  
@@ -1003,8 +1024,8 @@ Esta acción es **irreversible**; si deseas volver a usar el servicio, deberás 
   // 🔒 VERIFICACIÓN – Plantilla con número dinámico y aclaración de vínculo
   String _verificacionIdentidadMensaje(String numeroE164, {String? nombre}) {
     final saludo = (nombre != null && nombre.trim().isNotEmpty)
-        ? "Hola $nombre,\n\n"
-        : "Hola,\n\n";
+        ? "$nombre, haremos una verificación,\n\n"
+        : "Haremos una verificación,\n\n";
 
     return """
 ${saludo}🟣 *Tu Proceso Ya* – Verificación de identidad  
@@ -1019,6 +1040,41 @@ Esta verificación es necesaria para poder continuar con el proceso de borrado o
 Para fines de verificación y registro, necesitamos que por favor nos confirmes a continuación tu *nombre completo*. 
 """;
   }
+
+  String _confirmacionBorradoMensaje({String? nombre, String? numeroE164}) {
+    final saludo = (nombre != null && nombre.trim().isNotEmpty) ? "Perfecto $nombre,\n\n" : "Perfecto,\n\n";
+    final lineaNumero = (numeroE164 != null && numeroE164.isNotEmpty)
+        ? "Tu solicitud se registró desde el número *$numeroE164* vinculado a tu cuenta.\n\n"
+        : "";
+
+    return """
+${saludo}Hemos recibido tu decisión de *ELIMINAR definitivamente* tus datos personales.
+
+$lineaNumero📌 Conforme a la Ley 1581 de 2012, procederemos con el borrado total de tu información (historial, solicitudes, documentos y beneficios asociados) en un plazo *no mayor a 48 horas*.
+
+⚠️ Esta acción es *irreversible*. Si deseas volver a usar la plataforma, deberás registrarte nuevamente desde cero.
+
+Gracias por tu confirmación. 💜
+""";
+  }
+
+  String _confirmacionSuspensionMensaje({String? nombre, String? numeroE164}) {
+    final saludo = (nombre != null && nombre.trim().isNotEmpty) ? "Perfecto $nombre,\n\n" : "Perfecto,\n\n";
+    final lineaNumero = (numeroE164 != null && numeroE164.isNotEmpty)
+        ? "Tu solicitud se registró desde el número *$numeroE164* vinculado a tu cuenta.\n\n"
+        : "";
+
+    return """
+${saludo}Hemos recibido tu decisión de *SUSPENDER* el tratamiento de tus datos personales.
+
+$lineaNumero🛑 Desde este momento, tu información quedará en estado de *suspensión*: no será usada para nuevos procesos, salvo los estrictamente necesarios para cumplir deberes legales o contractuales ya vigentes.
+
+✅ Podrás *reactivar* tu cuenta cuando desees, informándonos por este mismo medio.
+
+Gracias por tu confirmación. 💜
+""";
+  }
+
 
 
   // 🔔 CONFIRMACIÓN – Muestra un alert antes de enviar mensajes delicados
