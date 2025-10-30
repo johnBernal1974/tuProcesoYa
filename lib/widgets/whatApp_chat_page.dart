@@ -1236,10 +1236,10 @@ Para fines de verificación y registro, necesitamos que por favor nos confirmes 
                 child: Center(child: CircularProgressIndicator()),
               ),
             if (!_cargandoPpl && _pplResults.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 6),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(12, 4, 12, 6),
                 child: Row(
-                  children: const [
+                  children: [
                     Icon(Icons.person_search, size: 18, color: Colors.deepPurple),
                     SizedBox(width: 6),
                     Text('Resultados en Ppl', style: TextStyle(fontWeight: FontWeight.w700)),
