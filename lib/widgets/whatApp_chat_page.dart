@@ -901,12 +901,20 @@ https://www.tuprocesoya.com
                               ),
 
                               // ✅ Confirmación – Opción 1: Borrado definitivo (48h)
+                              // ✅ Confirmación – Opción 1: Borrado definitivo (48 h)
                               _buildQuickMessageCard(
                                 Icons.delete_forever,
                                 "Confirmar\nBorrado (1)",
                                 _confirmacionBorradoMensaje(
                                   nombre: primerNombre.isNotEmpty ? primerNombre : null,
                                   numeroE164: numero,
+                                ),
+                                onTap: () => _confirmarEnvioMensaje(
+                                  _confirmacionBorradoMensaje(
+                                    nombre: primerNombre.isNotEmpty ? primerNombre : null,
+                                    numeroE164: numero,
+                                  ),
+                                  "confirmación de borrado (opción 1)",
                                 ),
                               ),
 
@@ -918,8 +926,14 @@ https://www.tuprocesoya.com
                                   nombre: primerNombre.isNotEmpty ? primerNombre : null,
                                   numeroE164: numero,
                                 ),
+                                onTap: () => _confirmarEnvioMensaje(
+                                  _confirmacionSuspensionMensaje(
+                                    nombre: primerNombre.isNotEmpty ? primerNombre : null,
+                                    numeroE164: numero,
+                                  ),
+                                  "confirmación de suspensión (opción 2)",
+                                ),
                               ),
-
                               if (estaRegistrado && !isPaid)
                                 _buildQuickMessageCard(
                                   Icons.lock_outline,
