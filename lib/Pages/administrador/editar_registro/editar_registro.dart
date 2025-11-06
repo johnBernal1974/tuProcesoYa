@@ -375,7 +375,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 ),
             ],
           ),
-          Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 11)),
+          Text('ID: ${widget.doc.id}', style: const TextStyle(fontSize: 14)),
           const SizedBox(height: 20),
           if (status == 'activado' || status == 'por_activar')
             Padding(

@@ -23,14 +23,38 @@ class ResumenSolicitudesWidget extends StatefulWidget {
 }
 
 class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
+  // 🔹 Control del cambio de estado
+  String? _idOriginalSeleccionado;
+  String? _origenSeleccionado;
+  String? _estadoSeleccionado;
+  bool _guardandoEstado = false;
+
+  final List<String> _estadosDisponibles = [
+    'Enviado',
+    'Concedido',
+    'Negado',
+  ];
+
+  // 🔹 Future cacheado para evitar recargar en cada setState
+  late Future<QuerySnapshot> _futureSolicitudes;
+
+  // 🔹 Overrides de estado para reflejar el cambio sin volver a consultar Firestore
+  final Map<String, String> _statusOverrides = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _futureSolicitudes = FirebaseFirestore.instance
+        .collection('solicitudes_usuario')
+        .where('idUser', isEqualTo: widget.idPpl)
+        .orderBy('fecha', descending: true)
+        .get();
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<QuerySnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('solicitudes_usuario')
-          .where('idUser', isEqualTo: widget.idPpl)
-          .orderBy('fecha', descending: true)
-          .get(),
+      future: _futureSolicitudes,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Center(child: CircularProgressIndicator());
@@ -50,10 +74,18 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
             final doc = solicitudes[index];
             final tipo = doc['tipo'] ?? 'Sin tipo';
             final numero = doc['numeroSeguimiento'] ?? '—';
-            final estadoRaw = doc['status'] ?? '—';
+
+            // 👇 Tomamos el estado de Firestore o el override en memoria si existe
+            final estadoRawFirestore = doc['status'] ?? '—';
+            final estadoRaw = _statusOverrides[doc.id] ?? estadoRawFirestore;
+
             final estilo = _obtenerEstiloEstado(estadoRaw);
             final origen = doc['origen'] ?? '';
             final idOriginal = doc['idOriginal'] ?? '';
+
+            final bool esSeleccionada =
+                _idOriginalSeleccionado == idOriginal &&
+                    _origenSeleccionado == origen;
 
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,6 +150,125 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
                   ),
                 ),
 
+                // 🔹 Botón para iniciar el cambio de estado de ESTA solicitud
+                if (!esSeleccionada)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _idOriginalSeleccionado = idOriginal;
+                          _origenSeleccionado = origen;
+                          _estadoSeleccionado = null;
+                          _guardandoEstado = false;
+                        });
+                      },
+                      child: const Text(
+                        "Actualizar estado de la solicitud",
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
+
+                // 🔹 Controles cuando esta solicitud está seleccionada
+                if (esSeleccionada) ...[
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    dropdownColor: Colors.white,
+                    value: _estadoSeleccionado,
+                    decoration: const InputDecoration(
+                      labelText: 'Nuevo estado',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    items: _estadosDisponibles
+                        .map(
+                          (estado) => DropdownMenuItem<String>(
+                        value: estado,
+                        child: Text(estado),
+                      ),
+                    )
+                        .toList(),
+                    onChanged: (valor) {
+                      setState(() {
+                        _estadoSeleccionado = valor;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: _guardandoEstado
+                              ? null
+                              : () async {
+                            if (_estadoSeleccionado == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Por favor selecciona un estado antes de guardar.'),
+                                ),
+                              );
+                              return;
+                            }
+
+                            setState(() {
+                              _guardandoEstado = true;
+                            });
+
+                            try {
+                              await _actualizarEstadoSolicitud();
+
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Estado actualizado a $_estadoSeleccionado'),
+                                ),
+                              );
+
+                              // ✅ Actualizamos el estado en memoria (para que cambie el texto "Estado: ...")
+                              setState(() {
+                                // Buscamos los docs de solicitudes_usuario que coinciden
+                                _statusOverrides[doc.id] = _estadoSeleccionado!;
+                                // Ocultamos dropdown y botones
+                                _idOriginalSeleccionado = null;
+                                _origenSeleccionado = null;
+                                _estadoSeleccionado = null;
+                              });
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Error al actualizar el estado: $e'),
+                                ),
+                              );
+                            } finally {
+                              setState(() {
+                                _guardandoEstado = false;
+                              });
+                            }
+                          },
+                          child: Text(_guardandoEstado ? 'Guardando...' : 'Guardar estado'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: _guardandoEstado
+                            ? null
+                            : () {
+                          setState(() {
+                            _idOriginalSeleccionado = null;
+                            _origenSeleccionado = null;
+                            _estadoSeleccionado = null;
+                          });
+                        },
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
                 if (widget.mostrarCorreos)
                   Padding(
                     padding: const EdgeInsets.only(left: 16.0, bottom: 12.0),
@@ -142,6 +293,45 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
         );
       },
     );
+  }
+
+  // 🔹 Actualiza el estado en la colección del servicio y en solicitudes_usuario
+  Future<void> _actualizarEstadoSolicitud() async {
+    if (_estadoSeleccionado == null ||
+        _idOriginalSeleccionado == null ||
+        _origenSeleccionado == null) {
+      return;
+    }
+
+    final String nuevoStatus = _estadoSeleccionado!;
+    final String idOriginal = _idOriginalSeleccionado!;
+    final String origen = _origenSeleccionado!;
+    final String idUser = widget.idPpl; // PPL asociado
+
+    final db = FirebaseFirestore.instance;
+    final batch = db.batch();
+
+    // 1. Actualizar documento en la colección del servicio (ej: redenciones_solicitados)
+    final servicioRef = db.collection(origen).doc(idOriginal);
+    batch.update(servicioRef, {
+      'status': nuevoStatus,
+    });
+
+    // 2. Actualizar documentos en solicitudes_usuario
+    final solicitudesSnap = await db
+        .collection('solicitudes_usuario')
+        .where('idOriginal', isEqualTo: idOriginal)
+        .where('idUser', isEqualTo: idUser)
+        .where('origen', isEqualTo: origen)
+        .get();
+
+    for (final d in solicitudesSnap.docs) {
+      batch.update(d.reference, {
+        'status': nuevoStatus,
+      });
+    }
+
+    await batch.commit();
   }
 
   // Requiere: import 'package:http/http.dart' as http;
@@ -401,7 +591,7 @@ class _ResumenSolicitudesWidgetState extends State<ResumenSolicitudesWidget> {
       s = s.replaceAll(
         RegExp(
           r'<div[^>]*class=["\"]?gmail_attr[^>]*>[\s\S]*?escribi[oó]\s*:\s*<br\s*/?>\s*</div>\s*',
-        caseSensitive: false,
+          caseSensitive: false,
           dotAll: true,
         ),
         '',
