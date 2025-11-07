@@ -9,7 +9,8 @@ class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
   final String seguimiento; // numeroSeguimiento
   final String seccionHistorial;
 
-  const BotonNotificarRespuestaWhatsApp({
+  const
+  BotonNotificarRespuestaWhatsApp({
     Key? key,
     required this.docId,
     required this.servicio,
@@ -92,23 +93,26 @@ class BotonNotificarRespuestaWhatsApp extends StatelessWidget {
             return;
           }
 
-          // Mostrar loader de envío
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (_) => AlertDialog(
-              backgroundColor: blanco,
-              title: const Text('Enviando mensaje'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Text('Por favor espere...'),
-                  SizedBox(height: 20),
-                  CircularProgressIndicator(),
-                ],
+          if(context.mounted){
+            // Mostrar loader de envío
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => const AlertDialog(
+                backgroundColor: blanco,
+                title: Text('Enviando mensaje'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('Por favor espere...'),
+                    SizedBox(height: 20),
+                    CircularProgressIndicator(),
+                  ],
+                ),
               ),
-            ),
-          );
+            );
+          }
+
 
           // Enviar mensaje
           await WhatsappService.enviarNotificacionRespuesta(

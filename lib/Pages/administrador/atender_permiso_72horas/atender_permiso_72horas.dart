@@ -1540,11 +1540,14 @@ class _AtenderPermiso72HorasPageState extends State<AtenderPermiso72HorasPage> {
 
   String generarTextoPretencionesParaPermiso72Horas() {
     return """
-PRIMERO: Que se ordene al establecimiento penitenciario y carcelario, área jurídica, emitir la documentación correspondiente y certificar el cómputo y abono de redención de pena por actividades de trabajo. estudio o enseñanza, así como cualquier otro requisito necesario para el trámite del permiso de hasta 72 horas.
+PRIMERO: Que se ordene al establecimiento penitenciario y carcelario, área jurídica, emitir la documentación correspondiente y certificar el cómputo y abono de redención de pena por actividades de trabajo, estudio o enseñanza, así como cualquier otro requisito necesario para el trámite del permiso de hasta 72 horas.
 
-SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establecido en el artículo 147 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de la tercera parte de la pena, la buena conducta, la participación en actividades de resocialización, y la existencia de un entorno familiar favorable.
+SEGUNDO: Otorgar el beneficio de permiso de hasta 72 horas, conforme a lo establecido en el artículo 147 del Código Penitenciario y Carcelario (Ley 65 de 1993), teniendo en cuenta el cumplimiento de la tercera parte de la pena, la buena conducta, la participación en actividades de resocialización y la existencia de un entorno familiar favorable.
+
+TERCERO: Que se disponga el seguimiento y control del permiso por parte del equipo técnico y de vigilancia del establecimiento penitenciario, dejando constancia de su cumplimiento y retorno oportuno, como muestra del compromiso del solicitante con el proceso de resocialización y el respeto a las decisiones judiciales.
 """;
   }
+
 
 
 
@@ -1661,8 +1664,11 @@ $textoCumplimientoPena
 Durante el disfrute del permiso, permaneceré en el domicilio ubicado en la $direccion, en el municipio de $municipio, departamento de $departamento, bajo el cuidado y supervisión de $nombreResponsable, quien es mi $parentescoResponsable y quien ha asumido el compromiso de brindarme apoyo y acompañamiento permanente.$textoHijos
 
 Esta solicitud representa para mí una oportunidad de inmenso valor en mi proceso de reintegración social y familiar, reafirmando mi propósito de construir un proyecto de vida digno y en armonía con mi entorno.
+
+Adicionalmente, Honorable Juez, quiero expresar que asumo este permiso, de ser concedido, con la más profunda responsabilidad y compromiso. Mi intención es cumplir de manera estricta y respetuosa cada una de las condiciones que se dispongan, honrando la confianza que el despacho de Su Señoría pueda depositar en mí. Tener la posibilidad de compartir estas horas con mi madre y mi hija significaría no solo un alivio emocional enorme, sino también un impulso decisivo para seguir perseverando en mi proceso de cambio, reafirmando ante ellos —y ante mí mismo— que soy capaz de responder positivamente a la oportunidad que la justicia me brinda. Estoy convencido de que este espacio de encuentro y apoyo afectivo tendrá un efecto profundamente restaurador en nuestra familia y fortalecerá mi determinación de continuar por el camino de la resocialización y el respeto a la ley.
 """;
   }
+
 
 
   void fetchDocumentoPermiso72Horas() async {

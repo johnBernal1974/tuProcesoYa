@@ -1155,7 +1155,22 @@ Gracias por tu confirmación. 💜
     final createdAt = (mensaje['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now();
 
     if (esImagen) {
-      return Image.network(contenido, width: 200, height: 200, fit: BoxFit.cover);
+      final String url = contenido?.toString() ?? '';
+      if (url.isEmpty) {
+        return const Text("Imagen no disponible");
+      }
+
+      return GestureDetector(
+        onTap: () {
+          html.window.open(url, '_blank');
+        },
+        child: Image.network(
+          url,
+          width: 200,
+          height: 200,
+          fit: BoxFit.cover,
+        ),
+      );
     }
 
     if (esArchivo) {
@@ -1679,6 +1694,15 @@ Gracias por tu confirmación. 💜
     );
   }
 
+  void _openImageBytesInNewTab(Uint8List bytes) {
+    final blob = html.Blob([bytes], 'image/jpeg'); // puedes usar image/png si lo prefieres
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    html.window.open(url, '_blank');
+    // Opcional: liberar la URL
+    html.Url.revokeObjectUrl(url);
+  }
+
+
 
   Widget _buildImageMessage(
       bool isAdmin,
@@ -1686,25 +1710,14 @@ Gracias por tu confirmación. 💜
       String messageId, {
         String? mediaId,
         String? from,
-        DateTime? createdAt, // ⚠️ Asegúrate de que al llamar pases createdAt
+        DateTime? createdAt,
       }) {
     return Align(
       alignment: isAdmin ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
         onTap: () {
-          showDialog(
-            context: context,
-            builder: (context) => Dialog(
-              child: InteractiveViewer(
-                maxScale: 8.0,
-                minScale: 0.5,
-                child: Image.memory(
-                  bytes,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          );
+          // 🟣 Abrir la imagen en una pestaña nueva (Flutter Web)
+          _openImageBytesInNewTab(bytes);
         },
         child: ConstrainedBox(
           constraints: const BoxConstraints(
@@ -1712,8 +1725,7 @@ Gracias por tu confirmación. 💜
           ),
           child: Card(
             elevation: 1.5,
-            color: isAdmin ? const Color(0xFFFBC02D)
-                : Colors.white,
+            color: isAdmin ? const Color(0xFFFBC02D) : Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
             ),
@@ -1771,8 +1783,8 @@ Gracias por tu confirmación. 💜
                             }
                           }
                         },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
+                        itemBuilder: (context) => const [
+                          PopupMenuItem(
                             value: 'borrar',
                             child: Row(
                               children: [
@@ -1782,7 +1794,7 @@ Gracias por tu confirmación. 💜
                               ],
                             ),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'responder',
                             child: Row(
                               children: [
@@ -1792,7 +1804,7 @@ Gracias por tu confirmación. 💜
                               ],
                             ),
                           ),
-                          const PopupMenuItem(
+                          PopupMenuItem(
                             value: 'guardar',
                             child: Row(
                               children: [
@@ -1814,6 +1826,7 @@ Gracias por tu confirmación. 💜
       ),
     );
   }
+
 
   void _responderMensaje(String contenido, {bool esImagen = false}) {
     _mensajeRespondido.value = {
@@ -2044,44 +2057,98 @@ Gracias por tu confirmación. 💜
     final fileName = result.files.single.name;
     final mimeType = _getMimeType(tipo);
 
-    // 2. Subir a Firebase Storage
-    final storageRef = FirebaseStorage.instance.ref().child('whatsapp_files/$fileName');
-    await storageRef.putData(bytes);
-    final fileUrl = await storageRef.getDownloadURL();
-    final nombreAdmin = AdminProvider().adminName;
+    if (!mounted) return;
 
-    // 3. Llamar a la función Cloud que sube y envía por WhatsApp
-    final uri = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/uploadAndSendWhatsAppMedia");
-
-    final response = await http.post(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        "fileUrl": fileUrl,
-        "mimeType": mimeType,
-        "to": numeroDestino,
-        "caption": fileName,
-      }),
+    // 🔄 Mostrar loader con texto
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 20),
+              Text(
+                tipo == 'image' ? 'Subiendo imagen...' : 'Subiendo documento...',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
 
-    if (response.statusCode == 200) {
-      print("✅ Archivo enviado correctamente por WhatsApp");
-    } else {
-      print("❌ Error al enviar archivo: ${response.body}");
+    try {
+      // 2. Subir a Firebase Storage con contentType correcto
+      final storageRef =
+      FirebaseStorage.instance.ref().child('whatsapp_files/$fileName');
+
+      await storageRef.putData(
+        bytes,
+        SettableMetadata(
+          contentType: mimeType, // 👈 clave para que se abra y no se descargue
+        ),
+      );
+
+      final fileUrl = await storageRef.getDownloadURL();
+      final nombreAdmin = AdminProvider().adminName;
+
+      // 3. Llamar a la función Cloud que envía por WhatsApp
+      final uri = Uri.parse(
+        "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/uploadAndSendWhatsAppMedia",
+      );
+
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          "fileUrl": fileUrl,
+          "mimeType": mimeType,
+          "to": numeroDestino,
+          "caption": fileName,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint("❌ Error al enviar archivo: ${response.body}");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Error enviando el archivo por WhatsApp')),
+          );
+        }
+      } else {
+        debugPrint("✅ Archivo enviado correctamente por WhatsApp");
+      }
+
+      // 4. Guardar en Firestore para mostrar en el chat
+      await FirebaseFirestore.instance.collection('whatsapp_messages').add({
+        'from': 'admin',
+        'adminName': nombreAdmin,
+        'conversationId': numeroDestino,
+        'createdAt': FieldValue.serverTimestamp(),
+        'esImagen': tipo == 'image',
+        'esArchivo': tipo == 'document',
+        'fileName': fileName,
+        'contenido': fileUrl,
+      });
+    } catch (e) {
+      debugPrint('❌ Error en adjuntarYEnviar: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ocurrió un error al adjuntar el archivo')),
+        );
+      }
+    } finally {
+      // 👇 Cerrar el loader sí o sí
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
-
-    // 4. Guardar en Firestore para mostrar en el chat
-    await FirebaseFirestore.instance.collection('whatsapp_messages').add({
-      'from': 'admin',
-      'adminName': nombreAdmin, // 👈 Agregado
-      'conversationId': numeroDestino,
-      'createdAt': FieldValue.serverTimestamp(),
-      'esImagen': tipo == 'image',
-      'esArchivo': tipo == 'document',
-      'fileName': fileName,
-      'contenido': fileUrl,
-    });
-
   }
 
 

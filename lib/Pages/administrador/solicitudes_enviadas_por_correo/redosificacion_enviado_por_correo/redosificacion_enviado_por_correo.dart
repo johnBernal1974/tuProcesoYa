@@ -194,7 +194,7 @@ class _SolicitudesRedosificacionRedencionPenaPorCorreoPageState extends State<So
                                     const SizedBox(height: 30),
                                     BotonNotificarRespuestaWhatsApp(
                                       docId: widget.idDocumento,
-                                      servicio: "Redosificación de redención",
+                                      servicio: "Readecuacion de redención",
                                       seguimiento: widget.numeroSeguimiento,
                                       seccionHistorial: "Redosificación de redención art. 19 ley 2466 de 2025",
                                     ),
