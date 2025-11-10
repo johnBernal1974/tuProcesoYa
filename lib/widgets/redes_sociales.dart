@@ -6,7 +6,7 @@ class RedesSocialesWidget extends StatelessWidget {
 
   final String facebookUrl = 'https://www.facebook.com/profile.php?id=61575010985735';
   final String instagramUrl = 'https://www.instagram.com/tuprocesoya1?utm_source=qr';
-  final String tiktokUrl = 'https://www.tiktok.com/@tuprocesoya2';
+  final String tiktokUrl = 'https://www.tiktok.com/@tuprocesoya';
   final String redPPlUrl = 'https://red-ppl-y-familias.web.app/';
 
   void _abrirUrl(String url) async {

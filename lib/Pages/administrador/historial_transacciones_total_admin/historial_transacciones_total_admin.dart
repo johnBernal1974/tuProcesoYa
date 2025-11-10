@@ -5,14 +5,14 @@ import 'package:intl/intl.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../src/colors/colors.dart';
 
-class AdminTransaccionesPage extends StatefulWidget {
-  const AdminTransaccionesPage({super.key});
+class AdminTransaccionesHistoricoPage extends StatefulWidget {
+  const AdminTransaccionesHistoricoPage({super.key});
 
   @override
-  _AdminTransaccionesPageState createState() => _AdminTransaccionesPageState();
+  _AdminTransaccionesHistoricoPageState createState() => _AdminTransaccionesHistoricoPageState();
 }
 
-class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
+class _AdminTransaccionesHistoricoPageState extends State<AdminTransaccionesHistoricoPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   Map<String, String> _userNames = {};
   Map<String, bool> _expandedCards = {};
@@ -22,7 +22,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
   Widget build(BuildContext context) {
 
     return MainLayout(
-      pageTitle: "Transacciones ${DateFormat('MMMM yyyy', 'es_CO').format(DateTime.now())}",
+      pageTitle: "Historial de Transacciones",
       content: Center(
         child: SizedBox(
           width: MediaQuery.of(context).size.width >= 1000 ? double.infinity : double.infinity,
@@ -30,7 +30,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
             padding: const EdgeInsets.all(16.0),
             child: StreamBuilder<QuerySnapshot>(
               stream: _firestore
-                  .collection("recargas")
+                  .collection("recargas_historicas")
                   .orderBy("createdAt", descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
@@ -75,20 +75,6 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: ElevatedButton(
-                        onPressed: _archivarYVaciarRecargas,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                        ),
-                        child: const Text(
-                          'Cerrar periodo y archivar',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                       decoration: BoxDecoration(
@@ -328,52 +314,7 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
     );
   }
 
-  Future<void> _archivarYVaciarRecargas() async {
-    try {
-      final snapshot = await _firestore.collection('recargas').get();
 
-      if (snapshot.docs.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No hay transacciones para archivar.')),
-        );
-        return;
-      }
-
-      // 📆 Datos del periodo actual
-      final ahora = DateTime.now();
-      final String periodoLegible = DateFormat("MMMM yyyy", "es_CO").format(ahora); // ej: "noviembre 2025"
-      final String periodoClave = DateFormat("yyyyMM").format(ahora);              // ej: "202511"
-
-      WriteBatch batch = _firestore.batch();
-
-      for (final doc in snapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-
-        final historicoRef = _firestore
-            .collection('recargas_historicas')
-            .doc(doc.id);
-
-        batch.set(historicoRef, {
-          ...data,
-          'archivadoEn': FieldValue.serverTimestamp(),
-          'periodo': periodoLegible,
-          'periodoClave': periodoClave,
-        });
-
-        batch.delete(doc.reference);
-      }
-
-      await batch.commit();
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transacciones archivadas correctamente.')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al archivar: $e')),
-      );
-    }
-  }
 
   /// **🔹 Obtiene el nombre del usuario desde Firestore**
   Future<String> _getUserName(String userId) async {

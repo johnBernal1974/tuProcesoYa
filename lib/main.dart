@@ -47,6 +47,7 @@ import 'Pages/administrador/historial_solicitudes_redosificacion_admin/historial
 import 'Pages/administrador/historial_solicitudes_trasladoPenitenciaria/historial_solicitudes_trasladoPenitenciaria.dart';
 import 'Pages/administrador/historial_solicitudes_tutela_admin/historial_solicitudes_tutela_admin.dart';
 import 'Pages/administrador/historial_transacciones_admin/historial_transacciones.dart';
+import 'Pages/administrador/historial_transacciones_total_admin/historial_transacciones_total_admin.dart';
 import 'Pages/administrador/hoistorial_pago_comisiones/hoistorial_pago_comisiones.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
@@ -277,6 +278,7 @@ class MyApp extends StatelessWidget {
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
+        'admin_transacciones_historico': (context) => const AdminTransaccionesHistoricoPage(),
         'configuraciones': (context) => ConfiguracionesPage(),
         'derechos_tutelables_page': (context) => const DerechosTutelablesPage(),
         'referidores_page_admin': (context) => const AdminReferidoresPage(),

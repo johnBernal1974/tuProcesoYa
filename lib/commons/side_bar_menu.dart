@@ -628,9 +628,15 @@ class _SideBarState extends State<SideBar> {
             children: [
               _buildDrawerTile(
                 context,
-                "Transacciones",
-                Icons.monitor_heart_rounded,
+                "Transacciones mes actual",
+                Icons.monetization_on,
                 'admin_transacciones',
+              ),
+              _buildDrawerTile(
+                context,
+                "Historial Transacciones",
+                Icons.monitor_heart_rounded,
+                'admin_transacciones_historico',
               ),
               _buildDrawerTile(
                 context,
@@ -886,24 +892,24 @@ class _SideBarState extends State<SideBar> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             children: [
-              _buildDrawerTile(
-                context,
-                "Transacciones",
-                Icons.monitor_heart_rounded,
-                'admin_transacciones',
-              ),
+              // _buildDrawerTile(
+              //   context,
+              //   "Transacciones",
+              //   Icons.monitor_heart_rounded,
+              //   'admin_transacciones',
+              // ),
               _buildDrawerTile(
                 context,
                 "Referidores",
                 Icons.double_arrow_outlined,
                 'referidores_page_admin',
               ),
-              _buildDrawerTile(
-                context,
-                "Pago de comisiones",
-                Icons.money_rounded,
-                'historial_pago_comisiones_page_admin',
-              ),
+              // _buildDrawerTile(
+              //   context,
+              //   "Pago de comisiones",
+              //   Icons.money_rounded,
+              //   'historial_pago_comisiones_page_admin',
+              // ),
               _buildDrawerTile(
                 context,
                 "Buzón de sugerencias",
