@@ -14,8 +14,9 @@ class InfoPage extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isTablet = screenWidth >= 600 && screenWidth < 1000;
     final isDesktop = screenWidth >= 1000;
-    final contentPadding = EdgeInsets.symmetric(horizontal: isDesktop ? 200 : isTablet ? 100 : 25);
-
+    final contentPadding = EdgeInsets.symmetric(
+      horizontal: isDesktop ? 60 : isTablet ? 40 : 20,
+    );
     return Scaffold(
       backgroundColor: blancoCards,
       body: SingleChildScrollView(
@@ -301,8 +302,8 @@ class InfoPage extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(12),
                                   child: Image.asset(
                                     thumbnail,
-                                    width: 300,
-                                    height: 300,
+                                    width: isWide ? 220 : 180,
+                                    height: isWide ? 220 : 180,
                                     fit: BoxFit.cover,
                                   ),
                                 ),
@@ -310,38 +311,16 @@ class InfoPage extends StatelessWidget {
                                 Text(
                                   title,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     color: Colors.deepPurple,
                                     fontWeight: FontWeight.bold,
+                                    fontSize: isWide ? 14 : 12,
                                   ),
                                 ),
                               ],
                             ),
                           );
                         }
-
-                        // Widget buildRedPplCard(double width) {
-                        //   return Column(
-                        //     children: [
-                        //       SizedBox(
-                        //         width: width,
-                        //         child: const RedPplImageLink(
-                        //           imageAsset: 'assets/images/imagen_red.png',
-                        //         ),
-                        //       ),
-                        //       const SizedBox(height: 8),
-                        //       const Text(
-                        //         'Ingresa a la red, anímate a ser\nparte del cambio',
-                        //         textAlign: TextAlign.center,
-                        //         style: TextStyle(
-                        //           color: Colors.deepPurple,
-                        //           fontWeight: FontWeight.bold,
-                        //         ),
-                        //       ),
-                        //     ],
-                        //   );
-                        // }
-
                         return isWide
                             ? Row(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -361,10 +340,25 @@ class InfoPage extends StatelessWidget {
                               title: 'Conoce a ¡Tu Proceso Ya!\nen solo un minuto',
                             ),
                             const SizedBox(width: 24),
-                            //buildRedPplCard(300),
+                            buildVideo(
+                              thumbnail: 'assets/images/thumbnail_registro.png',
+                              url:
+                              'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/como_registrarse.mp4?alt=media&token=bfb039dd-fb00-453c-8595-476bac8191b9',
+                              title: 'Tutorial para\nhacer el registro',
+                            ),
+                            const SizedBox(width: 24),
+                            buildVideo(
+                              thumbnail: 'assets/images/thumnail_como_funciona.png',
+                              url:
+                              'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/como_funciona_la_app.mp4?alt=media&token=2acccad4-5b5d-4b85-ba47-8c47ab6c3e5f',
+                              title: 'Conoce como\nfunciona la app.',
+                            ),
                           ],
                         )
-                            : Column(
+                            : Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 16,      // espacio horizontal entre thumbnails
+                          runSpacing: 20,   // espacio vertical entre filas
                           children: [
                             buildVideo(
                               thumbnail: 'assets/images/video_thumbnail2.jpeg',
@@ -372,15 +366,24 @@ class InfoPage extends StatelessWidget {
                               'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/video_privado_libertad_familias.mp4?alt=media&token=6b110ff8-9f1b-46d6-a735-907708007b0b',
                               title: 'Su familia también paga una\ncondena silenciosa',
                             ),
-                            const SizedBox(height: 20),
                             buildVideo(
                               thumbnail: 'assets/images/video_thumbnail.jpeg',
                               url:
                               'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/video_introduccionTuProcesoYa.mp4?alt=media&token=319ca517-c558-4cee-8f8d-edd8c6264eea',
                               title: 'Conoce a ¡Tu Proceso Ya!\nen solo un minuto',
                             ),
-                            const SizedBox(height: 20),
-                            //buildRedPplCard(400),
+                            buildVideo(
+                              thumbnail: 'assets/images/thumbnail_registro.png',
+                              url:
+                              'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/como_registrarse.mp4?alt=media&token=bfb039dd-fb00-453c-8595-476bac8191b9',
+                              title: 'Tutorial para\nhacer el registro',
+                            ),
+                            buildVideo(
+                              thumbnail: 'assets/images/thumnail_como_funciona.png',
+                              url:
+                              'https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/como_funciona_la_app.mp4?alt=media&token=2acccad4-5b5d-4b85-ba47-8c47ab6c3e5f',
+                              title: 'Conoce como\nfunciona la app.',
+                            ),
                           ],
                         );
                       },

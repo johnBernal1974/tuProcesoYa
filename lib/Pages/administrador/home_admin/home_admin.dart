@@ -663,13 +663,34 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                           child: WhatsAppChatWrapper(),
                                         ),
 
-                                      ElevatedButton.icon(
-                                        icon: Icon(Icons.download),
-                                        label: Text('Descargar Base PPL (Excel)'),
-                                        onPressed: exportPplCsvWeb,
-                                      ),
+                                      FutureBuilder<DocumentSnapshot>(
+                                        future: FirebaseFirestore.instance
+                                            .collection('admin')
+                                            .doc(FirebaseAuth.instance.currentUser!.uid)
+                                            .get(),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState == ConnectionState.waiting) {
+                                            return const SizedBox.shrink(); // o un loader pequeño
+                                          }
 
+                                          if (!snapshot.hasData || !snapshot.data!.exists) {
+                                            return const SizedBox.shrink();
+                                          }
 
+                                          final data = snapshot.data!.data() as Map<String, dynamic>?;
+                                          final rol = data?['rol'] ?? '';
+
+                                          if (rol != 'masterFull') {
+                                            return const SizedBox.shrink(); // no muestra nada si no es masterFull
+                                          }
+
+                                          return ElevatedButton.icon(
+                                            icon: const Icon(Icons.download),
+                                            label: const Text('Descargar Base PPL (Excel)'),
+                                            onPressed: exportPplCsvWeb,
+                                          );
+                                        },
+                                      )
                                     ],
                                   );
                                 } else {
