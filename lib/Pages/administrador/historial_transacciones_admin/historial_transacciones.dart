@@ -14,18 +14,17 @@ class AdminTransaccionesPage extends StatefulWidget {
 
 class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  Map<String, String> _userNames = {};
-  Map<String, bool> _expandedCards = {};
-
 
   @override
   Widget build(BuildContext context) {
-
     return MainLayout(
-      pageTitle: "Transacciones ${DateFormat('MMMM yyyy', 'es_CO').format(DateTime.now())}",
+      pageTitle:
+      "Transacciones ${DateFormat('MMMM yyyy', 'es_CO').format(DateTime.now())}",
       content: Center(
         child: SizedBox(
-          width: MediaQuery.of(context).size.width >= 1000 ? double.infinity : double.infinity,
+          width: MediaQuery.of(context).size.width >= 1000
+              ? double.infinity
+              : double.infinity,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: StreamBuilder<QuerySnapshot>(
@@ -39,38 +38,72 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("No hay transacciones registradas."));
+                  return const Center(
+                      child: Text("No hay transacciones registradas."));
                 }
 
-                List<QueryDocumentSnapshot> transacciones = snapshot.data!.docs;
+                List<QueryDocumentSnapshot> transacciones =
+                    snapshot.data!.docs;
 
                 // Agrupar por semana
-                Map<String, List<QueryDocumentSnapshot>> transaccionesPorSemana = {};
+                Map<String, List<QueryDocumentSnapshot>>
+                transaccionesPorSemana = {};
                 Map<String, int> totalPorSemana = {};
                 int totalGlobal = 0;
 
+                // 🔹 Nuevos mapas: resumen por concepto (solo aprobadas)
+                Map<String, int> conteoPorConcepto = {};
+                Map<String, int> valorPorConcepto = {};
+
                 for (var transaction in transacciones) {
-                  var fecha = (transaction["createdAt"] as Timestamp).toDate();
+                  var fecha =
+                  (transaction["createdAt"] as Timestamp).toDate();
+                  final status = transaction["status"] as String? ?? "";
+                  final amount =
+                      (transaction["amount"] as num?)?.toInt() ?? 0;
+
+                  // 🔹 Obtener concepto desde reference (antes del primer "_")
+                  String referenciaOriginal =
+                      transaction["reference"] ?? "";
+                  String concepto = "";
+                  if (referenciaOriginal.isNotEmpty) {
+                    concepto = referenciaOriginal.split('_').first;
+                  }
+                  if (concepto.isEmpty) {
+                    concepto = "Sin concepto";
+                  }
+
+                  // 🔹 Resumen global por concepto (solo aprobadas)
+                  if (status == "APPROVED") {
+                    conteoPorConcepto[concepto] =
+                        (conteoPorConcepto[concepto] ?? 0) + 1;
+                    valorPorConcepto[concepto] =
+                        (valorPorConcepto[concepto] ?? 0) + amount;
+                    totalGlobal += amount;
+                  }
 
                   // 🔥 Obtener el inicio y fin de la semana (lunes - domingo)
-                  DateTime inicioSemana = fecha.subtract(Duration(days: fecha.weekday - 1)); // Lunes
-                  DateTime finSemana = inicioSemana.add(const Duration(days: 6)); // Domingo
+                  DateTime inicioSemana = fecha
+                      .subtract(Duration(days: fecha.weekday - 1)); // Lunes
+                  DateTime finSemana =
+                  inicioSemana.add(const Duration(days: 6)); // Domingo
 
                   // 🔥 Formatear para mostrar "Semana entre el 10 y el 16 de marzo de 2025"
-                  String semana = "Semana entre el ${DateFormat("d", 'es_CO').format(inicioSemana)} "
+                  String semana =
+                      "Semana entre el ${DateFormat("d", 'es_CO').format(inicioSemana)} "
                       "y el ${DateFormat("d 'de' MMMM 'de' yyyy", 'es_CO').format(finSemana)}";
 
                   transaccionesPorSemana.putIfAbsent(semana, () => []);
                   transaccionesPorSemana[semana]!.add(transaction);
-                  if (transaction["status"] == "APPROVED") {
-                    totalPorSemana[semana] = (totalPorSemana[semana] ?? 0) + (transaction["amount"] as num).toInt();
-                    totalGlobal += (transaction["amount"] as num).toInt();
+                  if (status == "APPROVED") {
+                    totalPorSemana[semana] =
+                        (totalPorSemana[semana] ?? 0) + amount;
                   }
                 }
 
-
                 // Detectar si es móvil o PC
-                bool esMovil = MediaQuery.of(context).size.width < 800;
+                bool esMovil =
+                    MediaQuery.of(context).size.width < 800;
 
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,15 +123,17 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                     ),
                     const SizedBox(height: 10),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: gris, width: 3),
+                        border:
+                        Border.all(color: gris, width: 3),
                       ),
                       child: Column(
                         children: [
                           const Text(
-                            "Valor Total de Transacciones",
+                            "Valor Total de Transacciones Aprobadas",
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
@@ -116,10 +151,51 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                         ],
                       ),
                     ),
+
+                    const SizedBox(height: 10),
+
+                    // 🔹 Botón para ver resumen por concepto (Alert superpuesto)
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        icon: const Icon(Icons.analytics, size: 18),
+                        label: const Text(
+                          "Ver resumen por concepto",
+                          style: TextStyle(fontSize: 12),
+                        ),
+                        onPressed: conteoPorConcepto.isEmpty
+                            ? null
+                            : () {
+                          _mostrarResumenConceptosDialog(
+                            context,
+                            conteoPorConcepto,
+                            valorPorConcepto,
+                          );
+                        },
+                      ),
+                    ),
+
                     const SizedBox(height: 20),
-                    esMovil
-                        ? _buildMobileView(transaccionesPorSemana, totalPorSemana)
-                        : _buildDesktopView(transaccionesPorSemana, totalPorSemana),
+
+                    // 🔹 Lista por semana (único scroll vertical)
+                    Expanded(
+                      child: transaccionesPorSemana.isEmpty
+                          ? const Center(
+                        child: Text(
+                          "No hay transacciones registradas.",
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      )
+                          : esMovil
+                          ? _buildMobileView(
+                        transaccionesPorSemana,
+                        totalPorSemana,
+                      )
+                          : _buildDesktopView(
+                        transaccionesPorSemana,
+                        totalPorSemana,
+                      ),
+                    ),
                   ],
                 );
               },
@@ -130,139 +206,471 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
     );
   }
 
-  /// **🔹 Construye la Vista en Móvil (Tarjetas)**
-  Widget _buildMobileView(Map<String, List<QueryDocumentSnapshot>> transaccionesPorSemana, Map<String, int> totalPorSemana) {
-    return Expanded(
-      child: ListView(
-        children: transaccionesPorSemana.entries.map((entry) {
-          String semana = entry.key;
-          List<QueryDocumentSnapshot> transacciones = entry.value;
+  /// 🔹 AlertDialog con resumen por concepto (igual que el histórico)
+  void _mostrarResumenConceptosDialog(
+      BuildContext context,
+      Map<String, int> conteoPorConcepto,
+      Map<String, int> valorPorConcepto,
+      ) {
+    // 🔹 Totales globales del resumen
+    final int totalServicios =
+    conteoPorConcepto.values.fold(0, (a, b) => a + b);
+    final int totalValor =
+    valorPorConcepto.values.fold(0, (a, b) => a + b);
 
-          return Column(
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: blanco,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            "Resumen por concepto",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.deepPurple,
+            ),
+          ),
+          content: SizedBox(
+            width: MediaQuery.of(ctx).size.width * 0.8,
+            height: MediaQuery.of(ctx).size.height * 0.6,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 🔹 Totales generales arriba del cuadro
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.only(bottom: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.deepPurple.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Totales generales (pagos aprobados)",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Total servicios / pagos: $totalServicios",
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      Text(
+                        "Valor total: \$${NumberFormat("#,###", "es_CO").format(totalValor)}",
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 🔹 Contenido según dispositivo (lista o DataTable)
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: _buildResumenConceptos(
+                      ctx,
+                      conteoPorConcepto,
+                      valorPorConcepto,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text("Cerrar"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// 🔹 Contenido del resumen por concepto (responsivo)
+  Widget _buildResumenConceptos(
+      BuildContext context,
+      Map<String, int> conteoPorConcepto,
+      Map<String, int> valorPorConcepto,
+      ) {
+    final conceptos = conteoPorConcepto.keys.toList()..sort();
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
+    // 🔹 En móvil: lista sencilla, todo visible
+    if (isMobile) {
+      return Card(
+        color: blanco,
+        surfaceTintColor: blanco,
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: gris.withOpacity(0.5)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(12.0),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                "$semana - Total: \$${NumberFormat("#,###", "es_CO").format(totalPorSemana[semana] ?? 0)}",
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.black),
+              const Text(
+                "Pagos aprobados por concepto",
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey,
+                ),
               ),
               const SizedBox(height: 8),
-              ...transacciones.map((transaction) => _buildTransactionCard(transaction)).toList(),
-              const SizedBox(height: 16),
+              ...conceptos.map((concepto) {
+                final cantidad = conteoPorConcepto[concepto] ?? 0;
+                final valor = valorPorConcepto[concepto] ?? 0;
+                final conceptoCap = concepto.isNotEmpty
+                    ? concepto[0].toUpperCase() + concepto.substring(1)
+                    : concepto;
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    children: [
+                      // Concepto
+                      Expanded(
+                        flex: 3,
+                        child: Text(
+                          conceptoCap,
+                          style: const TextStyle(fontSize: 12),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // # pagos
+                      Expanded(
+                        flex: 1,
+                        child: Text(
+                          cantidad.toString(),
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Valor total
+                      Expanded(
+                        flex: 2,
+                        child: Text(
+                          "\$${NumberFormat("#,###", "es_CO").format(valor)}",
+                          style: const TextStyle(fontSize: 12),
+                          textAlign: TextAlign.right,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
             ],
-          );
-        }).toList(),
+          ),
+        ),
+      );
+    }
+
+    // 🔹 En tablet/PC: DataTable con scroll horizontal
+    return Card(
+      color: blanco,
+      surfaceTintColor: blanco,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: gris.withOpacity(0.5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Pagos aprobados por concepto",
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor:
+                MaterialStateProperty.all(Colors.grey[200]),
+                columns: const [
+                  DataColumn(
+                    label: Text(
+                      "Concepto",
+                      style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      "# pagos",
+                      style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(
+                      "Valor total",
+                      style: TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+                rows: conceptos.map((concepto) {
+                  final cantidad = conteoPorConcepto[concepto] ?? 0;
+                  final valor = valorPorConcepto[concepto] ?? 0;
+                  final conceptoCap = concepto.isNotEmpty
+                      ? concepto[0].toUpperCase() + concepto.substring(1)
+                      : concepto;
+
+                  return DataRow(
+                    cells: [
+                      DataCell(
+                        Text(
+                          conceptoCap,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          cantidad.toString(),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      DataCell(
+                        Text(
+                          "\$${NumberFormat("#,###", "es_CO").format(valor)}",
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  /// **🔹 Construye la Vista en PC (Tabla)**
-  Widget _buildDesktopView(Map<String, List<QueryDocumentSnapshot>> transaccionesPorSemana, Map<String, int> totalPorSemana) {
-    return Expanded(
-      child: ListView(
-        children: transaccionesPorSemana.entries.map((entry) {
-          String semana = entry.key;
-          List<QueryDocumentSnapshot> transacciones = entry.value;
+  /// **🔹 Construye la Vista en Móvil (Tarjetas)** – sin Expanded interno
+  Widget _buildMobileView(
+      Map<String, List<QueryDocumentSnapshot>> transaccionesPorSemana,
+      Map<String, int> totalPorSemana,
+      ) {
+    return ListView(
+      children: transaccionesPorSemana.entries.map((entry) {
+        String semana = entry.key;
+        List<QueryDocumentSnapshot> transacciones = entry.value;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                "$semana - Total: \$${NumberFormat("#,###", "es_CO").format(totalPorSemana[semana] ?? 0)}",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.black),
-              ),
-              const SizedBox(height: 8),
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "$semana - Total: \$${NumberFormat("#,###", "es_CO").format(totalPorSemana[semana] ?? 0)}",
+              style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black),
+            ),
+            const SizedBox(height: 8),
+            ...transacciones
+                .map((transaction) => _buildTransactionCard(transaction))
+                .toList(),
+            const SizedBox(height: 16),
+          ],
+        );
+      }).toList(),
+    );
+  }
 
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  headingRowColor: MaterialStateProperty.all(Colors.grey[200]),
-                  columns: const [
-                    DataColumn(label: Text("Fecha", style: TextStyle(fontSize: 12))),
-                    DataColumn(label: Text("Usuario", style: TextStyle(fontSize: 12))),
-                    DataColumn(label: Text("Método Pago", style: TextStyle(fontSize: 12))),
-                    DataColumn(label: Text("Monto", style: TextStyle(fontSize: 12))),
-                    DataColumn(label: Text("Servicio", style: TextStyle(fontSize: 12))), // ✅ Nueva columna
-                    DataColumn(label: Text("Referencia de pago", style: TextStyle(fontSize: 12))),
-                    DataColumn(label: Text("Estado", style: TextStyle(fontSize: 12))),
-                  ],
-                  rows: transacciones.map((transaction) {
-                    var fecha = (transaction["createdAt"] as Timestamp).toDate();
-                    var formattedDate = DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO').format(fecha);
-                    var formattedAmount = "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"] ?? 0)}";
-                    var estado = _traducirEstado(transaction["status"]);
-                    var paymentMethod = transaction["paymentMethod"] ?? "Desconocido";
-                    var userId = transaction["userId"];
-                    var transaccion = transaction["transactionId"];
-                    var referenciaOriginal = transaction["reference"] ?? "";
-                    var referenciaFormateada = referenciaOriginal.split('_').first;
-                    if (referenciaFormateada.isNotEmpty) {
-                      referenciaFormateada = referenciaFormateada[0].toUpperCase() + referenciaFormateada.substring(1);
-                    }
+  /// **🔹 Construye la Vista en PC (Tabla)** – sin Expanded interno
+  Widget _buildDesktopView(
+      Map<String, List<QueryDocumentSnapshot>> transaccionesPorSemana,
+      Map<String, int> totalPorSemana,
+      ) {
+    return ListView(
+      children: transaccionesPorSemana.entries.map((entry) {
+        String semana = entry.key;
+        List<QueryDocumentSnapshot> transacciones = entry.value;
 
-                    return DataRow(cells: [
-                      DataCell(Text(formattedDate, style: const TextStyle(fontSize: 12))),
-                      DataCell(FutureBuilder<String>(
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "$semana - Total: \$${NumberFormat("#,###", "es_CO").format(totalPorSemana[semana] ?? 0)}",
+              style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.black),
+            ),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor:
+                MaterialStateProperty.all(Colors.grey[200]),
+                columns: const [
+                  DataColumn(
+                      label:
+                      Text("Fecha", style: TextStyle(fontSize: 12))),
+                  DataColumn(
+                      label:
+                      Text("Usuario", style: TextStyle(fontSize: 12))),
+                  DataColumn(
+                      label: Text("Método Pago",
+                          style: TextStyle(fontSize: 12))),
+                  DataColumn(
+                      label:
+                      Text("Monto", style: TextStyle(fontSize: 12))),
+                  DataColumn(
+                      label: Text("Servicio",
+                          style: TextStyle(fontSize: 12))),
+                  DataColumn(
+                      label: Text("Referencia de pago",
+                          style: TextStyle(fontSize: 12))),
+                  DataColumn(
+                      label:
+                      Text("Estado", style: TextStyle(fontSize: 12))),
+                ],
+                rows: transacciones.map((transaction) {
+                  var fecha =
+                  (transaction["createdAt"] as Timestamp).toDate();
+                  var formattedDate =
+                  DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO')
+                      .format(fecha);
+                  var formattedAmount =
+                      "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"] ?? 0)}";
+                  var estado = _traducirEstado(transaction["status"]);
+                  var paymentMethod =
+                      transaction["paymentMethod"] ?? "Desconocido";
+                  var userId = transaction["userId"];
+                  var transaccion =
+                  transaction["transactionId"];
+                  var referenciaOriginal =
+                      transaction["reference"] ?? "";
+                  var referenciaFormateada =
+                      referenciaOriginal.split('_').first;
+                  if (referenciaFormateada.isNotEmpty) {
+                    referenciaFormateada =
+                        referenciaFormateada[0].toUpperCase() +
+                            referenciaFormateada.substring(1);
+                  }
+
+                  return DataRow(cells: [
+                    DataCell(Text(formattedDate,
+                        style:
+                        const TextStyle(fontSize: 12))),
+                    DataCell(
+                      FutureBuilder<String>(
                         future: _getUserName(userId),
                         builder: (context, snapshot) {
-                          final nombre = snapshot.data ?? "Cargando...";
+                          final nombre =
+                              snapshot.data ?? "Cargando...";
                           return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
                             children: [
-                              Text(nombre, style: const TextStyle(fontSize: 12)),
+                              Text(nombre,
+                                  style: const TextStyle(fontSize: 12)),
                               const SizedBox(height: 2),
-                              Text(userId, style: TextStyle(fontSize: 10, color: Colors.black.withOpacity(0.6))),
+                              Text(userId,
+                                  style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.black
+                                          .withOpacity(0.6))),
                             ],
                           );
                         },
-                      )),
-                      DataCell(Text(paymentMethod, style: const TextStyle(fontSize: 12))),
-                      DataCell(
-                        Text(
-                          formattedAmount,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                            color: estado == "Rechazado" ? Colors.red : Colors.black,
-                            decoration: estado == "Rechazado" ? TextDecoration.lineThrough : TextDecoration.none,
-                          ),
+                      ),
+                    ),
+                    DataCell(Text(paymentMethod,
+                        style:
+                        const TextStyle(fontSize: 12))),
+                    DataCell(
+                      Text(
+                        formattedAmount,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          color: estado == "Rechazado"
+                              ? Colors.red
+                              : Colors.black,
+                          decoration: estado == "Rechazado"
+                              ? TextDecoration.lineThrough
+                              : TextDecoration.none,
                         ),
                       ),
-                      DataCell(Text(referenciaFormateada, style: const TextStyle(fontSize: 12))), // ✅ Nueva celda
-                      DataCell(Text(transaccion, style: const TextStyle(fontSize: 12))),
-                      DataCell(Text(
+                    ),
+                    DataCell(Text(referenciaFormateada,
+                        style:
+                        const TextStyle(fontSize: 12))),
+                    DataCell(Text(transaccion,
+                        style:
+                        const TextStyle(fontSize: 12))),
+                    DataCell(
+                      Text(
                         estado,
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 12,
-                          color: estado == "Aprobado" ? Colors.green : Colors.red,
+                          color: estado == "Aprobado"
+                              ? Colors.green
+                              : Colors.red,
                         ),
-                      )),
-                    ]);
-                  }).toList(),
-                ),
+                      ),
+                    ),
+                  ]);
+                }).toList(),
               ),
-
-              const SizedBox(height: 16),
-            ],
-          );
-        }).toList(),
-      ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        );
+      }).toList(),
     );
   }
 
   /// **🔹 Construye una tarjeta en Móvil**
   Widget _buildTransactionCard(QueryDocumentSnapshot transaction) {
-    var fecha = (transaction["createdAt"] as Timestamp).toDate();
-    var formattedDate = DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO').format(fecha);
-    var formattedAmount = "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"] ?? 0)}";
+    var fecha =
+    (transaction["createdAt"] as Timestamp).toDate();
+    var formattedDate =
+    DateFormat("d 'de' MMMM 'de' y, HH:mm", 'es_CO').format(fecha);
+    var formattedAmount =
+        "\$${NumberFormat("#,###", "es_CO").format(transaction["amount"] ?? 0)}";
     var estado = _traducirEstado(transaction["status"]);
-    var paymentMethod = transaction["paymentMethod"] ?? "Desconocido";
+    var paymentMethod =
+        transaction["paymentMethod"] ?? "Desconocido";
     var userId = transaction["userId"];
     var transaccionId = transaction["transactionId"];
     var referenciaOriginal = transaction["reference"] ?? "";
-    var referenciaFormateada = referenciaOriginal.split('_').first;
+    var referenciaFormateada =
+        referenciaOriginal.split('_').first;
     if (referenciaFormateada.isNotEmpty) {
-      referenciaFormateada = referenciaFormateada[0].toUpperCase() + referenciaFormateada.substring(1);
+      referenciaFormateada =
+          referenciaFormateada[0].toUpperCase() +
+              referenciaFormateada.substring(1);
     }
 
     return Container(
@@ -271,35 +679,51 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
       child: Card(
         color: blanco,
         surfaceTintColor: blanco,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8)),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
             children: [
               Text(
                 formattedAmount,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
-                  color: estado == "Rechazado" ? Colors.red : Colors.black,
-                  decoration: estado == "Rechazado" ? TextDecoration.lineThrough : TextDecoration.none,
+                  color: estado == "Rechazado"
+                      ? Colors.red
+                      : Colors.black,
+                  decoration: estado == "Rechazado"
+                      ? TextDecoration.lineThrough
+                      : TextDecoration.none,
                 ),
               ),
               const SizedBox(height: 5),
-              Text("$formattedDate - $paymentMethod", style: const TextStyle(fontSize: 12)),
+              Text("$formattedDate - $paymentMethod",
+                  style: const TextStyle(fontSize: 12)),
 
               // 🔽 Nombre e ID del usuario
               FutureBuilder<String>(
                 future: _getUserName(userId),
                 builder: (context, snapshot) {
-                  final nombre = snapshot.data ?? "Cargando...";
+                  final nombre =
+                      snapshot.data ?? "Cargando...";
                   return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
                     children: [
-                      Text(nombre, style: const TextStyle(fontSize: 12, color: Colors.black)),
+                      Text(nombre,
+                          style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black)),
                       const SizedBox(height: 2),
-                      Text(userId, style: TextStyle(fontSize: 10, color: Colors.black.withOpacity(0.6))),
+                      Text(userId,
+                          style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.black
+                                  .withOpacity(0.6))),
                     ],
                   );
                 },
@@ -307,10 +731,15 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
 
               const SizedBox(height: 5),
               // 🔽 Servicio
-              Text(referenciaFormateada, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900)),
+              Text(referenciaFormateada,
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900)),
 
               const SizedBox(height: 5),
-              Text("No. Transacción: $transaccionId", style: const TextStyle(fontSize: 10, color: Colors.grey)),
+              Text("No. Transacción: $transaccionId",
+                  style: const TextStyle(
+                      fontSize: 10, color: Colors.grey)),
 
               const SizedBox(height: 5),
               Text(
@@ -318,7 +747,9 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 12,
-                  color: estado == "Aprobado" ? Colors.green : Colors.red,
+                  color: estado == "Aprobado"
+                      ? Colors.green
+                      : Colors.red,
                 ),
               ),
             ],
@@ -334,24 +765,26 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
 
       if (snapshot.docs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No hay transacciones para archivar.')),
+          const SnackBar(
+              content: Text('No hay transacciones para archivar.')),
         );
         return;
       }
 
       // 📆 Datos del periodo actual
       final ahora = DateTime.now();
-      final String periodoLegible = DateFormat("MMMM yyyy", "es_CO").format(ahora); // ej: "noviembre 2025"
-      final String periodoClave = DateFormat("yyyyMM").format(ahora);              // ej: "202511"
+      final String periodoLegible =
+      DateFormat("MMMM yyyy", "es_CO").format(ahora); // ej: "noviembre 2025"
+      final String periodoClave =
+      DateFormat("yyyyMM").format(ahora); // ej: "202511"
 
       WriteBatch batch = _firestore.batch();
 
       for (final doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
 
-        final historicoRef = _firestore
-            .collection('recargas_historicas')
-            .doc(doc.id);
+        final historicoRef =
+        _firestore.collection('recargas_historicas').doc(doc.id);
 
         batch.set(historicoRef, {
           ...data,
@@ -366,7 +799,8 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
       await batch.commit();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transacciones archivadas correctamente.')),
+        const SnackBar(
+            content: Text('Transacciones archivadas correctamente.')),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -378,7 +812,10 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
   /// **🔹 Obtiene el nombre del usuario desde Firestore**
   Future<String> _getUserName(String userId) async {
     try {
-      var userDoc = await FirebaseFirestore.instance.collection("Ppl").doc(userId).get();
+      var userDoc = await FirebaseFirestore.instance
+          .collection("Ppl")
+          .doc(userId)
+          .get();
       if (userDoc.exists) {
         var nombre = userDoc["nombre_ppl"];
         var apellido = userDoc["apellido_ppl"];
@@ -394,11 +831,19 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
   /// **🔹 Widget reutilizable para mostrar filas de detalles**
   Widget _buildDetailRow(String label, String value) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment:
+      MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+        Text(label,
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey)),
         Expanded(
-          child: Text(value, style: const TextStyle(fontSize: 12), textAlign: TextAlign.right, overflow: TextOverflow.ellipsis),
+          child: Text(value,
+              style: const TextStyle(fontSize: 12),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis),
         ),
       ],
     );
@@ -408,11 +853,19 @@ class _AdminTransaccionesPageState extends State<AdminTransaccionesPage> {
 /// 🔹 Widget reutilizable para mostrar filas de detalles
 Widget _buildDetailRow(String label, String value) {
   return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    mainAxisAlignment:
+    MainAxisAlignment.spaceBetween,
     children: [
-      Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+      Text(label,
+          style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey)),
       Expanded(
-        child: Text(value, style: const TextStyle(fontSize: 12), textAlign: TextAlign.right, overflow: TextOverflow.ellipsis),
+        child: Text(value,
+            style: const TextStyle(fontSize: 12),
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis),
       ),
     ],
   );
@@ -428,4 +881,3 @@ String _traducirEstado(String status) {
       return "Pendiente";
   }
 }
-
