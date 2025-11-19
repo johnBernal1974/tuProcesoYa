@@ -12,6 +12,7 @@ import '../../../commons/descargar_base_datos_ppl.dart';
 import '../../../src/colors/colors.dart';
 import '../../../widgets/agenda_listener.dart';
 import '../../../widgets/agenda_viewer.dart';
+import '../../../widgets/buscar_ppl_por_centro_widget/buscar_ppl_por_centro_widget.dart';
 import '../../../widgets/ventana_whatsApp.dart';
 
 class HomeAdministradorPage extends StatefulWidget {
@@ -656,6 +657,15 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                         ),
                                       ),
 
+                                      // 🔍 --- AQUI AGREGAMOS EL WIDGET DE BUSCAR POR CENTRO ---
+                                      SizedBox(
+                                        width: 300,
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                          child: const BuscarPplPorCentroWidget(),
+                                        ),
+                                      ),
+
                                       // Chat de WhatsApp
                                       if (constraints.maxWidth >= 800)
                                         const SizedBox(
@@ -663,6 +673,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                           child: WhatsAppChatWrapper(),
                                         ),
 
+                                      // Botón solo para masterFull
                                       FutureBuilder<DocumentSnapshot>(
                                         future: FirebaseFirestore.instance
                                             .collection('admin')
@@ -670,7 +681,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                             .get(),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState == ConnectionState.waiting) {
-                                            return const SizedBox.shrink(); // o un loader pequeño
+                                            return const SizedBox.shrink(); // Loader opcional
                                           }
 
                                           if (!snapshot.hasData || !snapshot.data!.exists) {
@@ -681,7 +692,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                           final rol = data?['rol'] ?? '';
 
                                           if (rol != 'masterFull') {
-                                            return const SizedBox.shrink(); // no muestra nada si no es masterFull
+                                            return const SizedBox.shrink();
                                           }
 
                                           return ElevatedButton.icon(
@@ -690,7 +701,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                             onPressed: exportPplCsvWeb,
                                           );
                                         },
-                                      )
+                                      ),
                                     ],
                                   );
                                 } else {
@@ -699,9 +710,16 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Center(child: TotalUsuariosCard(totalUsuarios: docs.length)),
+
                                       Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                                         child: _buildSearchField(),
+                                      ),
+
+                                      // 🔍 --- Y AQUI PARA MÓVILES ---
+                                      const Padding(
+                                        padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                        child: BuscarPplPorCentroWidget(),
                                       ),
                                     ],
                                   );

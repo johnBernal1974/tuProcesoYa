@@ -205,7 +205,7 @@ class _WhatsAppChatPageState extends State<WhatsAppChatPage> {
                               ),
                             Text(
                               numero,
-                              style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              style: const TextStyle(fontSize: 18, color: Colors.black, fontWeight: FontWeight.w900),
                             ),
                             const SizedBox(height: 4),
                             Row(
