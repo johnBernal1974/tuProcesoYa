@@ -6,7 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
+import 'package:mime/mime.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
@@ -29,6 +31,7 @@ class AtenderSolicitudRedosificacionRedencionesPage extends StatefulWidget {
   final String numeroSeguimiento;
   final String fecha;
   final String idUser;
+  final List<String> archivos; // 👈 CAMBIO: ahora es una lista
 
   const AtenderSolicitudRedosificacionRedencionesPage({
     super.key,
@@ -37,12 +40,14 @@ class AtenderSolicitudRedosificacionRedencionesPage extends StatefulWidget {
     required this.numeroSeguimiento,
     required this.fecha,
     required this.idUser,
+    this.archivos = const [], // 👈 ya NO es required, y tiene valor por defecto
   });
 
   @override
   State<AtenderSolicitudRedosificacionRedencionesPage> createState() =>
       _AtenderSolicitudRedosificacionRedencionesPageState();
 }
+
 
 
 class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderSolicitudRedosificacionRedencionesPage> {
@@ -90,22 +95,210 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
 
   String? ultimoHtmlEnviado;
 
+  final TextEditingController consideracionesController = TextEditingController();
+  final TextEditingController fundamentosController = TextEditingController();
+  final TextEditingController pretencionesController = TextEditingController();
+  bool _textoInicialPlantillaCargado = false;
+
+  List<String> archivos = []; // URLs crudas desde Firestore
+  List<Map<String, String>> archivosAdjuntos = []; // nombre + contenido (URL)
+
+
+
+  static const String defaultConsideraciones = """
+Inicialmente solicito la aplicación del principio de favorabilidad, conforme al artículo 19, parágrafo segundo de la Ley 2466 del 25 de junio de 2025. 
+Dicha norma modifica la fórmula redentoria del antiguo artículo 82-2 de la Ley 65 de 1993, reconociendo ahora dos (2) días de redención por cada tres (3) días de trabajo, en comparación con el esquema anterior que solo reconocía un día por cada dos de actividad laboral.
+
+Esta nueva disposición representa un beneficio concreto, ya que incrementa proporcionalmente la redención otorgada a quienes realizan actividades productivas certificadas. 
+De acuerdo con el numeral 7 del artículo 38 de la Ley 906 de 2004, es función del Juez de Ejecución de Penas y Medidas de Seguridad aplicar el principio de favorabilidad cuando una norma posterior resulte más beneficiosa al condenado.
+""";
+
+  static const String defaultFundamentos = """
+Conforme a lo dispuesto en el artículo 103A de la Ley 1709 de 2014 y en conexidad con el artículo 64, y el numeral 7 del artículo 38 de la Ley 906 de 2004, el suscrito tiene derecho a solicitar la aplicación retroactiva de la Ley 2466 de 2025 por ser más favorable.
+
+El artículo 19 de dicha ley reconoce la redención de pena por trabajo y otorga dos (2) días de redención por cada tres (3) días de actividad laboral, lo que representa una mejora significativa frente al modelo anterior.
+
+El principio de favorabilidad consagrado en el artículo 29 de la Constitución, en el artículo 6 de la Ley 599 de 2000, así como en tratados internacionales ratificados por Colombia como el Pacto Internacional de Derechos Civiles y Políticos y la Convención Americana sobre Derechos Humanos, exige la aplicación preferente de la norma más benigna, incluso de manera retroactiva.
+
+La Corte Suprema de Justicia ha sostenido que el juez debe aplicar sin excepción la ley posterior más favorable a las personas condenadas, por cuanto su aplicación no depende de teorías abstractas sino del análisis del caso concreto (CSJ, Sala Penal, Rad. 16837, M.P. Jorge Aníbal Gómez Gallego, 3 de septiembre de 2011).
+""";
+
+
+  static const String defaultPretenciones = """
+PRIMERO: Que se dejen sin efecto los autos anteriores de redención de pena por trabajo ya proferidos, y se proceda a redosificar dichos reconocimientos conforme a lo establecido en el artículo 19 de la Ley 2466 de 2025, aplicando el principio de favorabilidad, y reconociendo en consecuencia un mayor número de días redimidos.
+
+SEGUNDO: Que se requiera al establecimiento penitenciario para que remita todos los certificados correspondientes a mis actividades de trabajo desde la fecha de inicio de mi condena.
+
+TERCERO: Que, una vez allegados los certificados, se realice el cómputo de redención conforme a la nueva fórmula legal, es decir, dos (2) días redimidos por cada tres (3) días de trabajo efectivo certificado.
+""";
+
+
+
+
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     _pplProvider = PplProvider();
     _calculoCondenaController = CalculoCondenaController(_pplProvider);
+
     fetchUserData();
     fetchDocumentoSolicitudRedosificacionRedenciones();
     calcularTiempo(widget.idUser);
+
     adminFullName = AdminProvider().adminFullName ?? ""; // Nombre completo
     if (adminFullName.isEmpty) {
       if (kDebugMode) {
         print("❌ No se pudo obtener el nombre del administrador.");
       }
     }
+
+    // 🔹 Cargar el nodo `archivos` de Firestore
+    cargarArchivosDesdeFirestore();
   }
+
+  Future<void> cargarArchivosDesdeFirestore() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('readecuacion_solicitados')
+          .doc(widget.idDocumento)
+          .get();
+
+      if (!doc.exists) {
+        if (kDebugMode) print("⚠️ Documento sin nodo 'archivos'");
+        return;
+      }
+
+      final data = doc.data() as Map<String, dynamic>;
+
+      if (data['archivos'] != null && data['archivos'] is List) {
+        final List<dynamic> lista = data['archivos'];
+
+        // Guarda las URLs puras
+        archivos = lista.whereType<String>().toList();
+
+        // Construye la lista para usar en adjuntos
+        archivosAdjuntos = archivos.map((url) {
+          return {
+            "nombre": obtenerNombreArchivo(url),
+            "contenido": url,
+          };
+        }).toList();
+
+        if (mounted) setState(() {});
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("❌ Error cargando archivos desde readecuacion_solicitados: $e");
+      }
+    }
+  }
+
+  Widget _buildArchivosAdjuntos() {
+    if (archivos.isEmpty) {
+      return const Text(
+        "No hay archivos adjuntos",
+        style: TextStyle(fontSize: 14, fontStyle: FontStyle.italic, color: Colors.grey),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Archivos Adjuntos",
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+
+        for (final url in archivos)
+          GestureDetector(
+            onTap: () => abrirArchivo(url),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+                color: Colors.grey.shade100,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _iconoSegunArchivo(url),
+                    color: Colors.deepPurple,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      obtenerNombreArchivo(url),
+                      style: const TextStyle(fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const Icon(Icons.open_in_new, size: 18, color: Colors.black54),
+                ],
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  void abrirArchivo(String url) {
+    launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+  }
+
+  IconData _iconoSegunArchivo(String url) {
+    final ext = url.toLowerCase();
+
+    if (ext.endsWith(".pdf")) return Icons.picture_as_pdf;
+    if (ext.endsWith(".jpg") || ext.endsWith(".jpeg") || ext.endsWith(".png")) {
+      return Icons.image;
+    }
+    if (ext.endsWith(".doc") || ext.endsWith(".docx")) return Icons.description;
+    if (ext.endsWith(".xls") || ext.endsWith(".xlsx")) return Icons.grid_on;
+
+    return Icons.attach_file;
+  }
+
+
+
+
+
+
+  // void cargarDatos() async {
+  //   final doc = await FirebaseFirestore.instance
+  //       .collection('readecuacion_solicitados')
+  //       .doc(widget.numeroSeguimiento)
+  //       .get();
+  //
+  //   if (doc.exists) {
+  //     final data = doc.data() as Map<String, dynamic>;
+  //
+  //     consideracionesController.text =
+  //     data['consideraciones']?.toString().trim().isNotEmpty == true
+  //         ? data['consideraciones']
+  //         : defaultConsideraciones;
+  //
+  //     fundamentosController.text =
+  //     data['fundamentos']?.toString().trim().isNotEmpty == true
+  //         ? data['fundamentos']
+  //         : defaultFundamentos;
+  //
+  //     pretencionesController.text =
+  //     data['pretenciones']?.toString().trim().isNotEmpty == true
+  //         ? data['pretenciones']
+  //         : defaultPretenciones;
+  //   } else {
+  //     // Si no existe el doc, llenar todo con los defaults
+  //     consideracionesController.text = defaultConsideraciones;
+  //     fundamentosController.text = defaultFundamentos;
+  //     pretencionesController.text = defaultPretenciones;
+  //   }
+  //
+  //   setState(() {});
+  // }
+
 
   String obtenerNombreArchivo(String url) {
     // Decodifica la URL para que %2F se convierta en "/"
@@ -205,32 +398,135 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
               const SizedBox(height: 15),
               _buildDetallesSolicitud(),
               const SizedBox(height: 20),
+              _buildArchivosAdjuntos(),
+
             ],
           ),
         ),
-
         const SizedBox(height: 30),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Consideraciones",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 5),
+            TextField(
+              controller: consideracionesController,
+              maxLines: null,
+              decoration: const InputDecoration(
+                hintText: "Escribe las consideraciones...",
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
 
-        /// aca va lo de las redenciones
+            const SizedBox(height: 20),
+            const Text(
+              "Fundamentos de Derecho",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 5),
+            TextField(
+              controller: fundamentosController,
+              maxLines: null,
+              decoration: const InputDecoration(
+                hintText: "Escribe los fundamentos de derecho...",
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+
+            const SizedBox(height: 20),
+            const Text(
+              "Pretenciones",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 5),
+            TextField(
+              controller: pretencionesController,
+              maxLines: null,
+              decoration: const InputDecoration(
+                hintText: "Escribe las pretenciones...",
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.grey),
+                ),
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+
+            const SizedBox(height: 30),
+          ],
+        ),
+        const SizedBox(height: 30),
 
         const Divider(color: gris),
         const SizedBox(height: 20),
 
-        // ✅ Botón de vista previa
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
-            backgroundColor: Colors.white,
-            foregroundColor: Colors.black,
-          ),
-          onPressed: () {
-            setState(() {
-              _mostrarVistaPrevia = !_mostrarVistaPrevia;
-            });
-          },
-          child: const Text("Vista previa"),
-        ),
+        Row(
+          children: [
+            // 🔍 Botón Vista previa
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: () {
+                setState(() {
+                  _mostrarVistaPrevia = !_mostrarVistaPrevia;
+                });
+              },
+              child: const Text("Vista previa"),
+            ),
 
+            const SizedBox(width: 12),
+
+            // 💾 Botón Guardar cambios (idéntico en estilo)
+            ElevatedButton.icon(
+              icon: Icon(Icons.save, color: Theme.of(context).primaryColor),
+              label: const Text("Guardar cambios"),
+              style: ElevatedButton.styleFrom(
+                side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+              ),
+              onPressed: guardarCambios,
+            ),
+          ],
+        ),
         const SizedBox(height: 20),
 
         if (_mostrarVistaPrevia)
@@ -242,6 +538,39 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
       ],
     );
   }
+
+  void guardarCambios() async {
+    try {
+      final docRef = FirebaseFirestore.instance
+          .collection('readecuacion_solicitados') // ✅ Colección correcta
+          .doc(widget.idDocumento);              // ✅ El ID de la solicitud
+
+      await docRef.set({
+        "consideraciones": consideracionesController.text.trim(),
+        "fundamentos_derecho": fundamentosController.text.trim(), // 👈 nombre de campo correcto
+        "pretenciones": pretencionesController.text.trim(),
+        "updatedAt": FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      setState(() {}); // 🔁 refresca la UI (y la vista previa)
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Cambios guardados correctamente"),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error al guardar: $e"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+
 
   String obtenerTituloCorreo(String? nombreCorreo) {
     switch (nombreCorreo) {
@@ -939,6 +1268,9 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
           nui: fetchedData.nui ?? "",
           td: fetchedData.td ?? "",
           patio: fetchedData.patio ?? "",
+          consideraciones: consideracionesController.text,
+          fundamentosDeDerecho: fundamentosController.text,
+          pretenciones: pretencionesController.text,
         );
 
         isLoading = false;
@@ -954,14 +1286,29 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
   void fetchDocumentoSolicitudRedosificacionRedenciones() async {
     try {
       DocumentSnapshot documentSnapshot = await FirebaseFirestore.instance
-          .collection('readecuacion_solicitados')
+          .collection('readecuacion_solicitados') // ✅ Colección correcta
           .doc(widget.idDocumento)
           .get();
 
       if (documentSnapshot.exists) {
         Map<String, dynamic>? data = documentSnapshot.data() as Map<String, dynamic>?;
 
-        solicitudData = data; // ✅ Ahora sí podemos asignarla
+        solicitudData = data;
+
+        if (data != null) {
+          // ✅ Si el campo existe y no está vacío, se usa; si no, se usa el default
+          final cons = data['consideraciones']?.toString().trim() ?? "";
+          consideracionesController.text =
+          cons.isNotEmpty ? cons : defaultConsideraciones;
+
+          final fund = data['fundamentos_derecho']?.toString().trim() ?? "";
+          fundamentosController.text =
+          fund.isNotEmpty ? fund : defaultFundamentos;
+
+          final pret = data['pretenciones']?.toString().trim() ?? "";
+          pretencionesController.text =
+          pret.isNotEmpty ? pret : defaultPretenciones;
+        }
 
         if (data != null && mounted) {
           setState(() {
@@ -969,22 +1316,28 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
             reviso = data['reviso'] ?? 'No Revisado';
             envio = data['envió'] ?? 'No enviado';
             fechaEnvio = (data['fechaEnvio'] as Timestamp?)?.toDate();
-            fechaDiligenciamiento = (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
-            fechaRevision = (data['fecha_revision'] as Timestamp?)?.toDate();
+            fechaDiligenciamiento =
+                (data['fecha_diligenciamiento'] as Timestamp?)?.toDate();
+            fechaRevision =
+                (data['fecha_revision'] as Timestamp?)?.toDate();
             asignadoA_P2 = data['asignadoA_P2'] ?? '';
             asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
-            fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+            fechaAsignadoP2 =
+                (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
           });
         }
       } else {
-        if (kDebugMode) {
-          print("⚠️ Documento no encontrado en Firestore");
-        }
+        if (kDebugMode) print("⚠️ Documento no encontrado en Firestore");
+
+        // ✅ Si no existe el doc, usar siempre los defaults
+        consideracionesController.text = defaultConsideraciones;
+        fundamentosController.text = defaultFundamentos;
+        pretencionesController.text = defaultPretenciones;
+
+        setState(() {});
       }
     } catch (e) {
-      if (kDebugMode) {
-        print("❌ Error al obtener datos de Firestore: $e");
-      }
+      if (kDebugMode) print("❌ Error al obtener datos de Firestore: $e");
     }
   }
 
@@ -1076,76 +1429,66 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
   }
 
   Widget vistaPreviaSolicitudRedosificacionRedenciones({required Ppl? userData}) {
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('readecuacion_solicitados')
-          .doc(widget.idDocumento)
-          .get(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator();
-        }
+    if (userData == null) {
+      return const Text("Cargando datos del usuario...");
+    }
 
-        if (!snapshot.hasData || !snapshot.data!.exists) {
-          return const Text("No se encontró la solicitud de readecuación de redención.");
-        }
+    final plantilla = SolicitudRedosificacionRedencionTemplate(
+      dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+      entidad: entidad,
+      referencia: "Solicitudes varias - Solicitud Readecuación redención",
+      nombrePpl: userData.nombrePpl ?? "",
+      apellidoPpl: userData.apellidoPpl ?? "",
+      identificacionPpl: userData.numeroDocumentoPpl ?? "",
+      centroPenitenciario: userData.centroReclusion ?? "",
+      emailUsuario: userData.email ?? "",
+      emailAlternativo: "peticiones@tuprocesoya.com",
+      radicado: userData.radicado ?? "",
+      jdc: userData.juzgadoQueCondeno ?? "",
+      numeroSeguimiento: widget.numeroSeguimiento,
+      situacion: userData.situacion ?? 'En Reclusión',
+      nui: userData.nui ?? "",
+      td: userData.td ?? "",
+      patio: userData.patio ?? "",
+      consideraciones: consideracionesController.text,       // 👈 SIEMPRE controllers
+      fundamentosDeDerecho: fundamentosController.text,      // 👈
+      pretenciones: pretencionesController.text,             // 👈
+    );
 
-        final data = snapshot.data!.data() as Map<String, dynamic>;
-
-        final plantilla = SolicitudRedosificacionRedencionTemplate(
-          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-          entidad: entidad,
-          referencia: "Solicitudes varias - Solicitud Readecuación redención",
-          nombrePpl: userData?.nombrePpl ?? "",
-          apellidoPpl: userData?.apellidoPpl ?? "",
-          identificacionPpl: userData?.numeroDocumentoPpl ?? "",
-          centroPenitenciario: userData?.centroReclusion ?? "",
-          emailUsuario: userData?.email ?? "",
-          emailAlternativo: "peticiones@tuprocesoya.com",
-          radicado: userData?.radicado ?? "",
-          jdc: userData?.juzgadoQueCondeno ?? "",
-          numeroSeguimiento: data['numero_seguimiento'] ?? "",
-          situacion: userData?.situacion ?? 'En Reclusión',
-          nui: userData?.nui ?? "",
-          td: userData?.td ?? "",
-          patio: userData?.patio ?? "",
-        );
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          "Vista previa de la solicitud de readecuación de redención",
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Html(data: plantilla.generarTextoHtml()),
+        ),
+        const SizedBox(height: 50),
+        Wrap(
           children: [
-            const Text(
-              "Vista previa de la solicitud de readecuación de redencion",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[200],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Html(data: plantilla.generarTextoHtml()),
-            ),
-            const SizedBox(height: 50),
-            Wrap(
-              children: [
-                if (widget.status == "Solicitado")
-                  guardarVistaPrevia(widget.idDocumento),
-                if ((widget.status == "Diligenciado" || widget.status == "Revisado") &&
-                    rol != "pasante 1") ...[
-                  guardarRevisado(widget.idDocumento),
-                  const SizedBox(width: 20),
-                  botonEnviarCorreo(),
-                ],
-              ],
-            ),
-            const SizedBox(height: 150),
+            if (widget.status == "Solicitado")
+              guardarVistaPrevia(widget.idDocumento),
+            if ((widget.status == "Diligenciado" || widget.status == "Revisado") &&
+                rol != "pasante 1") ...[
+              guardarRevisado(widget.idDocumento),
+              const SizedBox(width: 20),
+              botonEnviarCorreo(),
+            ],
           ],
-        );
-      },
+        ),
+        const SizedBox(height: 150),
+      ],
     );
   }
+
 
   String convertirSaltosDeLinea(String texto) {
     return texto.replaceAll('\n', '<br>');
@@ -1190,6 +1533,9 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
       nui: userData?.nui ?? "",
       td: userData?.td ?? "",
       patio: userData?.patio ?? "",
+      consideraciones: consideracionesController.text,
+      fundamentosDeDerecho: fundamentosController.text,
+      pretenciones: pretencionesController.text,
     );
 
     // 🔹 Generar HTML final
@@ -1208,7 +1554,42 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
     // 🔹 Guardar HTML en variable global/local para enviarlo al manager
     ultimoHtmlEnviado = mensajeHtml;
 
+    // -----------------------------------------
+    // 🧩 Adjuntar archivos desde el nodo `archivos`
+    // -----------------------------------------
     final archivosBase64 = <Map<String, String>>[];
+
+    Future<void> procesarArchivo(String urlArchivo) async {
+      try {
+        String nombreArchivo = obtenerNombreArchivo(urlArchivo);
+        final response = await http.get(Uri.parse(urlArchivo));
+        if (response.statusCode == 200) {
+          String base64String = base64Encode(response.bodyBytes);
+          archivosBase64.add({
+            "nombre": nombreArchivo,
+            "base64": base64String,
+            "tipo": lookupMimeType(nombreArchivo) ?? "application/octet-stream",
+          });
+        } else {
+          if (kDebugMode) {
+            print("❌ Error HTTP al descargar archivo $urlArchivo: ${response.statusCode}");
+          }
+        }
+      } catch (e) {
+        if (kDebugMode) {
+          print("❌ Error al procesar archivo $urlArchivo: $e");
+        }
+      }
+    }
+
+    // 🔹 `archivos` debe ser una List<String> cargada en initState desde Firestore
+    for (final url in archivos) {
+      await procesarArchivo(url);
+    }
+
+    // -----------------------------------------
+    // ✉️ Envío del correo
+    // -----------------------------------------
     final asuntoCorreo = asuntoPersonalizado ??
         "Solicitud de Redosificación de Redención - ${widget.numeroSeguimiento}";
     final enviadoPor = correoRemitente;
@@ -1223,8 +1604,8 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
       "cc": correosCC,
       "subject": asuntoCorreo,
       "html": mensajeHtml,
-      "archivos": archivosBase64,
-      "idDocumento": widget.idDocumento, // 🔹 ID de solicitud
+      "archivos": archivosBase64,                 // 👈 Aquí van adjuntos
+      "idDocumento": widget.idDocumento,          // 🔹 ID de solicitud
       "enviadoPor": enviadoPor,
       "tipo": "readecuacion",
     });
@@ -1243,6 +1624,9 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
         "status": "Enviado",
         "fechaEnvio": FieldValue.serverTimestamp(),
         "envió": adminFullName,
+        "consideraciones": consideracionesController.text,
+        "fundamentos_derecho": fundamentosController.text,
+        "pretenciones":  pretencionesController.text,
       });
 
       await ResumenSolicitudesHelper.actualizarResumen(
@@ -1256,7 +1640,6 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
       }
     }
   }
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1302,6 +1685,9 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
           nui: redosificacion.nui,
           td: redosificacion.td,
           patio: redosificacion.patio,
+          consideraciones: consideracionesController.text,
+          fundamentosDeDerecho: fundamentosController.text,
+          pretenciones: pretencionesController.text,
         );
 
         // ✅ Ahora generas el HTML con la entidad y dirigido correctos
@@ -1475,6 +1861,10 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
             "status": "Diligenciado",
             "diligencio": adminFullName,
             "fecha_diligenciamiento": FieldValue.serverTimestamp(),
+            "consideraciones": consideracionesController.text,
+            "fundamentos_derecho": fundamentosController.text,
+            "pretenciones": pretencionesController.text,
+
           });
 
           // 🔁 Actualizar también el resumen en solicitudes_usuario
@@ -1545,6 +1935,11 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
             "status": "Revisado",
             "reviso": adminFullName,
             "fecha_revision": FieldValue.serverTimestamp(),
+            "consideraciones": consideracionesController.text,
+            "fundamentos_derecho": fundamentosController.text,
+            "pretenciones": pretencionesController.text,
+
+
           });
 
           await ResumenSolicitudesHelper.actualizarResumen(
