@@ -534,10 +534,13 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                         hintText: "https://...",
                         border: const OutlineInputBorder(), // fallback
                         enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey.shade400), // Borde siempre visible
+                          borderSide: BorderSide(color: Colors.grey.shade400),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(color: Colors.grey.shade600, width: 1.5), // Borde al enfocar
+                          borderSide: BorderSide(
+                            color: Colors.grey.shade600,
+                            width: 1.5,
+                          ),
                         ),
                       ),
                     ),
@@ -553,7 +556,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                             builder: (context) => AlertDialog(
                               backgroundColor: blanco,
                               title: const Text("Campo obligatorio"),
-                              content: const Text("Por favor, ingresa la URL de la Rama Judicial."),
+                              content: const Text(
+                                  "Por favor, ingresa la URL de la Rama Judicial."),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
@@ -578,52 +582,72 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                       },
                       child: const Text("Guardar"),
                     ),
-
                   ],
                 ),
               )
-                  : // 👇 Este es el widget que ya creaste con logo, texto e ícono
-              GestureDetector(
-                onTap: () {
-                  if (ramaJudicialUrl != null && ramaJudicialUrl!.isNotEmpty) {
-                    html.window.open(ramaJudicialUrl!, '_blank');
-                  }
-                },
-                child: Container(
-                  width: 280,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.grey.shade400),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                  : Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 👇 Tarjeta con logo que abre la URL
+                  GestureDetector(
+                    onTap: () {
+                      if (ramaJudicialUrl != null && ramaJudicialUrl!.isNotEmpty) {
+                        html.window.open(ramaJudicialUrl!, '_blank');
+                      }
+                    },
+                    child: Container(
+                      width: 280,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        border: Border.all(color: Colors.grey.shade400),
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                    ],
+                      child: Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8, right: 8),
+                            child: Image.asset(
+                              'assets/images/logo_rama_judicial_ok.png',
+                              width: 100,
+                              height: 100,
+                            ),
+                          ),
+                          const Expanded(
+                            child: Text(
+                              "Revisar rama judicial",
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                fontSize: 14,
+                              ),
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8, right: 8),
-                        child: Image.asset(
-                          'assets/images/logo_rama_judicial_ok.png',
-                          width: 100,
-                          height: 100,
-                        ),
-                      ),
-                      const Expanded(
-                        child: Text(
-                          "Revisar rama judicial",
-                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                          overflow: TextOverflow.visible,
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 8),
+                  // 👇 Botón para editar el enlace
+                  IconButton(
+                    tooltip: 'Editar enlace',
+                    icon: const Icon(Icons.edit),
+                    onPressed: () {
+                      // Prellenar el controlador con la URL actual
+                      _ramaUrlController.text = ramaJudicialUrl ?? '';
+                      setState(() {
+                        mostrarFormularioUrl = true;
+                      });
+                    },
                   ),
-                ),
+                ],
               ),
             ],
           ),
