@@ -20,6 +20,7 @@ import '../../../plantillas/plantilla_domiciliaria.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../../widgets/calculo_beneficios_penitenciarios-general.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV2.dart';
@@ -1117,179 +1118,53 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
             ],
           ),
           const SizedBox(height: 15),
+          const Divider(color: Colors.grey, height: 1),
+          const SizedBox(height: 15),
+
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.idUser),
             builder: (context, snapshot) {
-              double totalRedimido = snapshot.data ?? 0.0;
-              return _datosEjecucionCondena(totalRedimido);
-            },
-          ),
-          const SizedBox(height: 20),
+              final double totalRedimido = snapshot.data ?? 0.0;
 
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final esPantallaAncha = constraints.maxWidth > 700; // Ajusta el ancho según necesidad
+              // 🔹 1) condena total en días
+              final int totalDiasCondena =
+                  (userData!.mesesCondena ?? 0) * 30 + (userData!.diasCondena ?? 0);
 
-              if (esPantallaAncha) {
-                // ✅ En PC: todas en una fila
-                return Card(
-                  color: Colors.white,
-                  surfaceTintColor: blanco,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.grey.shade300),
+              // 🔹 2) días ejecutados reales desde captura hasta hoy
+              final DateTime hoy = DateTime.now();
+              final DateTime captura = userData!.fechaCaptura!;
+              final int diasEjecutadosReales = hoy.difference(captura).inDays;
+
+              // 🔹 3) total cumplido incluyendo redención
+              final int totalDiasCumplidos =
+                  diasEjecutadosReales + totalRedimido.round();
+
+              // 🔹 4) porcentaje ejecutado REAL incluyendo redención
+              final double porcentajeEjecutadoConRedencion =
+              totalDiasCondena == 0
+                  ? 0
+                  : (totalDiasCumplidos / totalDiasCondena) * 100;
+
+              // ✅ 5) tu widget de cuadritos (opcionalmente también puede usar este totalRedimido)
+              return Column(
+                children: [
+                  _datosEjecucionCondena(totalRedimido),
+
+                  const SizedBox(height: 20),
+
+                  BeneficiosPenitenciariosWidget(
+                    porcentajeEjecutado: porcentajeEjecutadoConRedencion,
+                    totalDiasCondena: totalDiasCondena,
+                    situacion: userData!.situacion,
+                    cardColor: Colors.white,
+                    borderColor: Colors.grey.shade300,
                   ),
-                  elevation: 2,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        if (situacion == "En Reclusión") ...[
-                          _buildBenefitMinimalSection(
-                            titulo: "72 Horas",
-                            condition: porcentajeEjecutado >= 33.33,
-                            remainingTime: _calcularDias(33),
-                          ),
-                          const SizedBox(width: 16),
-                          _buildBenefitMinimalSection(
-                            titulo: "Domiciliaria",
-                            condition: porcentajeEjecutado >= 50,
-                            remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                          ),
-                          const SizedBox(width: 16),
-                        ],
-                        _buildBenefitMinimalSection(
-                          titulo: "Condicional",
-                          condition: porcentajeEjecutado >= 60,
-                          remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                        ),
-                        const SizedBox(width: 16),
-                        _buildBenefitMinimalSection(
-                          titulo: "Extinción",
-                          condition: porcentajeEjecutado >= 100,
-                          remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              } else {
-                // ✅ En móvil: dos columnas como antes
-                return Card(
-                  color: Colors.white,
-                  surfaceTintColor: blanco,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  elevation: 2,
-                  margin: const EdgeInsets.symmetric(vertical: 12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Primera columna
-                        Expanded(
-                          child: Column(
-                            children: [
-                              if (situacion == "En Reclusión")
-                                _buildBenefitMinimalSection(
-                                  titulo: "72 Horas",
-                                  condition: porcentajeEjecutado >= 33.33,
-                                  remainingTime: _calcularDias(33),
-                                ),
-                              _buildBenefitMinimalSection(
-                                titulo: "Condicional",
-                                condition: porcentajeEjecutado >= 60,
-                                remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        // Segunda columna
-                        Expanded(
-                          child: Column(
-                            children: [
-                              if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria")
-                                if (situacion == "En Reclusión")
-                                  _buildBenefitMinimalSection(
-                                    titulo: "Domiciliaria",
-                                    condition: porcentajeEjecutado >= 50,
-                                    remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                                  ),
-                              _buildBenefitMinimalSection(
-                                titulo: "Extinción",
-                                condition: porcentajeEjecutado >= 100,
-                                remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }
+                ],
+              );
             },
           ),
           const SizedBox(height: 50),
         ],
-      ),
-    );
-  }
-
-  int _calcularDias(int metaPorcentaje) {
-    final diferencia = porcentajeEjecutado - metaPorcentaje;
-    return (diferencia.abs() / 100 * tiempoCondena * 30).round();
-  }
-
-  Widget _buildBenefitMinimalSection({
-    required String titulo,
-    required bool condition,
-    required int remainingTime,
-  }) {
-    return Card(
-      color: Colors.white,
-      surfaceTintColor: blanco,
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-        side: BorderSide(
-          color: condition ? Colors.green.shade700 : Colors.red.shade700, // Borde dinámico
-          width: 2.5,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              titulo,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 13,
-                color: Colors.black,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              condition
-                  ? "Hace $remainingTime días"
-                  : "Faltan $remainingTime días",
-              style: TextStyle(
-                color: condition ? Colors.green.shade700 : Colors.red.shade700,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1513,7 +1388,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
       });
     }
   }
-
 
   String formatearFechaCaptura(String fechaString) {
     try {

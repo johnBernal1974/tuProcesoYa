@@ -172,9 +172,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
   bool _guardandoRevocacion = false;
 
 
-
-
-
   @override
   void initState() {
     super.initState();
@@ -338,60 +335,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-  Future<void> _borrarRevocacion() async {
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: blanco,
-        title: const Text("Eliminar revocación"),
-        content: const Text("¿Seguro que deseas borrar esta revocación?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancelar"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Eliminar"),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmar != true) return;
-
-    try {
-      await widget.doc.reference.update({
-        'revocacion_beneficio': FieldValue.delete(),
-      });
-
-      setState(() {
-        _revocacionActual = null;
-        _tipoRevocacion = null;
-        _fechaRevocacion = null;
-        _editandoRevocacion = true; // vuelve a formulario
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("🗑️ Revocación eliminada."),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    } catch (e) {
-      debugPrint("Error borrando revocación: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("❌ Error eliminando revocación."),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-
-
-
   Future<void> _cargarTiempoDePrueba() async {
     try {
       final snapshot = await FirebaseFirestore.instance.collection('configuraciones').limit(1).get();
@@ -406,7 +349,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       debugPrint('Error al cargar tiempoDePrueba: $e');
     }
   }
-
 
   @override
   void dispose() {
@@ -613,7 +555,56 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+  Future<void> _borrarRevocacion() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: blanco,
+        title: const Text("Eliminar revocación"),
+        content: const Text("¿Seguro que deseas borrar esta revocación?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancelar"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Eliminar"),
+          ),
+        ],
+      ),
+    );
 
+    if (confirmar != true) return;
+
+    try {
+      await widget.doc.reference.update({
+        'revocacion_beneficio': FieldValue.delete(),
+      });
+
+      setState(() {
+        _revocacionActual = null;
+        _tipoRevocacion = null;
+        _fechaRevocacion = null;
+        _editandoRevocacion = true; // vuelve a formulario
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("🗑️ Revocación eliminada."),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    } catch (e) {
+      debugPrint("Error borrando revocación: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("❌ Error eliminando revocación."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   void cargarCiudades() async {
     final lista = await obtenerCiudadesDesdeFirestore();
@@ -750,7 +741,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             spacing: 20,
             runSpacing: 20,
             children: [
-              // Contenedor de beneficios
+              // CONTENEDOR DE BENEFICIOS*****************************//////////
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -1379,12 +1370,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-  int _calcularDias(double porcentajeMeta) {
-    final diasMeta = (porcentajeMeta / 100 * tiempoCondena * 30).ceil();
-    final diasActuales = (_calculoCondenaController.mesesComputados ?? 0) * 30 +
-        (_calculoCondenaController.diasComputados ?? 0);
-    return diasMeta - diasActuales;
-  }
 
 
   Widget botonEnviarWhatsappDesdeImagen(String celular, String docId) {
@@ -1405,8 +1390,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       label: const Text("Notificar activación"),
     );
   }
-
-
 
   Widget _buildBenefitMinimalSection({
     required String titulo,
@@ -2414,7 +2397,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       _isLoadingJuzgados = false;
     }
   }
-
 
   // 🔹 Asigna el documento al operador actual para que solo él pueda verlo y editarlo
   Future<void> _asignarDocumento() async {
@@ -3448,37 +3430,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     }
   }
 
-
-  void _initFormFields() {
-    final data = widget.doc.data() as Map<String, dynamic>;
-
-    _nombreController.text = data['nombre_ppl'] ?? "";
-    _apellidoController.text = data['apellido_ppl'] ?? "";
-    _numeroDocumentoController.text = data['numero_documento_ppl']?.toString() ?? "";
-    _tipoDocumento = data['tipo_documento_ppl'] ?? "";
-    _radicadoController.text = data['radicado'] ?? "";
-    _tdController.text = data['td'] ?? "";
-    _nuiController.text = data['nui'] ?? "";
-    _patioController.text = data['patio'] ?? "";
-    _nombreAcudienteController.text = data['nombre_acudiente'] ?? "";
-    _apellidosAcudienteController.text = data['apellido_acudiente'] ?? "";
-    _numeroDocumentoAcudienteController.text =
-        (data.containsKey('cedula_responsable') ? data['cedula_responsable'] : '')?.toString() ?? '';
-    final String? tipoDocAcud = data.containsKey('tipo_documento_acudiente')
-        ? data['tipo_documento_acudiente'] as String?
-        : null;
-    // Solo asigna si está dentro de las opciones; si no, déjalo en null
-    _tipoDocumentoAcudiente = (tipoDocAcud != null && _opciones.contains(tipoDocAcud))
-        ? tipoDocAcud
-        : null;
-    _parentescoAcudienteController.text = data['parentesco_representante'] ?? "";
-    _celularAcudienteController.text = data['celular'] ?? "";
-
-    // 🔒 Este campo puede no existir en registros antiguos
-    _celularWhatsappController.text = data.containsKey('celularWhatsapp') ? data['celularWhatsapp'] ?? "" : "";
-
-    _emailAcudienteController.text = data['email'] ?? "";
-    _direccionController.text = data['direccion'] ?? "";
+  int _calcularDias(double porcentajeMeta) {
+    final diasMeta = (porcentajeMeta / 100 * tiempoCondena * 30).ceil();
+    final diasActuales = (_calculoCondenaController.mesesComputados ?? 0) * 30 +
+        (_calculoCondenaController.diasComputados ?? 0);
+    return diasMeta - diasActuales;
   }
 
   Widget _datosEjecucionCondena(double totalDiasRedimidos, bool isExento) {
@@ -3527,6 +3483,38 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
         ),
       ],
     );
+  }
+
+  void _initFormFields() {
+    final data = widget.doc.data() as Map<String, dynamic>;
+
+    _nombreController.text = data['nombre_ppl'] ?? "";
+    _apellidoController.text = data['apellido_ppl'] ?? "";
+    _numeroDocumentoController.text = data['numero_documento_ppl']?.toString() ?? "";
+    _tipoDocumento = data['tipo_documento_ppl'] ?? "";
+    _radicadoController.text = data['radicado'] ?? "";
+    _tdController.text = data['td'] ?? "";
+    _nuiController.text = data['nui'] ?? "";
+    _patioController.text = data['patio'] ?? "";
+    _nombreAcudienteController.text = data['nombre_acudiente'] ?? "";
+    _apellidosAcudienteController.text = data['apellido_acudiente'] ?? "";
+    _numeroDocumentoAcudienteController.text =
+        (data.containsKey('cedula_responsable') ? data['cedula_responsable'] : '')?.toString() ?? '';
+    final String? tipoDocAcud = data.containsKey('tipo_documento_acudiente')
+        ? data['tipo_documento_acudiente'] as String?
+        : null;
+    // Solo asigna si está dentro de las opciones; si no, déjalo en null
+    _tipoDocumentoAcudiente = (tipoDocAcud != null && _opciones.contains(tipoDocAcud))
+        ? tipoDocAcud
+        : null;
+    _parentescoAcudienteController.text = data['parentesco_representante'] ?? "";
+    _celularAcudienteController.text = data['celular'] ?? "";
+
+    // 🔒 Este campo puede no existir en registros antiguos
+    _celularWhatsappController.text = data.containsKey('celularWhatsapp') ? data['celularWhatsapp'] ?? "" : "";
+
+    _emailAcudienteController.text = data['email'] ?? "";
+    _direccionController.text = data['direccion'] ?? "";
   }
 
   Widget nombrePpl() {
@@ -3765,7 +3753,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
-
   Widget parentescoAcudiente(){
     return textFormField(
       controller: _parentescoAcudienteController,
@@ -3804,7 +3791,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       },
     );
   }
-
 
   Widget emailAcudiente(){
     return textFormField(
@@ -3979,7 +3965,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
 
   /// 🔹 Función para mostrar la confirmación antes de bloquear al usuario
   Future<bool> _mostrarConfirmacionBloqueo() async {
@@ -5172,7 +5157,6 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
       ),
     );
   }
-
 
   Future<void> enviarMensajeWhatsApp(String whatsApp, String docId) async {
     if (whatsApp.isEmpty) {
