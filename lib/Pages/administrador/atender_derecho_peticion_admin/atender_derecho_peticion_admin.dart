@@ -22,6 +22,7 @@ import '../../../services/whatsapp_service.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../../../widgets/calculo_beneficios_penitenciarios-general.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/selector_correo_manual.dart';
 
@@ -719,8 +720,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
 
   /// 🎉 Nuevo Widget (Columna extra en PC, o debajo en móvil)
   Widget _buildExtraWidget() {
-    bool estaEnReclusion = userData?.situacion?.toLowerCase() == "en reclusión";
-
     if (userData == null) {
       return const Center(child: CircularProgressIndicator()); // 🔹 Muestra un loader mientras `userData` se carga
     }
@@ -748,7 +747,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ),
           const SizedBox(height: 20),
           const Text("Datos generales del PPL", style: TextStyle(
-            fontWeight: FontWeight.w900, fontSize: 24
+              fontWeight: FontWeight.w900, fontSize: 24
           ),),
           const SizedBox(height: 25),
           Row(
@@ -776,18 +775,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             ],
           ),
           const SizedBox(height: 15),
-          if (estaEnReclusion) ...[
-            const Divider(color: primary),
-            const SizedBox(height: 10),
-            const Text('Centro Reclusión:', style: TextStyle(fontSize: 12, color: Colors.black)),
-            Text(userData!.centroReclusion, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-            const SizedBox(height: 10),
-            const Text('Correos:', style: TextStyle(fontSize: 12, color: Colors.black)),
-            correoConBoton('Principal', correosCentro['correo_principal']),
-            correoConBoton('Director', correosCentro['correo_direccion']),
-            correoConBoton('Jurídica', correosCentro['correo_juridica']),
-            correoConBoton('Sanidad', correosCentro['correo_sanidad']),
-          ],
 
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
@@ -810,17 +797,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
           ),
           correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
           const Divider(color: primary, height: 1),
-          const SizedBox(height: 20),
-          SelectorCorreoManualFlexible(
-            entidadSeleccionada: entidad, // ← tu variable ya existente
-            onCorreoValidado: (correo, entidad) {
-              setState(() {
-                correoSeleccionado = correo;
-                nombreCorreoSeleccionado = "Manual";
-                this.entidad = entidad;
-              });
-            },
-          ),
           const SizedBox(height: 20),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -851,35 +827,34 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
             children: [
               const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
               Text(
-                '${userData!.mesesCondena} meses'
-                    '${userData!.diasCondena > 0 ? ' y ${userData!.diasCondena} días' : ''}',
+                '${userData!.mesesCondena ?? 0} meses, ${userData!.diasCondena ?? 0} días',
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ],
           ),
           if(userData!.situacion == "En Reclusión")
-          Column(
-            children: [
-              Row(
-                children: [
-                  const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                  Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                ],
-              ),
-              Row(
-                children: [
-                  const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                  Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                ],
-              ),
-              Row(
-                children: [
-                  const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-                  Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-                ],
-              ),
-            ],
-          ),
+            Column(
+              children: [
+                Row(
+                  children: [
+                    const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ],
+            ),
           const SizedBox(height: 15),
           const Text("Datos del Acudiente", style: TextStyle(
               fontWeight: FontWeight.w900,
@@ -916,47 +891,51 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
             ],
           ),
-          Row(
-            children: [
-              const Text('Email:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
-              Text(userData!.email, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-            ],
-          ),
           const SizedBox(height: 15),
+          const Divider(color: Colors.grey, height: 1),
+          const SizedBox(height: 15),
+
           FutureBuilder<double>(
             future: calcularTotalRedenciones(widget.idUser),
             builder: (context, snapshot) {
-              double totalRedimido = snapshot.data ?? 0.0;
-              return _datosEjecucionCondena(totalRedimido);
+              final double totalRedimido = snapshot.data ?? 0.0;
+
+              // 🔹 1) condena total en días
+              final int totalDiasCondena =
+                  (userData!.mesesCondena ?? 0) * 30 + (userData!.diasCondena ?? 0);
+
+              // 🔹 2) días ejecutados reales desde captura hasta hoy
+              final DateTime hoy = DateTime.now();
+              final DateTime captura = userData!.fechaCaptura!;
+              final int diasEjecutadosReales = hoy.difference(captura).inDays;
+
+              // 🔹 3) total cumplido incluyendo redención
+              final int totalDiasCumplidos =
+                  diasEjecutadosReales + totalRedimido.round();
+
+              // 🔹 4) porcentaje ejecutado REAL incluyendo redención
+              final double porcentajeEjecutadoConRedencion =
+              totalDiasCondena == 0
+                  ? 0
+                  : (totalDiasCumplidos / totalDiasCondena) * 100;
+
+              // ✅ 5) tu widget de cuadritos (opcionalmente también puede usar este totalRedimido)
+              return Column(
+                children: [
+                  _datosEjecucionCondena(totalRedimido),
+
+                  const SizedBox(height: 20),
+
+                  BeneficiosPenitenciariosWidget(
+                    porcentajeEjecutado: porcentajeEjecutadoConRedencion,
+                    totalDiasCondena: totalDiasCondena,
+                    situacion: userData!.situacion,
+                    cardColor: Colors.white,
+                    borderColor: Colors.grey.shade300,
+                  ),
+                ],
+              );
             },
-          ),
-          const SizedBox(height: 20),
-          Column(
-            children: [
-              if(userData!.situacion == "En Reclusión")
-              _buildBenefitCard(
-                title: 'Permiso Administrativo de 72 horas',
-                condition: porcentajeEjecutado >= 33.33,
-                remainingTime: ((33.33 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
-              if(userData!.situacion == "En Reclusión")
-              _buildBenefitCard(
-                title: 'Prisión Domiciliaria',
-                condition: porcentajeEjecutado >= 50,
-                remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
-              if(userData!.situacion == "En Reclusión" || userData!.situacion == "En Prisión domiciliaria")
-              _buildBenefitCard(
-                title: 'Libertad Condicional',
-                condition: porcentajeEjecutado >= 60,
-                remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
-              _buildBenefitCard(
-                title: 'Extinción de la Pena',
-                condition: porcentajeEjecutado >= 100,
-                remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil(),
-              ),
-            ],
           ),
           const SizedBox(height: 50),
         ],

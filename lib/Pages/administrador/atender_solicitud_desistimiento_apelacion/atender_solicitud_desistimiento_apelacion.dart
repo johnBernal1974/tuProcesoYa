@@ -19,6 +19,7 @@ import '../../../plantillas/plantilla_desistimiento_apelacion.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert' as dart_convert;
+import '../../../widgets/calculo_beneficios_penitenciarios-general.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/manager_correo_desistimiento_apelacion.dart';
 import '../historial_solicitudes_redenciones_admin/historial_solicitudes_redenciones_admin.dart';
@@ -544,142 +545,223 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
   }
 
   Widget _buildExtraWidget() {
-    bool estaEnReclusion = userData?.situacion?.toLowerCase() == "en reclusión";
-    String? situacion = userData?.situacion;
-    if (userData == null) return const Center(child: CircularProgressIndicator());
+    if (userData == null) {
+      return const Center(child: CircularProgressIndicator()); // 🔹 Muestra un loader mientras `userData` se carga
+    }
     return Container(
       padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(border: Border.all(color: Colors.grey, width: 1), borderRadius: BorderRadius.circular(10)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (userData!.situacion == "En Prisión domiciliaria" || userData!.situacion == "En libertad condicional")
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Colors.black),
-            child: Text(userData!.situacion ?? "", style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white)),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey, width: 1), // 🔹 Marco gris
+        borderRadius: BorderRadius.circular(10), // 🔹 Bordes redondeados
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (userData!.situacion == "En Prisión domiciliaria" ||
+              userData!.situacion == "En libertad condicional")
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.black,
+              ),
+              child: Text(
+                userData!.situacion ?? "",
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.white),
+              ),
+            ),
+          const SizedBox(height: 20),
+          const Text("Datos generales del PPL", style: TextStyle(
+              fontWeight: FontWeight.w900, fontSize: 24
+          ),),
+          const SizedBox(height: 25),
+          Row(
+            children: [
+              const Text('Nombre:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.nombrePpl, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
           ),
-        const SizedBox(height: 20),
-        const Text("Datos generales del PPL", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 24)),
-        const SizedBox(height: 25),
-        Row(children: [const Text('Nombre:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.nombrePpl, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        Row(children: [const Text('Apellido:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.apellidoPpl, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black))]),
-        Row(children: [const Text('Tipo Documento:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.tipoDocumentoPpl, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        Row(children: [const Text('Número Documento:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.numeroDocumentoPpl, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        const SizedBox(height: 15),
-        const Divider(color: primary, height: 1),
-        const SizedBox(height: 10),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Juzgado Ejecución Penas:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          Text(userData!.juzgadoEjecucionPenas, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-        ]),
-        correoConBoton('Correo JEP', userData!.juzgadoEjecucionPenasEmail),
-        const Divider(color: primary, height: 1),
-        const SizedBox(height: 10),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Juzgado Que Condenó:', style: TextStyle(fontSize: 12, color: Colors.black)),
-          Text(userData!.juzgadoQueCondeno, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
-        ]),
-        correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
-        const Divider(color: primary, height: 1),
-        const SizedBox(height: 20),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Delito:', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.delito, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        const SizedBox(height: 10),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Radicado:', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.radicado, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        const SizedBox(height: 10),
-        Row(children: [const Text('Fecha Captura:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(DateFormat('yyyy-MM-dd').format(userData!.fechaCaptura!), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        Row(children: [const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text('${userData!.mesesCondena ?? 0} meses, ${userData!.diasCondena ?? 0} días', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        if (userData!.situacion == "En Reclusión")
-          Column(children: [
-            Row(children: [const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-            Row(children: [const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-            Row(children: [const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-          ]),
-        const SizedBox(height: 15),
-        const Text("Datos del Acudiente", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.black)),
-        const SizedBox(height: 5),
-        Row(children: [const Text('Nombre:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.nombreAcudiente, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        Row(children: [const Text('Apellido:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.apellidoAcudiente, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        Row(children: [const Text('Parentesco:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.parentescoRepresentante, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        Row(children: [const Text('Celular:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.celular, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        Row(children: [const Text('WhatsApp:  ', style: TextStyle(fontSize: 12, color: Colors.black)), Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600))]),
-        const SizedBox(height: 15),
-        FutureBuilder<double>(future: calcularTotalRedenciones(widget.idUser), builder: (context, snapshot) {
-          double totalRedimido = snapshot.data ?? 0.0;
-          return _datosEjecucionCondena(totalRedimido);
-        }),
-        const SizedBox(height: 20),
-        // Beneficios (tarjetas) ...
-        LayoutBuilder(builder: (context, constraints) {
-          final esPantallaAncha = constraints.maxWidth > 700;
-          if (esPantallaAncha) {
-            return Card(
-              color: Colors.white,
-              surfaceTintColor: blanco,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade300)),
-              elevation: 2,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(mainAxisAlignment: MainAxisAlignment.start, children: [
-                  if (situacion == "En Reclusión") ...[
-                    _buildBenefitMinimalSection(titulo: "72 Horas", condition: porcentajeEjecutado >= 33.33, remainingTime: _calcularDias(33)),
-                    const SizedBox(width: 16),
-                    _buildBenefitMinimalSection(titulo: "Domiciliaria", condition: porcentajeEjecutado >= 50, remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil()),
-                    const SizedBox(width: 16),
+          Row(
+            children: [
+              const Text('Apellido:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.apellidoPpl, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black)),
+            ],
+          ),
+          Row(
+            children: [
+              const Text('Tipo Documento:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.tipoDocumentoPpl, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          Row(
+            children: [
+              const Text('Número Documento:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.numeroDocumentoPpl, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 15),
+
+          const Divider(color: primary, height: 1),
+          const SizedBox(height: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Juzgado Ejecución Penas:', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.juzgadoEjecucionPenas, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
+            ],
+          ),
+          correoConBoton('Correo JEP', userData!.juzgadoEjecucionPenasEmail),
+          const Divider(color: primary, height: 1),
+          const SizedBox(height: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Juzgado Que Condenó:', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.juzgadoQueCondeno, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
+            ],
+          ),
+          correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
+          const Divider(color: primary, height: 1),
+          const SizedBox(height: 20),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Delito:', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.delito, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Radicado:', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.radicado, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Text('Fecha Captura:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(
+                DateFormat('yyyy-MM-dd').format(userData!.fechaCaptura!),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              const Text('Tiempo Condena:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(
+                '${userData!.mesesCondena ?? 0} meses, ${userData!.diasCondena ?? 0} días',
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+          if(userData!.situacion == "En Reclusión")
+            Column(
+              children: [
+                Row(
+                  children: [
+                    const Text('TD:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.td, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                   ],
-                  _buildBenefitMinimalSection(titulo: "Condicional", condition: porcentajeEjecutado >= 60, remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil()),
-                  const SizedBox(width: 16),
-                  _buildBenefitMinimalSection(titulo: "Extinción", condition: porcentajeEjecutado >= 100, remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil()),
-                ]),
-              ),
-            );
-          } else {
-            return Card(
-              color: Colors.white,
-              surfaceTintColor: blanco,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade300)),
-              elevation: 2,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Expanded(child: Column(children: [
-                    if (situacion == "En Reclusión") _buildBenefitMinimalSection(titulo: "72 Horas", condition: porcentajeEjecutado >= 33.33, remainingTime: _calcularDias(33)),
-                    _buildBenefitMinimalSection(titulo: "Condicional", condition: porcentajeEjecutado >= 60, remainingTime: ((60 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil()),
-                  ])),
-                  const SizedBox(width: 16),
-                  Expanded(child: Column(children: [
-                    if (situacion == "En Reclusión" || situacion == "En Prisión domiciliaria") if (situacion == "En Reclusión") _buildBenefitMinimalSection(titulo: "Domiciliaria", condition: porcentajeEjecutado >= 50, remainingTime: ((50 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil()),
-                    _buildBenefitMinimalSection(titulo: "Extinción", condition: porcentajeEjecutado >= 100, remainingTime: ((100 - porcentajeEjecutado) / 100 * tiempoCondena * 30).ceil()),
-                  ])),
-                ]),
-              ),
-            );
-          }
-        }),
-        const SizedBox(height: 50),
-      ]),
-    );
-  }
+                ),
+                Row(
+                  children: [
+                    const Text('NUI:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.nui, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+                Row(
+                  children: [
+                    const Text('Patio:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+                    Text(userData!.patio, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ],
+            ),
+          const SizedBox(height: 15),
+          const Text("Datos del Acudiente", style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: Colors.black
+          )),
+          const SizedBox(height: 5),
+          Row(
+            children: [
+              const Text('Nombre:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.nombreAcudiente, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          Row(
+            children: [
+              const Text('Apellido:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.apellidoAcudiente, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          Row(
+            children: [
+              const Text('Parentesco:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.parentescoRepresentante, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          Row(
+            children: [
+              const Text('Celular:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.celular, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          Row(
+            children: [
+              const Text('WhatsApp:  ', style: TextStyle(fontSize: 12, color: Colors.black)),
+              Text(userData!.celularWhatsapp, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+            ],
+          ),
+          const SizedBox(height: 15),
+          const Divider(color: Colors.grey, height: 1),
+          const SizedBox(height: 15),
 
-  int _calcularDias(int metaPorcentaje) {
-    final diferencia = porcentajeEjecutado - metaPorcentaje;
-    return (diferencia.abs() / 100 * tiempoCondena * 30).round();
-  }
+          FutureBuilder<double>(
+            future: calcularTotalRedenciones(widget.idUser),
+            builder: (context, snapshot) {
+              final double totalRedimido = snapshot.data ?? 0.0;
 
-  Widget _buildBenefitMinimalSection({required String titulo, required bool condition, required int remainingTime}) {
-    return Card(
-      color: Colors.white,
-      surfaceTintColor: blanco,
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 6),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10), side: BorderSide(color: condition ? Colors.green.shade700 : Colors.red.shade700, width: 2.5)),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black)),
-          const SizedBox(height: 4),
-          Text(condition ? "Hace $remainingTime días" : "Faltan $remainingTime días", style: TextStyle(color: condition ? Colors.green.shade700 : Colors.red.shade700, fontSize: 12, fontWeight: FontWeight.w500)),
-        ]),
+              // 🔹 1) condena total en días
+              final int totalDiasCondena =
+                  (userData!.mesesCondena ?? 0) * 30 + (userData!.diasCondena ?? 0);
+
+              // 🔹 2) días ejecutados reales desde captura hasta hoy
+              final DateTime hoy = DateTime.now();
+              final DateTime captura = userData!.fechaCaptura!;
+              final int diasEjecutadosReales = hoy.difference(captura).inDays;
+
+              // 🔹 3) total cumplido incluyendo redención
+              final int totalDiasCumplidos =
+                  diasEjecutadosReales + totalRedimido.round();
+
+              // 🔹 4) porcentaje ejecutado REAL incluyendo redención
+              final double porcentajeEjecutadoConRedencion =
+              totalDiasCondena == 0
+                  ? 0
+                  : (totalDiasCumplidos / totalDiasCondena) * 100;
+
+              // ✅ 5) tu widget de cuadritos (opcionalmente también puede usar este totalRedimido)
+              return Column(
+                children: [
+                  _datosEjecucionCondena(totalRedimido),
+                  const SizedBox(height: 20),
+                  BeneficiosPenitenciariosWidget(
+                    porcentajeEjecutado: porcentajeEjecutadoConRedencion,
+                    totalDiasCondena: totalDiasCondena,
+                    situacion: userData!.situacion,
+                    cardColor: Colors.white,
+                    borderColor: Colors.grey.shade300,
+                  ),
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 50),
+        ],
       ),
     );
   }
