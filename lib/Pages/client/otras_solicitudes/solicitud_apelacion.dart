@@ -178,6 +178,7 @@ class _SolicitudApelacionPageState extends State<SolicitudApelacionPage> {
     }
   }
 
+
   Future<bool> mostrarConfirmacionEnvio() async {
     return await showDialog<bool>(
       context: context,

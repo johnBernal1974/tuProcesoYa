@@ -236,7 +236,7 @@ exports.wompiCheckoutUrl = onRequest({
     let integritySecret;
 
     // 🚩 Verifica si es un userId específico que quieres enviar a sandbox
-    if (userId === "KT9nShnvD0PztXyoZx6VB3aLtDi1") {
+    if (userId === "903a1a92-2f0f-4934-ac01-bf140f6a331f") {
       console.log("🚧 Usando credenciales SANDBOX para este usuario");
       publicKey = WOMPI_PUBLIC_KEY_SANDBOX.value().replace(/"/g, "");
       integritySecret = WOMPI_INTEGRITY_SECRET_SANDBOX.value();
