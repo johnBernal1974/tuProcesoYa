@@ -278,8 +278,8 @@ class _FormularioEstadiaAdminState extends State<FormularioEstadiaAdmin> {
       debugPrint("❌ Error eliminando estadía: $e");
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Error eliminando estadía'),
+          const SnackBar(
+            content: Text('Error eliminando estadía'),
             backgroundColor: Colors.red,
           ),
         );

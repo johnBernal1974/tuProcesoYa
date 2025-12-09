@@ -166,15 +166,23 @@ class TablaEstadiasAdmin extends StatelessWidget {
     return "${fecha.year}-${fecha.month.toString().padLeft(2, '0')}-${fecha.day.toString().padLeft(2, '0')}";
   }
 
-  void _mostrarDialogoEdicion(BuildContext context, String pplId, String estadiaId, Map<String, dynamic> data) {
+  void _mostrarDialogoEdicion(
+      BuildContext context,
+      String pplId,
+      String estadiaId,
+      Map<String, dynamic> data,
+      ) {
     final tipoCtrl = TextEditingController(text: data['tipo']);
     DateTime? fechaIngreso = (data['fecha_ingreso'] as Timestamp).toDate();
-    DateTime? fechaSalida = data['fecha_salida'] != null ? (data['fecha_salida'] as Timestamp).toDate() : null;
+    DateTime? fechaSalida = data['fecha_salida'] != null
+        ? (data['fecha_salida'] as Timestamp).toDate()
+        : null;
 
     showDialog(
       context: context,
       builder: (_) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           title: const Text("Editar estadía"),
           content: StatefulBuilder(
             builder: (context, setState) => Column(
@@ -188,7 +196,7 @@ class TablaEstadiasAdmin extends StatelessWidget {
                   onChanged: (val) => setState(() => tipoCtrl.text = val ?? 'Reclusión'),
                   decoration: InputDecoration(
                     labelText: 'Tipo',
-                    floatingLabelBehavior: FloatingLabelBehavior.always, // 👈 siempre visible
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
                       borderSide: const BorderSide(color: Colors.grey, width: 1),
@@ -218,23 +226,41 @@ class TablaEstadiasAdmin extends StatelessWidget {
                   },
                   child: Text("Ingreso: ${_formatearFecha(fechaIngreso ?? DateTime.now())}"),
                 ),
+
                 const SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: () async {
                     final picked = await showDatePicker(
                       context: context,
                       initialDate: fechaSalida ?? DateTime.now(),
-                      firstDate: fechaIngreso ?? DateTime(2000), // ✅ corregido
+                      firstDate: fechaIngreso ?? DateTime(2000),
                       lastDate: DateTime.now(),
                     );
                     if (picked != null) setState(() => fechaSalida = picked);
                   },
                   child: Text(
                     fechaSalida != null
-                        ? "Salida: ${_formatearFecha(fechaSalida!)}" // ✅ corregido
-                        : "Sin salida",
+                        ? "Salida: ${_formatearFecha(fechaSalida!)}"
+                        : "Salida: Actual", // 👈 antes decía "Sin salida"
                   ),
                 ),
+
+                // 👇 NUEVO: botón para quitar la fecha de salida y dejarla en null
+                if (fechaSalida != null) ...[
+                  const SizedBox(height: 4),
+                  TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        fechaSalida = null;
+                      });
+                    },
+                    icon: const Icon(Icons.clear, size: 18, color: Colors.red),
+                    label: const Text(
+                      "Quitar fecha de salida (dejar Actual)",
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -260,7 +286,7 @@ class TablaEstadiasAdmin extends StatelessWidget {
                   return;
                 }
 
-                // Validación de solapamientos (excluyendo esta misma estadía)
+                // 🔍 Validación de solapamientos (excluyendo esta misma estadía)
                 final estadiasExistentes = await FirebaseFirestore.instance
                     .collection('Ppl')
                     .doc(pplId)
@@ -273,10 +299,10 @@ class TablaEstadiasAdmin extends StatelessWidget {
                 for (final doc in estadiasExistentes.docs) {
                   if (doc.id == estadiaId) continue; // ⛔ Saltamos la que estamos editando
 
-                  final data = doc.data();
-                  final inicio = (data['fecha_ingreso'] as Timestamp).toDate();
-                  final fin = data['fecha_salida'] != null
-                      ? (data['fecha_salida'] as Timestamp).toDate()
+                  final d = doc.data();
+                  final inicio = (d['fecha_ingreso'] as Timestamp).toDate();
+                  final fin = d['fecha_salida'] != null
+                      ? (d['fecha_salida'] as Timestamp).toDate()
                       : DateTime.now();
 
                   final seSolapan = nuevaInicio.isBefore(fin) && nuevaFin.isAfter(inicio);
@@ -284,7 +310,8 @@ class TablaEstadiasAdmin extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          "Esta estadía se cruza con otra registrada entre ${_formatearFecha(inicio)} y ${_formatearFecha(fin)}.",
+                          "Esta estadía se cruza con otra registrada entre "
+                              "${_formatearFecha(inicio)} y ${_formatearFecha(fin)}.",
                         ),
                       ),
                     );
@@ -292,7 +319,7 @@ class TablaEstadiasAdmin extends StatelessWidget {
                   }
                 }
 
-                // ✅ Si todo pasa, guardamos
+                // ✅ Guardar cambios (fecha_salida puede ir como null)
                 await FirebaseFirestore.instance
                     .collection('Ppl')
                     .doc(pplId)
@@ -301,7 +328,9 @@ class TablaEstadiasAdmin extends StatelessWidget {
                     .update({
                   'tipo': tipoCtrl.text,
                   'fecha_ingreso': Timestamp.fromDate(fechaIngreso!),
-                  'fecha_salida': fechaSalida != null ? Timestamp.fromDate(fechaSalida!) : null,
+                  'fecha_salida': fechaSalida != null
+                      ? Timestamp.fromDate(fechaSalida!)
+                      : null, // 👈 aquí se guarda null si la quitaste
                 });
 
                 Navigator.pop(context);
