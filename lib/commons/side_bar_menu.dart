@@ -433,6 +433,11 @@ class _SideBarState extends State<SideBar> {
               context, "Página principal", Icons.home_filled, 'home_admin'),
 
           _buildDrawerTile(
+              context, "Filtrado inicial", Icons.filter_list_alt, 'filtrado_inicial_page_admin'),
+          _buildDrawerTile(
+              context, "Reporte beneficios", Icons.list_alt_sharp, 'reporte_beneficios_page_admin'),
+
+          _buildDrawerTile(
               context, "Solicitudes general", Icons.table_chart, 'historial_solicitudes_general_admin'),
 
           ExpansionTile(

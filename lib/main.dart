@@ -13,6 +13,7 @@ import 'package:tuprocesoya/Pages/detalle_de_correo_page/detalle_correo_acumulac
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
+import 'package:tuprocesoya/widgets/reporte_beneficios.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/administrador/atender_ solicitud_redenciones/atender_ solicitud_redenciones.dart';
@@ -32,6 +33,7 @@ import 'Pages/administrador/atender_traslado_proceso_admin/atender_traslado_proc
 import 'Pages/administrador/atender_tutela_admin/atender_tutela.dart';
 import 'Pages/administrador/buzon_sugerencias_administrador/buzon_sugerencias_administrador.dart';
 import 'Pages/administrador/editar_registro/editar_registro.dart';
+import 'Pages/administrador/filtrado_preliminarPage.dart';
 import 'Pages/administrador/historial_solicitudes_acumulacion_admin/historial_solicitudes_acumulacion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_apelacion_admin/historial_solicitudes_apelacion_admin.dart';
 import 'Pages/administrador/historial_solicitudes_asignacionJEP_admin/historial_solicitudes_asignacionJEP_admin.dart';
@@ -287,6 +289,9 @@ class MyApp extends StatelessWidget {
         'ver_respuestas_correos_page_admin': (context) => const VerRespuestasCorreosPage(),
         'historial_pago_comisiones_page_admin': (context) => const HistorialPagosComisionesPage(),
         'historial_solicitudes_general_admin': (context) => const TodasLasSolicitudesAdminPage(),
+        'filtrado_inicial_page_admin': (context) => const CalculoCondenaPage(),
+        'reporte_beneficios_page_admin': (context) => const ReporteBeneficiosINPECPage(),
+
 
         //Usuario
         'home': (context) => const HomePage(), // Página principal
