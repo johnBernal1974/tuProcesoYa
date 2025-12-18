@@ -60,6 +60,9 @@ class PantallaInicioRegistroPage extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 30),
+              const Divider(color: Colors.grey, height: 2),
+              const SizedBox(height: 30),
+
               GestureDetector(
                 onTap: () {
                   Navigator.pushNamed(context, "login");
