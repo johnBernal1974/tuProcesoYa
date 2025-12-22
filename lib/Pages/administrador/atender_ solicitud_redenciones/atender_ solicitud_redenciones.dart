@@ -88,6 +88,8 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
   late CalculoCondenaController _calculoCondenaController;
   String? ultimoHtmlEnviado;
 
+  bool _incluirRedosificacion = true;
+
   @override
   void initState() {
     // TODO: implement initState
@@ -213,6 +215,26 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
 
         const Divider(color: gris),
         const SizedBox(height: 20),
+        Card(
+          color: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: SwitchListTile(
+            title: const Text(
+              "Aplicar redosificación (Ley 2466 de 2025)",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: const Text(
+              "Si lo desactivas, el escrito hablará SOLO de redención (Ley 65/1993).",
+            ),
+            value: _incluirRedosificacion,
+            onChanged: (v) {
+              setState(() => _incluirRedosificacion = v);
+            },
+            activeColor: primary,
+          ),
+        ),
+        const SizedBox(height: 10),
 
         // ✅ Botón de vista previa
         ElevatedButton(
@@ -780,6 +802,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
   void fetchUserData() async {
     Ppl? fetchedData = await _pplProvider.getById(widget.idUser);
 
+
     final doc = await FirebaseFirestore.instance
         .collection('redenciones_solicitados')
         .doc(widget.idDocumento)
@@ -811,6 +834,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           nui: fetchedData.nui ?? "",
           td: fetchedData.td ?? "",
           patio: fetchedData.patio ?? "",
+          incluirRedosificacion: _incluirRedosificacion,
         );
         isLoading = false;
       });
@@ -980,6 +1004,7 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           nui: userData?.nui ?? "",
           td: userData?.td ?? "",
           patio: userData?.patio ?? "",
+          incluirRedosificacion: _incluirRedosificacion,
         );
 
         return Column(
@@ -1063,6 +1088,8 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
       nui: userData?.nui ?? "",
       td: userData?.td ?? "",
       patio: userData?.patio ?? "",
+      incluirRedosificacion: _incluirRedosificacion,
+
     );
 
     // HTML final coherente con Readecuación (encabezado + prefacio + cuerpo)
@@ -1179,6 +1206,8 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           nui: redenciones.nui,
           td: redenciones.td,
           patio: redenciones.patio,
+          incluirRedosificacion: _incluirRedosificacion,
+
         );
 
         // 2) HTML principal (servirá también como "ultimoHtmlEnviado" para las copias)
