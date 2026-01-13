@@ -1,8 +1,10 @@
+import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -11,6 +13,13 @@ import 'package:printing/printing.dart';
 import '../../helper/beneficios_helper.dart';
 import '../../widgets/analisis_preliminar/resumen_analisis_condena.dart';
 import '../../utils/pdf_download_helper.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
+
+import '../../utils/excel_download_helper.dart';
+import '../../utils/excel_download_helper.dart';
+import '../../utils/excel_share_helper.dart';
+
 
 class ListadoPplPorBeneficioPage extends StatelessWidget {
   final BeneficioTipo beneficio;
@@ -298,6 +307,155 @@ class ListadoPplPorBeneficioPage extends StatelessWidget {
 
   // ---------------------------
 
+  Future<Uint8List> _buildExcelListado({
+    required String titulo,
+    required List<QueryDocumentSnapshot> docs,
+  }) async {
+    final workbook = xlsio.Workbook();
+    final sheet = workbook.worksheets[0];
+    sheet.name = 'Listado';
+
+    const headers = [
+      'Nombre',
+      'TD / NUI / Patio',
+      'Centro de reclusión',
+      'N° Proceso',
+      '% hoy',
+      'Estado del beneficio (a hoy)',
+    ];
+
+    // ----- Header style -----
+    final headerStyle = workbook.styles.add('headerStyle');
+    headerStyle.bold = true;
+    headerStyle.backColor = '#F2F2F2';
+    headerStyle.hAlign = xlsio.HAlignType.center;
+    headerStyle.vAlign = xlsio.VAlignType.center;
+    headerStyle.borders.all.lineStyle = xlsio.LineStyle.thin;
+
+    // ----- Cell style -----
+    final cellStyle = workbook.styles.add('cellStyle');
+    cellStyle.hAlign = xlsio.HAlignType.left;
+    cellStyle.vAlign = xlsio.VAlignType.center;
+    cellStyle.wrapText = true;
+    cellStyle.borders.all.lineStyle = xlsio.LineStyle.thin;
+    cellStyle.fontSize = 10;
+
+    // Header row (fila 1)
+    for (int c = 0; c < headers.length; c++) {
+      final range = sheet.getRangeByIndex(1, c + 1);
+      range.setText(headers[c]);
+      range.cellStyle = headerStyle;
+    }
+
+    // Altura del header
+    sheet.getRangeByIndex(1, 1, 1, headers.length).rowHeight = 22;
+
+    // Ajustes de columnas (anchos “bonitos”)
+    sheet.getRangeByIndex(1, 1).columnWidth = 28; // A
+    sheet.getRangeByIndex(1, 2).columnWidth = 20; // B
+    sheet.getRangeByIndex(1, 3).columnWidth = 45; // C
+    sheet.getRangeByIndex(1, 4).columnWidth = 40; // D
+    sheet.getRangeByIndex(1, 5).columnWidth = 10; // E
+    sheet.getRangeByIndex(1, 6).columnWidth = 45; // F
+
+
+    // ❌ Freeze panes no soportado en XlsIO Flutter
+    // sheet.freezePanes(2, 1);
+
+    // Cargar filas
+    int row = 2;
+    for (final doc in docs) {
+      final data = doc.data() as Map<String, dynamic>;
+
+      final nombre = '${data['nombres'] ?? ''} ${data['apellidos'] ?? ''}'.trim();
+      final cedula = (data['numero_documento'] ?? '').toString();
+      final tipoDoc = abreviarTipoDocumento(data['tipo_documento']?.toString());
+      final docLinea = '$tipoDoc $cedula'.trim();
+
+      final td = (data['td'] ?? '').toString();
+      final nui = (data['nui'] ?? '').toString();
+      final patio = (data['patio'] ?? '').toString();
+
+      final centro = (data['centro_reclusion_nombre'] ?? '').toString();
+      final numeroProceso = (data['numero_proceso'] ?? '').toString();
+
+      final porcentaje = _porcentajeHoy(data).toStringAsFixed(2);
+
+      final tdNuiPatio =
+          'TD: ${td.trim().isEmpty ? '—' : td.trim()}\n'
+          'NUI: ${nui.trim().isEmpty ? '—' : nui.trim()}\n'
+          'Patio: ${patio.trim().isEmpty ? '—' : patio.trim()}';
+
+      final estados = beneficiosHasta(beneficio)
+          .map((b) => '${tituloBeneficio(b)}: ${_textoEstadoBeneficioPdf(data, b)}')
+          .join('\n');
+
+      final nombreYDoc =
+          '${nombre.isEmpty ? '—' : nombre}\n${docLinea.isEmpty ? '—' : docLinea}';
+
+      final values = <String>[
+        nombreYDoc,
+        tdNuiPatio,
+        centro.trim().isEmpty ? '—' : centro.trim(),
+        numeroProceso.trim().isEmpty ? '—' : numeroProceso.trim(),
+        '$porcentaje%',
+        estados.isEmpty ? '—' : estados,
+      ];
+
+      for (int c = 0; c < values.length; c++) {
+        final range = sheet.getRangeByIndex(row, c + 1);
+        range.setText(values[c]);
+        range.cellStyle = cellStyle;
+      }
+
+      // ✅ Altura de fila compatible (para que no quede “pegado”)
+      sheet.getRangeByIndex(row, 1, row, headers.length).rowHeight = 55;
+
+      row++;
+    }
+
+    final bytes = workbook.saveAsStream();
+    workbook.dispose();
+    return Uint8List.fromList(bytes);
+  }
+
+
+  Future<void> _descargarExcelListado(
+      BuildContext context,
+      String titulo,
+      List<QueryDocumentSnapshot> docs,
+      ) async {
+    try {
+      final bytes = await _buildExcelListado(titulo: titulo, docs: docs);
+
+      final now = DateTime.now();
+      final filename =
+          'listado_${titulo.replaceAll(" ", "_").toLowerCase()}_'
+          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}.xlsx';
+
+      if (kIsWeb) {
+        // ✅ WEB: descarga
+        downloadExcel(bytes, filename);
+      } else {
+        // ✅ MOBILE/DESKTOP: compartir
+        await shareExcelBytes(bytes, filename, text: 'Listado $titulo');
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Excel generado correctamente.')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error generando Excel: $e')),
+        );
+      }
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     final String titulo = tituloBeneficio(beneficio);
@@ -338,7 +496,15 @@ class ListadoPplPorBeneficioPage extends StatelessWidget {
                       ? null
                       : () => _descargarPdfListado(context, titulo, filtrados),
                 ),
+                IconButton(
+                  tooltip: 'Descargar Excel',
+                  icon: const Icon(Icons.grid_on), // o Icons.table_chart
+                  onPressed: filtrados.isEmpty
+                      ? null
+                      : () => _descargarExcelListado(context, titulo, filtrados),
+                ),
               ],
+
             ),
             body: filtrados.isEmpty
                 ? const Center(child: Text('No hay personas con este beneficio (a hoy)'))

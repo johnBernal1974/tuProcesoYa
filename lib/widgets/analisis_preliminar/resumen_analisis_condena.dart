@@ -213,7 +213,6 @@ class _ResumenAnalisisCondenaWidgetState extends State<ResumenAnalisisCondenaWid
   }
 
 
-
   Widget _beneficioRow({
     required String titulo,
     required double porcentajeReq,
