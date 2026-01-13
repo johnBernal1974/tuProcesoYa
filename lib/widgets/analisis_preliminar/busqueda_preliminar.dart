@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../src/colors/colors.dart';
+import '../../src/colors/colors.dart';
 
 /// ---- Helpers generales ----
 
@@ -40,9 +40,33 @@ class DelitoItem {
 InputDecoration _inputDecoration(String label) {
   final grey = Colors.grey.shade400;
   final greyFocused = Colors.grey.shade600;
+  final greyHint = Colors.grey.shade700;
 
   return InputDecoration(
     labelText: label,
+
+    // 🔹 Color normal del label
+    labelStyle: TextStyle(color: greyFocused),
+
+    // 🔹 Color del label cuando flota (focus)
+    floatingLabelStyle: MaterialStateTextStyle.resolveWith(
+          (states) {
+        if (states.contains(MaterialState.error)) {
+          return const TextStyle(color: Colors.red);
+        }
+        if (states.contains(MaterialState.focused)) {
+          return TextStyle(color: greyFocused);
+        }
+        return TextStyle(color: greyFocused);
+      },
+    ),
+
+    // 🔹 Hint SIEMPRE gris oscuro
+    hintStyle: TextStyle(color: greyHint),
+
+    // 🔹 Texto del error en rojo
+    errorStyle: const TextStyle(color: Colors.red),
+
     border: OutlineInputBorder(
       borderSide: BorderSide(color: grey),
     ),
@@ -60,6 +84,7 @@ InputDecoration _inputDecoration(String label) {
     ),
   );
 }
+
 
 /// ---- Widget principal ----
 
@@ -139,14 +164,14 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
   double? _porcentajeCumplido;
   int? _diasFaltantesPrimerBeneficio;
 
-  // ---- Datos del acudiente ----
-  final TextEditingController _acudienteNombresCtrl = TextEditingController();
-  final TextEditingController _acudienteApellidosCtrl = TextEditingController();
-  final TextEditingController _acudienteDocumentoCtrl = TextEditingController();
-  final TextEditingController _acudienteCelularCtrl = TextEditingController();
-
-  String? _acudienteParentescoSeleccionado;
-  String? _acudienteTipoDocumentoSeleccionado;
+  // // ---- Datos del acudiente ----
+  // final TextEditingController _acudienteNombresCtrl = TextEditingController();
+  // final TextEditingController _acudienteApellidosCtrl = TextEditingController();
+  // final TextEditingController _acudienteDocumentoCtrl = TextEditingController();
+  // final TextEditingController _acudienteCelularCtrl = TextEditingController();
+  //
+  // String? _acudienteParentescoSeleccionado;
+  // String? _acudienteTipoDocumentoSeleccionado;
 
 
   final List<String> _parentescos = [
@@ -433,9 +458,6 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
   }
 
 
-
-
-
   @override
   void dispose() {
     _mesesCtrl.dispose();
@@ -599,6 +621,19 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
     }
   }
 
+  void _resetResultados() {
+    setState(() {
+      _diasEjecutados = null;
+      _totalCondenaDias = null;
+      _diasCumplidos = null;
+      _diasRestantes = null;
+      _porcentajeCumplido = null;
+      _diasFaltantesPrimerBeneficio = null;
+      _beneficiosCumplidos = [];
+    });
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -734,6 +769,7 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                       setState(() {
                         _delitoSeleccionado = value;
                       });
+                      _resetResultados();
                     },
                     validator: (value) {
                       if (value == null) {
@@ -760,6 +796,8 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                     TextFormField(
                       controller: _otroDelitoCtrl,
                       decoration: _inputDecoration('Especificar delito'),
+                      onChanged: (_) => _resetResultados(),
+
                     ),
                   ],
 
@@ -773,6 +811,7 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                           controller: _mesesCtrl,
                           keyboardType: TextInputType.number,
                           decoration: _inputDecoration('Meses de condena'),
+                          onChanged: (_) => _resetResultados(),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Obligatorio';
@@ -790,6 +829,7 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                           controller: _diasCtrl,
                           keyboardType: TextInputType.number,
                           decoration: _inputDecoration('Días de condena'),
+                          onChanged: (_) => _resetResultados(),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Obligatorio';
@@ -817,12 +857,20 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                     builder: (state) {
                       return InkWell(
                         onTap: () async {
+                          final anterior = _fechaCaptura;
+
                           await _seleccionarFechaCaptura();
+
+                          // ✅ Actualiza el FormField
                           state.didChange(_fechaCaptura);
+
+                          // ✅ Si cambió la fecha, resetea resultados para forzar recalcular
+                          if (_fechaCaptura != anterior) {
+                            _resetResultados();
+                          }
                         },
                         child: InputDecorator(
-                          decoration:
-                          _inputDecoration('Fecha de captura').copyWith(
+                          decoration: _inputDecoration('Fecha de captura').copyWith(
                             errorText: state.errorText,
                           ),
                           child: Row(
@@ -840,14 +888,13 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                       );
                     },
                   ),
-
                   const SizedBox(height: 16),
-
                   // ---- DÍAS REDIMIDOS ----
                   TextFormField(
                     controller: _diasRedimidosCtrl,
                     keyboardType: TextInputType.number,
                     decoration: _inputDecoration('Días redimidos'),
+                    onChanged: (_) => _resetResultados(),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
                         return 'Obligatorio';
@@ -1171,131 +1218,131 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                     ),
 
                     const Divider(),
-                    Text(
-                      'Datos del acudiente',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-// 🔹 Nombres y apellidos
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _acudienteNombresCtrl,
-                            decoration: _inputDecoration('Nombres'),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Obligatorio';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _acudienteApellidosCtrl,
-                            decoration: _inputDecoration('Apellidos'),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Obligatorio';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-// 🔹 Parentesco
-                    DropdownButtonFormField<String>(
-                      decoration: _inputDecoration('Parentesco'),
-                      value: _acudienteParentescoSeleccionado,
-                      items: _parentescos
-                          .map(
-                            (p) => DropdownMenuItem(
-                          value: p,
-                          child: Text(p),
-                        ),
-                      )
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _acudienteParentescoSeleccionado = value;
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Selecciona el parentesco';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-// 🔹 Tipo de documento
-                    DropdownButtonFormField<String>(
-                      decoration: _inputDecoration('Tipo de documento'),
-                      value: _acudienteTipoDocumentoSeleccionado,
-                      items: _tiposDocumentoAcudiente
-                          .map(
-                            (t) => DropdownMenuItem(
-                          value: t,
-                          child: Text(t),
-                        ),
-                      )
-                          .toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _acudienteTipoDocumentoSeleccionado = value;
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Selecciona el tipo de documento';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-// 🔹 Número de documento
-                    TextFormField(
-                      controller: _acudienteDocumentoCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration: _inputDecoration('Número de documento'),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Obligatorio';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-// 🔹 Celular / WhatsApp
-                    TextFormField(
-                      controller: _acudienteCelularCtrl,
-                      keyboardType: TextInputType.phone,
-                      decoration: _inputDecoration('Número de celular / WhatsApp'),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Obligatorio';
-                        }
-                        if (value.length < 10) {
-                          return 'Número inválido';
-                        }
-                        return null;
-                      },
-                    ),
+//                     Text(
+//                       'Datos del acudiente',
+//                       style: theme.textTheme.titleMedium?.copyWith(
+//                         fontWeight: FontWeight.bold,
+//                       ),
+//                     ),
+//                     const SizedBox(height: 12),
+//
+// // 🔹 Nombres y apellidos
+//                     Row(
+//                       children: [
+//                         Expanded(
+//                           child: TextFormField(
+//                             controller: _acudienteNombresCtrl,
+//                             decoration: _inputDecoration('Nombres'),
+//                             validator: (value) {
+//                               if (value == null || value.trim().isEmpty) {
+//                                 return 'Obligatorio';
+//                               }
+//                               return null;
+//                             },
+//                           ),
+//                         ),
+//                         const SizedBox(width: 12),
+//                         Expanded(
+//                           child: TextFormField(
+//                             controller: _acudienteApellidosCtrl,
+//                             decoration: _inputDecoration('Apellidos'),
+//                             validator: (value) {
+//                               if (value == null || value.trim().isEmpty) {
+//                                 return 'Obligatorio';
+//                               }
+//                               return null;
+//                             },
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//
+//                     const SizedBox(height: 12),
+//
+// // 🔹 Parentesco
+//                     DropdownButtonFormField<String>(
+//                       decoration: _inputDecoration('Parentesco'),
+//                       value: _acudienteParentescoSeleccionado,
+//                       items: _parentescos
+//                           .map(
+//                             (p) => DropdownMenuItem(
+//                           value: p,
+//                           child: Text(p),
+//                         ),
+//                       )
+//                           .toList(),
+//                       onChanged: (value) {
+//                         setState(() {
+//                           _acudienteParentescoSeleccionado = value;
+//                         });
+//                       },
+//                       validator: (value) {
+//                         if (value == null || value.isEmpty) {
+//                           return 'Selecciona el parentesco';
+//                         }
+//                         return null;
+//                       },
+//                     ),
+//
+//                     const SizedBox(height: 12),
+//
+// // 🔹 Tipo de documento
+//                     DropdownButtonFormField<String>(
+//                       decoration: _inputDecoration('Tipo de documento'),
+//                       value: _acudienteTipoDocumentoSeleccionado,
+//                       items: _tiposDocumentoAcudiente
+//                           .map(
+//                             (t) => DropdownMenuItem(
+//                           value: t,
+//                           child: Text(t),
+//                         ),
+//                       )
+//                           .toList(),
+//                       onChanged: (value) {
+//                         setState(() {
+//                           _acudienteTipoDocumentoSeleccionado = value;
+//                         });
+//                       },
+//                       validator: (value) {
+//                         if (value == null || value.isEmpty) {
+//                           return 'Selecciona el tipo de documento';
+//                         }
+//                         return null;
+//                       },
+//                     ),
+//
+//                     const SizedBox(height: 12),
+//
+// // 🔹 Número de documento
+//                     TextFormField(
+//                       controller: _acudienteDocumentoCtrl,
+//                       keyboardType: TextInputType.number,
+//                       decoration: _inputDecoration('Número de documento'),
+//                       validator: (value) {
+//                         if (value == null || value.trim().isEmpty) {
+//                           return 'Obligatorio';
+//                         }
+//                         return null;
+//                       },
+//                     ),
+//
+//                     const SizedBox(height: 12),
+//
+// // 🔹 Celular / WhatsApp
+//                     TextFormField(
+//                       controller: _acudienteCelularCtrl,
+//                       keyboardType: TextInputType.phone,
+//                       decoration: _inputDecoration('Número de celular / WhatsApp'),
+//                       validator: (value) {
+//                         if (value == null || value.trim().isEmpty) {
+//                           return 'Obligatorio';
+//                         }
+//                         if (value.length < 10) {
+//                           return 'Número inválido';
+//                         }
+//                         return null;
+//                       },
+//                     ),
 
                     const SizedBox(height: 12),
                     SizedBox(
@@ -1419,12 +1466,12 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                             beneficiosCumplidosNombres,
                             'dias_faltantes_primer_beneficio':
                             diasFaltantesPrimerBeneficio,
-                            'acudiente_nombres': _acudienteNombresCtrl.text.trim(),
-                            'acudiente_apellidos': _acudienteApellidosCtrl.text.trim(),
-                            'acudiente_parentesco': _acudienteParentescoSeleccionado,
-                            'acudiente_tipo_documento': _acudienteTipoDocumentoSeleccionado,
-                            'acudiente_numero_documento': _acudienteDocumentoCtrl.text.trim(),
-                            'acudiente_celular': _acudienteCelularCtrl.text.trim(),
+                            // 'acudiente_nombres': _acudienteNombresCtrl.text.trim(),
+                            // 'acudiente_apellidos': _acudienteApellidosCtrl.text.trim(),
+                            // 'acudiente_parentesco': _acudienteParentescoSeleccionado,
+                            // 'acudiente_tipo_documento': _acudienteTipoDocumentoSeleccionado,
+                            // 'acudiente_numero_documento': _acudienteDocumentoCtrl.text.trim(),
+                            // 'acudiente_celular': _acudienteCelularCtrl.text.trim(),
                           };
 
                           // Construimos el RESUMEN en meses/días

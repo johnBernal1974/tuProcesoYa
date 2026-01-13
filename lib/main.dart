@@ -13,7 +13,7 @@ import 'package:tuprocesoya/Pages/detalle_de_correo_page/detalle_correo_acumulac
 import 'package:tuprocesoya/Pages/nosotros/nosotros_page.dart';
 import 'package:tuprocesoya/Pages/splash/splash.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
-import 'package:tuprocesoya/widgets/reporte_beneficios.dart';
+import 'package:tuprocesoya/widgets/analisis_preliminar/reporte_beneficios.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/administrador/atender_ solicitud_redenciones/atender_ solicitud_redenciones.dart';

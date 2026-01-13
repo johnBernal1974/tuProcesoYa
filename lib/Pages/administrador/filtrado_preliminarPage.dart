@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
-import '../../widgets/busqueda_preliminar.dart';
+import '../../widgets/analisis_preliminar/busqueda_preliminar.dart';
 
 class CalculoCondenaPage extends StatefulWidget {
   const CalculoCondenaPage({super.key});
