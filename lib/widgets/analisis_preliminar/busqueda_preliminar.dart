@@ -288,6 +288,7 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
     _fetchDatosParaDrops();
   }
 
+
   Future<void> _fetchDatosParaDrops() async {
     await _fetchTodosCentrosReclusion();
     await _fetchJuzgadosEjecucion();
@@ -404,11 +405,17 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
         };
       }).toList();
 
-      // 👉 ORDEN ALFABÉTICO POR NOMBRE DEL JUZGADO
+      // ✅ ORDEN POR CIUDAD y luego por NOMBRE
       fetchedJuzgados.sort((a, b) {
-        final nombreA = a['nombre'] ?? '';
-        final nombreB = b['nombre'] ?? '';
-        return nombreA.toLowerCase().compareTo(nombreB.toLowerCase());
+        final ciudadA = (a['ciudad'] ?? '').toLowerCase().trim();
+        final ciudadB = (b['ciudad'] ?? '').toLowerCase().trim();
+
+        final cmpCiudad = ciudadA.compareTo(ciudadB);
+        if (cmpCiudad != 0) return cmpCiudad;
+
+        final nombreA = (a['nombre'] ?? '').toLowerCase().trim();
+        final nombreB = (b['nombre'] ?? '').toLowerCase().trim();
+        return nombreA.compareTo(nombreB);
       });
 
       if (mounted) {
@@ -424,6 +431,7 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
       _isLoadingConocimiento = false;
     }
   }
+
 
 
   // 🔎 Helpers para mostrar nombre en el payload si quieres
@@ -645,911 +653,927 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
         _diasRestantes != null &&
         _porcentajeCumplido != null;
 
-    return Card(
-      elevation: 3,
-      color: blancoCards, // 👈 tu color de fondo
-      surfaceTintColor: blancoCards,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ───────── TARJETA VERDE DESPUÉS DE GUARDAR ─────────
-                if (_resumenGuardado != null) ...[
-                  Container(
-                    width: double.infinity,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade400),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // 👇 Convertimos el texto en líneas y damos estilo
-                        ..._resumenGuardado!
-                            .split('\n')
-                            .where((linea) => linea.trim().isNotEmpty)
-                            .map((linea) {
-                          final partes = linea.split(': ');
+    return Column(
+      children: [
+        Card(
+          elevation: 3,
+          color: blancoCards, // 👈 tu color de fondo
+          surfaceTintColor: blancoCards,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ───────── TARJETA VERDE DESPUÉS DE GUARDAR ─────────
+                    if (_resumenGuardado != null) ...[
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.green.shade400),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 👇 Convertimos el texto en líneas y damos estilo
+                            ..._resumenGuardado!
+                                .split('\n')
+                                .where((linea) => linea.trim().isNotEmpty)
+                                .map((linea) {
+                              final partes = linea.split(': ');
 
-                          // Si la línea tiene formato "Titulo: valor"
-                          if (partes.length > 1) {
-                            final titulo = partes[0];
-                            final valor = partes.sublist(1).join(': '); // por si hay más ':'
+                              // Si la línea tiene formato "Titulo: valor"
+                              if (partes.length > 1) {
+                                final titulo = partes[0];
+                                final valor = partes.sublist(1).join(': '); // por si hay más ':'
 
-                            return RichText(
-                              text: TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: '$titulo: ',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black,
-                                    ),
+                                return RichText(
+                                  text: TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: '$titulo: ',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: valor,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.normal,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  TextSpan(
-                                    text: valor,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.normal,
-                                      color: Colors.black,
-                                    ),
+                                );
+                              } else {
+                                // Para líneas como "Beneficios cumplidos:" o frases sueltas
+                                return Text(
+                                  linea,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
                                   ),
-                                ],
+                                );
+                              }
+                            }).toList(),
+
+                            const SizedBox(height: 8),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    _resumenGuardado = null; // 👈 vuelve a mostrar el formulario
+                                  });
+                                },
+                                child: const Text('Siguiente'),
                               ),
-                            );
-                          } else {
-                            // Para líneas como "Beneficios cumplidos:" o frases sueltas
-                            return Text(
-                              linea,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          }
-                        }).toList(),
-
-                        const SizedBox(height: 8),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              setState(() {
-                                _resumenGuardado = null; // 👈 vuelve a mostrar el formulario
-                              });
-                            },
-                            child: const Text('Siguiente'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-
-                // ───────── FORMULARIO COMPLETO SOLO SI NO HAY RESUMEN ─────────
-                if (_resumenGuardado == null) ...[
-                  Text(
-                    'Cálculo de condena',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ---- DELITO (DROP + OPCIÓN OTRO) ----
-                  DropdownButtonFormField<DelitoItem>(
-                    isExpanded: true,
-                    dropdownColor: Colors.white,
-                    decoration: _inputDecoration('Delito'),
-                    value: _delitoSeleccionado,
-                    items: _delitos
-                        .map(
-                          (d) => DropdownMenuItem<DelitoItem>(
-                        value: d,
-                        child: Text(
-                          d.nombre,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: d.excluidoBeneficios ? Colors.red : null,
-                          ),
-                        ),
-                      ),
-                    )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _delitoSeleccionado = value;
-                      });
-                      _resetResultados();
-                    },
-                    validator: (value) {
-                      if (value == null) {
-                        return 'Selecciona el delito';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-
-                  if (_delitoSeleccionado != null && _delitoEsExcluido)
-                    Text(
-                      'Este delito está excluido de varios beneficios y subrogados (Art. 68A CP).',
-                      style: TextStyle(
-                        color: Colors.red.shade700,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
-                  if (_delitoSeleccionado != null &&
-                      _delitoSeleccionado!.nombre == 'Otro (escribir)') ...[
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _otroDelitoCtrl,
-                      decoration: _inputDecoration('Especificar delito'),
-                      onChanged: (_) => _resetResultados(),
-
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  // ---- CAMPOS DE CONDENA ----
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _mesesCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('Meses de condena'),
-                          onChanged: (_) => _resetResultados(),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Obligatorio';
-                            }
-                            if (int.tryParse(value) == null) {
-                              return 'Solo números';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _diasCtrl,
-                          keyboardType: TextInputType.number,
-                          decoration: _inputDecoration('Días de condena'),
-                          onChanged: (_) => _resetResultados(),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Obligatorio';
-                            }
-                            if (int.tryParse(value) == null) {
-                              return 'Solo números';
-                            }
-                            return null;
-                          },
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
 
-                  const SizedBox(height: 16),
-
-                  // ---- FECHA CAPTURA (con validador) ----
-                  FormField<DateTime>(
-                    validator: (value) {
-                      if (_fechaCaptura == null) {
-                        return 'Selecciona la fecha de captura';
-                      }
-                      return null;
-                    },
-                    builder: (state) {
-                      return InkWell(
-                        onTap: () async {
-                          final anterior = _fechaCaptura;
-
-                          await _seleccionarFechaCaptura();
-
-                          // ✅ Actualiza el FormField
-                          state.didChange(_fechaCaptura);
-
-                          // ✅ Si cambió la fecha, resetea resultados para forzar recalcular
-                          if (_fechaCaptura != anterior) {
-                            _resetResultados();
-                          }
-                        },
-                        child: InputDecorator(
-                          decoration: _inputDecoration('Fecha de captura').copyWith(
-                            errorText: state.errorText,
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                _fechaCaptura == null
-                                    ? 'Selecciona la fecha'
-                                    : _dateFormat.format(_fechaCaptura!),
-                              ),
-                              const Icon(Icons.calendar_today),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  // ---- DÍAS REDIMIDOS ----
-                  TextFormField(
-                    controller: _diasRedimidosCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: _inputDecoration('Días redimidos'),
-                    onChanged: (_) => _resetResultados(),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Obligatorio';
-                      }
-                      if (int.tryParse(value.trim()) == null) {
-                        return 'Solo números';
-                      }
-                      return null;
-                    },
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ---- BOTÓN VALIDAR ----
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _calcular,
-                      child: const Text('Validar'),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  if (hayResultados) ...[
-                    const Divider(),
-                    Text(
-                      'Resultados',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 10,
-                      children: [
-                        _ResultadoChip(
-                          titulo: 'Condena total',
-                          valor: _formatearMesesDias(_totalCondenaDias!),
-                        ),
-                        _ResultadoChip(
-                          titulo: 'Días ejecutados',
-                          valor: _formatearMesesDias(_diasEjecutados!),
-                        ),
-                        _ResultadoChip(
-                          titulo: 'Días redimidos',
-                          valor: _formatearMesesDias(
-                            int.tryParse(_diasRedimidosCtrl.text.trim()) ?? 0,
-                          ),
-                        ),
-                        _ResultadoChip(
-                          titulo: 'Condena total cumplida',
-                          valor: _formatearMesesDias(_diasCumplidos!),
-                        ),
-                        _ResultadoChip(
-                          titulo: 'Condena restante',
-                          valor: _formatearMesesDias(_diasRestantes!),
-                        ),
-                        _ResultadoChip(
-                          titulo: '% cumplido',
-                          valor:
-                          '${_porcentajeCumplido!.toStringAsFixed(2)}%',
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    Text(
-                      'Beneficios según porcentaje cumplido',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Column(
-                      children: [
-                        _BeneficioCard(
-                          titulo: 'Permiso administrativo de hasta 72 horas',
-                          porcentajeRequerido: 33.33,
-                          porcentajeActual: _porcentajeCumplido!,
-                          totalCondenaDias: _totalCondenaDias!,
-                          diasCumplidos: _diasCumplidos!,
-                        ),
-                        const SizedBox(height: 8),
-                        _BeneficioCard(
-                          titulo: 'Prisión domiciliaria',
-                          porcentajeRequerido: 50.0,
-                          porcentajeActual: _porcentajeCumplido!,
-                          totalCondenaDias: _totalCondenaDias!,
-                          diasCumplidos: _diasCumplidos!,
-                        ),
-                        const SizedBox(height: 8),
-                        _BeneficioCard(
-                          titulo: 'Libertad condicional',
-                          porcentajeRequerido: 60.0,
-                          porcentajeActual: _porcentajeCumplido!,
-                          totalCondenaDias: _totalCondenaDias!,
-                          diasCumplidos: _diasCumplidos!,
-                        ),
-                        const SizedBox(height: 8),
-                        _BeneficioCard(
-                          titulo: 'Extinción de la pena',
-                          porcentajeRequerido: 100.0,
-                          porcentajeActual: _porcentajeCumplido!,
-                          totalCondenaDias: _totalCondenaDias!,
-                          diasCumplidos: _diasCumplidos!,
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    if (_beneficiosCumplidos.isEmpty &&
-                        _diasFaltantesPrimerBeneficio != null)
+                    // ───────── FORMULARIO COMPLETO SOLO SI NO HAY RESUMEN ─────────
+                    if (_resumenGuardado == null) ...[
                       Text(
-                        'Para alcanzar el primer beneficio (72 horas) faltan '
-                            '${_formatearMesesDias(_diasFaltantesPrimerBeneficio!)}.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
+                        'Cálculo de condena',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 16),
 
-                    const SizedBox(height: 24),
-
-                    // ---- DATOS DEL PPL ----
-                    const Divider(),
-                    Text(
-                      'Datos del PPL',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _nombresCtrl,
-                            decoration: _inputDecoration('Nombres'),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Obligatorio';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextFormField(
-                            controller: _apellidosCtrl,
-                            decoration: _inputDecoration('Apellidos'),
-                            validator: (value) {
-                              if (value == null || value.trim().isEmpty) {
-                                return 'Obligatorio';
-                              }
-                              return null;
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    DropdownButtonFormField<String>(
-                      decoration: _inputDecoration('Tipo de documento'),
-                      value: _tipoDocumentoSeleccionado,
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Cédula de ciudadanía',
-                          child: Text('Cédula de ciudadanía'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Cédula de extranjería',
-                          child: Text('Cédula de extranjería'),
-                        ),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _tipoDocumentoSeleccionado = value;
-                        });
-                      },
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Selecciona una opción';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    TextFormField(
-                      controller: _numeroDocCtrl,
-                      keyboardType: TextInputType.number,
-                      decoration:
-                      _inputDecoration('Número de documento'),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Obligatorio';
-                        }
-                        return null;
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    TextFormField(
-                      controller: _tdCtrl,
-                      decoration: _inputDecoration('TD'),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Obligatorio';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _nuiCtrl,
-                      decoration: _inputDecoration('NUI'),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Obligatorio';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    // 🔹 Patio
-                    TextFormField(
-                      controller: _patioCtrl,
-                      decoration: _inputDecoration('Patio'),
-                    ),
-                    const SizedBox(height: 16),
-                    // 🔹 Número de proceso
-                    TextFormField(
-                      controller: _numeroProcesoCtrl,
-                      decoration: _inputDecoration('Número de proceso'),
-                      // lo puedes dejar sin validator si no es obligatorio
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // 🔹 Centro de reclusión (DROP)
-                    DropdownButtonFormField<String>(
-                      decoration: _inputDecoration('Centro de reclusión'),
-                      value: _centroReclusionSeleccionadoId,
-                      isExpanded: true,
-                      items: centrosReclusionTodos.map((centro) {
-                        final nombre = (centro['nombre'] ?? '') as String;
-                        final regional = (centro['regional'] ?? '') as String;
-                        final id = (centro['id'] ?? '') as String;
-                        return DropdownMenuItem<String>(
-                          value: id,
-                          child: Text(
-                            '$nombre ($regional)',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _centroReclusionSeleccionadoId = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // 🔹 Juzgado de ejecución de penas (DROP)
-                    DropdownButtonFormField<String>(
-                      decoration: _inputDecoration('Juzgado de ejecución de penas'),
-                      value: _juzgadoEjecucionSeleccionadoId,
-                      isExpanded: true,
-                      items: juzgadosEjecucionPenas.map((j) {
-                        return DropdownMenuItem<String>(
-                          value: j['id'],
-                          child: Text(
-                            j['juzgadoEP'] ?? '',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _juzgadoEjecucionSeleccionadoId = value;
-                        });
-                      },
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // 🔹 Juzgado de conocimiento (DROP)
-                    DropdownButtonFormField<String>(
-                      decoration: _inputDecoration('Juzgado de conocimiento'),
-                      value: _juzgadoConocimientoSeleccionadoId,
-                      isExpanded: true,
-                      items: juzgadosConocimiento.map((j) {
-                        final ciudad = j['ciudad'] ?? '';
-                        final nombre = j['nombre'] ?? '';
-                        return DropdownMenuItem<String>(
-                          value: j['id'],
-                          child: Text(
-                            '$nombre ($ciudad)',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _juzgadoConocimientoSeleccionadoId = value;
-                        });
-                      },
-                    ),
-
-                    const Divider(),
-//                     Text(
-//                       'Datos del acudiente',
-//                       style: theme.textTheme.titleMedium?.copyWith(
-//                         fontWeight: FontWeight.bold,
-//                       ),
-//                     ),
-//                     const SizedBox(height: 12),
-//
-// // 🔹 Nombres y apellidos
-//                     Row(
-//                       children: [
-//                         Expanded(
-//                           child: TextFormField(
-//                             controller: _acudienteNombresCtrl,
-//                             decoration: _inputDecoration('Nombres'),
-//                             validator: (value) {
-//                               if (value == null || value.trim().isEmpty) {
-//                                 return 'Obligatorio';
-//                               }
-//                               return null;
-//                             },
-//                           ),
-//                         ),
-//                         const SizedBox(width: 12),
-//                         Expanded(
-//                           child: TextFormField(
-//                             controller: _acudienteApellidosCtrl,
-//                             decoration: _inputDecoration('Apellidos'),
-//                             validator: (value) {
-//                               if (value == null || value.trim().isEmpty) {
-//                                 return 'Obligatorio';
-//                               }
-//                               return null;
-//                             },
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//
-//                     const SizedBox(height: 12),
-//
-// // 🔹 Parentesco
-//                     DropdownButtonFormField<String>(
-//                       decoration: _inputDecoration('Parentesco'),
-//                       value: _acudienteParentescoSeleccionado,
-//                       items: _parentescos
-//                           .map(
-//                             (p) => DropdownMenuItem(
-//                           value: p,
-//                           child: Text(p),
-//                         ),
-//                       )
-//                           .toList(),
-//                       onChanged: (value) {
-//                         setState(() {
-//                           _acudienteParentescoSeleccionado = value;
-//                         });
-//                       },
-//                       validator: (value) {
-//                         if (value == null || value.isEmpty) {
-//                           return 'Selecciona el parentesco';
-//                         }
-//                         return null;
-//                       },
-//                     ),
-//
-//                     const SizedBox(height: 12),
-//
-// // 🔹 Tipo de documento
-//                     DropdownButtonFormField<String>(
-//                       decoration: _inputDecoration('Tipo de documento'),
-//                       value: _acudienteTipoDocumentoSeleccionado,
-//                       items: _tiposDocumentoAcudiente
-//                           .map(
-//                             (t) => DropdownMenuItem(
-//                           value: t,
-//                           child: Text(t),
-//                         ),
-//                       )
-//                           .toList(),
-//                       onChanged: (value) {
-//                         setState(() {
-//                           _acudienteTipoDocumentoSeleccionado = value;
-//                         });
-//                       },
-//                       validator: (value) {
-//                         if (value == null || value.isEmpty) {
-//                           return 'Selecciona el tipo de documento';
-//                         }
-//                         return null;
-//                       },
-//                     ),
-//
-//                     const SizedBox(height: 12),
-//
-// // 🔹 Número de documento
-//                     TextFormField(
-//                       controller: _acudienteDocumentoCtrl,
-//                       keyboardType: TextInputType.number,
-//                       decoration: _inputDecoration('Número de documento'),
-//                       validator: (value) {
-//                         if (value == null || value.trim().isEmpty) {
-//                           return 'Obligatorio';
-//                         }
-//                         return null;
-//                       },
-//                     ),
-//
-//                     const SizedBox(height: 12),
-//
-// // 🔹 Celular / WhatsApp
-//                     TextFormField(
-//                       controller: _acudienteCelularCtrl,
-//                       keyboardType: TextInputType.phone,
-//                       decoration: _inputDecoration('Número de celular / WhatsApp'),
-//                       validator: (value) {
-//                         if (value == null || value.trim().isEmpty) {
-//                           return 'Obligatorio';
-//                         }
-//                         if (value.length < 10) {
-//                           return 'Número inválido';
-//                         }
-//                         return null;
-//                       },
-//                     ),
-
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _guardando
-                            ? null
-                            : () async {
-                          if (!_formKey.currentState!.validate()) return;
-
-                          if (_totalCondenaDias == null ||
-                              _diasCumplidos == null ||
-                              _porcentajeCumplido == null ||
-                              _fechaCaptura == null ||
-                              _diasEjecutados == null ||
-                              _diasRestantes == null) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Primero debes calcular la condena antes de guardar.',
-                                ),
+                      // ---- DELITO (DROP + OPCIÓN OTRO) ----
+                      DropdownButtonFormField<DelitoItem>(
+                        isExpanded: true,
+                        dropdownColor: Colors.white,
+                        decoration: _inputDecoration('Delito'),
+                        value: _delitoSeleccionado,
+                        items: _delitos
+                            .map(
+                              (d) => DropdownMenuItem<DelitoItem>(
+                            value: d,
+                            child: Text(
+                              d.nombre,
+                              softWrap: false,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: d.excluidoBeneficios ? Colors.red : null,
                               ),
-                            );
-                            return;
-                          }
-
-                          final int diasRedimidosInt =
-                              int.tryParse(_diasRedimidosCtrl.text.trim()) ?? 0;
-
-                          // Confirmación
-                          final bool? confirmar = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) {
-                              return AlertDialog(
-                                title: const Text('Confirmar guardado'),
-                                content: const Text(
-                                  '¿Deseas guardar este análisis en la base de datos?',
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () =>
-                                        Navigator.of(ctx).pop(false),
-                                    child: const Text('Cancelar'),
-                                  ),
-                                  ElevatedButton(
-                                    onPressed: () =>
-                                        Navigator.of(ctx).pop(true),
-                                    child: const Text('Guardar'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-
-                          if (confirmar != true) return;
-
-                          final double p = _porcentajeCumplido!;
-                          final bool permiso72Cumplido = p >= 33.33;
-                          final bool domiciliariaCumplida = p >= 50.0;
-                          final bool condicionalCumplida = p >= 60.0;
-                          final bool extincionCumplida = p >= 100.0;
-
-                          final bool tieneAlgunBeneficio =
-                              permiso72Cumplido ||
-                                  domiciliariaCumplida ||
-                                  condicionalCumplida ||
-                                  extincionCumplida;
-
-                          final List<String>
-                          beneficiosCumplidosNombres =
-                          _beneficiosCumplidos
-                              .map((b) => b.nombre)
-                              .toList();
-
-                          final int diasFaltantesPrimerBeneficio =
-                              _diasFaltantesPrimerBeneficio ?? 0;
-
-                          final payload = <String, dynamic>{
-                            // Identificación PPL
-                            'nombres': _nombresCtrl.text.trim(),
-                            'apellidos': _apellidosCtrl.text.trim(),
-                            'tipo_documento': _tipoDocumentoSeleccionado,
-                            'numero_documento': _numeroDocCtrl.text.trim(),
-
-                            // Datos penitenciarios
-                            'td': _tdCtrl.text.trim(),
-                            'nui': _nuiCtrl.text.trim(),
-                            'patio': _patioCtrl.text.trim(),
-                            'numero_proceso': _numeroProcesoCtrl.text.trim(),
-
-                            // Ubicaciones / correos
-                            'centro_reclusion_id': _centroReclusionSeleccionadoId,
-                            'centro_reclusion_nombre': _buscarNombreCentroPorId(_centroReclusionSeleccionadoId),
-                            'juzgado_ejecucion_id': _juzgadoEjecucionSeleccionadoId,
-                            'juzgado_ejecucion_nombre': _buscarNombreJuzgadoEjecucionPorId(_juzgadoEjecucionSeleccionadoId),
-                            'juzgado_conocimiento_id': _juzgadoConocimientoSeleccionadoId,
-                            'juzgado_conocimiento_nombre': _buscarNombreJuzgadoConocimientoPorId(_juzgadoConocimientoSeleccionadoId),
-
-                            // Delito
-                            'delito': _nombreDelitoElegido,
-                            'delito_excluido_beneficios': _delitoEsExcluido,
-
-                            // Fuente de cálculo (lo importante para lo dinámico)
-                            'fecha_captura': Timestamp.fromDate(_fechaCaptura!),
-                            'total_condena_dias': _totalCondenaDias,
-                            'dias_redimidos': diasRedimidosInt,
-
-                            // Auditoría
-                            'created_at': FieldValue.serverTimestamp(),
-                            'updated_at': FieldValue.serverTimestamp(),
-                          };
-
-                          // Construimos el RESUMEN en meses/días
-                          final buffer = StringBuffer();
-                          buffer.writeln(
-                              'Nombre: ${_nombresCtrl.text.trim()} ${_apellidosCtrl.text.trim()}');
-                          buffer.writeln(
-                              'Documento: ${_tipoDocumentoSeleccionado ?? '-'} ${_numeroDocCtrl.text.trim()}');
-                          buffer.writeln(
-                              'TD: ${_tdCtrl.text.trim().isEmpty ? '—' : _tdCtrl.text.trim()} · '
-                                  'NUI: ${_nuiCtrl.text.trim().isEmpty ? '—' : _nuiCtrl.text.trim()}');
-                          buffer.writeln(
-                              'Delito: $_nombreDelitoElegido${_delitoEsExcluido ? ' (excluido de beneficios)' : ''}');
-                          buffer.writeln(
-                              'Fecha de captura: ${_dateFormat.format(_fechaCaptura!)}');
-                          buffer.writeln(
-                              'Condena total: ${_formatearMesesDias(_totalCondenaDias!)}');
-                          buffer.writeln(
-                              'Días ejecutados: ${_formatearMesesDias(_diasEjecutados!)}');
-                          buffer.writeln(
-                              'Días redimidos: ${_formatearMesesDias(diasRedimidosInt)}');
-                          buffer.writeln(
-                              'Condena total cumplida: ${_formatearMesesDias(_diasCumplidos!)}');
-                          buffer.writeln(
-                              'Condena restante: ${_formatearMesesDias(_diasRestantes!)}');
-                          buffer.writeln(
-                              'Cumplido: ${_porcentajeCumplido!.toStringAsFixed(2)}%');
-
-                          if (_beneficiosCumplidos.isNotEmpty) {
-                            buffer.writeln('\nBeneficios cumplidos:');
-                            for (final b in _beneficiosCumplidos) {
-                              buffer.writeln(
-                                  '- ${b.nombre}: desde hace ${_formatearMesesDias(b.diasDesde)}');
-                            }
-                          } else {
-                            buffer.writeln(
-                                '\nAún no cumple beneficios. Faltan ${_formatearMesesDias(diasFaltantesPrimerBeneficio)} para el primero (72 horas).');
-                          }
-
-                          final resumenTexto = buffer.toString();
-
-                          setState(() => _guardando = true);
-
-                          try {
-                            await FirebaseFirestore.instance
-                                .collection('analisis_condena_ppl')
-                                .add(payload);
-
-                            if (!mounted) return;
-
-                            setState(() {
-                              _resumenGuardado = resumenTexto;
-                            });
-                            _limpiarFormulario();
-
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                    'Análisis guardado correctamente.'),
-                              ),
-                            );
-                          } catch (e) {
-                            if (!mounted) return;
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                    'Error al guardar el análisis: $e'),
-                              ),
-                            );
-                          } finally {
-                            if (mounted) {
-                              setState(() => _guardando = false);
-                            }
-                          }
-                        },
-                        child: _guardando
-                            ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2),
+                            ),
+                          ),
                         )
-                            : const Text('Guardar'),
+                            .toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            _delitoSeleccionado = value;
+                          });
+                          _resetResultados();
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Selecciona el delito';
+                          }
+                          return null;
+                        },
                       ),
-                    ),
+                      const SizedBox(height: 8),
+
+                      if (_delitoSeleccionado != null && _delitoEsExcluido)
+                        Text(
+                          'Este delito está excluido de varios beneficios y subrogados (Art. 68A CP).',
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+
+                      if (_delitoSeleccionado != null &&
+                          _delitoSeleccionado!.nombre == 'Otro (escribir)') ...[
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _otroDelitoCtrl,
+                          decoration: _inputDecoration('Especificar delito'),
+                          onChanged: (_) => _resetResultados(),
+
+                        ),
+                      ],
+
+                      const SizedBox(height: 16),
+
+                      // ---- CAMPOS DE CONDENA ----
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _mesesCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: _inputDecoration('Meses de condena'),
+                              onChanged: (_) => _resetResultados(),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Obligatorio';
+                                }
+                                if (int.tryParse(value) == null) {
+                                  return 'Solo números';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _diasCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: _inputDecoration('Días de condena'),
+                              onChanged: (_) => _resetResultados(),
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Obligatorio';
+                                }
+                                if (int.tryParse(value) == null) {
+                                  return 'Solo números';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // ---- FECHA CAPTURA (con validador) ----
+                      FormField<DateTime>(
+                        validator: (value) {
+                          if (_fechaCaptura == null) {
+                            return 'Selecciona la fecha de captura';
+                          }
+                          return null;
+                        },
+                        builder: (state) {
+                          return InkWell(
+                            onTap: () async {
+                              final anterior = _fechaCaptura;
+
+                              await _seleccionarFechaCaptura();
+
+                              // ✅ Actualiza el FormField
+                              state.didChange(_fechaCaptura);
+
+                              // ✅ Si cambió la fecha, resetea resultados para forzar recalcular
+                              if (_fechaCaptura != anterior) {
+                                _resetResultados();
+                              }
+                            },
+                            child: InputDecorator(
+                              decoration: _inputDecoration('Fecha de captura').copyWith(
+                                errorText: state.errorText,
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _fechaCaptura == null
+                                        ? 'Selecciona la fecha'
+                                        : _dateFormat.format(_fechaCaptura!),
+                                  ),
+                                  const Icon(Icons.calendar_today),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      // ---- DÍAS REDIMIDOS ----
+                      TextFormField(
+                        controller: _diasRedimidosCtrl,
+                        keyboardType: TextInputType.number,
+                        decoration: _inputDecoration('Días redimidos'),
+                        onChanged: (_) => _resetResultados(),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Obligatorio';
+                          }
+                          if (int.tryParse(value.trim()) == null) {
+                            return 'Solo números';
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // ---- BOTÓN VALIDAR ----
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _calcular,
+                          child: const Text('Validar'),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      if (hayResultados) ...[
+                        const Divider(),
+                        Text(
+                          'Resultados',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+
+                        Wrap(
+                          spacing: 16,
+                          runSpacing: 10,
+                          children: [
+                            _ResultadoChip(
+                              titulo: 'Condena total',
+                              valor: _formatearMesesDias(_totalCondenaDias!),
+                            ),
+                            _ResultadoChip(
+                              titulo: 'Días ejecutados',
+                              valor: _formatearMesesDias(_diasEjecutados!),
+                            ),
+                            _ResultadoChip(
+                              titulo: 'Días redimidos',
+                              valor: _formatearMesesDias(
+                                int.tryParse(_diasRedimidosCtrl.text.trim()) ?? 0,
+                              ),
+                            ),
+                            _ResultadoChip(
+                              titulo: 'Condena total cumplida',
+                              valor: _formatearMesesDias(_diasCumplidos!),
+                            ),
+                            _ResultadoChip(
+                              titulo: 'Condena restante',
+                              valor: _formatearMesesDias(_diasRestantes!),
+                            ),
+                            _ResultadoChip(
+                              titulo: '% cumplido',
+                              valor:
+                              '${_porcentajeCumplido!.toStringAsFixed(2)}%',
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        Text(
+                          'Beneficios según porcentaje cumplido',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Column(
+                          children: [
+                            _BeneficioCard(
+                              titulo: 'Permiso administrativo de hasta 72 horas',
+                              porcentajeRequerido: 33.33,
+                              porcentajeActual: _porcentajeCumplido!,
+                              totalCondenaDias: _totalCondenaDias!,
+                              diasCumplidos: _diasCumplidos!,
+                            ),
+                            const SizedBox(height: 8),
+                            _BeneficioCard(
+                              titulo: 'Prisión domiciliaria',
+                              porcentajeRequerido: 50.0,
+                              porcentajeActual: _porcentajeCumplido!,
+                              totalCondenaDias: _totalCondenaDias!,
+                              diasCumplidos: _diasCumplidos!,
+                            ),
+                            const SizedBox(height: 8),
+                            _BeneficioCard(
+                              titulo: 'Libertad condicional',
+                              porcentajeRequerido: 60.0,
+                              porcentajeActual: _porcentajeCumplido!,
+                              totalCondenaDias: _totalCondenaDias!,
+                              diasCumplidos: _diasCumplidos!,
+                            ),
+                            const SizedBox(height: 8),
+                            _BeneficioCard(
+                              titulo: 'Extinción de la pena',
+                              porcentajeRequerido: 100.0,
+                              porcentajeActual: _porcentajeCumplido!,
+                              totalCondenaDias: _totalCondenaDias!,
+                              diasCumplidos: _diasCumplidos!,
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        if (_beneficiosCumplidos.isEmpty &&
+                            _diasFaltantesPrimerBeneficio != null)
+                          Text(
+                            'Para alcanzar el primer beneficio (72 horas) faltan '
+                                '${_formatearMesesDias(_diasFaltantesPrimerBeneficio!)}.',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+
+                        const SizedBox(height: 24),
+
+                        // ---- DATOS DEL PPL ----
+                        const Divider(),
+                        Text(
+                          'Datos del PPL',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: _nombresCtrl,
+                                decoration: _inputDecoration('Nombres'),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Obligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: TextFormField(
+                                controller: _apellidosCtrl,
+                                decoration: _inputDecoration('Apellidos'),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Obligatorio';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        DropdownButtonFormField<String>(
+                          dropdownColor: Colors.white,
+                          decoration: _inputDecoration('Tipo de documento'),
+                          value: _tipoDocumentoSeleccionado,
+                          items: const [
+                            DropdownMenuItem(
+                              value: 'Cédula de ciudadanía',
+                              child: Text('Cédula de ciudadanía'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'Cédula de extranjería',
+                              child: Text('Cédula de extranjería'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _tipoDocumentoSeleccionado = value;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Selecciona una opción';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        TextFormField(
+                          controller: _numeroDocCtrl,
+                          keyboardType: TextInputType.number,
+                          decoration:
+                          _inputDecoration('Número de documento'),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Obligatorio';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        TextFormField(
+                          controller: _tdCtrl,
+                          decoration: _inputDecoration('TD'),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Obligatorio';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        TextFormField(
+                          controller: _nuiCtrl,
+                          decoration: _inputDecoration('NUI'),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Obligatorio';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        // 🔹 Patio
+                        TextFormField(
+                          controller: _patioCtrl,
+                          decoration: _inputDecoration('Patio'),
+                        ),
+                        const SizedBox(height: 16),
+                        // 🔹 Número de proceso
+                        TextFormField(
+                          controller: _numeroProcesoCtrl,
+                          decoration: _inputDecoration('Número de proceso'),
+                          // lo puedes dejar sin validator si no es obligatorio
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // 🔹 Centro de reclusión (DROP)
+                        DropdownButtonFormField<String>(
+                          dropdownColor: Colors.white,
+                          decoration: _inputDecoration('Centro de reclusión'),
+                          value: _centroReclusionSeleccionadoId,
+                          isExpanded: true,
+                          items: centrosReclusionTodos.map((centro) {
+                            final nombre = (centro['nombre'] ?? '') as String;
+                            final regional = (centro['regional'] ?? '') as String;
+                            final id = (centro['id'] ?? '') as String;
+                            return DropdownMenuItem<String>(
+                              value: id,
+                              child: Text(
+                                '$nombre ($regional)',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _centroReclusionSeleccionadoId = value;
+                            });
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // 🔹 Juzgado de ejecución de penas (DROP)
+                        DropdownButtonFormField<String>(
+                          dropdownColor: Colors.white,
+                          decoration: _inputDecoration('Juzgado de ejecución de penas'),
+                          value: _juzgadoEjecucionSeleccionadoId,
+                          isExpanded: true,
+                          items: juzgadosEjecucionPenas.map((j) {
+                            return DropdownMenuItem<String>(
+                              value: j['id'],
+                              child: Text(
+                                j['juzgadoEP'] ?? '',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _juzgadoEjecucionSeleccionadoId = value;
+                            });
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // 🔹 Juzgado de conocimiento (DROP)
+                        DropdownButtonFormField<String>(
+                          dropdownColor: Colors.white,
+                          decoration: _inputDecoration('Juzgado de conocimiento'),
+                          value: _juzgadoConocimientoSeleccionadoId,
+                          isExpanded: true,
+                          items: juzgadosConocimiento.map((j) {
+                            final ciudad = j['ciudad'] ?? '';
+                            final nombre = j['nombre'] ?? '';
+                            return DropdownMenuItem<String>(
+                              value: j['id'],
+                              child: Text(
+                                '${_capitalizar(ciudad)} - $nombre',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+
+                            );
+                          }).toList(),
+                          onChanged: (value) {
+                            setState(() {
+                              _juzgadoConocimientoSeleccionadoId = value;
+                            });
+                          },
+                        ),
+
+                        const Divider(),
+        //                     Text(
+        //                       'Datos del acudiente',
+        //                       style: theme.textTheme.titleMedium?.copyWith(
+        //                         fontWeight: FontWeight.bold,
+        //                       ),
+        //                     ),
+        //                     const SizedBox(height: 12),
+        //
+        // // 🔹 Nombres y apellidos
+        //                     Row(
+        //                       children: [
+        //                         Expanded(
+        //                           child: TextFormField(
+        //                             controller: _acudienteNombresCtrl,
+        //                             decoration: _inputDecoration('Nombres'),
+        //                             validator: (value) {
+        //                               if (value == null || value.trim().isEmpty) {
+        //                                 return 'Obligatorio';
+        //                               }
+        //                               return null;
+        //                             },
+        //                           ),
+        //                         ),
+        //                         const SizedBox(width: 12),
+        //                         Expanded(
+        //                           child: TextFormField(
+        //                             controller: _acudienteApellidosCtrl,
+        //                             decoration: _inputDecoration('Apellidos'),
+        //                             validator: (value) {
+        //                               if (value == null || value.trim().isEmpty) {
+        //                                 return 'Obligatorio';
+        //                               }
+        //                               return null;
+        //                             },
+        //                           ),
+        //                         ),
+        //                       ],
+        //                     ),
+        //
+        //                     const SizedBox(height: 12),
+        //
+        // // 🔹 Parentesco
+        //                     DropdownButtonFormField<String>(
+        //                       decoration: _inputDecoration('Parentesco'),
+        //                       value: _acudienteParentescoSeleccionado,
+        //                       items: _parentescos
+        //                           .map(
+        //                             (p) => DropdownMenuItem(
+        //                           value: p,
+        //                           child: Text(p),
+        //                         ),
+        //                       )
+        //                           .toList(),
+        //                       onChanged: (value) {
+        //                         setState(() {
+        //                           _acudienteParentescoSeleccionado = value;
+        //                         });
+        //                       },
+        //                       validator: (value) {
+        //                         if (value == null || value.isEmpty) {
+        //                           return 'Selecciona el parentesco';
+        //                         }
+        //                         return null;
+        //                       },
+        //                     ),
+        //
+        //                     const SizedBox(height: 12),
+        //
+        // // 🔹 Tipo de documento
+        //                     DropdownButtonFormField<String>(
+        //                       decoration: _inputDecoration('Tipo de documento'),
+        //                       value: _acudienteTipoDocumentoSeleccionado,
+        //                       items: _tiposDocumentoAcudiente
+        //                           .map(
+        //                             (t) => DropdownMenuItem(
+        //                           value: t,
+        //                           child: Text(t),
+        //                         ),
+        //                       )
+        //                           .toList(),
+        //                       onChanged: (value) {
+        //                         setState(() {
+        //                           _acudienteTipoDocumentoSeleccionado = value;
+        //                         });
+        //                       },
+        //                       validator: (value) {
+        //                         if (value == null || value.isEmpty) {
+        //                           return 'Selecciona el tipo de documento';
+        //                         }
+        //                         return null;
+        //                       },
+        //                     ),
+        //
+        //                     const SizedBox(height: 12),
+        //
+        // // 🔹 Número de documento
+        //                     TextFormField(
+        //                       controller: _acudienteDocumentoCtrl,
+        //                       keyboardType: TextInputType.number,
+        //                       decoration: _inputDecoration('Número de documento'),
+        //                       validator: (value) {
+        //                         if (value == null || value.trim().isEmpty) {
+        //                           return 'Obligatorio';
+        //                         }
+        //                         return null;
+        //                       },
+        //                     ),
+        //
+        //                     const SizedBox(height: 12),
+        //
+        // // 🔹 Celular / WhatsApp
+        //                     TextFormField(
+        //                       controller: _acudienteCelularCtrl,
+        //                       keyboardType: TextInputType.phone,
+        //                       decoration: _inputDecoration('Número de celular / WhatsApp'),
+        //                       validator: (value) {
+        //                         if (value == null || value.trim().isEmpty) {
+        //                           return 'Obligatorio';
+        //                         }
+        //                         if (value.length < 10) {
+        //                           return 'Número inválido';
+        //                         }
+        //                         return null;
+        //                       },
+        //                     ),
+
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _guardando
+                                ? null
+                                : () async {
+                              if (!_formKey.currentState!.validate()) return;
+
+                              if (_totalCondenaDias == null ||
+                                  _diasCumplidos == null ||
+                                  _porcentajeCumplido == null ||
+                                  _fechaCaptura == null ||
+                                  _diasEjecutados == null ||
+                                  _diasRestantes == null) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Primero debes calcular la condena antes de guardar.',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              final int diasRedimidosInt =
+                                  int.tryParse(_diasRedimidosCtrl.text.trim()) ?? 0;
+
+                              // Confirmación
+                              final bool? confirmar = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) {
+                                  return AlertDialog(
+                                    backgroundColor: Colors.white,
+                                    title: const Text('Confirmar guardado'),
+                                    content: const Text(
+                                      '¿Deseas guardar este análisis en la base de datos?',
+                                    ),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.of(ctx).pop(false),
+                                        child: const Text('Cancelar'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () =>
+                                            Navigator.of(ctx).pop(true),
+                                        child: const Text('Guardar'),
+                                      ),
+                                    ],
+                                  );
+                                },
+                              );
+
+                              if (confirmar != true) return;
+
+                              final double p = _porcentajeCumplido!;
+                              final bool permiso72Cumplido = p >= 33.33;
+                              final bool domiciliariaCumplida = p >= 50.0;
+                              final bool condicionalCumplida = p >= 60.0;
+                              final bool extincionCumplida = p >= 100.0;
+
+                              final bool tieneAlgunBeneficio =
+                                  permiso72Cumplido ||
+                                      domiciliariaCumplida ||
+                                      condicionalCumplida ||
+                                      extincionCumplida;
+
+                              final List<String>
+                              beneficiosCumplidosNombres =
+                              _beneficiosCumplidos
+                                  .map((b) => b.nombre)
+                                  .toList();
+
+                              final int diasFaltantesPrimerBeneficio =
+                                  _diasFaltantesPrimerBeneficio ?? 0;
+
+                              final payload = <String, dynamic>{
+                                // Identificación PPL
+                                'nombres': _nombresCtrl.text.trim(),
+                                'apellidos': _apellidosCtrl.text.trim(),
+                                'tipo_documento': _tipoDocumentoSeleccionado,
+                                'numero_documento': _numeroDocCtrl.text.trim(),
+
+                                // Datos penitenciarios
+                                'td': _tdCtrl.text.trim(),
+                                'nui': _nuiCtrl.text.trim(),
+                                'patio': _patioCtrl.text.trim(),
+                                'numero_proceso': _numeroProcesoCtrl.text.trim(),
+
+                                // Ubicaciones / correos
+                                'centro_reclusion_id': _centroReclusionSeleccionadoId,
+                                'centro_reclusion_nombre': _buscarNombreCentroPorId(_centroReclusionSeleccionadoId),
+                                'juzgado_ejecucion_id': _juzgadoEjecucionSeleccionadoId,
+                                'juzgado_ejecucion_nombre': _buscarNombreJuzgadoEjecucionPorId(_juzgadoEjecucionSeleccionadoId),
+                                'juzgado_conocimiento_id': _juzgadoConocimientoSeleccionadoId,
+                                'juzgado_conocimiento_nombre': _buscarNombreJuzgadoConocimientoPorId(_juzgadoConocimientoSeleccionadoId),
+
+                                // Delito
+                                'delito': _nombreDelitoElegido,
+                                'delito_excluido_beneficios': _delitoEsExcluido,
+
+                                // Fuente de cálculo (lo importante para lo dinámico)
+                                'fecha_captura': Timestamp.fromDate(_fechaCaptura!),
+                                'total_condena_dias': _totalCondenaDias,
+                                'dias_redimidos': diasRedimidosInt,
+
+                                // Auditoría
+                                'created_at': FieldValue.serverTimestamp(),
+                                'updated_at': FieldValue.serverTimestamp(),
+                              };
+
+                              // Construimos el RESUMEN en meses/días
+                              final buffer = StringBuffer();
+                              buffer.writeln(
+                                  'Nombre: ${_nombresCtrl.text.trim()} ${_apellidosCtrl.text.trim()}');
+                              buffer.writeln(
+                                  'Documento: ${_tipoDocumentoSeleccionado ?? '-'} ${_numeroDocCtrl.text.trim()}');
+                              buffer.writeln(
+                                  'TD: ${_tdCtrl.text.trim().isEmpty ? '—' : _tdCtrl.text.trim()} · '
+                                      'NUI: ${_nuiCtrl.text.trim().isEmpty ? '—' : _nuiCtrl.text.trim()}');
+                              buffer.writeln(
+                                  'Delito: $_nombreDelitoElegido${_delitoEsExcluido ? ' (excluido de beneficios)' : ''}');
+                              buffer.writeln(
+                                  'Fecha de captura: ${_dateFormat.format(_fechaCaptura!)}');
+                              buffer.writeln(
+                                  'Condena total: ${_formatearMesesDias(_totalCondenaDias!)}');
+                              buffer.writeln(
+                                  'Días ejecutados: ${_formatearMesesDias(_diasEjecutados!)}');
+                              buffer.writeln(
+                                  'Días redimidos: ${_formatearMesesDias(diasRedimidosInt)}');
+                              buffer.writeln(
+                                  'Condena total cumplida: ${_formatearMesesDias(_diasCumplidos!)}');
+                              buffer.writeln(
+                                  'Condena restante: ${_formatearMesesDias(_diasRestantes!)}');
+                              buffer.writeln(
+                                  'Cumplido: ${_porcentajeCumplido!.toStringAsFixed(2)}%');
+
+                              if (_beneficiosCumplidos.isNotEmpty) {
+                                buffer.writeln('\nBeneficios cumplidos:');
+                                for (final b in _beneficiosCumplidos) {
+                                  buffer.writeln(
+                                      '- ${b.nombre}: desde hace ${_formatearMesesDias(b.diasDesde)}');
+                                }
+                              } else {
+                                buffer.writeln(
+                                    '\nAún no cumple beneficios. Faltan ${_formatearMesesDias(diasFaltantesPrimerBeneficio)} para el primero (72 horas).');
+                              }
+
+                              final resumenTexto = buffer.toString();
+
+                              setState(() => _guardando = true);
+
+                              try {
+                                await FirebaseFirestore.instance
+                                    .collection('analisis_condena_ppl')
+                                    .add(payload);
+
+                                if (!mounted) return;
+
+                                setState(() {
+                                  _resumenGuardado = resumenTexto;
+                                });
+                                _limpiarFormulario();
+
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                        'Análisis guardado correctamente.'),
+                                  ),
+                                );
+                              } catch (e) {
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Error al guardar el análisis: $e'),
+                                  ),
+                                );
+                              } finally {
+                                if (mounted) {
+                                  setState(() => _guardando = false);
+                                }
+                              }
+                            },
+                            child: _guardando
+                                ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2),
+                            )
+                                : const Text('Guardar'),
+                          ),
+                        ),
+                      ],
+                    ],
                   ],
-                ],
-              ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
+
+  String _capitalizar(String texto) {
+    if (texto.isEmpty) return texto;
+    return texto[0].toUpperCase() + texto.substring(1).toLowerCase();
+  }
+
 }
 
 /// ---- Widgets auxiliares ----

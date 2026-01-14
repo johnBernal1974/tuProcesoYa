@@ -237,87 +237,117 @@ class _LoginPageState extends State<LoginPage> {
 
 
   void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isLoading = true;
-      });
+    if (!_formKey.currentState!.validate()) return;
 
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
+    setState(() => _isLoading = true);
 
-      final success = await _authProvider.login(email, password, context);
-      if (success) {
-        final userId = FirebaseAuth.instance.currentUser?.uid;
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
-        if (userId != null) {
-          // 🔹 Verifica si el usuario es administrador
-          final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
+    final success = await _authProvider.login(email, password, context);
+    if (!success) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
 
-          if (adminDoc.exists) {
-            // ✅ Validar si está bloqueado
-            final status = adminDoc.data()?['status']?.toString().trim();
-            if (status == 'bloqueado') {
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
-              }
-              return;
-            }
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      if (mounted) setState(() => _isLoading = false);
+      return;
+    }
 
-            // ✅ Cargar datos del administrador (incluyendo su rol)
-            await AdminProvider().loadAdminData();
-            String role = AdminProvider().rol ?? "";
-            print("Rol obtenido en login: $role");
+    // 🔹 1) Verifica si es administrador
+    final adminDoc =
+    await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
-            if (role == "pasante 1" || role == "pasante 2") {
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, 'historial_solicitudes_derecho_peticion_admin', (route) => false);
-              }
-              return;
-            }
-
-            if (context.mounted) {
-              Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
-            }
-            return;
-          }
-
-          // 🔹 Si no es administrador, buscar en la colección 'Ppl'
-          final userDoc = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
-
-          if (userDoc.exists) {
-            final data = userDoc.data() as Map<String, dynamic>;
-            final status = data['status']?.toString().trim() ?? "";
-            print("Estado del usuario en Ppl: $status");
-
-            if (status == 'bloqueado') {
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
-              }
-              return;
-            }
-
-            if (status == 'registrado') {
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, 'estamos_validando', (route) => false);
-              }
-            } else {
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-              }
-            }
-          } else {
-            if (context.mounted) {
-              Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-            }
-          }
+    if (adminDoc.exists) {
+      // ✅ Validar si está bloqueado
+      final status = adminDoc.data()?['status']?.toString().trim();
+      if (status == 'bloqueado') {
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
         }
+        if (mounted) setState(() => _isLoading = false);
+        return;
       }
 
-      setState(() {
-        _isLoading = false;
-      });
+      // ✅ Cargar rol del admin
+      await AdminProvider().loadAdminData();
+      final role = (AdminProvider().rol ?? "").trim();
+      final roleNorm = role.toLowerCase();
+
+      print("Rol obtenido en login: $role");
+
+      // ✅ Ruteo por rol
+      if (roleNorm == "pasante 1" || roleNorm == "pasante 2") {
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            'historial_solicitudes_derecho_peticion_admin',
+                (route) => false,
+          );
+        }
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      // ✅ NUEVO: rol "filtrado" entra directo a Filtrado inicial
+      if (roleNorm == "filtrado") {
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            'filtrado_inicial_page_admin',
+                (route) => false,
+          );
+        }
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      // ✅ resto de admins
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
+      }
+      if (mounted) setState(() => _isLoading = false);
+      return;
     }
+
+    // 🔹 2) Si no es admin, buscar en Ppl
+    final userDoc =
+    await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+
+    if (userDoc.exists) {
+      final data = userDoc.data() as Map<String, dynamic>;
+      final status = data['status']?.toString().trim() ?? "";
+      print("Estado del usuario en Ppl: $status");
+
+      if (status == 'bloqueado') {
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
+        }
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      if (status == 'registrado') {
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(
+              context, 'estamos_validando', (route) => false);
+        }
+      } else {
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+        }
+      }
+    } else {
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+      }
+    }
+
+    if (mounted) setState(() => _isLoading = false);
   }
+
 
   Future<void> _loginConOTP() async {
     final whatsApp = _whatsAppController.text.trim();

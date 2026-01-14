@@ -33,6 +33,11 @@ class _CalculoCondenaPageState extends State<CalculoCondenaPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+
+                  const SizedBox(height: 12),
+                  _botonVerInforme(context),
+                  const SizedBox(height: 60),
+
                   Text(
                     'Análisis individual de PPL',
                     style: theme.textTheme.headlineSmall?.copyWith(
@@ -54,6 +59,27 @@ class _CalculoCondenaPageState extends State<CalculoCondenaPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _botonVerInforme(BuildContext context) {
+    return SizedBox(
+      width: 200,
+      child: ElevatedButton.icon(
+        icon: const Icon(Icons.list_alt_sharp, color: Colors.white),
+        label: const Text(
+          'Ver informe',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primary, // usa tu color primary
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        onPressed: () {
+          Navigator.pushNamed(context, 'reporte_beneficios_page_admin');
+        },
       ),
     );
   }
