@@ -425,6 +425,7 @@ class _SideBarState extends State<SideBar> {
       const SizedBox(height: 50),
     ];
     if (isAdmin == true) {
+      final rolNorm = (rol ?? '').trim().toLowerCase();
       // Para administradores, se muestran diferentes opciones según su rol.
       if (rol == "masterFull") {
         // Para master y masterFull se muestran todos los ítems de admin.
@@ -1062,6 +1063,15 @@ class _SideBarState extends State<SideBar> {
           _buildDrawerTile(context, "Historial Solicitudes de tutela",
               Icons.abc_rounded, 'historial_solicitudes_tutelas_admin'),
         );
+      }
+      else if (rolNorm == "filtrado") {
+        // Para operadores se muestran opciones básicas.
+        items.addAll([
+          _buildDrawerTile(
+              context, "Filtrado inicial", Icons.filter_list_alt, 'filtrado_inicial_page_admin'),
+          _buildDrawerTile(
+              context, "Reporte beneficios", Icons.list_alt_sharp, 'reporte_beneficios_page_admin'),
+        ]);
       }
     } else {
       // Menú para usuarios que no son admin.

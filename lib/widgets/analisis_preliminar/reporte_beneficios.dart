@@ -213,7 +213,7 @@ class ReporteBeneficiosINPECPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final ref = FirebaseFirestore.instance
         .collection('analisis_condena_ppl')
-        .orderBy('fecha_calculo', descending: true)
+        .orderBy('created_at', descending: true)
         .limit(500);
 
     return StreamBuilder<QuerySnapshot>(

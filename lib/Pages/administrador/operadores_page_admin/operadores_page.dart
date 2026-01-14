@@ -208,7 +208,7 @@ class _OperadoresPageState extends State<OperadoresPage> {
                                     dropdownColor: blanco,
                                     value: _selectedRol[docId],
                                     items: [
-                                      "operador 1", "operador 2", "pasante 1", "pasante 2",
+                                      "operador 1", "operador 2", "pasante 1", "pasante 2", "filtrado",
                                       "pasante 3", "coordinador 1", "coordinador 2", "master", "masterFull", ""
                                     ]
                                         .map((rol) => DropdownMenuItem(value: rol, child: Text(rol)))

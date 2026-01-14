@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1422,56 +1422,38 @@ class _CalculoCondenaWidgetState extends State<CalculoCondenaWidget> {
                               _diasFaltantesPrimerBeneficio ?? 0;
 
                           final payload = <String, dynamic>{
+                            // Identificación PPL
                             'nombres': _nombresCtrl.text.trim(),
                             'apellidos': _apellidosCtrl.text.trim(),
-                            'tipo_documento':
-                            _tipoDocumentoSeleccionado,
-                            'numero_documento':
-                            _numeroDocCtrl.text.trim(),
+                            'tipo_documento': _tipoDocumentoSeleccionado,
+                            'numero_documento': _numeroDocCtrl.text.trim(),
+
+                            // Datos penitenciarios
                             'td': _tdCtrl.text.trim(),
                             'nui': _nuiCtrl.text.trim(),
-                            'numero_proceso': _numeroProcesoCtrl.text.trim(),
-                            'centro_reclusion_id': _centroReclusionSeleccionadoId,
-                            'centro_reclusion_nombre':
-                            _buscarNombreCentroPorId(_centroReclusionSeleccionadoId),
-                            'juzgado_ejecucion_id': _juzgadoEjecucionSeleccionadoId,
-                            'juzgado_ejecucion_nombre':
-                            _buscarNombreJuzgadoEjecucionPorId(_juzgadoEjecucionSeleccionadoId),
-                            'juzgado_conocimiento_id': _juzgadoConocimientoSeleccionadoId,
-                            'juzgado_conocimiento_nombre':
-                            _buscarNombreJuzgadoConocimientoPorId(_juzgadoConocimientoSeleccionadoId),
                             'patio': _patioCtrl.text.trim(),
+                            'numero_proceso': _numeroProcesoCtrl.text.trim(),
+
+                            // Ubicaciones / correos
+                            'centro_reclusion_id': _centroReclusionSeleccionadoId,
+                            'centro_reclusion_nombre': _buscarNombreCentroPorId(_centroReclusionSeleccionadoId),
+                            'juzgado_ejecucion_id': _juzgadoEjecucionSeleccionadoId,
+                            'juzgado_ejecucion_nombre': _buscarNombreJuzgadoEjecucionPorId(_juzgadoEjecucionSeleccionadoId),
+                            'juzgado_conocimiento_id': _juzgadoConocimientoSeleccionadoId,
+                            'juzgado_conocimiento_nombre': _buscarNombreJuzgadoConocimientoPorId(_juzgadoConocimientoSeleccionadoId),
+
+                            // Delito
                             'delito': _nombreDelitoElegido,
-                            'delito_excluido_beneficios':
-                            _delitoEsExcluido,
+                            'delito_excluido_beneficios': _delitoEsExcluido,
+
+                            // Fuente de cálculo (lo importante para lo dinámico)
+                            'fecha_captura': Timestamp.fromDate(_fechaCaptura!),
                             'total_condena_dias': _totalCondenaDias,
-                            'dias_ejecutados': _diasEjecutados,
                             'dias_redimidos': diasRedimidosInt,
-                            'dias_cumplidos': _diasCumplidos,
-                            'dias_restantes': _diasRestantes,
-                            'porcentaje_cumplido':
-                            _porcentajeCumplido,
-                            'fecha_captura':
-                            Timestamp.fromDate(_fechaCaptura!),
-                            'fecha_calculo': Timestamp.now(),
-                            'permiso72_cumplido': permiso72Cumplido,
-                            'domiciliaria_cumplida':
-                            domiciliariaCumplida,
-                            'libertad_condicional_cumplida':
-                            condicionalCumplida,
-                            'extincion_pena_cumplida':
-                            extincionCumplida,
-                            'tiene_beneficio': tieneAlgunBeneficio,
-                            'beneficios_cumplidos':
-                            beneficiosCumplidosNombres,
-                            'dias_faltantes_primer_beneficio':
-                            diasFaltantesPrimerBeneficio,
-                            // 'acudiente_nombres': _acudienteNombresCtrl.text.trim(),
-                            // 'acudiente_apellidos': _acudienteApellidosCtrl.text.trim(),
-                            // 'acudiente_parentesco': _acudienteParentescoSeleccionado,
-                            // 'acudiente_tipo_documento': _acudienteTipoDocumentoSeleccionado,
-                            // 'acudiente_numero_documento': _acudienteDocumentoCtrl.text.trim(),
-                            // 'acudiente_celular': _acudienteCelularCtrl.text.trim(),
+
+                            // Auditoría
+                            'created_at': FieldValue.serverTimestamp(),
+                            'updated_at': FieldValue.serverTimestamp(),
                           };
 
                           // Construimos el RESUMEN en meses/días

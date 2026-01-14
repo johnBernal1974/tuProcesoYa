@@ -1,10 +1,9 @@
-import 'dart:html';
+
 import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -13,10 +12,8 @@ import 'package:printing/printing.dart';
 import '../../helper/beneficios_helper.dart';
 import '../../widgets/analisis_preliminar/resumen_analisis_condena.dart';
 import '../../utils/pdf_download_helper.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 
-import '../../utils/excel_download_helper.dart';
 import '../../utils/excel_download_helper.dart';
 import '../../utils/excel_share_helper.dart';
 
@@ -464,7 +461,7 @@ class ListadoPplPorBeneficioPage extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('analisis_condena_ppl')
-            .orderBy('fecha_calculo', descending: true)
+            .orderBy('created_at', descending: true)
             .limit(500)
             .snapshots(),
         builder: (context, snapshot) {

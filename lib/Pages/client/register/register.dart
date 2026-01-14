@@ -7,12 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
-import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 import '../../../commons/drop_depatamentos_municipios.dart';
 import '../../../services/whatsapp_otp_service.dart';
 import '../../administrador/terminos_y_condiciones/terminos_y_condiciones.dart';
 import '../estamos_validando/estamos_validando.dart';
-import 'dart:html' as html;
 
 
 class RegistroPage extends StatefulWidget {
@@ -43,7 +41,6 @@ class _RegistroPageState extends State<RegistroPage> {
   int currentPageIndex = 0;
   List<Map<String, Object>> centrosReclusionTodos = [];
   late Future<bool> _centrosFuture;
-  RecaptchaVerifier? _recaptchaVerifier;
   String? uidAutenticado;
 
 
@@ -152,14 +149,10 @@ class _RegistroPageState extends State<RegistroPage> {
   String? nui;
   String? patio;
   bool _aceptaTerminos = false;
-  String? _verificationId;
-  bool _otpEnviado = false;
-  late ConfirmationResult _confirmationResult;
-  RecaptchaVerifier? recaptchaVerifier;
   bool _otpCompleto = false;
   bool _mostrarPin = false;
+  bool _otpEnviado = false;
   bool _verificandoOTP = false;
-  bool _recaptchaValidado = false;
   String? codigoReferido;
   bool _mismoNumero = false;
   final WhatsAppOtpService _whatsappOtpService = WhatsAppOtpService();
@@ -167,18 +160,9 @@ class _RegistroPageState extends State<RegistroPage> {
   @override
   void initState() {
     super.initState();
-
-    if (kIsWeb) {
-      recaptchaVerifier = RecaptchaVerifier(
-        container: 'recaptcha-container',
-        size: RecaptchaVerifierSize.normal,
-        theme: RecaptchaVerifierTheme.light,
-        auth: FirebaseAuthPlatform.instance, // ✅ ESTE es el tipo correcto
-      );
-    }
-
     _centrosFuture = _fetchTodosCentrosReclusion();
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +186,13 @@ class _RegistroPageState extends State<RegistroPage> {
                 child: PageView(
                   controller: _pageController,
                   physics: const NeverScrollableScrollPhysics(),
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                    debugPrint("✅ PageView cambió a: $index");
+
+                  },
                   children: [
                     _buildIntroduccion(),
                     _buildIntroAcudienteForm(),
@@ -303,9 +294,6 @@ class _RegistroPageState extends State<RegistroPage> {
 
     // 🔥 Comportamiento normal para retroceder una página
     if (_currentPage > 0) {
-      setState(() {
-        _currentPage--;
-      });
       _pageController.previousPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -1008,12 +996,21 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
+  String _soloDigitos(String v) => v.replaceAll(RegExp(r'[^0-9]'), '');
+
+  String _normalizarDocumentoPpl() => _soloDigitos(numeroDocumentoPplController.text);
+
   Future<bool> _verificarDuplicadosFirestore({String? celular, String? documento}) async {
     try {
-      if (celular != null && celular.isNotEmpty) {
+      // -------------------------
+      // ✅ Validar celular (String)
+      // -------------------------
+      if (celular != null && celular.trim().isNotEmpty) {
+        final celClean = celular.replaceAll(RegExp(r'[^0-9]'), '');
+
         final celularSnapshot = await FirebaseFirestore.instance
             .collection('Ppl')
-            .where('celular', isEqualTo: celular)
+            .where('celular', isEqualTo: celClean)
             .limit(1)
             .get();
 
@@ -1023,16 +1020,37 @@ class _RegistroPageState extends State<RegistroPage> {
         }
       }
 
-      if (documento != null && documento.isNotEmpty) {
-        final documentoSnapshot = await FirebaseFirestore.instance
+      // -----------------------------------------
+      // ✅ Validar documento PPL (String o Number)
+      // -----------------------------------------
+      if (documento != null && documento.trim().isNotEmpty) {
+        final docClean = documento.replaceAll(RegExp(r'[^0-9]'), '');
+
+        // 1) Buscar como String (lo más común si ya lo guardas normalizado)
+        final qString = await FirebaseFirestore.instance
             .collection('Ppl')
-            .where('numero_documento_ppl', isEqualTo: documento)
+            .where('numero_documento_ppl', isEqualTo: docClean)
             .limit(1)
             .get();
 
-        if (documentoSnapshot.docs.isNotEmpty) {
-          _mostrarMensaje("Este número de documento ya está registrado.");
+        if (qString.docs.isNotEmpty) {
+          _mostrarMensaje("Este número de documento de un PPL ya está registrado.");
           return true;
+        }
+
+        // 2) Buscar como Number (por si registros viejos lo guardaron como int)
+        final docInt = int.tryParse(docClean);
+        if (docInt != null) {
+          final qInt = await FirebaseFirestore.instance
+              .collection('Ppl')
+              .where('numero_documento_ppl', isEqualTo: docInt)
+              .limit(1)
+              .get();
+
+          if (qInt.docs.isNotEmpty) {
+            _mostrarMensaje("Este número de documento de un PPL ya está registrado.");
+            return true;
+          }
         }
       }
 
@@ -1042,6 +1060,7 @@ class _RegistroPageState extends State<RegistroPage> {
       return true; // Por seguridad, detiene el flujo si hay error
     }
   }
+
 
   Widget _buildSituacionActualPplForm() {
     return Form(
@@ -1552,34 +1571,50 @@ class _RegistroPageState extends State<RegistroPage> {
           children: [
             const Text(
               "Verificación del número de celular",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, height: 1.2),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                height: 1.2,
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
-              "Para continuar, necesitamos validar tu número de celular. Te enviaremos un código por mensaje de texto que deberás ingresar a continuación.",
+              "Para continuar, necesitamos validar tu número. "
+                  "Te enviaremos un código por WhatsApp que deberás ingresar a continuación.",
               style: TextStyle(fontSize: 14),
             ),
             const SizedBox(height: 20),
 
-            // Botón para enviar el código
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: blanco,
-                side: const BorderSide(color: primary, width: 2),
+            // -------------------------
+            // 📲 Enviar código WhatsApp
+            // -------------------------
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: blanco,
+                  side: const BorderSide(color: primary, width: 2),
+                ),
+                onPressed: _verificandoOTP ? null : _enviarCodigoOTP,
+                child: const Text("Enviar código por WhatsApp"),
               ),
-              onPressed: _enviarCodigoOTP,
-              child: const Text("Enviar código de verificación"),
             ),
-            if (_recaptchaValidado) ...[
+
+            // -----------------------------------
+            // ✅ Mostrar OTP solo si ya fue enviado
+            // -----------------------------------
+            if (_otpEnviado) ...[
               const SizedBox(height: 30),
 
-              // Campo para ingresar el OTP
               PinCodeTextField(
                 appContext: context,
                 length: 6,
                 controller: otpController,
                 keyboardType: TextInputType.number,
                 animationType: AnimationType.fade,
+                enableActiveFill: true,
+                animationDuration: const Duration(milliseconds: 300),
+                cursorColor: primary,
                 pinTheme: PinTheme(
                   shape: PinCodeFieldShape.box,
                   borderRadius: BorderRadius.circular(8),
@@ -1592,35 +1627,43 @@ class _RegistroPageState extends State<RegistroPage> {
                   selectedColor: primary,
                   inactiveColor: Colors.grey,
                 ),
-                cursorColor: primary,
-                animationDuration: const Duration(milliseconds: 300),
-                enableActiveFill: true,
                 onChanged: (value) {
                   setState(() {
                     _otpCompleto = value.length == 6;
                   });
                 },
               ),
+
               const SizedBox(height: 20),
-              // Botón para verificar el OTP con estilo
-              ElevatedButton.icon(
-                icon: const Icon(Icons.verified, color: primary),
-                label: Text(
-                  _verificandoOTP ? "Validando código..." : "Verificar código",
-                  style: const TextStyle(color: primary),
-                ),
-                onPressed: (_otpCompleto && !_verificandoOTP)
-                    ? () async {
-                  setState(() => _verificandoOTP = true);
-                  _verificarOTP(); // tu función existente
-                  setState(() => _verificandoOTP = false);
-                }
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: blanco,
-                  side: BorderSide(
-                    color: _otpCompleto ? primary : Colors.grey,
-                    width: 2,
+
+              // -------------------------
+              // ✅ Verificar código
+              // -------------------------
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.verified, color: primary),
+                  label: Text(
+                    _verificandoOTP
+                        ? "Validando código..."
+                        : "Verificar código",
+                    style: const TextStyle(color: primary),
+                  ),
+                  onPressed: (_otpCompleto && !_verificandoOTP)
+                      ? () async {
+                    setState(() => _verificandoOTP = true);
+                    await _verificarOTP();
+                    if (mounted) {
+                      setState(() => _verificandoOTP = false);
+                    }
+                  }
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: blanco,
+                    side: BorderSide(
+                      color: _otpCompleto ? primary : Colors.grey,
+                      width: 2,
+                    ),
                   ),
                 ),
               ),
@@ -1631,18 +1674,18 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-  void _enviarCodigoOTP() async {
-    final whatsApp = whatsappController.text.trim();
+
+
+  Future<void> _enviarCodigoOTP() async {
+    final whatsApp = (_mismoNumero ? celularController.text : whatsappController.text).trim();
 
     if (!RegExp(r'^[0-9]{10}$').hasMatch(whatsApp)) {
-      _mostrarMensaje("Número de celular inválido. Debe tener 10 dígitos.");
+      _mostrarMensaje("Número de WhatsApp inválido. Debe tener 10 dígitos.");
       return;
     }
 
-    // Formatea a E.164 sin + (ej: 573001234567)
     final phoneE164NoPlus = '57$whatsApp';
 
-    // Muestra loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -1650,29 +1693,29 @@ class _RegistroPageState extends State<RegistroPage> {
     );
 
     try {
-      // Llamada al servicio que acabas de crear
       final sent = await _whatsappOtpService.sendOtp(phoneE164NoPlus);
 
-      Navigator.of(context).pop(); // cierra loading
+      if (mounted) Navigator.of(context).pop(); // cerrar loading
 
       if (sent) {
         setState(() {
-          _otpEnviado = true;
-          _recaptchaValidado = true; // para que muestre el campo de OTP como antes
+          _otpEnviado = true;        // ✅ muestra el input del OTP
+          _otpCompleto = false;      // resetea estado
+          otpController.clear();     // limpia por si ya había algo
         });
         _mostrarMensaje("Código enviado por WhatsApp ✅");
-        // Asegúrate que el usuario vea el campo de OTP (ya lo controlas por _recaptchaValidado)
       } else {
         _mostrarMensaje("No fue posible enviar el código por WhatsApp. Intenta de nuevo.");
       }
     } catch (e) {
-      Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop();
       _mostrarMensaje("Error enviando el código: ${e.toString()}");
     }
   }
 
 
-  void _guardarConPin() async {
+
+  Future<void> _guardarConPin() async {
     final pin = pinController.text.trim();
     final codigoReferidor = codigoReferidoController.text.trim();
     final nombre = nombrePplController.text.trim();
@@ -1708,7 +1751,7 @@ class _RegistroPageState extends State<RegistroPage> {
         "nombre_ppl": nombre,
         "apellido_ppl": apellido,
         "tipo_documento_ppl": tipoDocumento ?? "",
-        "numero_documento_ppl": numeroDocumentoPplController.text.trim(),
+        "numero_documento_ppl": _normalizarDocumentoPpl(),
         "regional": selectedRegional ?? "",
         "centro_reclusion": selectedCentro ?? "",
         "juzgado_ejecucion_penas": "",
@@ -1780,21 +1823,22 @@ class _RegistroPageState extends State<RegistroPage> {
     }
   }
 
-  void _verificarOTP() async {
+  Future<void> _verificarOTP() async {
     final codigo = otpController.text.trim();
 
-    if (codigo.isEmpty || codigo.length != 6) {
+    if (codigo.length != 6 || !RegExp(r'^\d{6}$').hasMatch(codigo)) {
       _mostrarMensaje("Ingresa un código válido de 6 dígitos.");
       return;
     }
 
-    final celular = celularController.text.trim();
-    if (!RegExp(r'^[0-9]{10}$').hasMatch(celular)) {
-      _mostrarMensaje("Número de celular inválido.");
+    final whatsApp = (_mismoNumero ? celularController.text : whatsappController.text).trim();
+
+    if (!RegExp(r'^[0-9]{10}$').hasMatch(whatsApp)) {
+      _mostrarMensaje("Número de WhatsApp inválido.");
       return;
     }
 
-    final phoneE164NoPlus = '57$celular';
+    final phoneE164NoPlus = '57$whatsApp';
 
     showDialog(
       context: context,
@@ -1804,26 +1848,29 @@ class _RegistroPageState extends State<RegistroPage> {
 
     try {
       final user = await _whatsappOtpService.verifyOtpAndSignIn(phoneE164NoPlus, codigo);
-      Navigator.of(context).pop();
+
+      if (mounted) Navigator.of(context).pop(); // cerrar loading
 
       if (user != null) {
         uidAutenticado = user.uid;
-        // Avanzar a la página del PIN (igual que lo hacías antes)
-        if (context.mounted) {
-          setState(() {
-            _currentPage = 16; // tu flujo prevé saltar a la página 16 para PIN
-          });
-          _pageController.jumpToPage(16);
-        }
+
+        if (!mounted) return;
+
+        setState(() {
+          _currentPage = 16; // tu página del PIN
+        });
+        _pageController.jumpToPage(16);
+
         _mostrarMensaje("Verificado. Bienvenido.");
       } else {
         _mostrarMensaje("Código inválido o expirado. Intenta nuevamente.");
       }
     } catch (e) {
-      Navigator.of(context).pop();
+      if (mounted) Navigator.of(context).pop();
       _mostrarMensaje("Error verificando el código: ${e.toString()}");
     }
   }
+
 
 
   // Método auxiliar para mostrar mensajes
@@ -1856,57 +1903,72 @@ class _RegistroPageState extends State<RegistroPage> {
 
   /// 🔥 **Método para validar y continuar a la siguiente página**
   Future<void> _validarYContinuar() async {
+    debugPrint("👉 _currentPage = $_currentPage");
+
+    // -------------------------------------------------
     // 0) Términos
-    if (_currentPage == 0 && !_formKeyTerminosYCondiciones.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Debes aceptar los Términos y Condiciones antes de continuar."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+    // -------------------------------------------------
+    if (_currentPage == 0) {
+      final ok = _formKeyTerminosYCondiciones.currentState?.validate() ?? false;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Debes aceptar los Términos y Condiciones antes de continuar."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
     }
 
+    // -------------------------------------------------
     // 1) Código referido (opcional)
+    // -------------------------------------------------
     if (_currentPage == 1) {
       final referidoPor = codigoReferidoController.text.trim();
       if (referidoPor.isNotEmpty) {
         final esValido = await _codigoReferidoEsValido(referidoPor);
         if (!esValido) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text("El código de referido ingresado no es válido."),
-                backgroundColor: Colors.red,
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("El código de referido ingresado no es válido."),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
           return;
         }
       }
     }
 
-    // 2) Datos acudiente (nombres, etc.)
-    if (_currentPage == 2 && !_formKeyAcudiente.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Por favor completa todos los campos del acudiente antes de continuar."),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
+    // -------------------------------------------------
+    // 2) Datos acudiente
+    // -------------------------------------------------
+    if (_currentPage == 2) {
+      final ok = _formKeyAcudiente.currentState?.validate() ?? false;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor completa todos los campos del acudiente antes de continuar."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
     }
 
-    // 3) NUEVA PÁGINA: Documento del acudiente
+    // -------------------------------------------------
+    // 3) Documento del acudiente
+    // -------------------------------------------------
     if (_currentPage == 3) {
       final ok = _formKeyDocumentoAcudiente.currentState?.validate() ?? false;
       if (!ok) return;
 
       final numero = numeroDocumentoAcudienteController.text.trim();
-      final tipo   = tipoDocumentoAcudiente;
+      final tipo = tipoDocumentoAcudiente;
 
       if (numero.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1926,16 +1988,14 @@ class _RegistroPageState extends State<RegistroPage> {
         );
         return;
       }
-      // (opcional) verificar duplicados aquí si guardas el doc del acudiente aparte
-      // final existeDocAcud = await _verificarDuplicadosFirestore(documentoAcudiente: numero);
-      // if (existeDocAcud) return;
     }
 
-    // 4) Celular acudiente (antes era 3)
+    // -------------------------------------------------
+    // 4) Celular acudiente + validar duplicado celular
+    // -------------------------------------------------
     if (_currentPage == 4) {
-      final celular = celularController.text.trim();
-
-      if (!_formKeyCelularAcudiente.currentState!.validate()) {
+      final ok = _formKeyCelularAcudiente.currentState?.validate() ?? false;
+      if (!ok) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Por favor ingresa el número del celular antes de continuar."),
@@ -1946,13 +2006,17 @@ class _RegistroPageState extends State<RegistroPage> {
         return;
       }
 
+      final celular = celularController.text.trim();
       final yaExiste = await _verificarDuplicadosFirestore(celular: celular);
       if (yaExiste) return;
     }
 
-    // 5) Parentesco (antes 4)
-    if (_currentPage == 5 && !_formKeyParentescoAcudiente.currentState!.validate()) {
-      if (context.mounted) {
+    // -------------------------------------------------
+    // 5) Parentesco
+    // -------------------------------------------------
+    if (_currentPage == 5) {
+      final ok = _formKeyParentescoAcudiente.currentState?.validate() ?? false;
+      if (!ok) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Por favor selecciona un parentesco antes de continuar."),
@@ -1960,13 +2024,16 @@ class _RegistroPageState extends State<RegistroPage> {
             duration: Duration(seconds: 2),
           ),
         );
+        return;
       }
-      return;
     }
 
-    // 6) Nombres PPL (antes 5)
-    if (_currentPage == 6 && !_formKeyNombresPPL.currentState!.validate()) {
-      if (context.mounted) {
+    // -------------------------------------------------
+    // 6) Nombres PPL
+    // -------------------------------------------------
+    if (_currentPage == 6) {
+      final ok = _formKeyNombresPPL.currentState?.validate() ?? false;
+      if (!ok) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Por favor ingresa los datos completos antes de continuar."),
@@ -1974,244 +2041,236 @@ class _RegistroPageState extends State<RegistroPage> {
             duration: Duration(seconds: 2),
           ),
         );
+        return;
       }
-      return;
     }
 
-    // 7) Documento PPL (antes 6)
+    // -------------------------------------------------
+    // 7) Documento PPL + validar duplicado documento
+    // -------------------------------------------------
     if (_currentPage == 7) {
-      final String documento = numeroDocumentoPplController.text.trim();
-      final String? tipoDoc = tipoDocumento;
+      final ok = _formKeyDocumentoPPL.currentState?.validate() ?? false;
+      if (!ok) return;
 
-      if (!_formKeyDocumentoPPL.currentState!.validate()) {
-        setState(() {});
-        return;
-      }
-      if (documento.isEmpty && (tipoDoc == null || tipoDoc.isEmpty)) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Por favor ingresa el número de documento y selecciona el tipo de documento."),
-              backgroundColor: Colors.red,
-              duration: Duration(seconds: 2),
-            ),
-          );
-        }
-        return;
-      }
+      final documento = _normalizarDocumentoPpl(); // SOLO dígitos
+      final tipoDoc = tipoDocumento;
+
       if (documento.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Por favor ingresa el número de documento."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor ingresa el número de documento."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
         return;
       }
+
       if (tipoDoc == null || tipoDoc.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Por favor selecciona el tipo de documento."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona el tipo de documento."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
         return;
       }
+
       if (!RegExp(r'^\d{6,10}$').hasMatch(documento)) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("El número de documento debe tener entre 6 y 10 dígitos."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("El número de documento debe tener entre 6 y 10 dígitos."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
         return;
       }
+
+      // ✅ Validar duplicado en BD
       final existeDocumento = await _verificarDuplicadosFirestore(documento: documento);
       if (existeDocumento) return;
     }
 
-    // 8) Situación actual (antes 7)
+    // -------------------------------------------------
+    // 8) Situación actual (salto condicional)
+    // -------------------------------------------------
     if (_currentPage == 8) {
       if (situacionActual == null || situacionActual!.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Por favor selecciona una opción."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona una opción."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
         return;
       }
 
-      if (situacionActual == "En Reclusión") {
-        setState(() => _currentPage = 11); // antes 10
-        _pageController.jumpToPage(11);
-        return;
-      } else {
-        setState(() => _currentPage = 9); // ir a dirección (antes 8)
-        _pageController.jumpToPage(9);
-        return;
-      }
-    }
-
-    // 9) Dirección (antes 8)
-    if (_currentPage == 9) {
-      final String direccion = direccionPplController.text.trim();
-      if (direccion.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Por favor ingresa la dirección."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
-        return;
-      }
-    }
-
-    // 10) Depto/Municipio (antes 9)
-    if (_currentPage == 10) {
-      if (departamentoSeleccionado == null || departamentoSeleccionado!.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Por favor selecciona un departamento."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
-        return;
-      }
-      if (municipioSeleccionado == null || municipioSeleccionado!.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Por favor selecciona un municipio."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
-        return;
-      }
-
+      // ✅ Si está en reclusión -> saltar a centro (11)
       if (situacionActual == "En Reclusión") {
         setState(() => _currentPage = 11);
         _pageController.jumpToPage(11);
         return;
       }
 
-      // Si NO está en reclusión, saltar Centro (11) y seguir a Patio (14) como tenía tu lógica original (+1)
-      setState(() => _currentPage = 14); // antes 13
+      // ✅ Si NO está en reclusión -> ir a dirección (9)
+      setState(() => _currentPage = 9);
+      _pageController.jumpToPage(9);
+      return;
+    }
+
+    // -------------------------------------------------
+    // 9) Dirección
+    // -------------------------------------------------
+    if (_currentPage == 9) {
+      final direccion = direccionPplController.text.trim();
+      if (direccion.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor ingresa la dirección."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+    }
+
+    // -------------------------------------------------
+    // 10) Departamento / Municipio (salto condicional)
+    // -------------------------------------------------
+    if (_currentPage == 10) {
+      if (departamentoSeleccionado == null || departamentoSeleccionado!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona un departamento."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+      if (municipioSeleccionado == null || municipioSeleccionado!.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor selecciona un municipio."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        return;
+      }
+
+      // ✅ si está en reclusión -> va a centro (11)
+      if (situacionActual == "En Reclusión") {
+        setState(() => _currentPage = 11);
+        _pageController.jumpToPage(11);
+        return;
+      }
+
+      // ✅ si NO está en reclusión -> saltar centro (11), TD (12), NUI (13) y llegar a Patio (14)
+      setState(() => _currentPage = 14);
       _pageController.jumpToPage(14);
       return;
     }
 
-    // 11) Centro de reclusión (antes 10)
+    // -------------------------------------------------
+    // 11) Centro de reclusión
+    // -------------------------------------------------
     if (_currentPage == 11) {
-      if (!_formKeyLegalPPL.currentState!.validate()) {
-        setState(() {});
-        return;
-      }
       if (selectedCentro == null || selectedCentro!.isEmpty) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Debes seleccionar un Centro de Reclusión antes de continuar."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Debes seleccionar un Centro de Reclusión antes de continuar."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
         return;
       }
     }
 
-    // 12) TD (antes 11)
+    // -------------------------------------------------
+    // 12) TD
+    // -------------------------------------------------
     if (_currentPage == 12) {
-      final String td = tdPplController.text.trim();
-
-      if (!_formKeyTdPPL.currentState!.validate()) {
-        setState(() {});
-        return;
-      }
-      if (td.isEmpty) {
-        setState(() {});
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Por favor ingresa el TD."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
-        return;
-      }
-      if (!RegExp(r'^[0-9]+$').hasMatch(td)) {
-        setState(() {});
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("El TD solo puede contener números."), backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
-        return;
-      }
+      final ok = _formKeyTdPPL.currentState?.validate() ?? false;
+      if (!ok) return;
     }
 
-    // 13) NUI (antes 12)
+    // -------------------------------------------------
+    // 13) NUI
+    // -------------------------------------------------
     if (_currentPage == 13) {
-      final String nui = nuiPplController.text.trim();
-
-      if (!_formKeyNuiPPL.currentState!.validate()) {
-        setState(() {});
-        return;
-      }
-      if (nui.isEmpty) {
-        setState(() {});
-        const SnackBar(content: Text("Por favor ingresa el NUI."), backgroundColor: Colors.red, duration: Duration(seconds: 2));
-        return;
-      }
-      if (!RegExp(r'^[0-9]+$').hasMatch(nui)) {
-        setState(() {});
-        const SnackBar(content: Text("El NUI solo puede contener números."), backgroundColor: Colors.red, duration: Duration(seconds: 2));
-        return;
-      }
+      final ok = _formKeyNuiPPL.currentState?.validate() ?? false;
+      if (!ok) return;
     }
 
-    // 14) Patio (antes 13)
+    // -------------------------------------------------
+    // 14) Patio
+    // -------------------------------------------------
     if (_currentPage == 14) {
-      final String patio = patioPplController.text.trim();
-
-      if (!_formKeyPatioPPL.currentState!.validate()) {
-        setState(() {});
-        return;
-      }
-      if (patio.isEmpty) {
-        setState(() {});
-        const SnackBar(content: Text("Por favor ingresa el número del patio."), backgroundColor: Colors.red, duration: Duration(seconds: 2));
-        return;
-      }
+      final ok = _formKeyPatioPPL.currentState?.validate() ?? false;
+      if (!ok) return;
     }
 
-    // 15) Envío OTP (antes 14)
+    // -------------------------------------------------
+    // 15) OTP: solo enviar OTP (no avanza)
+    // -------------------------------------------------
     if (_currentPage == 15) {
-      final String celular = celularController.text.trim();
-
-      if (!_formKeyCelularAcudiente.currentState!.validate()) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Por favor ingresa un número de celular válido."),
-                backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
+      final ok = _formKeyCelularAcudiente.currentState?.validate() ?? false;
+      if (!ok) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Por favor ingresa un número de celular válido."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
         return;
       }
+
+      // (opcional) validar duplicado celular nuevamente
+      final celular = celularController.text.trim();
       final existeCelular = await _verificarDuplicadosFirestore(celular: celular);
       if (existeCelular) return;
 
-      _enviarCodigoOTP();
+      await _enviarCodigoOTP();
       return;
     }
 
-    // 17) PIN (antes 16)
-    if (_currentPage == 17) {
+    // -------------------------------------------------
+    // 16) PIN: guardar y navegar
+    // -------------------------------------------------
+    if (_currentPage == 16) {
       final pin = pinController.text.trim();
+
       if (pin.isEmpty || pin.length != 4 || !RegExp(r'^\d{4}$').hasMatch(pin)) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Ingresa un PIN válido de 4 números."),
-                backgroundColor: Colors.red, duration: Duration(seconds: 2)),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Ingresa un PIN válido de 4 números."),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 2),
+          ),
+        );
         return;
       }
-      _guardarConPin();
+
+      await _guardarConPin();
       return;
     }
 
-    // Avanzar
-    if (_currentPage < 17) {
+    // -------------------------------------------------
+    // Avanzar normal (0..16)
+    // -------------------------------------------------
+    if (_currentPage < 16) {
       setState(() => _currentPage++);
-      _pageController.nextPage(duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
