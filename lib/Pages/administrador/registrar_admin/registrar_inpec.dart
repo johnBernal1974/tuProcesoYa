@@ -1,4 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -27,6 +27,8 @@ class _RegistrarInpecPageState extends State<RegistrarInpecPage> {
   // ✅ Roles INPEC
   final List<String> _rolesInpec = const [
     'oficinaJuridica',
+    'dirJuridica',
+
   ];
 
   String? _rolSeleccionado = 'oficinaJuridica';
@@ -45,7 +47,7 @@ class _RegistrarInpecPageState extends State<RegistrarInpecPage> {
   Future<void> _registerInpec() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Verifica vacíos
+    // ✅ Validación campos
     if (_centroReclusionController.text.trim().isEmpty ||
         _celularController.text.trim().isEmpty ||
         _emailController.text.trim().isEmpty ||
@@ -58,13 +60,13 @@ class _RegistrarInpecPageState extends State<RegistrarInpecPage> {
       return;
     }
 
-    // Coincidencia email / password
     if (_emailController.text.trim() != _confirmEmailController.text.trim()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Los correos electrónicos no coinciden")),
       );
       return;
     }
+
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Las contraseñas no coinciden")),
@@ -75,22 +77,37 @@ class _RegistrarInpecPageState extends State<RegistrarInpecPage> {
     setState(() => _isLoading = true);
 
     try {
-      // ✅ DEBUG: confirma que sigues logueado como admin ANTES
-      final before = FirebaseAuth.instance.currentUser;
-      debugPrint("ANTES -> UID: ${before?.uid} EMAIL: ${before?.email}");
+      // ✅ 1) Verifica que sigues autenticado como admin
+      await FirebaseAuth.instance.currentUser?.reload();
+      final user = FirebaseAuth.instance.currentUser;
 
-      final callable = FirebaseFunctions.instance.httpsCallable('crearUsuarioInpec');
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No estás autenticado.")),
+        );
+        return;
+      }
 
-      final result = await callable.call({
+      // ✅ 2) Fuerza refresh del token (CLAVE EN WEB)
+      final idToken = await user.getIdToken(true);
+      debugPrint("TOKEN LEN: ${idToken?.length}");
+      debugPrint("UID ACTUAL: ${user.uid}  EMAIL: ${user.email}");
+
+      // ✅ 3) Asegura región correcta
+      final functions = FirebaseFunctions.instanceFor(region: "us-central1");
+      final callable = functions.httpsCallable("crearUsuarioInpec");
+
+      // ✅ 4) Payload (IMPORTANTE: idToken debe ir aquí)
+      final payload = {
+        'idToken': idToken,
         'email': _emailController.text.trim(),
         'password': _passwordController.text,
         'centro_reclusion': _centroReclusionController.text.trim(),
         'rolInpec': _rolSeleccionado ?? 'oficinaJuridica',
-
-        // Si tu function no usa celular, puedes quitar esto.
-        // Si sí lo quieres guardar, lo ideal es que también lo reciba la function:
         'celular': _celularController.text.trim(),
-      });
+      };
+
+      final result = await callable.call(payload);
 
       final data = (result.data as Map?) ?? {};
       final ok = data['ok'] == true;
@@ -100,17 +117,15 @@ class _RegistrarInpecPageState extends State<RegistrarInpecPage> {
         throw Exception("La función no retornó ok=true");
       }
 
-      // ✅ DEBUG: confirma que sigues logueado como admin DESPUÉS
+      // ✅ Confirma que sigues como admin
       final after = FirebaseAuth.instance.currentUser;
-      debugPrint("DESPUÉS -> UID: ${after?.uid} EMAIL: ${after?.email}");
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Usuario INPEC creado ✅ UID: ${uidNuevo ?? '-'}")),
       );
 
-      // ✅ Opcional: limpia el formulario
+      // ✅ Limpia formulario
       _centroReclusionController.clear();
       _celularController.clear();
       _emailController.clear();
@@ -119,16 +134,31 @@ class _RegistrarInpecPageState extends State<RegistrarInpecPage> {
       _confirmPasswordController.clear();
       setState(() => _rolSeleccionado = 'oficinaJuridica');
 
-      // ✅ Navega donde tú quieras
-      Navigator.pushReplacementNamed(context, 'inpec_page_admin');
-
+      // ✅ Navega donde quieras
+      //Navigator.pushReplacementNamed(context, 'inpec_page_admin');
     } on FirebaseFunctionsException catch (e) {
-      // Errores controlados desde la function
+      final code = e.code;
       final msg = e.message ?? e.code;
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $msg")),
-      );
+
+      if (code == "unauthenticated") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Tu sesión no se está enviando a la función (token). Cierra sesión e ingresa de nuevo.")),
+        );
+      } else if (code == "permission-denied") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No tienes permisos para crear usuarios INPEC.")),
+        );
+      } else if (code == "already-exists") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Ya existe un usuario con ese email.")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $msg")),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -164,6 +194,7 @@ class _RegistrarInpecPageState extends State<RegistrarInpecPage> {
                     const SizedBox(height: 10),
 
                     DropdownButtonFormField<String>(
+                      dropdownColor: Colors.white,
                       value: _rolSeleccionado,
                       items: _rolesInpec
                           .map((r) => DropdownMenuItem(

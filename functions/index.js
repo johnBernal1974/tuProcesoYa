@@ -25,6 +25,7 @@ const axios = require("axios");
 //Se coloco para probar el enviod e imagens en whatsapp
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 const cors = require("cors")({ origin: true });
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 
 
 admin.initializeApp();
@@ -2259,70 +2260,229 @@ exports.verifyOtpWhatsAppLogin = functions.https.onRequest(async (req, res) => {
 //****
 
 // ✅ Solo admins/masterFull pueden crear usuarios INPEC
-exports.crearUsuarioInpec = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "No autenticado.");
+// ✅ Callable v2
+
+
+exports.crearUsuarioInpec = onCall(
+  { region: "us-central1" },
+  async (request) => {
+    // request.data => payload
+    // request.auth => auth del usuario
+    // request.rawRequest => headers
+
+    console.log("REQ KEYS:", Object.keys(request));
+    console.log("AUTH:", request.auth);
+    console.log("RAW AUTH HEADER:", request.rawRequest?.headers?.authorization);
+
+    // ✅ 1) Debe venir autenticado (Callable lo manda)
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Debes estar autenticado para usar esta función."
+      );
+    }
+
+    const creatorUid = request.auth.uid;
+
+    // ✅ 2) Solo admins (colección admin docId=uid)
+    const adminSnap = await admin.firestore().collection("admin").doc(creatorUid).get();
+    if (!adminSnap.exists) {
+      throw new HttpsError(
+        "permission-denied",
+        "Solo un administrador puede crear usuarios INPEC."
+      );
+    }
+
+    // ✅ 3) Datos
+    const data = request.data || {};
+
+    const email = (data.email || "").toString().trim().toLowerCase();
+    const password = (data.password || "").toString();
+    const centro_reclusion = (data.centro_reclusion || "").toString().trim();
+    const rolInpec = (data.rolInpec || "oficinaJuridica").toString().trim();
+    const celular = (data.celular || "").toString().trim();
+
+    if (!email || !password || !centro_reclusion || !celular) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Faltan campos obligatorios (email, password, centro_reclusion, celular)."
+      );
+    }
+
+    if (!/^\d{10}$/.test(celular)) {
+      throw new HttpsError("invalid-argument", "El celular debe tener 10 dígitos.");
+    }
+
+    if (password.length < 6) {
+      throw new HttpsError("invalid-argument", "La contraseña debe tener mínimo 6 caracteres.");
+    }
+
+    const rolesPermitidos = ["oficinaJuridica"];
+    if (!rolesPermitidos.includes(rolInpec)) {
+      throw new HttpsError(
+        "invalid-argument",
+        `Rol inválido. Permitidos: ${rolesPermitidos.join(", ")}`
+      );
+    }
+
+    // ✅ 4) Evitar duplicado por email
+    try {
+      await admin.auth().getUserByEmail(email);
+      throw new HttpsError("already-exists", "Ya existe un usuario con ese email.");
+    } catch (err) {
+      if (err?.code && err.code !== "auth/user-not-found") {
+        if (err instanceof HttpsError) throw err;
+        throw new HttpsError("internal", err.message || "Error al validar email.");
+      }
+    }
+
+    // ✅ 5) Crear usuario Auth (NO afecta sesión del admin)
+    let created;
+    try {
+      created = await admin.auth().createUser({ email, password, disabled: false });
+    } catch (e) {
+      throw new HttpsError("internal", e.message || "No se pudo crear el usuario en Auth.");
+    }
+
+    const uid = created.uid;
+
+    // ✅ 6) Version app
+    let versionApp = "1.0.0";
+    try {
+      const configDoc = await admin
+        .firestore()
+        .collection("configuraciones")
+        .doc("h7NXeT2STxoHVv049o3J")
+        .get();
+      versionApp = configDoc.data()?.version_app || "1.0.0";
+    } catch (_) {}
+
+    // ✅ 7) Guardar perfil INPEC
+    const inpecData = {
+      centro_reclusion,
+      celular,
+      email,
+      fecha_registro: admin.firestore.FieldValue.serverTimestamp(),
+      status: "registrado",
+      rol: rolInpec,
+      version: versionApp,
+      creado_por: creatorUid,
+    };
+
+    try {
+      await admin.firestore().collection("inpec").doc(uid).set(inpecData, { merge: true });
+    } catch (e) {
+      try { await admin.auth().deleteUser(uid); } catch (_) {}
+      throw new HttpsError("internal", e.message || "No se pudo guardar el perfil INPEC.");
+    }
+
+    return { ok: true, uid, email };
   }
+);
 
-  const uidSolicitante = context.auth.uid;
 
-  // 1) Verificar que quien llama sea admin
-  const adminDoc = await admin.firestore().collection("admin").doc(uidSolicitante).get();
-  if (!adminDoc.exists) {
-    throw new functions.https.HttpsError("permission-denied", "No eres admin.");
+// ✅ Solo admins pueden crear OPERADORES
+exports.crearUsuarioOperador = onCall(
+  { region: "us-central1" },
+  async (request) => {
+
+    // ✅ Debe venir autenticado
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Debes estar autenticado para usar esta función.");
+    }
+
+    const creatorUid = request.auth.uid;
+
+    // ✅ Solo admins
+    const adminSnap = await admin.firestore().collection("admin").doc(creatorUid).get();
+    if (!adminSnap.exists) {
+      throw new HttpsError("permission-denied", "Solo un administrador puede crear operadores.");
+    }
+
+    const data = request.data || {};
+
+    const email = (data.email || "").toString().trim().toLowerCase();
+    const password = (data.password || "").toString();
+    const nombre = (data.nombre || "").toString().trim();
+    const apellidos = (data.apellidos || "").toString().trim();
+    const celular = (data.celular || "").toString().trim();
+    const rol = (data.rol || "operador 1").toString().trim();
+
+    // ✅ Validaciones
+    if (!email || !password || !nombre || !apellidos || !celular) {
+      throw new HttpsError(
+        "invalid-argument",
+        "Faltan campos obligatorios (nombre, apellidos, celular, email, password)."
+      );
+    }
+
+    if (!/^\d{10}$/.test(celular)) {
+      throw new HttpsError("invalid-argument", "El celular debe tener 10 dígitos.");
+    }
+
+    if (password.length < 6) {
+      throw new HttpsError("invalid-argument", "La contraseña debe tener mínimo 6 caracteres.");
+    }
+
+    const rolesPermitidos = ["operador 1", "operador 2"];
+    if (!rolesPermitidos.includes(rol)) {
+      throw new HttpsError(
+        "invalid-argument",
+        `Rol inválido. Permitidos: ${rolesPermitidos.join(", ")}`
+      );
+    }
+
+    // ✅ Evitar duplicado por email
+    try {
+      await admin.auth().getUserByEmail(email);
+      throw new HttpsError("already-exists", "Ya existe un usuario con ese email.");
+    } catch (err) {
+      if (err?.code && err.code !== "auth/user-not-found") {
+        if (err instanceof HttpsError) throw err;
+        throw new HttpsError("internal", err.message || "Error al validar email.");
+      }
+    }
+
+    // ✅ Crear usuario Auth
+    let created;
+    try {
+      created = await admin.auth().createUser({ email, password, disabled: false });
+    } catch (e) {
+      throw new HttpsError("internal", e.message || "No se pudo crear el usuario en Auth.");
+    }
+
+    const uid = created.uid;
+
+    // ✅ versión app (igual que tú)
+    let versionApp = "1.0.0";
+    try {
+      const configDoc = await admin.firestore()
+        .collection("configuraciones")
+        .doc("h7NXeT2STxoHVv049o3J")
+        .get();
+      versionApp = configDoc.data()?.version_app || "1.0.0";
+    } catch (_) {}
+
+    // ✅ Guardar en admin/{uid}
+    const operadorData = {
+      name: nombre,
+      apellidos,
+      celular,
+      email,
+      fecha_registro: admin.firestore.FieldValue.serverTimestamp(),
+      status: "registrado",
+      rol,               // ✅ operador 1 / operador 2
+      version: versionApp,
+      creado_por: creatorUid,
+    };
+
+    try {
+      await admin.firestore().collection("admin").doc(uid).set(operadorData, { merge: true });
+    } catch (e) {
+      try { await admin.auth().deleteUser(uid); } catch (_) {}
+      throw new HttpsError("internal", e.message || "No se pudo guardar el operador.");
+    }
+
+    return { ok: true, uid, email };
   }
-
-  const rolAdmin = (adminDoc.data()?.rol || "").toString().trim().toLowerCase();
-  const permitidos = ["masterfull", "master"]; // ajusta si quieres
-  if (!permitidos.includes(rolAdmin)) {
-    throw new functions.https.HttpsError("permission-denied", "No tienes permisos para crear usuarios INPEC.");
-  }
-
-  // 2) Validar data
-  const { email, password, centro_reclusion, rolInpec } = data || {};
-
-  if (!email || !password || !centro_reclusion) {
-    throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Faltan campos: email, password, centro_reclusion."
-    );
-  }
-
-  const rol = (rolInpec || "oficinaJuridica").toString().trim();
-
-  // 3) Crear usuario Auth SIN cambiar sesión del admin
-  let userRecord;
-  try {
-    userRecord = await admin.auth().createUser({
-      email: email.toString().trim(),
-      password: password.toString(),
-    });
-  } catch (e) {
-    // errores típicos: email ya existe, password débil, etc.
-    throw new functions.https.HttpsError("already-exists", e.message);
-  }
-
-  // 4) Guardar datos en colección "inpec"
-  const uidNuevo = userRecord.uid;
-
-  // versión de app (opcional)
-  const configDoc = await admin.firestore().collection("configuraciones").doc("h7NXeT2STxoHVv049o3J").get();
-  const versionApp = configDoc.exists ? (configDoc.data()?.version_app || "1.0.0") : "1.0.0";
-
-  await admin.firestore().collection("inpec").doc(uidNuevo).set({
-    email: email.toString().trim(),
-    centro_reclusion: centro_reclusion.toString().trim(),
-    rol: rol,
-    status: "registrado",
-    version: versionApp,
-    fecha_registro: admin.firestore.FieldValue.serverTimestamp(),
-    creado_por: uidSolicitante,
-  });
-
-  return { ok: true, uid: uidNuevo };
-});
-
-
-
-
-
+);

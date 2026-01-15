@@ -95,6 +95,7 @@ class _OperadoresPageState extends State<OperadoresPage> {
                     width: cardWidth,
                     padding: const EdgeInsets.all(10),
                     child: ListView.builder(
+                      key: const PageStorageKey<String>('operadores_list'),
                       itemCount: filteredDocs.isNotEmpty ? filteredDocs.length : 0,
                       itemBuilder: (context, index) {
                         //if (index >= filteredDocs.length) return const SizedBox();
@@ -106,142 +107,20 @@ class _OperadoresPageState extends State<OperadoresPage> {
                         _selectedEstado.putIfAbsent(docId, () => data['status']);
                         _selectedRol.putIfAbsent(docId, () => data['rol']);
 
-                        return Card(
-                          color: blancoCards,
-                          surfaceTintColor: blancoCards,
-                          margin: const EdgeInsets.symmetric(vertical: 10),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                LayoutBuilder(
-                                  builder: (context, constraints) {
-                                    bool isMobile = constraints.maxWidth < 600;
-                                    return Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        isMobile
-                                            ? Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              "${data['name']} ${data['apellidos']}",
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                            ),
-                                            const SizedBox(height: 5),
-                                            Text(
-                                              "Fecha de Registro: ${_formatFecha(data['fecha_registro'])}",
-                                              style: const TextStyle(fontSize: 12, color: gris),
-                                            ),
-                                          ],
-                                        )
-                                            : Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Text(
-                                              "${data['name']} ${data['apellidos']}",
-                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                            ),
-                                            Text(
-                                              "Fecha de Registro: ${_formatFecha(data['fecha_registro'])}",
-                                              style: const TextStyle(fontSize: 12, color: gris),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        isMobile
-                                            ? Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            _buildInfoRow("Celular", data['celular']),
-                                            _buildInfoRow("Email", data['email']),
-                                          ],
-                                        )
-                                            : Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            _buildInfoRow("Celular", data['celular']),
-                                            _buildInfoRow("Email", data['email']),
-                                          ],
-                                        ),
-                                      ],
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 10),
+                        return OperadorCard(
+                          doc: doc,
+                          onUpdate: (docId, status, rol) async {
+                            await FirebaseFirestore.instance.collection('admin').doc(docId).update({
+                              'status': status,
+                              'rol': rol,
+                            });
 
-                                if (!_editMode[docId]!) ...[
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      _buildInfoRow("Estado", data['status']),
-                                      _buildInfoRow("Rol", data['rol']),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 10),
-                                  ElevatedButton(
-                                    onPressed: () {
-                                      setState(() {
-                                        _editMode[docId] = true;
-                                      });
-                                    },
-                                    child: const Text("Editar"),
-                                  ),
-                                ] else ...[
-                                  const SizedBox(height: 10),
-                                  DropdownButtonFormField<String>(
-                                    dropdownColor: blanco,
-                                    value: _selectedEstado[docId],
-                                    items: ["registrado", "activado", "suspendido", "cancelado"]
-                                        .map((estado) => DropdownMenuItem(value: estado, child: Text(estado)))
-                                        .toList(),
-                                    onChanged: (valor) {
-                                      setState(() {
-                                        _selectedEstado[docId] = valor!;
-                                      });
-                                    },
-                                    decoration: const InputDecoration(labelText: "Estado"),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  DropdownButtonFormField<String>(
-                                    dropdownColor: blanco,
-                                    value: _selectedRol[docId],
-                                    items: [
-                                      "operador 1", "operador 2", "pasante 1", "pasante 2", "filtrado",
-                                      "pasante 3", "coordinador 1", "coordinador 2", "master", "masterFull", ""
-                                    ]
-                                        .map((rol) => DropdownMenuItem(value: rol, child: Text(rol)))
-                                        .toList(),
-                                    onChanged: (valor) {
-                                      setState(() {
-                                        _selectedRol[docId] = valor!;
-                                      });
-                                    },
-                                    decoration: const InputDecoration(labelText: "Rol"),
-                                  ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      ElevatedButton(
-                                        onPressed: () => _updateOperador(docId),
-                                        child: const Text("Actualizar"),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            _editMode[docId] = false;
-                                          });
-                                        },
-                                        child: const Text("Cancelar"),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Operador actualizado con éxito")),
+                              );
+                            }
+                          },
                         );
                       },
                     ),
@@ -325,6 +204,39 @@ class _OperadoresPageState extends State<OperadoresPage> {
       const SnackBar(content: Text("Operador actualizado con éxito")),
     );
   }
+  InputDecoration _inputGrey(String label) {
+    final grey = Colors.grey.shade400;
+    final greyFocused = Colors.grey.shade600;
+
+    return InputDecoration(
+      labelText: label,
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: grey, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: greyFocused, width: 1.5),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: grey, width: 1),
+      ),
+
+      // aunque haya error, igual gris (si quieres rojo en error, me dices)
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: grey, width: 1),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: greyFocused, width: 1.5),
+      ),
+    );
+  }
+
 
 
   Widget _buildInfoRow(String label, String value) {
@@ -336,6 +248,157 @@ class _OperadoresPageState extends State<OperadoresPage> {
     );
   }
 }
+
+class OperadorCard extends StatefulWidget {
+  final DocumentSnapshot doc;
+  final Future<void> Function(String docId, String status, String rol) onUpdate;
+
+  const OperadorCard({
+    super.key,
+    required this.doc,
+    required this.onUpdate,
+  });
+
+  @override
+  State<OperadorCard> createState() => _OperadorCardState();
+}
+
+class _OperadorCardState extends State<OperadorCard> {
+  bool _edit = false;
+  late String _estado;
+  late String _rol;
+
+  @override
+  void initState() {
+    super.initState();
+    final data = widget.doc.data() as Map<String, dynamic>;
+    _estado = (data['status'] ?? '').toString();
+    _rol = (data['rol'] ?? '').toString();
+  }
+
+  InputDecoration _inputGrey(String label) {
+    final grey = Colors.grey.shade400;
+    final greyFocused = Colors.grey.shade600;
+    return InputDecoration(
+      labelText: label,
+      floatingLabelBehavior: FloatingLabelBehavior.always,
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: grey, width: 1),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: greyFocused, width: 1.5),
+      ),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: BorderSide(color: grey, width: 1),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.doc.data() as Map<String, dynamic>;
+    final docId = widget.doc.id;
+
+    return Card(
+      color: blancoCards,
+      surfaceTintColor: blancoCards,
+      elevation: 0,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: Colors.grey.shade400, width: 1),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "${data['name']} ${data['apellidos']}",
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildInfoRow("Celular", (data['celular'] ?? '').toString()),
+                _buildInfoRow("Email", (data['email'] ?? '').toString()),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            if (!_edit) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildInfoRow("Estado", (data['status'] ?? '').toString()),
+                  _buildInfoRow("Rol", (data['rol'] ?? '').toString()),
+                ],
+              ),
+              const SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () => setState(() => _edit = true),
+                child: const Text("Editar"),
+              ),
+            ] else ...[
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                dropdownColor: blanco,
+                value: _estado,
+                items: ["registrado", "activado", "suspendido", "cancelado"]
+                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .toList(),
+                onChanged: (v) => setState(() => _estado = v ?? _estado),
+                decoration: _inputGrey("Estado"),
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                dropdownColor: blanco,
+                value: _rol,
+                items: [
+                  "operador 1","operador 2","pasante 1","pasante 2","filtrado",
+                  "pasante 3","coordinador 1","coordinador 2","master","masterFull",""
+                ].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                onChanged: (v) => setState(() => _rol = v ?? _rol),
+                decoration: _inputGrey("Rol"),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: () async {
+                      await widget.onUpdate(docId, _estado, _rol);
+                      if (mounted) setState(() => _edit = false);
+                    },
+                    child: const Text("Actualizar"),
+                  ),
+                  TextButton(
+                    onPressed: () => setState(() => _edit = false),
+                    child: const Text("Cancelar"),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      children: [
+        Text("$label: ", style: const TextStyle(fontSize: 12, color: gris)),
+        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
 
 
 

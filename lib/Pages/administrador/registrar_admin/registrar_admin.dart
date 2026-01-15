@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -25,12 +26,12 @@ class _RegistrarOperadoresPageState extends State<RegistrarOperadoresPage> {
   Future<void> _registerOperador() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Verifica si hay campos vacíos
-    if (_nombreController.text.isEmpty ||
-        _apellidosController.text.isEmpty ||
-        _celularController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _confirmEmailController.text.isEmpty ||
+    // ✅ Validación campos
+    if (_nombreController.text.trim().isEmpty ||
+        _apellidosController.text.trim().isEmpty ||
+        _celularController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _confirmEmailController.text.trim().isEmpty ||
         _passwordController.text.isEmpty ||
         _confirmPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -39,13 +40,13 @@ class _RegistrarOperadoresPageState extends State<RegistrarOperadoresPage> {
       return;
     }
 
-    // Validaciones de coincidencia
-    if (_emailController.text != _confirmEmailController.text) {
+    if (_emailController.text.trim() != _confirmEmailController.text.trim()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Los correos electrónicos no coinciden")),
       );
       return;
     }
+
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Las contraseñas no coinciden")),
@@ -54,49 +55,94 @@ class _RegistrarOperadoresPageState extends State<RegistrarOperadoresPage> {
     }
 
     setState(() => _isLoading = true);
+
     try {
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-      );
+      // ✅ 1) Verifica sesión admin
+      await FirebaseAuth.instance.currentUser?.reload();
+      final user = FirebaseAuth.instance.currentUser;
 
-      final uid = userCredential.user!.uid;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("No estás autenticado.")),
+        );
+        return;
+      }
 
-// 🔍 Obtener la versión actual desde la colección 'configuraciones'
-      final configDoc = await FirebaseFirestore.instance
-          .collection('configuraciones')
-          .doc('h7NXeT2STxoHVv049o3J')
-          .get();
+      // ✅ 2) Refresh token (web)
+      final idToken = await user.getIdToken(true);
+      debugPrint("TOKEN LEN: ${idToken?.length}");
+      debugPrint("UID ACTUAL: ${user.uid}  EMAIL: ${user.email}");
 
-      final versionApp = configDoc.data()?['version_app'] ?? '1.0.0';
+      // ✅ 3) Callable
+      final functions = FirebaseFunctions.instanceFor(region: "us-central1");
+      final callable = functions.httpsCallable("crearUsuarioOperador");
 
-      await FirebaseFirestore.instance.collection('admin').doc(uid).set({
-        'name': _nombreController.text.trim(),
+      // ✅ 4) Payload
+      final payload = {
+        'nombre': _nombreController.text.trim(),
         'apellidos': _apellidosController.text.trim(),
         'celular': _celularController.text.trim(),
         'email': _emailController.text.trim(),
-        'fecha_registro': FieldValue.serverTimestamp(),
-        'status': 'registrado',
-        'rol': '',
-        'version': versionApp, // 🔥 Asignar versión desde Firestore
-      });
+        'password': _passwordController.text,
+        // 👇 si tienes dropdown de rol, lo mandas aquí
+        'rol': 'operador 1', // o el valor que selecciones
+      };
 
-      if (context.mounted) {
+      final result = await callable.call(payload);
+
+      final data = (result.data as Map?) ?? {};
+      final ok = data['ok'] == true;
+      final uidNuevo = data['uid']?.toString();
+
+      if (!ok) throw Exception("La función no retornó ok=true");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Operador creado ✅ UID: ${uidNuevo ?? '-'}")),
+      );
+
+      // ✅ Limpia formulario
+      _nombreController.clear();
+      _apellidosController.clear();
+      _celularController.clear();
+      _emailController.clear();
+      _confirmEmailController.clear();
+      _passwordController.clear();
+      _confirmPasswordController.clear();
+
+      // ✅ Navega donde quieras
+      Navigator.pushReplacementNamed(context, 'operadores_page');
+
+    } on FirebaseFunctionsException catch (e) {
+      final code = e.code;
+      final msg = e.message ?? e.code;
+
+      debugPrint("FunctionsException: code=$code msg=$msg details=${e.details}");
+
+      if (!mounted) return;
+
+      if (code == "permission-denied") {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Operador registrado con éxito")),
+          const SnackBar(content: Text("No tienes permisos para crear operadores.")),
         );
-        Navigator.pushReplacementNamed(context, 'operadores_page');
+      } else if (code == "already-exists") {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Ya existe un usuario con ese email.")),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: $msg")),
+        );
       }
-
-      print("**** Operador registrado exitosamente");
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error: ${e.toString()}")),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-    setState(() => _isLoading = false);
   }
 
 
