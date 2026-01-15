@@ -11,6 +11,8 @@ import '../../commons/admin_provider.dart';
 import '../../providers/auth_provider.dart';
 import 'package:http/http.dart' as http;
 
+import '../client/contactanos.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
 
@@ -150,20 +152,26 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 40),
 
-                    if (_isOtp) // 🔵 El botón de recuperar solo para usuarios normales
+
+
+                    if (_isOtp)
                       GestureDetector(
                         onTap: () {
-                          Navigator.pushNamed(context, "forgot_password");
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const ContactanosPage()),
+                          );
                         },
                         child: Text(
-                          "¿Quieres recuperar tu cuenta?",
+                          "¿Cambiaste el número de celular?",
                           style: TextStyle(
-                            color: gris,
+                            color: Colors.black,
                             fontSize: screenWidth > 600 ? 18 : 14,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w800,
+                            decoration: TextDecoration.underline,
                           ),
                         ),
                       ),
+
 
                   ],
                 ),

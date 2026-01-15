@@ -79,6 +79,7 @@ import 'Pages/administrador/ver_correos_entrantes/ver_correos_entrantes.dart';
 import 'Pages/alimentar_base_datos_temporal/alimentar_base_datos_temporal.dart';
 import 'Pages/bloqueado_page/bloqueado.dart';
 import 'Pages/client/buzon_sugerencias/buzon_sugerencias.dart';
+import 'Pages/client/contactanos.dart';
 import 'Pages/client/derecho_de_peticion/derecho_de_peticion.dart';
 import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_TrasladoPenitenciaria/historial_solicitudes_TrasladoPenitenciaria.dart';
@@ -345,6 +346,7 @@ class MyApp extends StatelessWidget {
           final referidorId = ModalRoute.of(context)!.settings.arguments as String;
           return MisReferidosPage(referidorId: referidorId);
         },
+        'contactanos': (context) => const ContactanosPage(),
         //general
         'login': (context) => const LoginPage(),
         'pagina_inicio_registro_page': (context) => const PantallaInicioRegistroPage(),

@@ -4,9 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
-import 'dart:html' as html;
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:firebase_auth_platform_interface/firebase_auth_platform_interface.dart';
 
 class CambiarNumeroPage extends StatefulWidget {
   final String userId; // UID o ID del documento del usuario

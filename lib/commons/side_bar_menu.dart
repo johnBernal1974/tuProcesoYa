@@ -40,6 +40,10 @@ class _SideBarState extends State<SideBar> {
   int solicitudesCopiaSentencia = 0;
   int solicitudesAsignacionJEP = 0;
 
+  bool _isInpec = false;
+  String? _rolInpec; // ejemplo: "oficinaJuridica"
+
+
 
 
   @override
@@ -111,40 +115,65 @@ class _SideBarState extends State<SideBar> {
     final prefs = await SharedPreferences.getInstance();
 
     try {
-      // 🔹 Leer de SharedPreferences si ya están guardados
+      // ✅ Si ya está en caché
       if (prefs.containsKey('isAdmin') && prefs.containsKey('rol')) {
         _isAdmin = prefs.getBool('isAdmin');
         rol = prefs.getString('rol') ?? "";
       } else {
         // 🔹 Consultar Firestore si no hay caché
         final userId = FirebaseAuth.instance.currentUser?.uid;
+
         if (userId == null) {
           _isAdmin = false;
           rol = "";
         } else {
-          final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
+          // 1) Admin?
+          final adminDoc =
+          await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
-          // 🔹 Intentar cargar el rol desde AdminProvider
           String? nuevoRol;
-          try {
-            await AdminProvider().loadAdminData();
-            nuevoRol = AdminProvider().rol;
-          } catch (_) {
-            nuevoRol = "";
+          if (adminDoc.exists) {
+            try {
+              await AdminProvider().loadAdminData();
+              nuevoRol = AdminProvider().rol;
+            } catch (_) {
+              nuevoRol = "";
+            }
           }
 
           _isAdmin = adminDoc.exists;
           rol = nuevoRol ?? "";
 
-          // 🔹 Guardar resultados en SharedPreferences
           await prefs.setBool('isAdmin', _isAdmin!);
           await prefs.setString('rol', rol!);
         }
       }
+
+      // ✅ Detectar INPEC (siempre, haya o no admin)
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        final inpecDoc =
+        await FirebaseFirestore.instance.collection('inpec').doc(userId).get();
+
+        if (inpecDoc.exists) {
+          _isInpec = true;
+          _rolInpec = (inpecDoc.data()?['rol'] ?? '').toString().trim();
+        } else {
+          _isInpec = false;
+          _rolInpec = null;
+        }
+
+        // opcional cache
+        await prefs.setBool('isInpec', _isInpec);
+        await prefs.setString('rolInpec', _rolInpec ?? "");
+      }
+
     } catch (e) {
-      // 🔥 En caso de error, marcamos como no admin
       _isAdmin = false;
       rol = "";
+
+      _isInpec = false;
+      _rolInpec = null;
     }
 
     if (mounted) {
@@ -153,6 +182,7 @@ class _SideBarState extends State<SideBar> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -407,9 +437,15 @@ class _SideBarState extends State<SideBar> {
       decoration: const BoxDecoration(color: blanco),
       child: Column(
         children: [
-          Image.asset(
-              'assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
-          if (isAdmin == true) const Text("Administrador"),
+          Image.asset('assets/images/logo_tu_proceso_ya_transparente.png', height: 40),
+
+          if (_isInpec)
+            Text(
+              "INPEC - ${_rolInpec ?? ''}",
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            )
+          else if (isAdmin == true)
+            const Text("Administrador"),
         ],
       ),
     );
@@ -1073,6 +1109,30 @@ class _SideBarState extends State<SideBar> {
               context, "Reporte beneficios", Icons.list_alt_sharp, 'reporte_beneficios_page_admin'),
         ]);
       }
+      // ✅ MENÚ INPEC (NO admin, NO user)
+      if (_isInpec) {
+        // Puedes validar rol específico:
+        final rolInpecNorm = (_rolInpec ?? '').toLowerCase();
+
+        if (rolInpecNorm == 'oficinajuridica') {
+          items.addAll([
+            _buildDrawerTile(context, "Panel INPEC", Icons.home_filled, 'inpec_panel_home'),
+            const Divider(height: 1, color: grisMedio),
+
+            _buildDrawerTile(context, "Permiso 72 horas", Icons.timer_outlined, 'inpec_permiso_72'),
+            _buildDrawerTile(context, "Prisión domiciliaria", Icons.home_outlined, 'inpec_domiciliaria'),
+            _buildDrawerTile(context, "Libertad condicional", Icons.gavel_outlined, 'inpec_condicional'),
+            _buildDrawerTile(context, "Extinción de la pena", Icons.verified_outlined, 'inpec_extincion'),
+
+            const Divider(height: 1, color: grisMedio),
+            _buildDrawerTile(context, "Reporte beneficios", Icons.list_alt_sharp, 'reporte_beneficios_page_admin'),
+          ]);
+
+          items.add(const SizedBox(height: 60));
+          return items; // 👈 IMPORTANTE: corta aquí para que no muestre menú de usuario normal
+        }
+      }
+
     } else {
       // Menú para usuarios que no son admin.
       items.addAll([
@@ -1164,6 +1224,7 @@ class _SideBarState extends State<SideBar> {
       }) {
     return ListTile(
       onTap: () {
+        // ✅ ADMIN
         if (_isAdmin == true) {
           if (ModalRoute.of(context)?.settings.name != route) {
             Navigator.pushNamed(context, route);
@@ -1171,6 +1232,15 @@ class _SideBarState extends State<SideBar> {
           return;
         }
 
+        // ✅ INPEC (no validar pago/trial)
+        if (_isInpec) {
+          if (ModalRoute.of(context)?.settings.name != route) {
+            Navigator.pushNamed(context, route);
+          }
+          return;
+        }
+
+        // ✅ USUARIO NORMAL (Ppl)
         if (!_isPaid.value && !_isTrial) {
           _showPaymentDialog(context);
           return;
@@ -1464,6 +1534,8 @@ class _SideBarState extends State<SideBar> {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('isAdmin'); // 🔥 Borra datos guardados
         await prefs.remove('rol');
+        await prefs.remove('isInpec');
+        await prefs.remove('rolInpec');
 
         try {
           await _authProvider.signOut();
