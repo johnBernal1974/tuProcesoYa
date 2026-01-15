@@ -2256,6 +2256,73 @@ exports.verifyOtpWhatsAppLogin = functions.https.onRequest(async (req, res) => {
 });
 
 
+//****
+
+// ✅ Solo admins/masterFull pueden crear usuarios INPEC
+exports.crearUsuarioInpec = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError("unauthenticated", "No autenticado.");
+  }
+
+  const uidSolicitante = context.auth.uid;
+
+  // 1) Verificar que quien llama sea admin
+  const adminDoc = await admin.firestore().collection("admin").doc(uidSolicitante).get();
+  if (!adminDoc.exists) {
+    throw new functions.https.HttpsError("permission-denied", "No eres admin.");
+  }
+
+  const rolAdmin = (adminDoc.data()?.rol || "").toString().trim().toLowerCase();
+  const permitidos = ["masterfull", "master"]; // ajusta si quieres
+  if (!permitidos.includes(rolAdmin)) {
+    throw new functions.https.HttpsError("permission-denied", "No tienes permisos para crear usuarios INPEC.");
+  }
+
+  // 2) Validar data
+  const { email, password, centro_reclusion, rolInpec } = data || {};
+
+  if (!email || !password || !centro_reclusion) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Faltan campos: email, password, centro_reclusion."
+    );
+  }
+
+  const rol = (rolInpec || "oficinaJuridica").toString().trim();
+
+  // 3) Crear usuario Auth SIN cambiar sesión del admin
+  let userRecord;
+  try {
+    userRecord = await admin.auth().createUser({
+      email: email.toString().trim(),
+      password: password.toString(),
+    });
+  } catch (e) {
+    // errores típicos: email ya existe, password débil, etc.
+    throw new functions.https.HttpsError("already-exists", e.message);
+  }
+
+  // 4) Guardar datos en colección "inpec"
+  const uidNuevo = userRecord.uid;
+
+  // versión de app (opcional)
+  const configDoc = await admin.firestore().collection("configuraciones").doc("h7NXeT2STxoHVv049o3J").get();
+  const versionApp = configDoc.exists ? (configDoc.data()?.version_app || "1.0.0") : "1.0.0";
+
+  await admin.firestore().collection("inpec").doc(uidNuevo).set({
+    email: email.toString().trim(),
+    centro_reclusion: centro_reclusion.toString().trim(),
+    rol: rol,
+    status: "registrado",
+    version: versionApp,
+    fecha_registro: admin.firestore.FieldValue.serverTimestamp(),
+    creado_por: uidSolicitante,
+  });
+
+  return { ok: true, uid: uidNuevo };
+});
+
+
 
 
 

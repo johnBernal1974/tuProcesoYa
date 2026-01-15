@@ -56,6 +56,7 @@ import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
 import 'Pages/administrador/referidores/agregar_referidores.dart';
 import 'Pages/administrador/referidores/referidores.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
+import 'Pages/administrador/registrar_admin/registrar_inpec.dart';
 import 'Pages/administrador/registro_asistido_admin/registro_asistido_admin.dart';
 import 'Pages/administrador/respuesta_sugerencia_admin/respuesta_sugerencia_admin.dart';
 import 'Pages/administrador/solicitudes_enviadas_por_correo/acumulacion_enviadas_por_correo/acumulacion_enviadas_por_correo.dart';
@@ -279,6 +280,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_asignacionJEP_admin': (context) => const HistorialSolicitudesAsignacionJEPAdminPage(),
         'historial_solicitudes_desistimientoApelacion_admin': (context) => const HistorialSolicitudesDesistimientoApelacionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
+        'registrar_inpec': (context) => const RegistrarInpecPage(),
         'operadores_page': (context) => const OperadoresPage(),
         'admin_transacciones': (context) => const AdminTransaccionesPage(),
         'admin_transacciones_historico': (context) => const AdminTransaccionesHistoricoPage(),

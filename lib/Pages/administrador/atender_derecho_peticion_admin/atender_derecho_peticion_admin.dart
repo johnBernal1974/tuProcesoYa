@@ -785,7 +785,7 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               Text(userData!.juzgadoEjecucionPenas, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
             ],
           ),
-          correoConBoton('Correo JEP', userData!.juzgadoEjecucionPenasEmail),
+
           const Divider(color: primary, height: 1),
           const SizedBox(height: 10),
           Column(
@@ -795,7 +795,10 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               Text(userData!.juzgadoQueCondeno, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, height: 1.1)),
             ],
           ),
-          correoConBoton('Correo JDC', userData!.juzgadoQueCondenoEmail),
+
+          const Divider(color: primary, height: 1),
+          const SizedBox(height: 60),
+          _selectorDestinoCorreo(),
           const Divider(color: primary, height: 1),
           const SizedBox(height: 20),
           Column(
@@ -974,56 +977,6 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       return userData?.juzgadoQueCondeno ?? "";
     }
     return "";
-  }
-
-  // Función para generar cada fila con el botón "Elegir"
-  Widget correoConBoton(String nombre, String? correo) {
-    bool isSelected = nombre == nombreCorreoSeleccionado; // Verifica si es el seleccionado
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          correoSeleccionado = correo;
-          nombreCorreoSeleccionado = nombre;
-          entidad = obtenerEntidad(nombre);
-        });
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 2),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.green.withOpacity(0.3) : Colors.transparent,
-          borderRadius: BorderRadius.circular(5),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Expanded(
-              child: Text(
-                '$nombre: ${correo ?? 'Cargando...'}',
-                style: const TextStyle(fontSize: 12, color: Colors.black),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  correoSeleccionado = correo;
-                  nombreCorreoSeleccionado = nombre;
-                  entidad = obtenerEntidad(nombre);
-                });
-              },
-              child: Text(
-                isSelected ? 'Elegido' : 'Elegir',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isSelected ? Colors.black : Colors.blue,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   void fetchUserData() async {
@@ -1623,6 +1576,108 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
       }
     }
   }
+  //***
+
+  List<OpcionCorreo> _buildOpcionesCorreo() {
+    final opciones = <OpcionCorreo>[];
+
+    // ✅ JEP
+    if ((userData?.juzgadoEjecucionPenasEmail ?? "").trim().isNotEmpty) {
+      opciones.add(OpcionCorreo(
+        nombre: "Correo JEP",
+        correo: userData!.juzgadoEjecucionPenasEmail.trim(),
+        entidad: userData?.juzgadoEjecucionPenas ?? "",
+      ));
+    }
+
+    // ✅ JDC
+    if ((userData?.juzgadoQueCondenoEmail ?? "").trim().isNotEmpty) {
+      opciones.add(OpcionCorreo(
+        nombre: "Correo JDC",
+        correo: userData!.juzgadoQueCondenoEmail.trim(),
+        entidad: userData?.juzgadoQueCondeno ?? "",
+      ));
+    }
+
+    // ✅ Centro de reclusión (si tienes correos cargados)
+    final centro = (userData?.centroReclusion ?? "").trim();
+
+    // Tus keys: correo_direccion, correo_juridica, correo_principal, correo_sanidad
+    final dir = (correosCentro['correo_direccion'] ?? '').trim();
+    final jur = (correosCentro['correo_juridica'] ?? '').trim();
+    final pri = (correosCentro['correo_principal'] ?? '').trim();
+    final san = (correosCentro['correo_sanidad'] ?? '').trim();
+
+    // Solo agrega si son reales
+    if (dir.isNotEmpty && dir != "No disponible") {
+      opciones.add(OpcionCorreo(nombre: "Director", correo: dir, entidad: centro));
+    }
+    if (jur.isNotEmpty && jur != "No disponible") {
+      opciones.add(OpcionCorreo(nombre: "Jurídica", correo: jur, entidad: centro));
+    }
+    if (pri.isNotEmpty && pri != "No disponible") {
+      opciones.add(OpcionCorreo(nombre: "Principal", correo: pri, entidad: centro));
+    }
+    if (san.isNotEmpty && san != "No disponible") {
+      opciones.add(OpcionCorreo(nombre: "Sanidad", correo: san, entidad: centro));
+    }
+
+    return opciones;
+  }
+
+  Widget _selectorDestinoCorreo() {
+    if (userData == null) return const SizedBox();
+
+    final opciones = _buildOpcionesCorreo();
+
+    if (opciones.isEmpty) {
+      return const Text(
+        "No hay correos disponibles para seleccionar.",
+        style: TextStyle(color: Colors.red),
+      );
+    }
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Seleccionar entidad y correo destino",
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+
+            ...opciones.map((op) {
+              final isSelected = nombreCorreoSeleccionado == op.nombre;
+
+              return RadioListTile<String>(
+                dense: true,
+                value: op.nombre,
+                groupValue: nombreCorreoSeleccionado,
+                title: Text(op.nombre, style: const TextStyle(fontSize: 13)),
+                subtitle: Text(
+                  "${op.entidad}\n${op.correo}",
+                  style: const TextStyle(fontSize: 12),
+                ),
+                onChanged: (_) {
+                  setState(() {
+                    nombreCorreoSeleccionado = op.nombre;
+                    correoSeleccionado = op.correo;
+                    entidad = op.entidad;
+                  });
+                },
+              );
+            }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+
 
 
   Widget botonEnviarCorreo() {
@@ -2075,3 +2130,15 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
   }
 
 }
+class OpcionCorreo {
+  final String nombre;   // Ej: "Correo JEP", "Jurídica", "Director", etc.
+  final String correo;   // email destino
+  final String entidad;  // Ej: Juzgado..., CPMSBOG..., etc.
+
+  OpcionCorreo({
+    required this.nombre,
+    required this.correo,
+    required this.entidad,
+  });
+}
+

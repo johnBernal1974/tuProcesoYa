@@ -15,13 +15,23 @@ class ContactanosPage extends StatelessWidget {
   }
 
   Future<void> _abrirWhatsapp() async {
-    final Uri uri = Uri.parse(
-      'https://wa.me/57$telefono',
+    const String telefono = '3001312777';
+
+    final String mensaje = Uri.encodeComponent(
+      'Hola, he cambiado mi numero de WhatsApp y requiero de su soporte.\n\nMil gracias.',
     );
+
+    final Uri uri = Uri.parse(
+      'https://wa.me/57$telefono?text=$mensaje',
+    );
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      debugPrint('No se pudo abrir WhatsApp');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

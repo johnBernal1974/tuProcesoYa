@@ -18,11 +18,9 @@ import '../../../models/ppl.dart';
 import '../../../plantillas/plantilla_desistimiento_apelacion.dart';
 import '../../../src/colors/colors.dart';
 import 'package:http/http.dart' as http;
-import 'dart:convert' as dart_convert;
 import '../../../widgets/calculo_beneficios_penitenciarios-general.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/manager_correo_desistimiento_apelacion.dart';
-import '../historial_solicitudes_redenciones_admin/historial_solicitudes_redenciones_admin.dart';
 import 'atender_solicitud_desistimiento_apelacion_controller.dart';
 
 class AtenderSolicitudDesistimientoApelacionPage extends StatefulWidget {

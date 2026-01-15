@@ -713,6 +713,12 @@ class _SideBarState extends State<SideBar> {
               ),
               _buildDrawerTile(
                 context,
+                "Registrar Inpec",
+                Icons.app_registration,
+                'registrar_inpec',
+              ),
+              _buildDrawerTile(
+                context,
                 "Registrar Operadores",
                 Icons.app_registration,
                 'registrar_operadores',
