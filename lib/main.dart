@@ -16,6 +16,7 @@ import 'package:tuprocesoya/src/colors/colors.dart';
 import 'package:tuprocesoya/widgets/analisis_preliminar/reporte_beneficios.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
+import 'Pages/Inpec/home_inpec.dart';
 import 'Pages/administrador/atender_ solicitud_redenciones/atender_ solicitud_redenciones.dart';
 import 'Pages/administrador/atender_apelacion/atender_apelacion.dart';
 import 'Pages/administrador/atender_asignacion_jep/atender_asignacion_jep.dart';
@@ -294,6 +295,9 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_general_admin': (context) => const TodasLasSolicitudesAdminPage(),
         'filtrado_inicial_page_admin': (context) => const CalculoCondenaPage(),
         'reporte_beneficios_page_admin': (context) => const ReporteBeneficiosINPECPage(),
+
+        //INPEC
+        'inpec_home': (context) => const PanelJuridicaPenitenciariaHomePage(), // Página principal
 
 
         //Usuario

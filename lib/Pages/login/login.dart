@@ -264,96 +264,133 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // 🔹 1) Verifica si es administrador
-    final adminDoc =
-    await FirebaseFirestore.instance.collection('admin').doc(userId).get();
+    try {
+      // =========================
+      // 1) ADMIN
+      // =========================
+      final adminDoc =
+      await FirebaseFirestore.instance.collection('admin').doc(userId).get();
 
-    if (adminDoc.exists) {
-      // ✅ Validar si está bloqueado
-      final status = adminDoc.data()?['status']?.toString().trim();
-      if (status == 'bloqueado') {
-        if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
+      if (adminDoc.exists) {
+        final status = adminDoc.data()?['status']?.toString().trim();
+        if (status == 'bloqueado') {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
+          }
+          return;
         }
-        if (mounted) setState(() => _isLoading = false);
+
+        await AdminProvider().loadAdminData();
+        final role = (AdminProvider().rol ?? "").trim();
+        final roleNorm = role.toLowerCase();
+
+        if (roleNorm == "pasante 1" || roleNorm == "pasante 2") {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              'historial_solicitudes_derecho_peticion_admin',
+                  (route) => false,
+            );
+          }
+          return;
+        }
+
+        if (roleNorm == "filtrado") {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              'filtrado_inicial_page_admin',
+                  (route) => false,
+            );
+          }
+          return;
+        }
+
+        if (context.mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
+        }
         return;
       }
 
-      // ✅ Cargar rol del admin
-      await AdminProvider().loadAdminData();
-      final role = (AdminProvider().rol ?? "").trim();
-      final roleNorm = role.toLowerCase();
+      // =========================
+      // 2) INPEC (NUEVO)
+      // =========================
+      final inpecDoc =
+      await FirebaseFirestore.instance.collection('inpec').doc(userId).get();
 
-      print("Rol obtenido en login: $role");
+      if (inpecDoc.exists) {
+        final data = inpecDoc.data() as Map<String, dynamic>;
+        final status = (data['status'] ?? '').toString().trim();
+        final rolInpec = (data['rol'] ?? '').toString().trim().toLowerCase();
 
-      // ✅ Ruteo por rol
-      if (roleNorm == "pasante 1" || roleNorm == "pasante 2") {
+        if (status == 'bloqueado') {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
+          }
+          return;
+        }
+
+        // ✅ Ruteo INPEC por rol (por ahora solo oficinaJuridica)
+        if (rolInpec == 'oficinajuridica') {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              'inpec_home', // 👈 crea esta ruta para el panel INPEC
+                  (route) => false,
+            );
+          }
+          return;
+        }
+
+        // fallback si no coincide el rol
         if (context.mounted) {
           Navigator.pushNamedAndRemoveUntil(
             context,
-            'historial_solicitudes_derecho_peticion_admin',
+            'inpec_home',
                 (route) => false,
           );
         }
-        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
-      // ✅ NUEVO: rol "filtrado" entra directo a Filtrado inicial
-      if (roleNorm == "filtrado") {
-        if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            'filtrado_inicial_page_admin',
-                (route) => false,
-          );
+      // =========================
+      // 3) USUARIO NORMAL (Ppl)
+      // =========================
+      final userDoc =
+      await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+        final status = data['status']?.toString().trim() ?? "";
+
+        if (status == 'bloqueado') {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
+          }
+          return;
         }
-        if (mounted) setState(() => _isLoading = false);
-        return;
-      }
 
-      // ✅ resto de admins
-      if (context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
-      }
-      if (mounted) setState(() => _isLoading = false);
-      return;
-    }
-
-    // 🔹 2) Si no es admin, buscar en Ppl
-    final userDoc =
-    await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
-
-    if (userDoc.exists) {
-      final data = userDoc.data() as Map<String, dynamic>;
-      final status = data['status']?.toString().trim() ?? "";
-      print("Estado del usuario en Ppl: $status");
-
-      if (status == 'bloqueado') {
-        if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(context, '/bloqueado', (_) => false);
-        }
-        if (mounted) setState(() => _isLoading = false);
-        return;
-      }
-
-      if (status == 'registrado') {
-        if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(
-              context, 'estamos_validando', (route) => false);
+        if (status == 'registrado') {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              'estamos_validando',
+                  (route) => false,
+            );
+          }
+        } else {
+          if (context.mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
+          }
         }
       } else {
         if (context.mounted) {
           Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
         }
       }
-    } else {
-      if (context.mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, 'home', (route) => false);
-      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
-
-    if (mounted) setState(() => _isLoading = false);
   }
 
 
