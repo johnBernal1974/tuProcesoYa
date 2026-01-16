@@ -77,11 +77,20 @@ class SolicitudExitosaReadecuacionRedencionPage extends StatelessWidget {
                 children: [
                   TextSpan(
                     text:
-                    "2. Te informaremos oportunamente sobre el estado y el resultado de tu solicitud.",
+                    "2. Una vez radicada la solicitud, la respuesta depende exclusivamente del juzgado y sus tiempos pueden extenderse por carga laboral, trámites internos o solicitudes de información adicional. ",
+                  ),
+                  TextSpan(
+                    text: "No es posible garantizar una fecha exacta de respuesta.",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(
+                    text:
+                    " Realizaremos seguimiento y te notificaremos cualquier avance relevante en tu proceso.",
                   ),
                 ],
               ),
             ),
+
             const SizedBox(height: 80),
             Center(
               child: ElevatedButton(

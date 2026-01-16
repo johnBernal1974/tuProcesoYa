@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../src/colors/colors.dart';
+import '../../../widgets/info_tiempos_judiciales.dart';
 
 class SolicitarServiciosPage extends StatelessWidget {
   SolicitarServiciosPage({super.key});
@@ -82,6 +83,8 @@ class SolicitarServiciosPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const InfoTiemposJudiciales(),
+                const SizedBox(height: 24),
                 const Text(
                   'Selecciona el servicio que deseas solicitar:',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),

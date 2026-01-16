@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../commons/main_layaout.dart';
 import '../../../src/colors/colors.dart';
+import '../../../widgets/info_tiempos_judiciales.dart';
 
 class HistorialSolicitudesPage extends StatelessWidget {
   HistorialSolicitudesPage({super.key});
@@ -74,35 +75,30 @@ class HistorialSolicitudesPage extends StatelessWidget {
       "icon": Icons.rate_review,
       "route": "historial_solicitudes_apelacion",
     },
-
     {
       "collection": "readecuacion_solicitados",
       "title": "Readecuación de redención\n Art. 19 - ley 2466 de 2025",
       "icon": Icons.calculate_sharp,
       "route": "historial_solicitudes_readecuacion_redenciones",
     },
-
     {
       "collection": "trasladoPenitenciaria_solicitados",
       "title": "Traslado\nPenitenciaria",
       "icon": Icons.door_back_door_outlined,
       "route": "historial_solicitudes_trasladoPenitenciaria",
     },
-
     {
       "collection": "copiaSentencia_solicitados",
       "title": "Copia de\nSentencia",
       "icon": Icons.copy,
       "route": "historial_solicitudes_copiaSentencia",
     },
-
     {
       "collection": "asignacionJEP_solicitados",
       "title": "Asignación de juzgado\nde ejecución de penas",
       "icon": Icons.assistant_direction_sharp,
       "route": "historial_solicitudes_asignacionJep",
     },
-
     {
       "collection": "desistimiento_apelacion_solicitados",
       "title": "Desistimiento\nde Apelación",
@@ -111,31 +107,13 @@ class HistorialSolicitudesPage extends StatelessWidget {
     },
   ];
 
-  Future<List<Map<String, dynamic>>> _obtenerSolicitudes(String userId) async {
-    final firestore = FirebaseFirestore.instance;
-    List<Map<String, dynamic>> resultado = [];
-
-    for (var config in _solicitudesConfig) {
-      final snapshot = await firestore
-          .collection(config["collection"])
-          .where('idUser', isEqualTo: userId)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        resultado.add(config);
-      }
-    }
-
-    return resultado;
-  }
-
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth >= 1000
-        ? 3
-        : screenWidth >= 600
+
+    final crossAxisCount = screenWidth >= 1200
+        ? 4
+        : screenWidth >= 900
         ? 3
         : 2;
 
@@ -149,8 +127,6 @@ class HistorialSolicitudesPage extends StatelessWidget {
                 .where('idUser', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
                 .limit(1)
                 .get();
-
-            print('Consulta a colección ${config['collection']}: ${querySnapshot.docs.length} documentos encontrados');
 
             return {
               "config": config,
@@ -166,55 +142,76 @@ class HistorialSolicitudesPage extends StatelessWidget {
           final results = snapshot.data!;
           final filteredConfigs = results.where((r) => r['hasData'] == true).toList();
 
-          print('Total de colecciones con datos: ${filteredConfigs.length}');
-
           if (filteredConfigs.isEmpty) {
-            return const Center(
-              child: Text("No tienes solicitudes registradas."),
-            );
+            return const Center(child: Text("No tienes solicitudes registradas."));
           }
 
-          return Center( // 🔹 Centra el contenido
-            child: ConstrainedBox( // 🔹 Limita ancho máximo
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: GridView.count(
-                    crossAxisCount: crossAxisCount,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    children: filteredConfigs.map((result) {
-                      final config = result['config'] as Map<String, dynamic>;
-                      return _buildCard(
-                        context,
-                        config['icon'],
-                        config['title'],
-                        config['route'],
-                        blanco,
-                      );
-                    }).toList(),
+          // ✅ Clave: darle altura acotada al Column para que Expanded funcione
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              return Align(
+                alignment: Alignment.topCenter, // arriba, no centrado verticalmente
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1000),
+                  child: SizedBox(
+                    height: constraints.maxHeight, // 👈 esto habilita Expanded
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 🔔 SIEMPRE VISIBLE (no se mueve)
+                        const InfoTiemposJudiciales(),
+
+                        // ✅ El grid es lo único que hace scroll
+                        Expanded(
+                          child: SingleChildScrollView(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              child: GridView.count(
+                                crossAxisCount: crossAxisCount,
+                                crossAxisSpacing: 6,
+                                mainAxisSpacing: 6,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                children: filteredConfigs.map((result) {
+                                  final config = result['config'] as Map<String, dynamic>;
+                                  return _buildCard(
+                                    context,
+                                    config['icon'],
+                                    config['title'],
+                                    config['route'],
+                                    blanco,
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
       ),
     );
   }
 
-
-  Widget _buildCard(BuildContext context, IconData icon, String titulo, String ruta, Color color) {
+  Widget _buildCard(
+      BuildContext context,
+      IconData icon,
+      String titulo,
+      String ruta,
+      Color color,
+      ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isMobile = screenWidth < 600;
 
-    final double iconSize = isMobile ? 34.0 : 34.0;
-    final double fontSize = isMobile ? 12.0 : 16.0;
-    final double padding = isMobile ? 12.0 : 18.0;
-    final double margin = isMobile ? 6.0 : 12.0;
+    final double iconSize = isMobile ? 24.0 : 26.0;
+    final double fontSize = isMobile ? 10.8 : 12.5;
+    final double padding = isMobile ? 10.0 : 12.0;
+    final double margin = isMobile ? 3.0 : 4.0;
 
     return GestureDetector(
       onTap: () => navegar(context, ruta),
@@ -223,28 +220,30 @@ class HistorialSolicitudesPage extends StatelessWidget {
         margin: EdgeInsets.all(margin),
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
           boxShadow: const [
             BoxShadow(
               color: Colors.black12,
-              blurRadius: 4,
-              offset: Offset(0, 2),
+              blurRadius: 2,
+              offset: Offset(0, 1),
             ),
           ],
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: iconSize, color: Colors.black54),
-              const SizedBox(height: 10),
-              Text(
-                titulo,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.w600),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: iconSize, color: Colors.black54),
+            const SizedBox(height: 6),
+            Text(
+              titulo,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w600,
+                height: 1.05,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

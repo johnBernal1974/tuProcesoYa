@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tuprocesoya/src/colors/colors.dart';
 
 import '../../widgets/html_video_player.dart';
+import '../../widgets/info_tiempos_judiciales.dart';
 import '../../widgets/preguntas_expandibles.dart';
 import '../../widgets/red_ppl.dart';
 import '../../widgets/redes_sociales.dart';
@@ -48,6 +49,10 @@ class InfoPage extends StatelessWidget {
                 child: RedesSocialesWidget(),
               ),
             ),
+            const SizedBox(height: 30),
+            Container(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: const InfoTiemposJudiciales()),
             const SizedBox(height: 30),
 
             /// tarjeta que habla de la ley 2466 de 2025

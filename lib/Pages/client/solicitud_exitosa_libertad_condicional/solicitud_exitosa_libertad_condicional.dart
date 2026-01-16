@@ -83,14 +83,15 @@ class SolicitudExitosaLibertadCondicionalPage extends StatelessWidget {
                 children: [
                   TextSpan(
                     text:
-                    "2. Una vez radicada la presente solicitud, el juez debe emitir una decisión en un plazo máximo de ",
+                    "2. Una vez radicada la solicitud, la respuesta depende exclusivamente del juzgado y sus tiempos pueden extenderse por carga laboral, trámites internos o solicitudes de información adicional. ",
                   ),
                   TextSpan(
-                    text: "20 días hábiles.",
+                    text: "No es posible garantizar una fecha exacta de respuesta.",
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
                   TextSpan(
-                    text: " Te notificaremos cualquier avance relevante en tu proceso.",
+                    text:
+                    " Realizaremos seguimiento y te notificaremos cualquier avance relevante en tu proceso.",
                   ),
                 ],
               ),
