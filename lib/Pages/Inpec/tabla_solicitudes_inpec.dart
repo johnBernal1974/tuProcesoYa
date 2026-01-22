@@ -185,37 +185,50 @@ class _SolicitudesBeneficioTablePageState extends State<SolicitudesBeneficioTabl
                               // ✅ ID del solicitante en la solicitud: "id"
                               final pplId = (m['idUser'] ?? '').toString();
 
+
                               // ✅ Fecha solicitud viene de "fecha"
                               final fechaSolicitud = _fmtDateTime(m['fecha']);
-                              final fechaRevision = _fmtDateTime(m['fecha_revision']);
-                              final fechaRespuesta = _fmtDateTime(m['fecha_respuesta']);
 
-                              final estadoColor = _estadoColor(status);
-                              final filaColor = _filaColor(status);
+                              final fechaBase = _toDate(m['fecha'])!;
+                              final fechaRevision = _toDate(m['fecha_revision_inpec']);
+                              final fechaRespuesta = _toDate(m['fecha_respuesta_inpec']);
+
+                              final estadoColor = _estadoColor(
+                                status: status,
+                                fechaBase: fechaBase,
+                                fechaRevision: fechaRevision,
+                                fechaRespuesta: fechaRespuesta,
+                              );
+
 
                               return DataRow(
-                                color: MaterialStatePropertyAll(filaColor),
                                 cells: [
                                   DataCell(
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 10,
-                                          height: 10,
-                                          decoration: BoxDecoration(
-                                            color: estadoColor,
-                                            shape: BoxShape.circle,
+                                    Padding(
+                                      padding: EdgeInsets.zero,
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 15,
+                                            height: 15,
+                                            decoration: BoxDecoration(
+                                              color: estadoColor, // 🔥 el estado se comunica solo con el punto
+                                              shape: BoxShape.circle,
+                                            ),
                                           ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Expanded(
-                                          child: Text(
-                                            status,
-                                            style: const TextStyle(fontSize: 11),
-                                            overflow: TextOverflow.ellipsis,
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Text(
+                                              status,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
                                   ),
 
@@ -240,16 +253,60 @@ class _SolicitudesBeneficioTablePageState extends State<SolicitudesBeneficioTabl
                                           final nombre = (ppl['nombre_ppl'] ?? '').toString().trim();
                                           final apellido = (ppl['apellido_ppl'] ?? '').toString().trim();
                                           final full = ('$nombre $apellido').trim();
-                                          return Text(
-                                            full.isEmpty ? '-' : full,
-                                            style: const TextStyle(fontSize: 11),
-                                            overflow: TextOverflow.ellipsis,
+
+                                          final documento = (ppl['numero_documento_ppl'] ?? '')
+                                              .toString()
+                                              .trim();
+
+                                          return Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Text(
+                                                full.isEmpty ? '-' : full,
+                                                style: const TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                                maxLines: 1,
+                                              ),
+                                              const SizedBox(height: 2),
+                                              RichText(
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                text: documento.isEmpty
+                                                    ? const TextSpan(
+                                                  text: '-',
+                                                  style: TextStyle(fontSize: 12, color: Colors.black),
+                                                )
+                                                    : TextSpan(
+                                                  children: [
+                                                    const TextSpan(
+                                                      text: 'No. Identificación: ',
+                                                      style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: Colors.black,
+                                                        fontWeight: FontWeight.normal,
+                                                      ),
+                                                    ),
+                                                    TextSpan(
+                                                      text: documento,
+                                                      style: const TextStyle(
+                                                        fontSize: 12,
+                                                        color: Colors.black,
+                                                        fontWeight: FontWeight.w700, // 🔥 solo el número en negrilla
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
                                           );
                                         },
                                       ),
                                     ),
                                   ),
-
                                   // ✅ NUI desde Ppl
                                   DataCell(
                                     SizedBox(
@@ -297,27 +354,42 @@ class _SolicitudesBeneficioTablePageState extends State<SolicitudesBeneficioTabl
                                     ),
                                   ),
 
-                                  DataCell(
-                                    SizedBox(
-                                      width: 150,
-                                      child: Text(
-                                        fechaRevision.isEmpty ? 'Pendiente' : fechaRevision,
-                                        style: const TextStyle(fontSize: 11),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
+                                  _celdaEstadoPorTiempo(
+                                    fechaBase: fechaBase,
+                                    fechaNodo: m['fecha_revision_inpec'],
+                                    horasLimite: 48,
+                                    width: 150,
                                   ),
 
-                                  DataCell(
-                                    SizedBox(
-                                      width: 160,
-                                      child: Text(
-                                        fechaRespuesta.isEmpty ? 'Pendiente' : fechaRespuesta,
-                                        style: const TextStyle(fontSize: 11),
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
+                                  _celdaEstadoPorTiempo(
+                                    fechaBase: fechaBase,
+                                    fechaNodo: m['fecha_respuesta_inpec'],
+                                    horasLimite: 96,
+                                    width: 160,
                                   ),
+
+
+                                  // DataCell(
+                                  //   SizedBox(
+                                  //     width: 150,
+                                  //     child: Text(
+                                  //       fechaRevision.isEmpty ? 'Pendiente' : fechaRevision,
+                                  //       style: const TextStyle(fontSize: 11),
+                                  //       overflow: TextOverflow.ellipsis,
+                                  //     ),
+                                  //   ),
+                                  // ),
+                                  //
+                                  // DataCell(
+                                  //   SizedBox(
+                                  //     width: 160,
+                                  //     child: Text(
+                                  //       fechaRespuesta.isEmpty ? 'Pendiente' : fechaRespuesta,
+                                  //       style: const TextStyle(fontSize: 11),
+                                  //       overflow: TextOverflow.ellipsis,
+                                  //     ),
+                                  //   ),
+                                  // ),
                                 ],
                               );
                             }).toList(),
@@ -346,22 +418,106 @@ class _SolicitudesBeneficioTablePageState extends State<SolicitudesBeneficioTabl
     return f.format(dt);
   }
 
-  static Color _estadoColor(String status) {
+  Color _estadoColor({
+    required String status,
+    required DateTime fechaBase,
+    DateTime? fechaRevision,
+    DateTime? fechaRespuesta,
+  }) {
     final s = status.trim().toLowerCase();
-    if (s == 'solicitado') return Colors.amber;
-    if (s == 'respondido' || s == 'enviado') return Colors.green;
-    if (s == 'vencido') return Colors.red;
-    if (s == 'retrasado') return Colors.blue;
+
+    // 1️⃣ Solicitado siempre amarillo
+    if (s == 'solicitado') {
+      return Colors.amber;
+    }
+
+    final paso48 = _pasoTiempo(fechaBase, 48);
+    final paso96 = _pasoTiempo(fechaBase, 96);
+
+    final tieneRevision = fechaRevision != null;
+    final tieneRespuesta = fechaRespuesta != null;
+
+    // 4️⃣ VENCIDO (rojo)
+    if ((paso48 && !tieneRevision) || (paso96 && !tieneRespuesta)) {
+      return Colors.red;
+    }
+
+    // 3️⃣ RETRASADO (azul)
+    if ((paso48 && tieneRevision) || (paso96 && tieneRespuesta)) {
+      return Colors.blue;
+    }
+
+    // 2️⃣ OK / EN TIEMPO (verde)
+    if (tieneRevision && tieneRespuesta && !paso48 && !paso96) {
+      return Colors.green;
+    }
+
+    // fallback
     return Colors.grey;
   }
 
-  static Color _filaColor(String status) {
-    final s = status.trim().toLowerCase();
-    if (s == 'solicitado') return const Color(0xFFFFF3CD);
-    if (s == 'respondido' || s == 'enviado') return const Color(0xFFD4EDDA);
-    if (s == 'vencido') return const Color(0xFFF8D7DA);
-    if (s == 'retrasado') return const Color(0xFFD1ECF1);
-    return Colors.white;
+
+  //helpers de filtrado de estados de envio
+
+
+  DateTime? _toDate(dynamic v) {
+    if (v == null) return null;
+    if (v is Timestamp) return v.toDate();
+    if (v is DateTime) return v;
+    return null;
+  }
+  bool _pasoTiempo(DateTime base, int horas) {
+    return DateTime.now().difference(base).inHours > horas;
+  }
+
+  bool _vencioDesde(DateTime? fechaBase, int horasLimite) {
+    if (fechaBase == null) return false;
+    final limite = fechaBase.add(Duration(hours: horasLimite));
+    return DateTime.now().isAfter(limite);
+  }
+
+  DataCell _celdaEstadoPorTiempo({
+    required DateTime? fechaBase,
+    required dynamic fechaNodo,        // m['fecha_revision'] o m['fecha_respuesta']
+    required int horasLimite,          // 48 o 96
+    required double width,
+  }) {
+    final dtNodo = _toDate(fechaNodo);
+    final tieneDato = dtNodo != null;
+
+    final vencido = _vencioDesde(fechaBase, horasLimite);
+
+    Color bg;
+    String texto;
+
+    if (vencido) {
+      bg = const Color(0xFFF8D7DA); // rojo suave
+      texto = tieneDato ? _fmtDateTime(dtNodo) : 'Vencido';
+    } else {
+      if (!tieneDato) {
+        bg = const Color(0xFFFFF3CD); // amarillo suave
+        texto = 'Pendiente';
+      } else {
+        bg = Colors.white;
+        texto = _fmtDateTime(dtNodo);
+      }
+    }
+
+    return DataCell(
+      Container(
+        width: width,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          texto,
+          style: const TextStyle(fontSize: 11),
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    );
   }
 }
 

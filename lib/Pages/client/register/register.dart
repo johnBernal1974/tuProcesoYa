@@ -1780,6 +1780,7 @@ class _RegistroPageState extends State<RegistroPage> {
         "direccion": direccionPplController.text.trim(),
         "pin_respaldo": sha256.convert(utf8.encode(pin)).toString(),
         "referidoPor": codigoReferidor,
+        "programa": "general",
       };
 
       // Paso 1: Guardar todos los datos excepto versión
@@ -2353,12 +2354,6 @@ class _RegistroPageState extends State<RegistroPage> {
           'regional': regionalId,
         };
       }).toList();
-      //
-      // for (var centro in fetchedTodosCentros) {
-      //   if (kDebugMode) {
-      //     print("🔹 Centros obtenidos");
-      //   }
-      // }
 
       // 🔥 Solo actualiza el estado si los datos han cambiado
       if (centrosReclusionTodos.isEmpty || fetchedTodosCentros.length != centrosReclusionTodos.length) {

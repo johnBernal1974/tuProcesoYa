@@ -25,6 +25,7 @@ import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV2.dart';
 import '../../../widgets/envio_correo_managerV3.dart';
+import '../../../widgets/envio_correo_managerV6.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -2363,96 +2364,118 @@ Adicionalmente, Honorable Juez, quiero expresar que asumo este permiso, de ser c
         // HTML principal que también usaremos como "ultimoHtmlEnviado"
         final String htmlGenerado = permiso72horas.generarTextoHtml();
 
-        final envioCorreoManager = EnvioCorreoManagerV3();
+        final envioCorreoManager = EnvioCorreoManagerV6();
 
-        await envioCorreoManager.enviarCorreoCompleto(
-          context: context,
-          correoDestinoPrincipal: correoSeleccionado!,
-          html: htmlGenerado,
-          numeroSeguimiento: permiso72horas.numeroSeguimiento,
-          nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
-          celularWhatsapp: userData?.celularWhatsapp,
-          rutaHistorial: 'historial_solicitudes_permiso_72horas_admin',
-          nombreServicio: "Permiso de 72 Horas",
+        // Lee la solicitud para obtener la cédula del acudiente
+        final snap = await FirebaseFirestore.instance
+            .collection("permiso_solicitados")        // usa la colección que corresponda a esa página
+            .doc(widget.idDocumento)
+            .get();
 
-          // IDs
-          idDocumentoSolicitud: widget.idDocumento,
-          idDocumentoPpl: widget.idUser,
+        final dataSol = snap.data() ?? {};
+        final String identificacionAcudiente =
+        (dataSol['cedula_responsable'] ?? '').toString().trim();
 
-          // Datos para prefacio centro
-          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
-          nombrePpl: userData?.nombrePpl ?? '',
-          apellidoPpl: userData?.apellidoPpl ?? '',
-          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
-          nui: userData?.nui ?? '',
-          td: userData?.td ?? '',
-          patio: userData?.patio ?? '',
-          beneficioPenitenciario: "Permiso de 72 Horas",
-          juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
+        if(context.mounted){
+          await envioCorreoManager.enviarCorreoCompleto(
+            context: context,
+            correoDestinoPrincipal: correoSeleccionado!,
+            html: htmlGenerado,
+            numeroSeguimiento: permiso72horas.numeroSeguimiento,
 
-          // Rutas de guardado
-          nombrePathStorage: "permiso",
-          nombreColeccionFirestore: "permiso_solicitados",
 
-          // Resend adapter (asunto y prefacio vienen del manager)
-          enviarCorreoResend: ({
-            required String correoDestino,
-            String? asuntoPersonalizado,
-            String? prefacioHtml,
-          }) async {
-            await enviarCorreoResend(
-              correoDestino: correoDestino,
-              asuntoPersonalizado: asuntoPersonalizado ?? "Solicitud de Permiso de 72 horas – ${permiso72horas.numeroSeguimiento}",
-              prefacioHtml: prefacioHtml,
-            );
-          },
+            nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+            apellidoAcudiente: userData?.apellidoAcudiente ?? "",
+            parentescoAcudiente: userData?.parentescoRepresentante ?? "Familiar",
+            identificacionAcudiente: identificacionAcudiente,
+            celularAcudiente: userData?.celular,
 
-          // Guardado HTML (firma V3)
-          subirHtml: ({
-            required String tipoEnvio,
-            required String htmlFinal,
-            required String nombreColeccionFirestore,
-            required String nombrePathStorage,
-          }) async {
-            await subirHtmlCorreoADocumentoPermiso72Horas(
-              idDocumento: widget.idDocumento,
-              htmlFinal: htmlFinal,
-              tipoEnvio: tipoEnvio,
-            );
-          },
 
-          // Esto se cita en centro/reparto si corresponde
-          ultimoHtmlEnviado: htmlGenerado,
+            celularWhatsapp: userData?.celularWhatsapp,
 
-          // Selectores
-          buildSelectorCorreoCentroReclusion: ({
-            required Function(String correo, String nombreCentro) onEnviarCorreo,
-            required Function() onOmitir,
-          }) {
-            return SeleccionarCorreoCentroReclusionV2(
-              idUser: widget.idUser,
-              onEnviarCorreo: onEnviarCorreo,
-              onOmitir: onOmitir,
-            );
-          },
-          buildSelectorCorreoReparto: ({
-            required Function(String correo, String entidad) onCorreoValidado,
-            required Function(String nombreCiudad) onCiudadNombreSeleccionada,
-            required Function(String correo, String entidad) onEnviarCorreoManual,
-            required Function() onOmitir,
-          }) {
-            return SelectorCorreoManualFlexible(
-              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas',
-              onCorreoValidado: onCorreoValidado,
-              onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
-              onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: onOmitir,
-            );
-          },
+            rutaHistorial: 'historial_solicitudes_permiso_72horas_admin',
+            nombreServicio: "Permiso de 72 Horas",
 
-          // Opcional: permitir omitir el envío principal
-          permitirOmitirPrincipal: true,
-        );
+            // IDs
+            idDocumentoSolicitud: widget.idDocumento,
+            idDocumentoPpl: widget.idUser,
+
+            // Datos para prefacio centro
+            centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+            nombrePpl: userData?.nombrePpl ?? '',
+            apellidoPpl: userData?.apellidoPpl ?? '',
+            identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+            nui: userData?.nui ?? '',
+            td: userData?.td ?? '',
+            patio: userData?.patio ?? '',
+            beneficioPenitenciario: "Permiso de 72 Horas",
+            juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
+
+            // Rutas de guardado
+            nombrePathStorage: "permiso",
+            nombreColeccionFirestore: "permiso_solicitados",
+
+            // Resend adapter (asunto y prefacio vienen del manager)
+            enviarCorreoResend: ({
+              required String correoDestino,
+              String? asuntoPersonalizado,
+              String? prefacioHtml,
+            }) async {
+              await enviarCorreoResend(
+                correoDestino: correoDestino,
+                asuntoPersonalizado: asuntoPersonalizado ?? "Solicitud de Permiso de 72 horas – ${permiso72horas.numeroSeguimiento}",
+                prefacioHtml: prefacioHtml,
+              );
+            },
+
+            // Guardado HTML (firma V3)
+            subirHtml: ({
+              required String tipoEnvio,
+              required String htmlFinal,
+              required String nombreColeccionFirestore,
+              required String nombrePathStorage,
+            }) async {
+              await subirHtmlCorreoADocumentoPermiso72Horas(
+                idDocumento: widget.idDocumento,
+                htmlFinal: htmlFinal,
+                tipoEnvio: tipoEnvio,
+              );
+            },
+
+            // Esto se cita en centro/reparto si corresponde
+            ultimoHtmlEnviado: htmlGenerado,
+
+            // Selectores
+            buildSelectorCorreoCentroReclusion: ({
+              required Function(String correo, String nombreCentro) onEnviarCorreo,
+              required Function() onOmitir,
+            }) {
+              return SeleccionarCorreoCentroReclusionV2(
+                idUser: widget.idUser,
+                onEnviarCorreo: onEnviarCorreo,
+                onOmitir: onOmitir,
+              );
+            },
+            buildSelectorCorreoReparto: ({
+              required Function(String correo, String entidad) onCorreoValidado,
+              required Function(String nombreCiudad) onCiudadNombreSeleccionada,
+              required Function(String correo, String entidad) onEnviarCorreoManual,
+              required Function() onOmitir,
+            }) {
+              return SelectorCorreoManualFlexible(
+                entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas',
+                onCorreoValidado: onCorreoValidado,
+                onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
+                onEnviarCorreoManual: onEnviarCorreoManual,
+                onOmitir: onOmitir,
+              );
+            },
+
+            // Opcional: permitir omitir el envío principal
+            permitirOmitirPrincipal: true,
+          );
+        }
+
       },
       child: const Text("Enviar por correo"),
     );
