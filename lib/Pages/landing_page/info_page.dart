@@ -96,8 +96,9 @@ class InfoPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
                           const Text(
-                            '¡Atención! Ya puedes invocar el beneficio del artículo 19: redime 2 días de condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
-                                'Aún falta reglamentación del Ministerio de Trabajo, pero puedes anticipar tu solicitud con base en el principio de favorabilidad.',
+                            '¡Atención! El artículo 19 de la Ley 2466 de 2025 establece que las actividades certificadas de trabajo desarrolladas por las personas privadas de la libertad permiten la redención de pena, abonando dos (2) días de reclusión por cada tres (3) días de actividad. '
+                                'La jurisprudencia ha aclarado que este beneficio no puede aplicarse de manera restrictiva, sino que se extiende igualmente a las actividades de estudio y enseñanza, al compartir la misma finalidad resocializadora. '
+                                'El beneficio puede invocarse con fundamento en el principio de igualdad y el principio de favorabilidad.',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 12,
@@ -105,6 +106,7 @@ class InfoPage extends StatelessWidget {
                               height: 1.5,
                             ),
                           ),
+
                           const SizedBox(height: 12),
                           TextButton.icon(
                             icon: const Icon(Icons.info_outline, color: Colors.deepPurple),
@@ -132,11 +134,12 @@ class InfoPage extends StatelessWidget {
                                           ),
                                           SizedBox(height: 16),
                                           Text(
-                                            'Desde el 25 de junio de 2025, está vigente un nuevo beneficio para personas condenadas. El artículo 19 permite redimir 2 días de la condena por cada 3 días de trabajo certificado dentro del centro penitenciario. '
-                                                'Aunque falta el decreto reglamentario del Ministerio de Trabajo (que debe expedirse antes de diciembre de 2025), ya puedes presentar tu solicitud anticipada bajo el principio de favorabilidad.',
+                                            'Desde el 25 de junio de 2025 se encuentra vigente un nuevo beneficio para las personas condenadas. El artículo 19 de la Ley 2466 de 2025 permite la redención de pena por actividades certificadas realizadas dentro del establecimiento penitenciario, abonando dos (2) días de condena por cada tres (3) días de actividad. '
+                                                'La jurisprudencia ha aclarado que este beneficio se aplica al trabajo, al estudio y a la enseñanza con base en el principio de favorabilidad y de igualdad.',
                                             style: TextStyle(fontSize: 12),
                                             textAlign: TextAlign.justify,
                                           ),
+
                                           SizedBox(height: 16),
                                           Text(
                                             'Este es el momento de actuar. Regístrate en nuestra plataforma y deja constancia de tu intención de acogerte a este beneficio.',

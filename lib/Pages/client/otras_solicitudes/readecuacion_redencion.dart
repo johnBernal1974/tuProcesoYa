@@ -77,6 +77,28 @@ class _SolicitudReadecuacionRedencionPageState extends State<SolicitudReadecuaci
                     ),
                   ),
                   const SizedBox(height: 10),
+                  RichText(
+                    textAlign: TextAlign.justify,
+                    text: const TextSpan(
+                      style: textoNormal,
+                      children: [
+                        TextSpan(
+                          text:
+                          'De igual forma, la jurisprudencia ha establecido que este beneficio no puede aplicarse de manera restrictiva, ',
+                        ),
+                        TextSpan(
+                          text: 'extendiéndose también a las actividades de estudio y enseñanza',
+                          style: textoNegrilla,
+                        ),
+                        TextSpan(
+                          text:
+                          ', en aplicación de los principios de igualdad y favorabilidad, al compartir estas actividades la misma finalidad resocializadora que el trabajo.',
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
 
                   RichText(
                     textAlign: TextAlign.justify,
