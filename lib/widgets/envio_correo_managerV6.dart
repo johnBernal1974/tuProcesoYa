@@ -72,6 +72,10 @@ class EnvioCorreoManagerV6 {
     required String identificacionAcudiente,
     String? celularAcudiente,
 
+    DateTime? periodoDesde,
+    DateTime? periodoHasta,
+
+
     // rutas de guardado
     required String nombrePathStorage,
     required String nombreColeccionFirestore,
@@ -270,6 +274,9 @@ class EnvioCorreoManagerV6 {
                       identificacionAcudiente: identificacionAcudiente,
                       celularAcudiente: celularAcudiente,
                       celularWhatsapp: celularWhatsapp,
+                      periodoDesde: periodoDesde,
+                      periodoHasta: periodoHasta,
+
                     ),
                     mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
                     idDocumentoSolicitud: idDocumentoSolicitud,

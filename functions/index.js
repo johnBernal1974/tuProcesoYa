@@ -1242,7 +1242,7 @@ exports.sendNewSolicitudMessage = functions.https.onRequest(async (req, res) => 
     to: to,
     type: "template",
     template: {
-      name: "envio_mensaje_correo",
+      name: "envio_mensaje_correo2",
       language: { code: "es_CO" },
       components: [
         {

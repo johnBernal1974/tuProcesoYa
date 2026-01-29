@@ -90,6 +90,56 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
 
   bool _incluirRedosificacion = true;
 
+  DateTime? _periodoDesde;
+  DateTime? _periodoHasta;
+
+  Future<void> _pickDesde() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _periodoDesde ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+
+    if (picked == null) return;
+
+    setState(() => _periodoDesde = picked);
+
+    if (_periodoHasta != null && _periodoHasta!.isBefore(_periodoDesde!)) {
+      setState(() {
+        final tmp = _periodoHasta;
+        _periodoHasta = _periodoDesde;
+        _periodoDesde = tmp;
+      });
+    }
+
+    await _guardarPeriodoEnFirestore();
+  }
+
+  Future<void> _pickHasta() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _periodoHasta ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+
+    if (picked == null) return;
+
+    setState(() => _periodoHasta = picked);
+
+    if (_periodoDesde != null && _periodoHasta!.isBefore(_periodoDesde!)) {
+      setState(() {
+        final tmp = _periodoDesde;
+        _periodoDesde = _periodoHasta;
+        _periodoHasta = tmp;
+      });
+    }
+
+    await _guardarPeriodoEnFirestore();
+  }
+
+
   @override
   void initState() {
     // TODO: implement initState
@@ -236,6 +286,11 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
         ),
         const SizedBox(height: 10),
 
+        // ✅ Selector de periodo (solo si NO aplica redosificación)
+        if (!_incluirRedosificacion) _buildSelectorPeriodo(),
+
+        const SizedBox(height: 10),
+
         // ✅ Botón de vista previa
         ElevatedButton(
           style: ElevatedButton.styleFrom(
@@ -281,6 +336,122 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
         return '';
     }
   }
+
+  Widget _buildSelectorPeriodo() {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
+    String fmt(DateTime? d) =>
+        d == null ? "Sin seleccionar" : DateFormat('dd/MM/yyyy').format(d);
+
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Periodo para el cómputo (opcional)",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "Si no seleccionas nada, el escrito no incluirá el periodo.",
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+            const SizedBox(height: 10),
+
+            isMobile
+                ? Column(
+              children: [
+                _btnFecha(
+                  label: "Desde",
+                  value: fmt(_periodoDesde),
+                  onTap: _pickDesde,
+                ),
+                const SizedBox(height: 10),
+                _btnFecha(
+                  label: "Hasta",
+                  value: fmt(_periodoHasta),
+                  onTap: _pickHasta,
+                ),
+              ],
+            )
+                : Row(
+              children: [
+                Expanded(
+                  child: _btnFecha(
+                    label: "Desde",
+                    value: fmt(_periodoDesde),
+                    onTap: _pickDesde,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _btnFecha(
+                    label: "Hasta",
+                    value: fmt(_periodoHasta),
+                    onTap: _pickHasta,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // ✅ Limpiar
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () async {
+                  setState(() {
+                    _periodoDesde = null;
+                    _periodoHasta = null;
+                  });
+                  await _guardarPeriodoEnFirestore();
+                },
+                icon: const Icon(Icons.clear, size: 18),
+                label: const Text("Quitar periodo"),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _btnFecha({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        side: const BorderSide(color: Colors.grey),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
+      onPressed: onTap,
+      child: Row(
+        children: [
+          const Icon(Icons.date_range, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "$label: $value",
+              style: const TextStyle(fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   Color _obtenerColorStatus(String status) {
     switch (status) {
@@ -835,6 +1006,9 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           td: fetchedData.td ?? "",
           patio: fetchedData.patio ?? "",
           incluirRedosificacion: _incluirRedosificacion,
+          // ✅ aquí van los DateTime? (pueden ser null)
+          periodoDesde: _periodoDesde,
+          periodoHasta: _periodoHasta,
         );
         isLoading = false;
       });
@@ -869,6 +1043,13 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
             asignadoA_P2 = data['asignadoA_P2'] ?? '';
             asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
             fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+
+            final desdeTs = data['periodo_desde'] as Timestamp?;
+            final hastaTs = data['periodo_hasta'] as Timestamp?;
+
+            _periodoDesde = desdeTs?.toDate();
+            _periodoHasta = hastaTs?.toDate();
+
           });
         }
       } else {
@@ -1005,6 +1186,8 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           td: userData?.td ?? "",
           patio: userData?.patio ?? "",
           incluirRedosificacion: _incluirRedosificacion,
+          periodoDesde: _periodoDesde,
+          periodoHasta: _periodoHasta,
         );
 
         return Column(
@@ -1089,6 +1272,9 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
       td: userData?.td ?? "",
       patio: userData?.patio ?? "",
       incluirRedosificacion: _incluirRedosificacion,
+
+      periodoDesde: _periodoDesde,
+      periodoHasta: _periodoHasta,
 
     );
 
@@ -1208,6 +1394,10 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
           patio: redenciones.patio,
           incluirRedosificacion: _incluirRedosificacion,
 
+          periodoDesde: _periodoDesde,
+          periodoHasta: _periodoHasta,
+
+
         );
 
         // 2) HTML principal (servirá también como "ultimoHtmlEnviado" para las copias)
@@ -1265,6 +1455,9 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
             patio: userData?.patio ?? '',
             beneficioPenitenciario: "Redención de pena",
             juzgadoEp: userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+            periodoDesde: _periodoDesde,
+            periodoHasta: _periodoHasta,
+
 
             // ✉️ Envío (Resend)
             enviarCorreoResend: ({
@@ -1334,6 +1527,20 @@ class _AtenderSolicitudRedencionesPageState extends State<AtenderSolicitudRedenc
       child: const Text("Enviar por correo"),
     );
   }
+
+  Future<void> _guardarPeriodoEnFirestore() async {
+    if (widget.idDocumento.isEmpty) return;
+
+    await FirebaseFirestore.instance
+        .collection('redenciones_solicitados')
+        .doc(widget.idDocumento)
+        .set({
+      "periodo_desde": _periodoDesde == null ? null : Timestamp.fromDate(_periodoDesde!),
+      "periodo_hasta": _periodoHasta == null ? null : Timestamp.fromDate(_periodoHasta!),
+      "periodo_actualizado_en": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
 
 
   Future<void> subirHtmlCorreoADocumentoSolicitudRedenciones({

@@ -16,11 +16,32 @@ String generarPrefacioCentroReclusionV3({
   required String identificacionAcudiente,
   String? celularAcudiente,
   String? celularWhatsapp,
+
+  // ✅ NUEVO: periodo opcional
+  DateTime? periodoDesde,
+  DateTime? periodoHasta,
+
 }) {
   // Extraer solo la parte después del guion si existe
   String juzgadoLimpio = juzgadoEp.contains('-')
       ? juzgadoEp.split('-')[1].trim()
       : juzgadoEp.trim();
+
+
+  String two(int n) => n.toString().padLeft(2, '0');
+  String fmt(DateTime d) => "${two(d.day)}/${two(d.month)}/${d.year}";
+
+  String periodoHtml() {
+    if (periodoDesde == null && periodoHasta == null) return "";
+    if (periodoDesde != null && periodoHasta != null) {
+      return " correspondiente al periodo <b>del ${fmt(periodoDesde!)} al ${fmt(periodoHasta!)}</b>";
+    }
+    if (periodoDesde != null) {
+      return " correspondiente al periodo <b>desde ${fmt(periodoDesde!)}</b>";
+    }
+    return " correspondiente al periodo <b>hasta ${fmt(periodoHasta!)}</b>";
+  }
+
 
   return """
 <div style="font-family: Arial, sans-serif; font-size: 15px;">
@@ -49,8 +70,11 @@ String generarPrefacioCentroReclusionV3({
   </p><br><br>
 
   <p>
-    Me permito informar que, ha sido presentada ante el <b>$juzgadoLimpio</b>, la solicitud de <b>$beneficioPenitenciario</b>. 
-    Con el fin de que dicho despacho pueda resolver de manera oportuna y conforme a derecho, solicito respetuosamente que se remitan, con carácter urgente, directamente a esa autoridad judicial, los siguientes documentos:
+    Me permito informar que ha sido presentada ante el <b>$juzgadoLimpio</b> la solicitud de 
+  <b>$beneficioPenitenciario</b>${periodoHtml()}.
+  Con el fin de que dicho despacho pueda resolver de manera oportuna y conforme a derecho, 
+  solicito respetuosamente que se remitan, con carácter urgente, directamente a esa autoridad judicial, 
+  los siguientes documentos:
   </p><br>
 
   <ol>
