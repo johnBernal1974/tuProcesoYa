@@ -659,11 +659,11 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                                       ),
 
                                       // 🔍 --- AQUI AGREGAMOS EL WIDGET DE BUSCAR POR CENTRO ---
-                                      SizedBox(
+                                      const SizedBox(
                                         width: 300,
                                         child: Padding(
-                                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                                          child: const BuscarPplPorCentroWidget(),
+                                          padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                                          child: BuscarPplPorCentroWidget(),
                                         ),
                                       ),
 

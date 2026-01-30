@@ -54,6 +54,7 @@ import 'Pages/administrador/historial_transacciones_total_admin/historial_transa
 import 'Pages/administrador/hoistorial_pago_comisiones/hoistorial_pago_comisiones.dart';
 import 'Pages/administrador/home_admin/home_admin.dart';
 import 'Pages/administrador/operadores_page_admin/operadores_page.dart';
+import 'Pages/administrador/ppl_con_beneficios_obtenidos/ppl_con_beneficios_obtenidos.dart';
 import 'Pages/administrador/referidores/agregar_referidores.dart';
 import 'Pages/administrador/referidores/referidores.dart';
 import 'Pages/administrador/registrar_admin/registrar_admin.dart';
@@ -295,6 +296,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_general_admin': (context) => const TodasLasSolicitudesAdminPage(),
         'filtrado_inicial_page_admin': (context) => const CalculoCondenaPage(),
         'reporte_beneficios_page_admin': (context) => const ReporteBeneficiosINPECPage(),
+        'ppl_beneficios_plataforma_page': (context) => const PplBeneficiosPlataformaPage(),
 
         //INPEC
         'inpec_home': (context) => const PanelJuridicaPenitenciariaHomePage(), // Página principal

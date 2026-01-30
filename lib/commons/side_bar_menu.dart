@@ -477,6 +477,10 @@ class _SideBarState extends State<SideBar> {
           _buildDrawerTile(
               context, "Solicitudes general", Icons.table_chart, 'historial_solicitudes_general_admin'),
 
+          _buildDrawerTile(
+              context, "Baneficios Ganados", Icons.star, 'ppl_beneficios_plataforma_page'),
+
+
           ExpansionTile(
             initiallyExpanded: true,
             leading: const Icon(Icons.add_chart, color: Colors.deepPurple),
