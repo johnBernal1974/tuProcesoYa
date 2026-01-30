@@ -23,6 +23,8 @@ class EditarBeneficiosWidget extends StatefulWidget {
 
 class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
 
+
+
   final List<String> _beneficiosDisponibles = [
 
     "Permiso de 72h",
@@ -41,6 +43,9 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
 
   late List<String> _beneficiosAdquiridosSeleccionados;
   late List<String> _beneficiosNegadosSeleccionados;
+
+  bool _permiso72hPrevio = false;
+
 
 
   // nuevo para ctuializar la situcaion cuando se seleecione un beneficioa dquirido
@@ -68,6 +73,8 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
     super.initState();
     _beneficiosAdquiridosSeleccionados = List<String>.from(widget.beneficiosAdquiridosInicial);
     _beneficiosNegadosSeleccionados = List<String>.from(widget.beneficiosNegadosInicial);
+
+    _cargarPermiso72hPrevio();
   }
 
   //para tomar el nombre del admin que hace el cambio o la seleccion
@@ -89,27 +96,32 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
     return "$nombre $apellido".trim();
   }
 
+  Future<void> _cargarPermiso72hPrevio() async {
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection("Ppl")
+          .doc(widget.pplId)
+          .get();
 
-  // Future<void> _guardarCambios() async {
-  //   try {
-  //     await FirebaseFirestore.instance.collection("Ppl").doc(widget.pplId).update({
-  //       "beneficiosAdquiridos": _beneficiosAdquiridosSeleccionados,
-  //       "beneficiosNegados": _beneficiosNegadosSeleccionados,
-  //     });
-  //
-  //     if (context.mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(content: Text("Beneficios actualizados exitosamente.")),
-  //       );
-  //     }
-  //   } catch (e) {
-  //     if (context.mounted) {
-  //       ScaffoldMessenger.of(context).showSnackBar(
-  //         const SnackBar(content: Text("Error al actualizar beneficios.")),
-  //       );
-  //     }
-  //   }
-  // } comentado para guardar estado
+      final data = doc.data() as Map<String, dynamic>?;
+      final bool previo = data?["permiso72hPrevio"] == true;
+
+      if (!mounted) return;
+
+      setState(() {
+        _permiso72hPrevio = previo;
+
+        // ✅ Si es previo, ocultamos la opción y limpiamos selecciones por coherencia
+        if (_permiso72hPrevio) {
+          _beneficiosAdquiridosSeleccionados.remove("Permiso de 72h");
+          _beneficiosNegadosSeleccionados.remove("Permiso de 72h");
+        }
+      });
+    } catch (_) {
+      // si falla, no bloqueamos nada (se queda false)
+    }
+  }
+
 
 
   Future<void> _guardarCambios() async {
@@ -280,6 +292,10 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final beneficiosVisibles = _permiso72hPrevio
+        ? _beneficiosDisponibles.where((b) => b != "Permiso de 72h").toList()
+        : _beneficiosDisponibles;
+
     return Card(
       surfaceTintColor: Colors.amber.shade600,
       margin: const EdgeInsets.only(bottom: 20),
@@ -298,8 +314,9 @@ class _EditarBeneficiosWidgetState extends State<EditarBeneficiosWidget> {
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const Divider(color: gris),
-            ..._beneficiosDisponibles.map((beneficio) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+
+            ...beneficiosVisibles.map((beneficio) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [

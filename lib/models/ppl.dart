@@ -46,6 +46,8 @@ class Ppl {
   final bool exento;
   final List<String> beneficiosAdquiridos;
   final List<String> beneficiosNegados;
+  bool? permiso72hPrevio;
+
 
   Ppl({
     required this.id,
@@ -89,6 +91,7 @@ class Ppl {
     required this.exento,
     required this.beneficiosAdquiridos,
     required this.beneficiosNegados,
+    required this.permiso72hPrevio,
   });
 
   factory Ppl.fromJson(Map<String, dynamic> json) => Ppl(
@@ -153,6 +156,7 @@ class Ppl {
     List<String>.from(json["beneficiosAdquiridos"] ?? []),
     beneficiosNegados:
     List<String>.from(json["beneficiosNegados"] ?? []),
+    permiso72hPrevio: json["permiso72hPrevio"] ?? false,
   );
 
   factory Ppl.fromDocumentSnapshot(DocumentSnapshot doc) {
@@ -219,6 +223,7 @@ class Ppl {
       beneficiosAdquiridos:
       List<String>.from(data["beneficiosAdquiridos"] ?? []),
       beneficiosNegados: List<String>.from(data["beneficiosNegados"] ?? []),
+      permiso72hPrevio: data["permiso72hPrevio"] ?? false,
     );
   }
 
@@ -264,6 +269,7 @@ class Ppl {
     "exento": exento,
     "beneficiosAdquiridos": beneficiosAdquiridos,
     "beneficiosNegados": beneficiosNegados,
+    "permiso72hPrevio": permiso72hPrevio,
   };
 
   // Método auxiliar (opcional)

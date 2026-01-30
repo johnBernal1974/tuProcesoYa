@@ -1484,6 +1484,11 @@ class _HomePageState extends State<HomePage> {
     final bool esExtincion = idBeneficio.toLowerCase().contains("extincion");
     final bool esExento = _ppl?.exento ?? false;
 
+    final bool esPermiso72h = idBeneficio.toLowerCase().trim() == "permiso_72h";
+    final bool permiso72hPrevio = (_ppl?.permiso72hPrevio ?? false) == true;
+    final bool disfrutandoPermiso72h = esPermiso72h && permiso72hPrevio;
+
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -1541,6 +1546,35 @@ class _HomePageState extends State<HomePage> {
             _buildEstadoSolicitud(normalizedStatus!),
           ],
           const SizedBox(height: 4),
+
+          if (disfrutandoPermiso72h) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.green.shade50,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.green.shade200),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.access_time, color: Colors.green, size: 18),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "Disfrutando de este beneficio.",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
           if (negado) ...[
             const SizedBox(height: 4),
             Text(
@@ -1612,6 +1646,7 @@ class _HomePageState extends State<HomePage> {
               !adquirido &&
               !negado &&
               !estaEnProceso &&
+              !disfrutandoPermiso72h &&
               (!esExento || esExtincion)) ...[
             const SizedBox(height: 6),
             Text(
