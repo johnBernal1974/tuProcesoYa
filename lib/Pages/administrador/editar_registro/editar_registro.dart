@@ -29,6 +29,7 @@ import '../../../widgets/exento.dart';
 import '../../../widgets/formulario_estadias_reclusion.dart';
 import '../../../widgets/ingresar_juzgado_conocimiento.dart';
 import '../../../widgets/ingresar_juzgado_ep.dart';
+import '../../../widgets/permiso_72h_previo_card.dart';
 import '../../../widgets/tabla_vista_estadias_reclusion.dart';
 import '../../seguimiento_solicitudes_page.dart';
 import '../home_admin/home_admin.dart';
@@ -736,6 +737,9 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 onPressed: () => _mostrarComentariosSeguimiento(context),
               ),
             ),
+          const SizedBox(height: 20),
+          if (situacion == "Extinción de la pena")
+            infoPenaCumplida(),
           const SizedBox(height: 20),
           Wrap(
             spacing: 20,
@@ -1525,7 +1529,11 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
                 data["situacion"] == "En libertad condicional")
               infoPplNoRecluido(),
 
+            if (data["situacion"] == "Extinción de la pena")
+              infoPenaCumplida(),
+
             const SizedBox(height: 20),
+
             EditarExclusionWidget(
               pplId: data['id'],
               exentoInicial: data['exento'] ?? false,
@@ -1533,7 +1541,8 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             const SizedBox(height: 20),
             _buildRevocacionSwitcher(context),
             const SizedBox(height: 20),
-
+            Permiso72hPrevioCard(pplId: data['id']),
+            const SizedBox(height: 20),
             EditarBeneficiosWidget(
               pplId: data["id"],
               beneficiosAdquiridosInicial: ppl.beneficiosAdquiridos,
@@ -2532,6 +2541,7 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
     );
   }
 
+
   Widget direccionPpl() {
     _direccionController.text = widget.doc['direccion'] ?? ''; // ✅ Asegura valor inicial
     return TextFormField(
@@ -2633,6 +2643,29 @@ class _EditarRegistroPageState extends State<EditarRegistroPage> {
             }
           }
         },
+      ),
+    );
+  }
+
+  Widget infoPenaCumplida() {
+    return Container(
+      width: 300,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: blanco,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: Colors.green, width: 2),
+      ),
+      child: const Center(
+        child: Text(
+          "Pena cumplida",
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            height: 1,
+          ),
+        ),
       ),
     );
   }
