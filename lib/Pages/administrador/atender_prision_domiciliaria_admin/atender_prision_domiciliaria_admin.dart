@@ -30,6 +30,8 @@ import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
+import 'dart:async';
+
 
 class AtenderPrisionDomiciliariaPage extends StatefulWidget {
   final String status;
@@ -134,6 +136,15 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   late CalculoCondenaController _calculoCondenaController;
   String? ultimoHtmlEnviado;
 
+  // new para periodo y notas adicionales del correo al inpec
+  DateTime? _periodoDesde;
+  DateTime? _periodoHasta;
+
+  final TextEditingController _notaAdicionalCentroController = TextEditingController();
+  Timer? _debounceNota;
+
+
+
 
   @override
   void initState() {
@@ -191,6 +202,52 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     }
     archivos = List<String>.from(widget.archivos); // Copia los archivos una vez
   }
+
+  //new para selector de periodo
+  Future<void> _pickDesde() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _periodoDesde ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (picked == null) return;
+
+    setState(() => _periodoDesde = picked);
+
+    if (_periodoHasta != null && _periodoHasta!.isBefore(_periodoDesde!)) {
+      setState(() {
+        final tmp = _periodoHasta;
+        _periodoHasta = _periodoDesde;
+        _periodoDesde = tmp;
+      });
+    }
+
+    await _guardarPeriodoEnFirestore(); // (si lo quieres guardar igual que redenciones)
+  }
+
+  Future<void> _pickHasta() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _periodoHasta ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (picked == null) return;
+
+    setState(() => _periodoHasta = picked);
+
+    if (_periodoDesde != null && _periodoHasta!.isBefore(_periodoDesde!)) {
+      setState(() {
+        final tmp = _periodoDesde;
+        _periodoDesde = _periodoHasta;
+        _periodoHasta = tmp;
+      });
+    }
+
+    await _guardarPeriodoEnFirestore();
+  }
+
 
   String obtenerNombreArchivo(String url) {
     // Decodifica la URL para que %2F se convierta en "/"
@@ -339,6 +396,12 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
                     solicitudData!['hijos'].map((h) => Map<String, String>.from(h)))
                     : [],
               ),
+              const SizedBox(height: 20),
+              _buildSelectorPeriodo(),
+              const SizedBox(height: 10),
+              notaAdicionalConBotonGuardar(),
+              const SizedBox(height: 10),
+
             ],
           ),
 
@@ -524,6 +587,204 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     );
   }
 
+
+
+  Widget notaAdicionalConBotonGuardar() {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    return isMobile
+        ? Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _notaAdicionalCentroController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: 'Anotación adicional para el centro (opcional)',
+            hintText: 'Se incluirá en el correo al centro de reclusión',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton.icon(
+          onPressed: () async {
+            await _guardarNotaCentroEnFirestore();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("✅ Nota guardada")),
+              );
+            }
+          },
+          icon: const Icon(Icons.save),
+          label: const Text("Guardar"),
+        ),
+      ],
+    )
+        : Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _notaAdicionalCentroController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'Anotación adicional para el centro (opcional)',
+              hintText: 'Se incluirá en el correo al centro de reclusión',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          height: 56, // altura similar a un input (aprox)
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              await _guardarNotaCentroEnFirestore();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("✅ Nota guardada")),
+                );
+              }
+            },
+            icon: const Icon(Icons.save),
+            label: const Text("Guardar"),
+          ),
+        ),
+      ],
+    );
+  }
+
+
+  //new para seleccionar periodo
+  Widget _buildSelectorPeriodo() {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
+    String fmt(DateTime? d) =>
+        d == null ? "Sin seleccionar" : DateFormat('dd/MM/yyyy').format(d);
+
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Periodo para el cómputo (opcional)",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "Si no seleccionas nada, el escrito no incluirá el periodo.",
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+            const SizedBox(height: 10),
+
+            isMobile
+                ? Column(
+              children: [
+                _btnFecha(
+                  label: "Desde",
+                  value: fmt(_periodoDesde),
+                  onTap: _pickDesde,
+                ),
+                const SizedBox(height: 10),
+                _btnFecha(
+                  label: "Hasta",
+                  value: fmt(_periodoHasta),
+                  onTap: _pickHasta,
+                ),
+              ],
+            )
+                : Row(
+              children: [
+                Expanded(
+                  child: _btnFecha(
+                    label: "Desde",
+                    value: fmt(_periodoDesde),
+                    onTap: _pickDesde,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _btnFecha(
+                    label: "Hasta",
+                    value: fmt(_periodoHasta),
+                    onTap: _pickHasta,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // ✅ Limpiar
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () async {
+                  setState(() {
+                    _periodoDesde = null;
+                    _periodoHasta = null;
+                  });
+                  await _guardarPeriodoEnFirestore();
+                },
+                icon: const Icon(Icons.clear, size: 18),
+                label: const Text("Quitar periodo"),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _guardarPeriodoEnFirestore() async {
+    if (widget.idDocumento.isEmpty) return;
+
+    await FirebaseFirestore.instance
+        .collection('domiciliaria_solicitados')
+        .doc(widget.idDocumento)
+        .set({
+      "periodo_desde": _periodoDesde == null ? null : Timestamp.fromDate(_periodoDesde!),
+      "periodo_hasta": _periodoHasta == null ? null : Timestamp.fromDate(_periodoHasta!),
+      "periodo_actualizado_en": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+
+
+  Widget _btnFecha({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        side: const BorderSide(color: Colors.grey),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
+      onPressed: onTap,
+      child: Row(
+        children: [
+          const Icon(Icons.date_range, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "$label: $value",
+              style: const TextStyle(fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget infoReparacionVictima({required String reparacion}) {
     final descripciones = {
       "reparado": {
@@ -702,6 +963,8 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     _fundamentosDerechoController.dispose();
     _pretencionesController.dispose();
     _anexosController.dispose();
+    _notaAdicionalCentroController.dispose();
+    _debounceNota?.cancel();
     super.dispose();
   }
 
@@ -1585,6 +1848,16 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
             asignadoA_P2 = data['asignadoA_P2'] ?? '';
             asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
             fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+
+            // ✅ NUEVO: recuperar periodo
+            final desdeTs = data['periodo_desde'] as Timestamp?;
+            final hastaTs = data['periodo_hasta'] as Timestamp?;
+            _periodoDesde = desdeTs?.toDate();
+            _periodoHasta = hastaTs?.toDate();
+
+            // ✅ NUEVO: recuperar nota adicional
+            _notaAdicionalCentroController.text =
+                (data['nota_adicional_centro'] ?? '').toString();
           });
         }
       } else {
@@ -2413,6 +2686,10 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
             beneficioPenitenciario: "Prisión domiciliaria",
             juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
 
+            periodoDesde: _periodoDesde,
+            periodoHasta: _periodoHasta,
+            notaAdicionalCentro: _notaAdicionalCentroController.text,
+
             // ✉️ Envío (Resend)
             enviarCorreoResend: ({
               required String correoDestino,
@@ -2481,6 +2758,19 @@ TERCERO: Que se autorice el traslado al lugar de residencia indicado en esta sol
       child: const Text("Enviar por correo"),
     );
   }
+
+  Future<void> _guardarNotaCentroEnFirestore() async {
+    if (widget.idDocumento.isEmpty) return;
+
+    await FirebaseFirestore.instance
+        .collection('domiciliaria_solicitados')
+        .doc(widget.idDocumento)
+        .set({
+      "nota_adicional_centro": _notaAdicionalCentroController.text.trim(),
+      "nota_actualizada_en": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
 
 
   Future<void> subirHtmlCorreoADocumentoDomiciliaria({

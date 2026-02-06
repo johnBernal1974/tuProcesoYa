@@ -21,6 +21,9 @@ String generarPrefacioCentroReclusionV3({
   DateTime? periodoDesde,
   DateTime? periodoHasta,
 
+  // ✅ NUEVO: nota adicional opcional
+  String? notaAdicional,
+
 }) {
   // Extraer solo la parte después del guion si existe
   String juzgadoLimpio = juzgadoEp.contains('-')
@@ -40,6 +43,17 @@ String generarPrefacioCentroReclusionV3({
       return " correspondiente al periodo <b>desde ${fmt(periodoDesde!)}</b>";
     }
     return " correspondiente al periodo <b>hasta ${fmt(periodoHasta!)}</b>";
+  }
+
+  String notaAdicionalHtml() {
+    final t = (notaAdicional ?? "").trim();
+    if (t.isEmpty) return "";
+    return """
+      <div style="margin-top: 12px; padding: 10px; border: 1px solid #ddd; background: #fafafa;">
+        <b>Nota adicional:</b><br>
+        ${t.replaceAll('\n', '<br>')}
+      </div><br>
+    """;
   }
 
 
@@ -83,6 +97,9 @@ String generarPrefacioCentroReclusionV3({
     <li><b>Certificado de buena conducta:</b> conforme al artículo 147 de la Ley 65 de 1993.</li>
     <li><b>Concepto del Consejo de Evaluación y Tratamiento:</b> sobre la solicitud y el proceso de resocialización.</li>
   </ol><br><br>
+  
+    ${notaAdicionalHtml()}
+
 
   <p>
     Agradezco de antemano la atención prestada a esta solicitud.

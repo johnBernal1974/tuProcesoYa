@@ -75,6 +75,8 @@ class EnvioCorreoManagerV6 {
     DateTime? periodoDesde,
     DateTime? periodoHasta,
 
+    String? notaAdicionalCentro,
+
 
     // rutas de guardado
     required String nombrePathStorage,
@@ -276,6 +278,7 @@ class EnvioCorreoManagerV6 {
                       celularWhatsapp: celularWhatsapp,
                       periodoDesde: periodoDesde,
                       periodoHasta: periodoHasta,
+                      notaAdicional: notaAdicionalCentro,
 
                     ),
                     mensajeExito: "El correo al centro de reclusión fue enviado correctamente.",
