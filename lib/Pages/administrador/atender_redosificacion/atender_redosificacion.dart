@@ -107,30 +107,39 @@ class _AtenderSolicitudRedosificacionRedencionesPageState extends State<AtenderS
 
 
   static const String defaultConsideraciones = """
-Inicialmente solicito la aplicación del principio de favorabilidad, conforme al artículo 19, parágrafo segundo de la Ley 2466 del 25 de junio de 2025. 
-Dicha norma modifica la fórmula redentoria del antiguo artículo 82-2 de la Ley 65 de 1993, reconociendo ahora dos (2) días de redención por cada tres (3) días de trabajo, en comparación con el esquema anterior que solo reconocía un día por cada dos de actividad laboral.
+Solicito la aplicación del principio de favorabilidad conforme al artículo 19, parágrafo segundo, de la Ley 2466 de 2025, por tratarse de una norma posterior más beneficiosa en materia de redención de pena.
 
-Esta nueva disposición representa un beneficio concreto, ya que incrementa proporcionalmente la redención otorgada a quienes realizan actividades productivas certificadas. 
-De acuerdo con el numeral 7 del artículo 38 de la Ley 906 de 2004, es función del Juez de Ejecución de Penas y Medidas de Seguridad aplicar el principio de favorabilidad cuando una norma posterior resulte más beneficiosa al condenado.
+La nueva fórmula redentoria mejora de manera objetiva el régimen anterior y debe aplicarse tanto a las redenciones ya reconocidas, como a aquellas derivadas de actividades desarrolladas por la persona condenada que, siendo legalmente susceptibles de redención, aún no han sido objeto de reconocimiento.
+
+En virtud del numeral 7 del artículo 38 de la Ley 906 de 2004, corresponde al Juez de Ejecución de Penas efectuar el cómputo integral de la redención conforme a la Ley 2466 de 2025, procediendo a la redosificación o al reconocimiento inicial del beneficio, según corresponda.
 """;
 
   static const String defaultFundamentos = """
-Conforme a lo dispuesto en el artículo 103A de la Ley 1709 de 2014 y en conexidad con el artículo 64, y el numeral 7 del artículo 38 de la Ley 906 de 2004, el suscrito tiene derecho a solicitar la aplicación retroactiva de la Ley 2466 de 2025 por ser más favorable.
+Conforme a lo dispuesto en el artículo 103A de la Ley 1709 de 2014, en armonía con el artículo 64 y el numeral 7 del artículo 38 de la Ley 906 de 2004, la persona condenada tiene derecho a solicitar la aplicación retroactiva de la Ley 2466 de 2025, en cuanto resulte más favorable a su situación jurídica.
 
-El artículo 19 de dicha ley reconoce la redención de pena por trabajo y otorga dos (2) días de redención por cada tres (3) días de actividad laboral, lo que representa una mejora significativa frente al modelo anterior.
+El artículo 19 de la Ley 2466 de 2025 regula la redención de pena por trabajo, estableciendo que por cada tres (3) días de actividad se redimen dos (2) días de pena, lo cual representa una mejora sustancial frente al régimen anterior de redención.
 
-El principio de favorabilidad consagrado en el artículo 29 de la Constitución, en el artículo 6 de la Ley 599 de 2000, así como en tratados internacionales ratificados por Colombia como el Pacto Internacional de Derechos Civiles y Políticos y la Convención Americana sobre Derechos Humanos, exige la aplicación preferente de la norma más benigna, incluso de manera retroactiva.
+No obstante, una interpretación constitucional, sistemática y jurisprudencial del ordenamiento penitenciario permite concluir que la redención de pena no se limita exclusivamente al trabajo, sino que comprende igualmente las actividades de estudio y enseñanza, en tanto todas ellas responden a la misma finalidad resocializadora y de reintegración social reconocida por la Constitución y la ley.
 
-La Corte Suprema de Justicia ha sostenido que el juez debe aplicar sin excepción la ley posterior más favorable a las personas condenadas, por cuanto su aplicación no depende de teorías abstractas sino del análisis del caso concreto (CSJ, Sala Penal, Rad. 16837, M.P. Jorge Aníbal Gómez Gallego, 3 de septiembre de 2011).
+En ese sentido, el Tribunal Superior de Medellín – Sala Penal, en providencia con radicado 05-001-60-00000-2019-00867, de fecha 4 de septiembre de 2025, precisó que no puede existir trato desigual en materia de redención de pena, al reconocer que el trabajo, el estudio y la enseñanza generan la misma consecuencia jurídica, por lo cual los beneficios más favorables introducidos por el legislador deben extenderse a todas estas modalidades de redención.
+
+Negar la aplicación del nuevo factor de redención a las actividades de estudio y enseñanza implicaría un trato discriminatorio injustificado y contrario al principio de igualdad, así como una vulneración directa del principio de favorabilidad, consagrado en el artículo 29 de la Constitución Política, desarrollado en el artículo 6 de la Ley 599 de 2000 y reforzado por instrumentos internacionales ratificados por Colombia, como el Pacto Internacional de Derechos Civiles y Políticos y la Convención Americana sobre Derechos Humanos.
+
+En concordancia con lo anterior, la Corte Suprema de Justicia ha sostenido que el juez de ejecución de penas debe aplicar sin excepción la ley posterior más favorable a la persona condenada, atendiendo al análisis concreto del caso y al impacto real del beneficio en su situación jurídica, sin que dicha aplicación dependa de interpretaciones restrictivas o formales (CSJ, Sala Penal, Rad. 16837, M.P. Jorge Aníbal Gómez Gallego, 3 de septiembre de 2011).
+
+En consecuencia, el factor de redención previsto en el artículo 19 de la Ley 2466 de 2025 debe aplicarse de manera extensiva y favorable a las actividades de trabajo, estudio y enseñanza, procediendo la redosificación de la pena conforme a dicho criterio.
 """;
 
 
   static const String defaultPretenciones = """
-PRIMERO: Que se dejen sin efecto los autos anteriores de redención de pena por trabajo ya proferidos, y se proceda a redosificar dichos reconocimientos conforme a lo establecido en el artículo 19 de la Ley 2466 de 2025, aplicando el principio de favorabilidad, y reconociendo en consecuencia un mayor número de días redimidos.
+PRIMERO:
+Que se redosifique la redención de pena reconocida, dejando sin efecto los autos anteriores, y aplicando el artículo 19 de la Ley 2466 de 2025 bajo el principio de favorabilidad.
 
-SEGUNDO: Que se requiera al establecimiento penitenciario para que remita todos los certificados correspondientes a mis actividades de trabajo desde la fecha de inicio de mi condena.
+SEGUNDO:
+Que se requiera al establecimiento penitenciario para la remisión de los certificados de trabajo, estudio y/o enseñanza desde el inicio de la condena.
 
-TERCERO: Que, una vez allegados los certificados, se realice el cómputo de redención conforme a la nueva fórmula legal, es decir, dos (2) días redimidos por cada tres (3) días de trabajo efectivo certificado.
+TERCERO:
+Que, con base en dichos certificados, se realice el cómputo conforme a la nueva fórmula legal de redención.
 """;
 
 

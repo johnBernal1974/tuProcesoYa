@@ -22,11 +22,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/calculo_beneficios_penitenciarios-general.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
-import '../../../widgets/envio_correo_manager.dart';
-import '../../../widgets/envio_correo_managerV2.dart';
-import '../../../widgets/envio_correo_managerV3.dart';
 import '../../../widgets/envio_correo_managerV6.dart';
-import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_prision_domiciliaria_admin/historial_solicitudes_prision_domiciliaria_admin.dart';
@@ -141,7 +137,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
   DateTime? _periodoHasta;
 
   final TextEditingController _notaAdicionalCentroController = TextEditingController();
-  Timer? _debounceNota;
 
 
 
@@ -964,7 +959,6 @@ class _AtenderPrisionDomiciliariaPageState extends State<AtenderPrisionDomicilia
     _pretencionesController.dispose();
     _anexosController.dispose();
     _notaAdicionalCentroController.dispose();
-    _debounceNota?.cancel();
     super.dispose();
   }
 
