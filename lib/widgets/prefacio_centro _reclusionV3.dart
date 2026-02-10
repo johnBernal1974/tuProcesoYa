@@ -36,14 +36,21 @@ String generarPrefacioCentroReclusionV3({
 
   String periodoHtml() {
     if (periodoDesde == null && periodoHasta == null) return "";
+
+    // Ambos: desde – hasta
     if (periodoDesde != null && periodoHasta != null) {
-      return " correspondiente al periodo <b>del ${fmt(periodoDesde!)} al ${fmt(periodoHasta!)}</b>";
+      return " correspondiente al periodo comprendido desde el <b>${fmt(periodoDesde!)}</b> al  <b>${fmt(periodoHasta!)}</b>";
     }
+
+    // Solo desde
     if (periodoDesde != null) {
-      return " correspondiente al periodo <b>desde ${fmt(periodoDesde!)}</b>";
+      return " correspondiente al periodo comprendido desde el <b>${fmt(periodoDesde!)}</b> hasta la fecha";
     }
-    return " correspondiente al periodo <b>hasta ${fmt(periodoHasta!)}</b>";
+
+    // (opcional defensivo, por si llega solo hasta)
+    return " correspondiente al periodo comprendido hasta el <b>${fmt(periodoHasta!)}</b>";
   }
+
 
   String notaAdicionalHtml() {
     final t = (notaAdicional ?? "").trim();
@@ -73,22 +80,22 @@ String generarPrefacioCentroReclusionV3({
 
   <p>
     Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.
-  </p>
+  </p><br><br>
 
   <!-- 🔁 Antes decía: "Yo, [PPL] ... actualmente recluido ..." -->
   <p>
     Yo, <b>$nombreAcudiente $apellidoAcudiente</b>, en calidad de <b>$parentescoAcudiente</b> de 
     <b>$nombrePpl $apellidoPpl</b> (C.C. <b>$identificacionPpl</b>), actualmente recluido en la 
     <b>$centroPenitenciario</b>, con NUI: <b>$nui</b>, TD: <b>$td</b>, ubicado en el Patio No: <b>$patio</b>, 
-    me permito realizar la presente solicitud.
-  </p><br><br>
+    me permito informar;
+  </p><br>
 
   <p>
-    Me permito informar que ha sido presentada ante el <b>$juzgadoLimpio</b> la solicitud de 
-  <b>$beneficioPenitenciario</b>${periodoHtml()}.
+    Ha sido presentada ante el <b>$juzgadoLimpio</b> la solicitud de 
+  <b>$beneficioPenitenciario.</b>
   Con el fin de que dicho despacho pueda resolver de manera oportuna y conforme a derecho, 
   solicito respetuosamente que se remitan, con carácter urgente, directamente a esa autoridad judicial, 
-  los siguientes documentos:
+  los siguientes documentos,${periodoHtml()}
   </p><br>
 
   <ol>

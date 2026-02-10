@@ -22,6 +22,7 @@ import '../../../widgets/calculo_beneficios_penitenciarios-general.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
 import '../../../widgets/envio_correo_manager.dart';
 import '../../../widgets/envio_correo_managerV2.dart';
+import '../../../widgets/envio_correo_managerV6.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
@@ -103,6 +104,13 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
   Map<String, dynamic>? solicitudData;
   String? _opcionReparacionSeleccionada;
   late CalculoCondenaController _calculoCondenaController;
+
+  //para agregar periodo y notas adicionales al inpec
+  DateTime? _periodoDesde;
+  DateTime? _periodoHasta;
+
+  final TextEditingController _notaAdicionalCentroController = TextEditingController();
+
 
 
 
@@ -270,6 +278,10 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
               const SizedBox(height: 15),
               _buildDetallesSolicitud(),
               const SizedBox(height: 20),
+              _buildSelectorPeriodo(),
+              const SizedBox(height: 10),
+              notaAdicionalConBotonGuardar(),
+
             ],
           ),
 
@@ -446,8 +458,261 @@ class _AtenderExtincionPenaPageState extends State<AtenderExtincionPenaPage> {
     _consideracionesController.dispose();
     _fundamentosDerechoController.dispose();
     _pretencionesController.dispose();
+    _notaAdicionalCentroController.dispose();
+
     super.dispose();
   }
+
+  Future<void> _pickDesde() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _periodoDesde ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (picked == null) return;
+
+    setState(() => _periodoDesde = picked);
+
+    if (_periodoHasta != null && _periodoHasta!.isBefore(_periodoDesde!)) {
+      setState(() {
+        final tmp = _periodoHasta;
+        _periodoHasta = _periodoDesde;
+        _periodoDesde = tmp;
+      });
+    }
+
+    await _guardarPeriodoEnFirestore(); // (si lo quieres guardar igual que redenciones)
+  }
+
+  Future<void> _pickHasta() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _periodoHasta ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (picked == null) return;
+
+    setState(() => _periodoHasta = picked);
+
+    if (_periodoDesde != null && _periodoHasta!.isBefore(_periodoDesde!)) {
+      setState(() {
+        final tmp = _periodoDesde;
+        _periodoDesde = _periodoHasta;
+        _periodoHasta = tmp;
+      });
+    }
+
+    await _guardarPeriodoEnFirestore();
+  }
+
+  Future<void> _guardarPeriodoEnFirestore() async {
+    if (widget.idDocumento.isEmpty) return;
+
+    await FirebaseFirestore.instance
+        .collection('extincion_pena_solicitados') // ✅ CAMBIO
+        .doc(widget.idDocumento)
+        .set({
+      "periodo_desde": _periodoDesde == null ? null : Timestamp.fromDate(_periodoDesde!),
+      "periodo_hasta": _periodoHasta == null ? null : Timestamp.fromDate(_periodoHasta!),
+      "periodo_actualizado_en": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  //new para seleccionar periodo
+  Widget _buildSelectorPeriodo() {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
+    String fmt(DateTime? d) =>
+        d == null ? "Sin seleccionar" : DateFormat('dd/MM/yyyy').format(d);
+
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Periodo para el cómputo (opcional)",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              "Si no seleccionas nada, el escrito no incluirá el periodo.",
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+            const SizedBox(height: 10),
+
+            isMobile
+                ? Column(
+              children: [
+                _btnFecha(
+                  label: "Desde",
+                  value: fmt(_periodoDesde),
+                  onTap: _pickDesde,
+                ),
+                const SizedBox(height: 10),
+                _btnFecha(
+                  label: "Hasta",
+                  value: fmt(_periodoHasta),
+                  onTap: _pickHasta,
+                ),
+              ],
+            )
+                : Row(
+              children: [
+                Expanded(
+                  child: _btnFecha(
+                    label: "Desde",
+                    value: fmt(_periodoDesde),
+                    onTap: _pickDesde,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _btnFecha(
+                    label: "Hasta",
+                    value: fmt(_periodoHasta),
+                    onTap: _pickHasta,
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 10),
+
+            // ✅ Limpiar
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () async {
+                  setState(() {
+                    _periodoDesde = null;
+                    _periodoHasta = null;
+                  });
+                  await _guardarPeriodoEnFirestore();
+                },
+                icon: const Icon(Icons.clear, size: 18),
+                label: const Text("Quitar periodo"),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _btnFecha({
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return OutlinedButton(
+      style: OutlinedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        side: const BorderSide(color: Colors.grey),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+      ),
+      onPressed: onTap,
+      child: Row(
+        children: [
+          const Icon(Icons.date_range, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              "$label: $value",
+              style: const TextStyle(fontSize: 13),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _guardarNotaCentroEnFirestore() async {
+    if (widget.idDocumento.isEmpty) return;
+
+    await FirebaseFirestore.instance
+        .collection('extincion_pena_solicitados') // ✅ CAMBIO
+        .doc(widget.idDocumento)
+        .set({
+      "nota_adicional_centro": _notaAdicionalCentroController.text.trim(),
+      "nota_actualizada_en": FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
+  Widget notaAdicionalConBotonGuardar() {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    return isMobile
+        ? Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextField(
+          controller: _notaAdicionalCentroController,
+          maxLines: 4,
+          decoration: const InputDecoration(
+            labelText: 'Anotación adicional para el centro (opcional)',
+            hintText: 'Se incluirá en el correo al centro de reclusión',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
+        ElevatedButton.icon(
+          onPressed: () async {
+            await _guardarNotaCentroEnFirestore();
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("✅ Nota guardada")),
+              );
+            }
+          },
+          icon: const Icon(Icons.save),
+          label: const Text("Guardar"),
+        ),
+      ],
+    )
+        : Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _notaAdicionalCentroController,
+            maxLines: 4,
+            decoration: const InputDecoration(
+              labelText: 'Anotación adicional para el centro (opcional)',
+              hintText: 'Se incluirá en el correo al centro de reclusión',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        SizedBox(
+          height: 56, // altura similar a un input (aprox)
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              await _guardarNotaCentroEnFirestore();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("✅ Nota guardada")),
+                );
+              }
+            },
+            icon: const Icon(Icons.save),
+            label: const Text("Guardar"),
+          ),
+        ),
+      ],
+    );
+  }
+
+
 
   String obtenerTituloCorreo(String? nombreCorreo) {
     switch (nombreCorreo) {
@@ -1206,6 +1471,15 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
             asignadoA_P2 = data['asignadoA_P2'] ?? '';
             asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
             fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
+
+            // ✅ recuperar periodo
+            final desdeTs = data['periodo_desde'] as Timestamp?;
+            final hastaTs = data['periodo_hasta'] as Timestamp?;
+            _periodoDesde = desdeTs?.toDate();
+            _periodoHasta = hastaTs?.toDate();
+
+// ✅ recuperar nota adicional
+            _notaAdicionalCentroController.text = (data['nota_adicional_centro'] ?? '').toString();
           });
         }
       } else {
@@ -1620,9 +1894,107 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     return texto.replaceAll('\n', '<br>');
   }
 
-  Future<void> enviarCorreoResend({required String correoDestino, String? asuntoPersonalizado, String? prefacioHtml}) async {
-    final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
+  // Future<void> enviarCorreoResend({required String correoDestino, String? asuntoPersonalizado, String? prefacioHtml}) async {
+  //   final url = Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend");
+  //
+  //   final doc = await FirebaseFirestore.instance
+  //       .collection('extincion_pena_solicitados')
+  //       .doc(widget.idDocumento)
+  //       .get();
+  //
+  //   final latestData = doc.data();
+  //   if (latestData == null || userData == null) return;
+  //
+  //     extincionPena = ExtincionPenaTemplate(
+  //     dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+  //     entidad: entidad ?? "",
+  //     referencia: "Beneficios penitenciarios - Extinción de la pena",
+  //     nombrePpl: userData?.nombrePpl.trim() ?? "",
+  //     apellidoPpl: userData?.apellidoPpl.trim() ?? "",
+  //     identificacionPpl: userData?.numeroDocumentoPpl ?? "",
+  //     centroPenitenciario: userData?.centroReclusion ?? "",
+  //     sinopsis: sinopsis,
+  //     consideraciones: consideraciones,
+  //     fundamentosDeDerecho: fundamentosDeDerecho,
+  //     pretenciones: pretenciones,
+  //     emailUsuario: userData?.email.trim() ?? '',
+  //     nui: userData?.nui ?? '',
+  //     td: userData?.td ?? '',
+  //     patio: userData?.patio ?? '',
+  //     radicado: userData?.radicado ?? '',
+  //     delito: userData?.delito ?? '',
+  //       condena: userData?.diasCondena != null && userData!.diasCondena! > 0
+  //           ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
+  //           : "${userData?.mesesCondena ?? 0} meses",
+  //
+  //       purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
+  //     jdc: userData?.juzgadoQueCondeno ?? '',
+  //     numeroSeguimiento: widget.numeroSeguimiento,
+  //     situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
+  //   );
+  //
+  //   String mensajeHtml = "${prefacioHtml ?? ''}${extincionPena.generarTextoHtml()}";
+  //   List<Map<String, String>> archivosBase64 = [];
+  //
+  //   final asuntoCorreo = asuntoPersonalizado ?? "Solicitud extinción de la pena - ${widget.numeroSeguimiento}";
+  //   final currentUser = FirebaseAuth.instance.currentUser;
+  //   final enviadoPor = currentUser?.email ?? adminFullName;
+  //
+  //   List<String> correosCC = [];
+  //   if (userData?.email != null && userData!.email.trim().isNotEmpty) {
+  //     correosCC.add(userData!.email.trim());
+  //   }
+  //
+  //   final body = jsonEncode({
+  //     "to": correoDestino,
+  //     "cc": correosCC,
+  //     "subject": asuntoCorreo,
+  //     "html": mensajeHtml,
+  //     "archivos": archivosBase64,
+  //     "idDocumento": widget.idDocumento,
+  //     "enviadoPor": enviadoPor,
+  //     "tipo": "extincion_pena",
+  //   });
+  //
+  //   final response = await http.post(
+  //     url,
+  //     headers: {"Content-Type": "application/json"},
+  //     body: body,
+  //   );
+  //
+  //   if (response.statusCode == 200) {
+  //     await FirebaseFirestore.instance
+  //         .collection('extincion_pena_solicitados')
+  //         .doc(widget.idDocumento)
+  //         .update({
+  //       "status": "Enviado",
+  //       "fechaEnvio": FieldValue.serverTimestamp(),
+  //       "envió": adminFullName,
+  //     });
+  //
+  //     await ResumenSolicitudesHelper.actualizarResumen(
+  //       idOriginal: widget.idDocumento,
+  //       nuevoStatus: "Enviado",
+  //       origen: "extincion_pena_solicitados",
+  //     );
+  //
+  //   } else {
+  //     if (kDebugMode) {
+  //       print("❌ Error al enviar el correo con Resend: ${response.body}");
+  //     }
+  //   }
+  // }9 feb 2026
 
+  Future<void> enviarCorreoResend({
+    required String correoDestino,
+    String? asuntoPersonalizado,
+    String? prefacioHtml,
+  }) async {
+    final url = Uri.parse(
+      "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/sendEmailWithResend",
+    );
+
+    // ✅ 1) Trae la última data de la solicitud (por si ya se actualizó el correo/entidad)
     final doc = await FirebaseFirestore.instance
         .collection('extincion_pena_solicitados')
         .doc(widget.idDocumento)
@@ -1631,42 +2003,63 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
     final latestData = doc.data();
     if (latestData == null || userData == null) return;
 
-      extincionPena = ExtincionPenaTemplate(
-      dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
-      entidad: entidad ?? "",
+    // ✅ 2) Si guardas el "nombreCorreoSeleccionado" y "entidad" en Firestore, recupéralos aquí
+    final String? nombreCorreoSelFS =
+    (latestData['nombreCorreoSeleccionado'] ?? nombreCorreoSeleccionado)
+        ?.toString();
+
+    final String entidadFS =
+    (latestData['entidad'] ?? entidad ?? '').toString();
+
+    // ✅ 3) Reconstruye template con dirigido/entidad correctos
+    extincionPena = ExtincionPenaTemplate(
+      dirigido: obtenerTituloCorreo(nombreCorreoSelFS),
+      entidad: entidadFS,
+
       referencia: "Beneficios penitenciarios - Extinción de la pena",
       nombrePpl: userData?.nombrePpl.trim() ?? "",
       apellidoPpl: userData?.apellidoPpl.trim() ?? "",
       identificacionPpl: userData?.numeroDocumentoPpl ?? "",
       centroPenitenciario: userData?.centroReclusion ?? "",
+
       sinopsis: sinopsis,
       consideraciones: consideraciones,
       fundamentosDeDerecho: fundamentosDeDerecho,
       pretenciones: pretenciones,
+
       emailUsuario: userData?.email.trim() ?? '',
       nui: userData?.nui ?? '',
       td: userData?.td ?? '',
       patio: userData?.patio ?? '',
       radicado: userData?.radicado ?? '',
       delito: userData?.delito ?? '',
-        condena: userData?.diasCondena != null && userData!.diasCondena! > 0
-            ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
-            : "${userData?.mesesCondena ?? 0} meses",
 
-        purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
+      condena: (userData?.diasCondena != null && (userData!.diasCondena ?? 0) > 0)
+          ? "${userData?.mesesCondena ?? 0} meses y ${userData?.diasCondena} días"
+          : "${userData?.mesesCondena ?? 0} meses",
+
+      purgado: "$mesesEjecutado meses y $diasEjecutadoExactos días",
       jdc: userData?.juzgadoQueCondeno ?? '',
       numeroSeguimiento: widget.numeroSeguimiento,
-      situacion: userData?.situacion ?? 'En Reclusión', // ✅ Campo agregado
+      situacion: userData?.situacion ?? 'En Reclusión',
     );
 
-    String mensajeHtml = "${prefacioHtml ?? ''}${extincionPena.generarTextoHtml()}";
-    List<Map<String, String>> archivosBase64 = [];
+    // ✅ 4) IMPORTANTE: pegar el prefacio (aquí viene periodo + nota cuando aplica)
+    final String mensajeHtml = """
+${prefacioHtml ?? ''}
+${extincionPena.generarTextoHtml()}
+""";
 
-    final asuntoCorreo = asuntoPersonalizado ?? "Solicitud extinción de la pena - ${widget.numeroSeguimiento}";
+    // ✅ 5) Adjuntos (si no usas, se queda vacío)
+    final List<Map<String, String>> archivosBase64 = [];
+
+    final asuntoCorreo =
+        asuntoPersonalizado ?? "Solicitud extinción de la pena - ${widget.numeroSeguimiento}";
+
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
 
-    List<String> correosCC = [];
+    final List<String> correosCC = [];
     if (userData?.email != null && userData!.email.trim().isNotEmpty) {
       correosCC.add(userData!.email.trim());
     }
@@ -1703,13 +2096,120 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
         nuevoStatus: "Enviado",
         origen: "extincion_pena_solicitados",
       );
-
     } else {
       if (kDebugMode) {
         print("❌ Error al enviar el correo con Resend: ${response.body}");
       }
     }
   }
+
+
+  // Widget botonEnviarCorreo() {
+  //   return ElevatedButton(
+  //     style: ElevatedButton.styleFrom(
+  //       side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
+  //       backgroundColor: Colors.white,
+  //       foregroundColor: Colors.black,
+  //     ),
+  //     onPressed: () async {
+  //       if (correoSeleccionado == null || correoSeleccionado!.isEmpty) {
+  //         await showDialog(
+  //           context: context,
+  //           builder: (context) => AlertDialog(
+  //             backgroundColor: Colors.white,
+  //             title: const Text("Aviso"),
+  //             content: const Text("No se ha seleccionado un correo electrónico."),
+  //             actions: [
+  //               TextButton(
+  //                 child: const Text("OK"),
+  //                 onPressed: () => Navigator.of(context).pop(),
+  //               ),
+  //             ],
+  //           ),
+  //         );
+  //         return;
+  //       }
+  //
+  //       // Crear la instancia
+  //       final envioCorreoManager = EnvioCorreoManagerV2();
+  //
+  //       // Llamar al método
+  //       await envioCorreoManager.enviarCorreoCompleto(
+  //         context: context,
+  //         correoDestinoPrincipal: correoSeleccionado!,
+  //         html: extincionPena.generarTextoHtml(),
+  //         numeroSeguimiento: extincionPena.numeroSeguimiento,
+  //
+  //         // 👇 Datos del acudiente (nuevos)
+  //         parentescoAcudiente: userData?.parentescoRepresentante ?? '',
+  //         nombreAcudiente: userData?.nombreAcudiente ?? 'Usuario',
+  //         apellidoAcudiente: userData?.apellidoAcudiente ?? '',
+  //         celularAcudiente: userData?.celular ?? '',
+  //         celularWhatsapp: userData?.celularWhatsapp,
+  //
+  //         rutaHistorial: 'historial_solicitudes_extincion_pena_admin',
+  //         nombreServicio: 'Extinción de la Pena',
+  //         idDocumentoPpl: widget.idUser,
+  //
+  //         // Datos del PPL / contexto
+  //         centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+  //         nombrePpl: userData?.nombrePpl ?? '',
+  //         apellidoPpl: userData?.apellidoPpl ?? '',
+  //         identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+  //         nui: userData?.nui ?? '',
+  //         td: userData?.td ?? '',
+  //         patio: userData?.patio ?? '',
+  //         beneficioPenitenciario: 'Extinción de la pena',
+  //
+  //         enviarCorreoResend: ({
+  //           required String correoDestino,
+  //           String? asuntoPersonalizado,
+  //           String? prefacioHtml,
+  //         }) async {
+  //           await enviarCorreoResend(
+  //             correoDestino: correoDestino,
+  //             asuntoPersonalizado: asuntoPersonalizado,
+  //             prefacioHtml: prefacioHtml,
+  //           );
+  //         },
+  //
+  //         subirHtml: () async {
+  //           await subirHtmlCorreoADocumentoExtincionPena(
+  //             idDocumento: widget.idDocumento,
+  //             htmlContent: extincionPena.generarTextoHtml(),
+  //           );
+  //         },
+  //
+  //         buildSelectorCorreoCentroReclusion: ({
+  //           required Function(String correo, String nombreCentro) onEnviarCorreo,
+  //           required Function() onOmitir,
+  //         }) {
+  //           return SeleccionarCorreoCentroReclusionV2(
+  //             idUser: widget.idUser,
+  //             onEnviarCorreo: onEnviarCorreo,
+  //             onOmitir: onOmitir,
+  //           );
+  //         },
+  //
+  //         buildSelectorCorreoReparto: ({
+  //           required Function(String correo, String entidad) onCorreoValidado,
+  //           required Function(String nombreCiudad) onCiudadNombreSeleccionada,
+  //           required Function(String correo, String entidad) onEnviarCorreoManual,
+  //           required Function() onOmitir,
+  //         }) {
+  //           return SelectorCorreoManualFlexible(
+  //             entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas',
+  //             onCorreoValidado: onCorreoValidado,
+  //             onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
+  //             onEnviarCorreoManual: onEnviarCorreoManual,
+  //             onOmitir: () => Navigator.of(context).pop(),
+  //           );
+  //         },
+  //       );
+  //     },
+  //     child: const Text("Enviar por correo"),
+  //   );
+  // } 9 feb 2026
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1737,99 +2237,184 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
           return;
         }
 
-        // Crear la instancia
-        final envioCorreoManager = EnvioCorreoManagerV2();
+        // ✅ 1) Antes de generar el HTML, actualiza dirigido y entidad (igual que condicional)
+        extincionPena = ExtincionPenaTemplate(
+          dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado),
+          entidad: obtenerEntidad(nombreCorreoSeleccionado ?? ""),
 
-        // Llamar al método
-        await envioCorreoManager.enviarCorreoCompleto(
-          context: context,
-          correoDestinoPrincipal: correoSeleccionado!,
-          html: extincionPena.generarTextoHtml(),
+          // 👇 el resto se conserva del objeto actual para no perder nada
+          referencia: extincionPena.referencia,
+          nombrePpl: extincionPena.nombrePpl,
+          apellidoPpl: extincionPena.apellidoPpl,
+          identificacionPpl: extincionPena.identificacionPpl,
+          centroPenitenciario: extincionPena.centroPenitenciario,
+
+          sinopsis:extincionPena.sinopsis,
+          consideraciones: extincionPena.consideraciones,
+          fundamentosDeDerecho: extincionPena.fundamentosDeDerecho,
+          pretenciones: extincionPena.pretenciones,
+
+          nui: extincionPena.nui,
+          td: extincionPena.td,
+          patio: extincionPena.patio,
+          radicado: extincionPena.radicado,
+          delito: extincionPena.delito,
+          condena: extincionPena.condena,
+          purgado: extincionPena.purgado,
+          jdc: extincionPena.jdc,
           numeroSeguimiento: extincionPena.numeroSeguimiento,
 
-          // 👇 Datos del acudiente (nuevos)
-          parentescoAcudiente: userData?.parentescoRepresentante ?? '',
-          nombreAcudiente: userData?.nombreAcudiente ?? 'Usuario',
-          apellidoAcudiente: userData?.apellidoAcudiente ?? '',
-          celularAcudiente: userData?.celular ?? '',
-          celularWhatsapp: userData?.celularWhatsapp,
+          situacion: userData?.situacion ?? 'EN RECLUSIÓN',
 
-          rutaHistorial: 'historial_solicitudes_extincion_pena_admin',
-          nombreServicio: 'Extinción de la Pena',
-          idDocumentoPpl: widget.idUser,
 
-          // Datos del PPL / contexto
-          centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
-          nombrePpl: userData?.nombrePpl ?? '',
-          apellidoPpl: userData?.apellidoPpl ?? '',
-          identificacionPpl: userData?.numeroDocumentoPpl ?? '',
-          nui: userData?.nui ?? '',
-          td: userData?.td ?? '',
-          patio: userData?.patio ?? '',
-          beneficioPenitenciario: 'Extinción de la pena',
+          // datos acudiente si tu template los usa:
 
-          enviarCorreoResend: ({
-            required String correoDestino,
-            String? asuntoPersonalizado,
-            String? prefacioHtml,
-          }) async {
-            await enviarCorreoResend(
-              correoDestino: correoDestino,
-              asuntoPersonalizado: asuntoPersonalizado,
-              prefacioHtml: prefacioHtml,
-            );
-          },
-
-          subirHtml: () async {
-            await subirHtmlCorreoADocumentoExtincionPena(
-              idDocumento: widget.idDocumento,
-              htmlContent: extincionPena.generarTextoHtml(),
-            );
-          },
-
-          buildSelectorCorreoCentroReclusion: ({
-            required Function(String correo, String nombreCentro) onEnviarCorreo,
-            required Function() onOmitir,
-          }) {
-            return SeleccionarCorreoCentroReclusionV2(
-              idUser: widget.idUser,
-              onEnviarCorreo: onEnviarCorreo,
-              onOmitir: onOmitir,
-            );
-          },
-
-          buildSelectorCorreoReparto: ({
-            required Function(String correo, String entidad) onCorreoValidado,
-            required Function(String nombreCiudad) onCiudadNombreSeleccionada,
-            required Function(String correo, String entidad) onEnviarCorreoManual,
-            required Function() onOmitir,
-          }) {
-            return SelectorCorreoManualFlexible(
-              entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas',
-              onCorreoValidado: onCorreoValidado,
-              onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
-              onEnviarCorreoManual: onEnviarCorreoManual,
-              onOmitir: () => Navigator.of(context).pop(),
-            );
-          },
+          emailUsuario: extincionPena.emailUsuario,
+          emailAlternativo: extincionPena.emailAlternativo,
         );
+
+        // ✅ 2) HTML final (con dirigido/entidad correctos)
+        final ultimoHtmlEnviado = extincionPena.generarTextoHtml();
+
+        // ✅ 3) Manager V6
+        final envioCorreoManager = EnvioCorreoManagerV6();
+
+        // ✅ 4) Leer la solicitud para obtener la cédula del acudiente (igual que condicional)
+        final snap = await FirebaseFirestore.instance
+            .collection("extincion_pena_solicitados") // 🔁 AJUSTA si tu colección se llama distinto
+            .doc(widget.idDocumento)
+            .get();
+
+        final dataSol = snap.data() ?? {};
+        final String identificacionAcudiente =
+        (dataSol['cedula_responsable'] ?? '').toString().trim();
+        print("🧾 cedula_responsable -> '$identificacionAcudiente'");
+
+        if (context.mounted) {
+          await envioCorreoManager.enviarCorreoCompleto(
+            context: context,
+            correoDestinoPrincipal: correoSeleccionado!,
+            html: ultimoHtmlEnviado,
+            numeroSeguimiento: extincionPena.numeroSeguimiento,
+
+            // 👤 Acudiente
+            nombreAcudiente: userData?.nombreAcudiente ?? "Usuario",
+            apellidoAcudiente: userData?.apellidoAcudiente ?? "",
+            parentescoAcudiente: userData?.parentescoRepresentante ?? "Familiar",
+            identificacionAcudiente: (dataSol['cedula_responsable'] ?? '').toString().trim(),
+            celularAcudiente: userData?.celular,
+            celularWhatsapp: userData?.celularWhatsapp,
+
+            // 🧭 Navegación / etiquetas
+            rutaHistorial: 'historial_solicitudes_extincion_pena_admin',
+            nombreServicio: "Extinción de la Pena",
+
+            // IDs
+            idDocumentoSolicitud: widget.idDocumento,
+            idDocumentoPpl: widget.idUser,
+
+            // 🔹 nombres dinámicos (Firestore y Storage)
+            nombreColeccionFirestore: "extincion_pena_solicitados", // 🔁 AJUSTA
+            nombrePathStorage: "extincion_pena",                    // 🔁 AJUSTA
+
+            // 🏛️ Datos PPL / Centro
+            centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
+            nombrePpl: userData?.nombrePpl ?? '',
+            apellidoPpl: userData?.apellidoPpl ?? '',
+            identificacionPpl: userData?.numeroDocumentoPpl ?? '',
+            nui: userData?.nui ?? '',
+            td: userData?.td ?? '',
+            patio: userData?.patio ?? '',
+            beneficioPenitenciario: "Extinción de la pena",
+            juzgadoEp: userData?.juzgadoEjecucionPenas ?? "JUZGADO DE EJECUCIÓN DE PENAS",
+
+            periodoDesde: _periodoDesde,
+            periodoHasta: _periodoHasta,
+            notaAdicionalCentro: _notaAdicionalCentroController.text,
+
+            // ✉️ Envío (Resend)
+            enviarCorreoResend: ({
+              required String correoDestino,
+              String? asuntoPersonalizado,
+              String? prefacioHtml,
+            }) async {
+              await enviarCorreoResend(
+                correoDestino: correoDestino,
+                asuntoPersonalizado: asuntoPersonalizado,
+                prefacioHtml: prefacioHtml,
+              );
+            },
+
+            // 💾 Guardado HTML por tipo (V6 lo pide así)
+            subirHtml: ({
+              required String tipoEnvio,
+              required String htmlFinal,
+              required String nombreColeccionFirestore,
+              required String nombrePathStorage,
+            }) async {
+              await subirHtmlCorreoADocumentoExtincionPena(
+                idDocumento: widget.idDocumento,
+                htmlFinal: htmlFinal,
+                tipoEnvio: tipoEnvio,
+              );
+            },
+
+            // 🏢 Selector centro reclusión
+            buildSelectorCorreoCentroReclusion: ({
+              required Function(String correo, String nombreCentro) onEnviarCorreo,
+              required Function() onOmitir,
+            }) {
+              return SeleccionarCorreoCentroReclusionV2(
+                idUser: widget.idUser,
+                onEnviarCorreo: onEnviarCorreo,
+                onOmitir: onOmitir,
+              );
+            },
+
+            // 📨 Selector reparto
+            buildSelectorCorreoReparto: ({
+              required Function(String correo, String entidad) onCorreoValidado,
+              required Function(String nombreCiudad) onCiudadNombreSeleccionada,
+              required Function(String correo, String entidad) onEnviarCorreoManual,
+              required Function() onOmitir,
+            }) {
+              return SelectorCorreoManualFlexible(
+                entidadSeleccionada:
+                userData?.juzgadoEjecucionPenas ?? "Juzgado de ejecución de penas",
+                onCorreoValidado: onCorreoValidado,
+                onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
+                onEnviarCorreoManual: onEnviarCorreoManual,
+                onOmitir: () => Navigator.of(context).pop(),
+              );
+            },
+
+            // 🧾 El manager usará esto para citar/guardar
+            ultimoHtmlEnviado: ultimoHtmlEnviado,
+          );
+        }
       },
       child: const Text("Enviar por correo"),
     );
   }
 
+
   Future<void> subirHtmlCorreoADocumentoExtincionPena({
     required String idDocumento,
-    required String htmlContent,
+    required String htmlFinal,
+    required String tipoEnvio, // "principal" | "centro_reclusion" | "reparto"
   }) async {
     try {
       // 🛠 Asegurar UTF-8 para que se vean bien las tildes y ñ
-      final contenidoFinal = htmlUtf8Compatible(htmlContent);
+      final contenidoFinal = htmlUtf8Compatible(htmlFinal);
 
       // 📁 Crear bytes
       final bytes = utf8.encode(contenidoFinal);
-      const fileName = "correo.html";
-      final filePath = "extincion/$idDocumento/correos/$fileName"; // 🟣 Cambiar carpeta
+
+      // ✅ Nombre distinto por tipo (para no sobreescribir)
+      final fileName = "correo_$tipoEnvio.html";
+
+      // ✅ Mantengo tu carpeta "extincion" (como ya la usabas)
+      final filePath = "extincion_pena/$idDocumento/correos/$fileName";
 
       final ref = FirebaseStorage.instance.ref(filePath);
       final metadata = SettableMetadata(contentType: "text/html");
@@ -1840,20 +2425,26 @@ SEGUNDO: Solicitar a la autoridad judicial competente que, con base en la certif
       // 🌐 Obtener URL
       final downloadUrl = await ref.getDownloadURL();
 
-      // 🗃️ Guardar en Firestore
-      await FirebaseFirestore.instance
-          .collection("extincion_pena_solicitados") // 🟣 Cambiar colección
-          .doc(idDocumento)
-          .update({
+      // ✅ Guardar en Firestore (también por tipo)
+      final Map<String, dynamic> updateData = {
+        "correoHtmlUrl_$tipoEnvio": downloadUrl,
+        "fechaHtmlCorreo_$tipoEnvio": FieldValue.serverTimestamp(),
+        // (Opcional) mantener compatibilidad con los campos viejos:
         "correoHtmlUrl": downloadUrl,
         "fechaHtmlCorreo": FieldValue.serverTimestamp(),
-      });
+      };
 
-      print("✅ HTML de extincion subido y guardado con URL: $downloadUrl");
+      await FirebaseFirestore.instance
+          .collection("extincion_pena_solicitados")
+          .doc(idDocumento)
+          .update(updateData);
+
+      print("✅ HTML extinción ($tipoEnvio) subido y guardado con URL: $downloadUrl");
     } catch (e) {
-      print("❌ Error al subir HTML del correo de domiciliaria: $e");
+      print("❌ Error al subir HTML del correo de extinción: $e");
     }
   }
+
 
 
   /// 💡 Corrige el HTML para asegurar que tenga codificación UTF-8
