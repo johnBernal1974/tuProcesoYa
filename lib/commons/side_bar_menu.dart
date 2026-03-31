@@ -8,6 +8,8 @@ import '../../providers/auth_provider.dart';
 import '../Pages/client/mis_referidos/mis_referidos.dart';
 import '../src/colors/colors.dart';
 import 'admin_provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+
 
 class SideBar extends StatefulWidget {
   const SideBar({super.key});
@@ -43,12 +45,19 @@ class _SideBarState extends State<SideBar> {
   bool _isInpec = false;
   String? _rolInpec; // ejemplo: "oficinaJuridica"
 
+  //identificar piloto
+  bool _esPiloto = false;
+
 
 
 
   @override
   void initState() {
     super.initState();
+
+    // piloto
+    _esPiloto = (Firebase.app().options.projectId ?? '') == 'tu-proceso-ya-piloto';
+
     _fetchPendingSuggestions();
     _checkIfAdmin();
     _loadData();
@@ -460,14 +469,19 @@ class _SideBarState extends State<SideBar> {
     List<Widget> items = [
       const SizedBox(height: 50),
     ];
+
+    final String homeAdminRoute = _esPiloto ? 'home_admin_piloto' : 'home_admin';
+    final String homeUserRoute  = _esPiloto ? 'home_piloto' : 'home';
+    final String homeInpecRoute = _esPiloto ? 'inpec_panel_home_piloto' : 'inpec_panel_home';
+
+
     if (isAdmin == true) {
       final rolNorm = (rol ?? '').trim().toLowerCase();
       // Para administradores, se muestran diferentes opciones según su rol.
       if (rol == "masterFull") {
         // Para master y masterFull se muestran todos los ítems de admin.
         items.addAll([
-          _buildDrawerTile(
-              context, "Página principal", Icons.home_filled, 'home_admin'),
+          _buildDrawerTile(context, "Página principal", Icons.home_filled, homeAdminRoute),
 
           _buildDrawerTile(
               context, "Filtrado inicial", Icons.filter_list_alt, 'filtrado_inicial_page_admin'),
@@ -1224,28 +1238,134 @@ class _SideBarState extends State<SideBar> {
     return items;
   }
 
+  // Widget _buildDrawerTile(
+  //     BuildContext context,
+  //     String title,
+  //     IconData icon,
+  //     String route, {
+  //       bool showBadge = false,
+  //       int? contador, // 👈 Nuevo parámetro opcional
+  //     }) {
+  //   return ListTile(
+  //     onTap: () {
+  //       // ✅ ADMIN
+  //       if (_isAdmin == true) {
+  //         if (ModalRoute.of(context)?.settings.name != route) {
+  //           Navigator.pushNamed(context, route);
+  //         }
+  //         return;
+  //       }
+  //
+  //       // ✅ INPEC (no validar pago/trial)
+  //       if (_isInpec) {
+  //         if (ModalRoute.of(context)?.settings.name != route) {
+  //           Navigator.pushNamed(context, route);
+  //         }
+  //         return;
+  //       }
+  //
+  //       // ✅ USUARIO NORMAL (Ppl)
+  //       if (!_isPaid.value && !_isTrial) {
+  //         _showPaymentDialog(context);
+  //         return;
+  //       }
+  //
+  //       if (ModalRoute.of(context)?.settings.name != route) {
+  //         Navigator.pushNamed(context, route);
+  //       }
+  //     },
+  //     leading: Stack(
+  //       clipBehavior: Clip.none,
+  //       children: [
+  //         Icon(icon, color: Colors.black54, size: 20),
+  //         if (contador != null && contador > 0)
+  //           Positioned(
+  //             right: -10,
+  //             top: -6,
+  //             child: Container(
+  //               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+  //               decoration: BoxDecoration(
+  //                 color: Colors.red,
+  //                 borderRadius: BorderRadius.circular(12),
+  //               ),
+  //               constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+  //               child: Text(
+  //                 '$contador',
+  //                 textAlign: TextAlign.center,
+  //                 style: const TextStyle(
+  //                   color: Colors.white,
+  //                   fontSize: 10,
+  //                   fontWeight: FontWeight.bold,
+  //                 ),
+  //               ),
+  //             ),
+  //           )
+  //         else if (showBadge)
+  //           Positioned(
+  //             right: -2,
+  //             top: -2,
+  //             child: Container(
+  //               width: 10,
+  //               height: 10,
+  //               decoration: const BoxDecoration(
+  //                 color: Colors.red,
+  //                 shape: BoxShape.circle,
+  //               ),
+  //             ),
+  //           ),
+  //       ],
+  //     ),
+  //
+  //     title: Text(
+  //       title,
+  //       style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+  //     ),
+  //   );
+  //
+  // }
+
   Widget _buildDrawerTile(
       BuildContext context,
       String title,
       IconData icon,
       String route, {
         bool showBadge = false,
-        int? contador, // 👈 Nuevo parámetro opcional
+        int? contador,
       }) {
     return ListTile(
       onTap: () {
+        Navigator.pop(context); // ✅ Cierra el drawer primero
+
+        final current = ModalRoute.of(context)?.settings.name;
+
+        // ✅ Si es un home, reemplaza el stack
+        final esHome = route == 'home_admin' ||
+            route == 'home_admin_piloto' ||
+            route == 'home' ||
+            route == 'home_piloto' ||
+            route == 'inpec_panel_home' ||
+            route == 'inpec_panel_home_piloto';
+
         // ✅ ADMIN
         if (_isAdmin == true) {
-          if (ModalRoute.of(context)?.settings.name != route) {
-            Navigator.pushNamed(context, route);
+          if (current != route) {
+            if (esHome) {
+              Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
+            } else {
+              Navigator.pushNamed(context, route);
+            }
           }
           return;
         }
 
-        // ✅ INPEC (no validar pago/trial)
+        // ✅ INPEC
         if (_isInpec) {
-          if (ModalRoute.of(context)?.settings.name != route) {
-            Navigator.pushNamed(context, route);
+          if (current != route) {
+            if (esHome) {
+              Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
+            } else {
+              Navigator.pushNamed(context, route);
+            }
           }
           return;
         }
@@ -1256,8 +1376,12 @@ class _SideBarState extends State<SideBar> {
           return;
         }
 
-        if (ModalRoute.of(context)?.settings.name != route) {
-          Navigator.pushNamed(context, route);
+        if (current != route) {
+          if (esHome) {
+            Navigator.pushNamedAndRemoveUntil(context, route, (_) => false);
+          } else {
+            Navigator.pushNamed(context, route);
+          }
         }
       },
       leading: Stack(
@@ -1301,14 +1425,17 @@ class _SideBarState extends State<SideBar> {
             ),
         ],
       ),
-
       title: Text(
         title,
-        style: const TextStyle(color: Colors.black87, fontSize: 13, fontWeight: FontWeight.bold),
+        style: const TextStyle(
+          color: Colors.black87,
+          fontSize: 13,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
-
   }
+
 
   Future<bool> esReferidor() async {
     final userId = FirebaseAuth.instance.currentUser?.uid;

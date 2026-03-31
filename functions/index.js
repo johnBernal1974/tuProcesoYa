@@ -32,13 +32,22 @@ admin.initializeApp();
 const db = admin.firestore();
 
 
-// Firebase config secrets
+// Firebase config secrets prodccion
 const FIREBASE_API_KEY = defineSecret("FB_API_KEY");
 const FIREBASE_AUTH_DOMAIN = defineSecret("FB_AUTH_DOMAIN");
 const FIREBASE_PROJECT_ID = defineSecret("FB_PROJECT_ID");
 const FIREBASE_STORAGE_BUCKET = defineSecret("FB_STORAGE_BUCKET");
 const FIREBASE_APP_ID = defineSecret("FB_APP_ID");
 const FIREBASE_MESSAGING_SENDER_ID = defineSecret("FB_MESSAGING_SENDER_ID");
+
+
+//Firebase config piloto
+const PILOTO_API_KEY = defineSecret("PILOTO_API_KEY");
+const PILOTO_AUTH_DOMAIN = defineSecret("PILOTO_AUTH_DOMAIN");
+const PILOTO_PROJECT_ID = defineSecret("PILOTO_PROJECT_ID");
+const PILOTO_STORAGE_BUCKET = defineSecret("PILOTO_STORAGE_BUCKET");
+const PILOTO_APP_ID = defineSecret("PILOTO_APP_ID");
+const PILOTO_MESSAGING_SENDER_ID = defineSecret("PILOTO_MESSAGING_SENDER_ID");
 
 
 // secrets de zoho
@@ -103,6 +112,7 @@ app.post("/", async (req, res) => {
 
 exports.resendWebhook = functions.https.onRequest(app);
 
+
 exports.getFirestoreConfig = onRequest({
   cors: true,
   secrets: [
@@ -132,6 +142,44 @@ exports.getFirestoreConfig = onRequest({
     return res.status(500).json({ error: "Error interno del servidor", details: error.message });
   }
 });
+
+//config piloto
+let cachedConfigPiloto = null;
+let lastFetchTimePiloto = 0;
+
+exports.getFirestoreConfigPiloto = onRequest({
+  cors: true,
+  secrets: [
+    PILOTO_API_KEY,
+    PILOTO_AUTH_DOMAIN,
+    PILOTO_PROJECT_ID,
+    PILOTO_STORAGE_BUCKET,
+    PILOTO_APP_ID,
+    PILOTO_MESSAGING_SENDER_ID,
+  ],
+}, async (req, res) => {
+  try {
+    const now = Date.now();
+    if (!cachedConfigPiloto || now - lastFetchTimePiloto > CACHE_DURATION_MS) {
+      cachedConfigPiloto = {
+        apiKey: PILOTO_API_KEY.value(),
+        authDomain: PILOTO_AUTH_DOMAIN.value(),
+        projectId: PILOTO_PROJECT_ID.value(),
+        storageBucket: PILOTO_STORAGE_BUCKET.value(),
+        appId: PILOTO_APP_ID.value(),
+        messagingSenderId: PILOTO_MESSAGING_SENDER_ID.value(),
+      };
+      lastFetchTimePiloto = now;
+    }
+    return res.status(200).json(cachedConfigPiloto);
+  } catch (error) {
+    return res.status(500).json({
+      error: "Error interno del servidor (piloto)",
+      details: error.message,
+    });
+  }
+});
+
 
 exports.wompiWebhook = functions.https.onRequest(async (req, res) => {
   try {
@@ -433,8 +481,6 @@ exports.sendEmailWithResend = onRequest({
     return res.status(500).json({ error: "Error enviando correo" });
   }
 });
-
-
 
 exports.generarTextoIAExtendido = onRequest({
   cors: true,

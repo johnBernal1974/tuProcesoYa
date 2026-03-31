@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:tuprocesoya/src/colors/colors.dart'; // Asegúrate de que el color primary esté definido aquí
@@ -12,6 +13,7 @@ import '../../providers/auth_provider.dart';
 import 'package:http/http.dart' as http;
 
 import '../client/contactanos.dart';
+import '../recuperar_cuenta/recuperar_cuenta.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -42,6 +44,12 @@ class _LoginPageState extends State<LoginPage> {
   Timer? _timer;
   bool _puedeReenviar = false;
   bool _tienesCuenta = false;
+
+  //para seleccionar el proyecto piloto o produc
+  static const String _env = String.fromEnvironment('ENV', defaultValue: 'prod');
+
+  String _rutaHomeAdmin() => _env == 'piloto' ? 'home_admin_piloto' : 'home_admin';
+
 
 
 
@@ -158,7 +166,7 @@ class _LoginPageState extends State<LoginPage> {
                       GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const ContactanosPage()),
+                            MaterialPageRoute(builder: (_) => const RecuperarCuentaPage()),
                           );
                         },
                         child: Text(
@@ -264,6 +272,22 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
+    // ✅ DEBUG: confirmar a qué Firebase estás conectado
+    print("✅ ENV DEBUG (Login correo)");
+    print("Firebase projectId: ${Firebase.app().options.projectId}");
+    print("Firebase appId: ${Firebase.app().options.appId}");
+    print("UID autenticado: $userId");
+
+// ✅ DEBUG: confirmar existencia de docs en ESTA BD
+    final adminDocDbg = await FirebaseFirestore.instance.collection('admin').doc(userId).get();
+    final pplDocDbg   = await FirebaseFirestore.instance.collection('Ppl').doc(userId).get();
+    final inpecDocDbg  = await FirebaseFirestore.instance.collection('inpec').doc(userId).get();
+
+    print("admin/{uid}.exists: ${adminDocDbg.exists} | data: ${adminDocDbg.data()}");
+    print("inpec/{uid}.exists: ${inpecDocDbg.exists} | data: ${inpecDocDbg.data()}");
+    print("Ppl/{uid}.exists: ${pplDocDbg.exists} | data: ${pplDocDbg.data()}");
+
+
     try {
       // =========================
       // 1) ADMIN
@@ -307,7 +331,9 @@ class _LoginPageState extends State<LoginPage> {
         }
 
         if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
+          //Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false); piloto prod
+          Navigator.pushNamedAndRemoveUntil(context, _rutaHomeAdmin(), (route) => false);
+
         }
         return;
       }
@@ -480,6 +506,22 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
 
+      // ✅ DEBUG: confirmar a qué Firebase estás conectado
+      print("✅ ENV DEBUG (Login OTP)");
+      print("Firebase projectId: ${Firebase.app().options.projectId}");
+      print("Firebase appId: ${Firebase.app().options.appId}");
+      print("UID autenticado: $uid");
+
+// ✅ DEBUG: confirmar existencia de docs en ESTA BD
+      final adminDocDbg = await FirebaseFirestore.instance.collection('admin').doc(uid).get();
+      final pplDocDbg   = await FirebaseFirestore.instance.collection('Ppl').doc(uid).get();
+      final inpecDocDbg  = await FirebaseFirestore.instance.collection('inpec').doc(uid).get();
+
+      print("admin/{uid}.exists: ${adminDocDbg.exists} | data: ${adminDocDbg.data()}");
+      print("inpec/{uid}.exists: ${inpecDocDbg.exists} | data: ${inpecDocDbg.data()}");
+      print("Ppl/{uid}.exists: ${pplDocDbg.exists} | data: ${pplDocDbg.data()}");
+
+
       // === tu navegación existente ===
       final adminDoc = await FirebaseFirestore.instance.collection('admin').doc(uid).get();
       if (adminDoc.exists) {
@@ -497,7 +539,9 @@ class _LoginPageState extends State<LoginPage> {
           return;
         }
         if (context.mounted) {
-          Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false);
+          //Navigator.pushNamedAndRemoveUntil(context, 'home_admin', (route) => false); para filtrado de piloto prod
+          Navigator.pushNamedAndRemoveUntil(context, _rutaHomeAdmin(), (route) => false);
+
         }
         return;
       }

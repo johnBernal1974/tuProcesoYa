@@ -17,6 +17,8 @@ import 'package:tuprocesoya/widgets/analisis_preliminar/reporte_beneficios.dart'
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_web/webview_flutter_web.dart';
 import 'Pages/Inpec/home_inpec.dart';
+import 'Pages/PILOTO/ADMIN_PILOTO_PAGES/Pages/editar_registro_piloto_page.dart';
+import 'Pages/PILOTO/ADMIN_PILOTO_PAGES/Pages/home_administrador_piloto_page.dart';
 import 'Pages/administrador/atender_ solicitud_redenciones/atender_ solicitud_redenciones.dart';
 import 'Pages/administrador/atender_apelacion/atender_apelacion.dart';
 import 'Pages/administrador/atender_asignacion_jep/atender_asignacion_jep.dart';
@@ -158,6 +160,8 @@ import 'dart:async';
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
 Map<String, dynamic> envVars = {}; // 🔹 Variable global para almacenar las variables de entorno
+const String kEnv = String.fromEnvironment('ENV', defaultValue: 'prod');
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // Asegura que la inicialización esté completa antes de correr la app
@@ -177,6 +181,8 @@ void main() async {
       messagingSenderId: config['messagingSenderId'],
     ),
   );
+  debugPrint("ENV: $kEnv | projectId: ${config['projectId']}");
+
 
   WebViewPlatform.instance = WebWebViewPlatform();
 
@@ -185,17 +191,32 @@ void main() async {
 }
 
 
+// Future<Map<String, dynamic>> obtenerFirebaseConfig() async {
+//   final response = await http.get(
+//     Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getFirestoreConfig"),
+//   );
+//
+//   if (response.statusCode == 200) {
+//     return jsonDecode(response.body);
+//   } else {
+//     throw Exception("Error obteniendo configuración: ${response.statusCode}");
+//   }
+// } para seleccionar el firebase prod o piloto
+
 Future<Map<String, dynamic>> obtenerFirebaseConfig() async {
-  final response = await http.get(
-    Uri.parse("https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getFirestoreConfig"),
-  );
+  const url = (kEnv == 'piloto')
+      ? "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getFirestoreConfigPiloto"
+      : "https://us-central1-tu-proceso-ya-fe845.cloudfunctions.net/getFirestoreConfig";
+
+  final response = await http.get(Uri.parse(url));
 
   if (response.statusCode == 200) {
-    return jsonDecode(response.body);
+    return jsonDecode(response.body) as Map<String, dynamic>;
   } else {
-    throw Exception("Error obteniendo configuración: ${response.statusCode}");
+    throw Exception("Error obteniendo configuración ($kEnv): ${response.statusCode}");
   }
 }
+
 
 
 
@@ -298,6 +319,20 @@ class MyApp extends StatelessWidget {
         'reporte_beneficios_page_admin': (context) => const ReporteBeneficiosINPECPage(),
         'ppl_beneficios_plataforma_page': (context) => const PplBeneficiosPlataformaPage(),
 
+
+
+        //PILOTO
+        'home_admin_piloto': (_) => const HomeAdminPilotoPage(),
+        'editar_piloto': (context) {
+          final docId = ModalRoute.of(context)!.settings.arguments as String;
+          return EditRegistroPilotoPage(docId: docId);
+        },
+
+
+
+
+
+
         //INPEC
         'inpec_home': (context) => const PanelJuridicaPenitenciariaHomePage(), // Página principal
 
@@ -368,6 +403,7 @@ class MyApp extends StatelessWidget {
 
       },
         onGenerateRoute: (settings) {
+
           if (settings.name == 'respuesta_sugerencia_page_admin') {
             final args = settings.arguments as Map<String, dynamic>;
             return MaterialPageRoute(

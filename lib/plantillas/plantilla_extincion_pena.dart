@@ -74,7 +74,7 @@ class ExtincionPenaTemplate {
         Condenado: <b>$nombrePpl $apellidoPpl</b>.<br>
         Radicado del proceso: <b>$radicado</b>.<br>
         Delito: <b>$delito</b>.<br>
-        Asunto: <b>Solicitud de Extinción de la pena - $numeroSeguimiento</b>.<br><br>
+        Asunto: <b>Solicitud de Libertad por pena cumplida - $numeroSeguimiento</b>.<br><br>
 
         “Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.”<br><br>
         E.S.D<br><br>

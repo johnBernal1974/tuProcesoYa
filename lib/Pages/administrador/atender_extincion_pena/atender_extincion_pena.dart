@@ -6,9 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
-import 'package:mime/mime.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../commons/admin_provider.dart';
 import '../../../commons/main_layaout.dart';
 import '../../../controllers/tiempo_condena_controller.dart';
@@ -20,14 +18,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../widgets/calculo_beneficios_penitenciarios-general.dart';
 import '../../../widgets/datos_ejecucion_condena.dart';
-import '../../../widgets/envio_correo_manager.dart';
-import '../../../widgets/envio_correo_managerV2.dart';
 import '../../../widgets/envio_correo_managerV6.dart';
-import '../../../widgets/seleccionar_correo_centro_copia_correo.dart';
 import '../../../widgets/seleccionar_correo_centro_copia_correoV2.dart';
 import '../../../widgets/selector_correo_manual.dart';
 import '../historial_solicitudes_extincion_pena_admin/historial_solicitudes_extincion_pena_admin.dart';
-import '../historial_solicitudes_libertad_condicional_admin/historial_solicitudes_libertad_condicional_admin.dart';
 import 'atender_extincion_pena_controller.dart';
 
 class AtenderExtincionPenaPage extends StatefulWidget {
@@ -2054,7 +2048,7 @@ ${extincionPena.generarTextoHtml()}
     final List<Map<String, String>> archivosBase64 = [];
 
     final asuntoCorreo =
-        asuntoPersonalizado ?? "Solicitud extinción de la pena - ${widget.numeroSeguimiento}";
+        asuntoPersonalizado ?? "Solicitud Libertad por pena Cumplida - ${widget.numeroSeguimiento}";
 
     final currentUser = FirebaseAuth.instance.currentUser;
     final enviadoPor = currentUser?.email ?? adminFullName;
@@ -2102,114 +2096,6 @@ ${extincionPena.generarTextoHtml()}
       }
     }
   }
-
-
-  // Widget botonEnviarCorreo() {
-  //   return ElevatedButton(
-  //     style: ElevatedButton.styleFrom(
-  //       side: BorderSide(width: 1, color: Theme.of(context).primaryColor),
-  //       backgroundColor: Colors.white,
-  //       foregroundColor: Colors.black,
-  //     ),
-  //     onPressed: () async {
-  //       if (correoSeleccionado == null || correoSeleccionado!.isEmpty) {
-  //         await showDialog(
-  //           context: context,
-  //           builder: (context) => AlertDialog(
-  //             backgroundColor: Colors.white,
-  //             title: const Text("Aviso"),
-  //             content: const Text("No se ha seleccionado un correo electrónico."),
-  //             actions: [
-  //               TextButton(
-  //                 child: const Text("OK"),
-  //                 onPressed: () => Navigator.of(context).pop(),
-  //               ),
-  //             ],
-  //           ),
-  //         );
-  //         return;
-  //       }
-  //
-  //       // Crear la instancia
-  //       final envioCorreoManager = EnvioCorreoManagerV2();
-  //
-  //       // Llamar al método
-  //       await envioCorreoManager.enviarCorreoCompleto(
-  //         context: context,
-  //         correoDestinoPrincipal: correoSeleccionado!,
-  //         html: extincionPena.generarTextoHtml(),
-  //         numeroSeguimiento: extincionPena.numeroSeguimiento,
-  //
-  //         // 👇 Datos del acudiente (nuevos)
-  //         parentescoAcudiente: userData?.parentescoRepresentante ?? '',
-  //         nombreAcudiente: userData?.nombreAcudiente ?? 'Usuario',
-  //         apellidoAcudiente: userData?.apellidoAcudiente ?? '',
-  //         celularAcudiente: userData?.celular ?? '',
-  //         celularWhatsapp: userData?.celularWhatsapp,
-  //
-  //         rutaHistorial: 'historial_solicitudes_extincion_pena_admin',
-  //         nombreServicio: 'Extinción de la Pena',
-  //         idDocumentoPpl: widget.idUser,
-  //
-  //         // Datos del PPL / contexto
-  //         centroPenitenciario: userData?.centroReclusion ?? 'Centro de reclusión',
-  //         nombrePpl: userData?.nombrePpl ?? '',
-  //         apellidoPpl: userData?.apellidoPpl ?? '',
-  //         identificacionPpl: userData?.numeroDocumentoPpl ?? '',
-  //         nui: userData?.nui ?? '',
-  //         td: userData?.td ?? '',
-  //         patio: userData?.patio ?? '',
-  //         beneficioPenitenciario: 'Extinción de la pena',
-  //
-  //         enviarCorreoResend: ({
-  //           required String correoDestino,
-  //           String? asuntoPersonalizado,
-  //           String? prefacioHtml,
-  //         }) async {
-  //           await enviarCorreoResend(
-  //             correoDestino: correoDestino,
-  //             asuntoPersonalizado: asuntoPersonalizado,
-  //             prefacioHtml: prefacioHtml,
-  //           );
-  //         },
-  //
-  //         subirHtml: () async {
-  //           await subirHtmlCorreoADocumentoExtincionPena(
-  //             idDocumento: widget.idDocumento,
-  //             htmlContent: extincionPena.generarTextoHtml(),
-  //           );
-  //         },
-  //
-  //         buildSelectorCorreoCentroReclusion: ({
-  //           required Function(String correo, String nombreCentro) onEnviarCorreo,
-  //           required Function() onOmitir,
-  //         }) {
-  //           return SeleccionarCorreoCentroReclusionV2(
-  //             idUser: widget.idUser,
-  //             onEnviarCorreo: onEnviarCorreo,
-  //             onOmitir: onOmitir,
-  //           );
-  //         },
-  //
-  //         buildSelectorCorreoReparto: ({
-  //           required Function(String correo, String entidad) onCorreoValidado,
-  //           required Function(String nombreCiudad) onCiudadNombreSeleccionada,
-  //           required Function(String correo, String entidad) onEnviarCorreoManual,
-  //           required Function() onOmitir,
-  //         }) {
-  //           return SelectorCorreoManualFlexible(
-  //             entidadSeleccionada: userData?.juzgadoEjecucionPenas ?? 'Juzgado de ejecución de penas',
-  //             onCorreoValidado: onCorreoValidado,
-  //             onCiudadNombreSeleccionada: onCiudadNombreSeleccionada,
-  //             onEnviarCorreoManual: onEnviarCorreoManual,
-  //             onOmitir: () => Navigator.of(context).pop(),
-  //           );
-  //         },
-  //       );
-  //     },
-  //     child: const Text("Enviar por correo"),
-  //   );
-  // } 9 feb 2026
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
