@@ -37,6 +37,13 @@ class DerechoPeticionTemplate {
     required this.nombreAcudiente,
   });
 
+  String convertirParrafos(String texto) {
+    return texto
+        .split('\n\n')
+        .map((p) => '<p>${p.replaceAll('\n', '<br>')}</p>')
+        .join();
+  }
+
   String generarTextoHtml() {
     return """
     <html>
@@ -45,20 +52,18 @@ class DerechoPeticionTemplate {
         <b>$entidad</b><br><br>
         Asunto: <b>Derecho de petición - $numeroSeguimiento</b>.<br>
         Ref: <b>$referencia</b>.<br><br>
-        Yo, <b>$nombrePpl $apellidoPpl</b>, con número de identificación <b>$identificacionPpl</b>, NUI : <b>$nui</b>, TD : <b>$td</b> , PATIO : <b>$patio</b>, actualmente recluido en <b>$centroPenitenciario</b>, actuando en ejercicio del derecho de petición consagrado en el artículo 85 de la Constitución Política y la Ley 1755 de 2015, de manera respetuosa elevo a ustedes lo siguiente:<br><br>
+       
         <b>I. Consideraciones</b><br>
-        $consideraciones<br><br>
+        ${convertirParrafos(consideraciones)}<br><br>
         <b>II. Fundamentos de derecho:</b><br>
-        $fundamentosDeDerecho<br><br>
+        ${convertirParrafos(fundamentosDeDerecho)}<br><br>
         <b>III. Petición concreta</b><br>
-        $peticionConcreta<br><br><br>       
+        ${convertirParrafos(peticionConcreta)}<br><br><br>       
         Agradezco enormemente su colaboración y respuesta rápida y satisfactoria.<br><br><br><br>
         Atentamente,<br><br><br>
-        <b>$nombrePpl $apellidoPpl</b><br>
-        CC.$identificacionPpl<br>
-        TD.$td<br>
-        NUI.$nui<br>
-        PATIO.$patio<br><br><br>
+        <b>Duvan Ramirez Aristizábal</b><br>
+        CC.19483703<br>
+        TP.265935 C.S.J<br><br><br><br>
                 
         Por favor enviar las notificaciones a la siguiente dirección electrónica:<br>
         $emailAlternativo<br>

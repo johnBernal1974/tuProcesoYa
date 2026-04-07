@@ -2099,8 +2099,13 @@ class _AtenderDerechoPeticionPageState extends State<AtenderDerechoPeticionPage>
               .doc(idDocumento)
               .update({
             "status": "Revisado",
-            "reviso": adminFullName, // Guarda el nombre del admin
+            "reviso": adminFullName,
             "fecha_revision": FieldValue.serverTimestamp(),
+
+            /// 🔥 GUARDAR LOS TEXTOS ACTUALIZADOS
+            "consideraciones": _consideracionesController.text.trim(),
+            "fundamentos_de_derecho": _fundamentosDerechoController.text.trim(),
+            "peticion_concreta": _peticionConcretaController.text.trim(),
           });
 
           await ResumenSolicitudesHelper.actualizarResumen(
