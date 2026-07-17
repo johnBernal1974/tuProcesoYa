@@ -59,7 +59,7 @@ class SolicitudRedosificacionRedencionTemplate {
     <b>$dirigido</b><br>
     <b>$entidad</b><br><br>
 
-    Asunto: <b>Solicitud de Redosificación de Redención – $numeroSeguimiento</b><br>
+    Asunto: <b>Redención de penas - Redosificación – $numeroSeguimiento</b><br>
     Radicado del proceso: <b>$radicado</b><br><br>
 
     Me amparo en el artículo 85 de la Constitución Política de Colombia y en el artículo 14 de la Ley 1437 de 2011.<br><br>

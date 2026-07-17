@@ -786,7 +786,8 @@ exports.leerCorreosZoho = onSchedule(
 const VERIFY_TOKEN = "miverificatuproceso";
 
 exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
-  // 1️⃣ Verificación del webhook
+
+  // 🔐 VERIFICACIÓN
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
     const token = req.query["hub.verify_token"];
@@ -797,91 +798,96 @@ exports.webhookWhatsapp = functions.https.onRequest(async (req, res) => {
         console.log("✅ Webhook verificado correctamente");
         return res.status(200).send(challenge);
       } else {
-        console.error("❌ Error de verificación.");
         return res.sendStatus(403);
       }
     }
   }
 
-  // 2️⃣ Procesar mensajes entrantes
+  // 📩 MENSAJES
   if (req.method === "POST") {
+
     try {
+
       const body = req.body;
+      const value = body.entry?.[0]?.changes?.[0]?.value;
 
-      if (
-        body.object &&
-        body.entry &&
-        body.entry[0].changes &&
-        body.entry[0].changes[0].value.messages
-      ) {
-        const messageData = body.entry[0].changes[0].value.messages[0];
-        const from = messageData.from;
-        const id = messageData.id;
+      const phoneNumberId = value?.metadata?.phone_number_id;
 
-        // 🟢 Capturar perfil si viene
-        const contactProfile = body.entry[0].changes[0].value.contacts?.[0]?.profile;
-        const profilePicUrl = contactProfile?.profile_pic_url || null;
-        const profileName = contactProfile?.name || null;
+      console.log("📲 PHONE ID TPY:", phoneNumberId);
 
-        let text = "(sin contenido)";
-        let mediaType = null;
-        let mediaId = null;
-        let fileName = null;
+      // 🔥 CAMBIA ESTE ID
+      const PHONE_ID_TPY = "724376300739509";
 
-        if (messageData.text) {
-          text = messageData.text.body;
-        } else if (messageData.image) {
-          text = "(Imagen)";
-          mediaType = "image";
-          mediaId = messageData.image.id;
-        } else if (messageData.audio) {
-          text = "(Audio)";
-          mediaType = "audio";
-          mediaId = messageData.audio.id;
-        } else if (messageData.document) {
-          text = "(Documento)";
-          mediaType = "document";
-          mediaId = messageData.document.id;
-          fileName = messageData.document.filename || "Documento.pdf";
-        }
-
-        // 1️⃣ Guardar mensaje individual
-        await admin.firestore().collection("whatsapp_messages").add({
-          from: from,
-          conversationId: from,
-          text: text,
-          mediaType: mediaType,
-          mediaId: mediaId,
-          fileName: fileName,
-          messageId: id,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          isRead: false,
-        });
-
-        // 2️⃣ Actualizar o crear resumen de conversación con foto y nombre
-        await admin.firestore().collection("whatsapp_conversations").doc(from).set(
-          {
-            conversationId: from,
-            lastMessage: text,
-            lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
-            hasUnread: true,
-            profilePicUrl: profilePicUrl,
-            profileName: profileName,
-          },
-          { merge: true }
-        );
-
-        console.log(`✅ Mensaje procesado de ${from}: ${text} (${mediaType || "texto"})`);
+      // ⛔ FILTRO CRÍTICO
+      if (phoneNumberId !== PHONE_ID_TPY) {
+        console.log("⛔ Ignorado: no es Tu Proceso Ya");
+        return res.sendStatus(200);
       }
 
+      const messageData = value?.messages?.[0];
+
+      if (!messageData) return res.sendStatus(200);
+
+      const from = messageData.from;
+      const id = messageData.id;
+
+      const contactProfile = value.contacts?.[0]?.profile;
+      const profilePicUrl = contactProfile?.profile_pic_url || null;
+      const profileName = contactProfile?.name || null;
+
+      let text = "(sin contenido)";
+      let mediaType = null;
+      let mediaId = null;
+      let fileName = null;
+
+      if (messageData.text) {
+        text = messageData.text.body;
+      } else if (messageData.image) {
+        text = "(Imagen)";
+        mediaType = "image";
+        mediaId = messageData.image.id;
+      } else if (messageData.audio) {
+        text = "(Audio)";
+        mediaType = "audio";
+        mediaId = messageData.audio.id;
+      } else if (messageData.document) {
+        text = "(Documento)";
+        mediaType = "document";
+        mediaId = messageData.document.id;
+        fileName = messageData.document.filename || "Documento.pdf";
+      }
+
+      await admin.firestore().collection("whatsapp_messages").add({
+        from: from,
+        conversationId: from,
+        text: text,
+        mediaType: mediaType,
+        mediaId: mediaId,
+        fileName: fileName,
+        messageId: id,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        isRead: false,
+      });
+
+      await admin.firestore().collection("whatsapp_conversations").doc(from).set({
+        conversationId: from,
+        lastMessage: text,
+        lastMessageAt: admin.firestore.FieldValue.serverTimestamp(),
+        hasUnread: true,
+        profilePicUrl: profilePicUrl,
+        profileName: profileName,
+      }, { merge: true });
+
+      console.log(`✅ TPY Mensaje de ${from}: ${text}`);
+
       return res.sendStatus(200);
+
     } catch (error) {
-      console.error("❌ Error procesando mensaje:", error);
+      console.error("❌ ERROR WEBHOOK TPY:", error);
       return res.sendStatus(500);
     }
   }
 
-  // Si no es GET ni POST
   return res.sendStatus(405);
 });
 
