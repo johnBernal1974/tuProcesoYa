@@ -132,6 +132,7 @@ import 'Pages/client/solicitudes_beneficios/solicitud_extincion_pena.dart';
 import 'Pages/client/solicitudes_beneficios/solicitud_libertad_condicional.dart';
 import 'Pages/client/tutela/tutela.dart';
 import 'Pages/client/tutela_solicitud/tutela_solicitud.dart';
+import 'Pages/codigo_acceso_page/codigo_acceso_page.dart';
 import 'Pages/configuraciones/configuraciones.dart';
 import 'Pages/detalle_de_correo_page/detalla_correo_trasladoPenitenciaria.dart';
 import 'Pages/detalle_de_correo_page/detalle_correo_apelacion.dart';
@@ -400,6 +401,7 @@ class MyApp extends StatelessWidget {
         'tutela_solicitud': (context) => const TutelaSolicitudPage(),
         'info': (context) => const InfoPage(),
         'bloqueo_page': (context) => const BloqueadoPage(),
+        'codigo_acceso_page': (context) => const ValidarCodigoPage(),
 
       },
         onGenerateRoute: (settings) {

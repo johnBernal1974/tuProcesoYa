@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,9 +13,9 @@ import '../estamos_validando/estamos_validando.dart';
 
 
 class RegistroPage extends StatefulWidget {
-  final DocumentSnapshot? doc; // 🔥 Agregar el parámetro opcional `doc`
+  final String? codigoIngresado; // 🔥 Recibe el código de acceso validado
 
-  RegistroPage({super.key, this.doc});
+  const RegistroPage({super.key, this.codigoIngresado});
 
   @override
   _RegistroPageState createState() => _RegistroPageState();
@@ -347,7 +346,7 @@ class _RegistroPageState extends State<RegistroPage> {
               Row(
                 children: [
                   const Icon(Icons.warning_amber_rounded, color: Colors.red), // ⚠️ Icono de advertencia
-                 const SizedBox(width: 8), // Espacio entre el icono y el texto
+                  const SizedBox(width: 8), // Espacio entre el icono y el texto
                   Expanded( // Permite que el texto se ajuste sin desbordar
                     child: RichText(
                       text: const TextSpan(
@@ -650,7 +649,7 @@ class _RegistroPageState extends State<RegistroPage> {
               ),
               const SizedBox(height: 10),
               const Text("Es muy importante el número de WhatsApp ya que es el único medio de comunicación por donde te estaremos enviando toda la información relevante de tu proceso.", style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.bold, height: 1.1
+                  fontSize: 13, fontWeight: FontWeight.bold, height: 1.1
               ),),
               const SizedBox(height: 20),
               // 🔹 Celular WhatsApp
@@ -797,7 +796,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 ),
               ),
               const SizedBox(height: 20),
-        
+
               // 🔹 Nombres
               TextFormField(
                 controller: nombrePplController,
@@ -813,7 +812,7 @@ class _RegistroPageState extends State<RegistroPage> {
                 },
               ),
               const SizedBox(height: 15),
-        
+
               // 🔹 Apellidos
               TextFormField(
                 controller: apellidoPplController,
@@ -1769,7 +1768,7 @@ class _RegistroPageState extends State<RegistroPage> {
         "dias_condena": 0,
         "status": "registrado",
         "isNotificatedActivated": false,
-        "isPaid": false,
+        "isPaid": true,
         "assignedTo": "",
         "fechaRegistro": DateTime.now(),
         "saldo": 0,
@@ -1781,10 +1780,22 @@ class _RegistroPageState extends State<RegistroPage> {
         "pin_respaldo": sha256.convert(utf8.encode(pin)).toString(),
         "referidoPor": codigoReferidor,
         "programa": "general",
+        "codigo_acceso_usado": widget.codigoIngresado ?? "", // 🔥 Guarda el código validado aquí
       };
 
       // Paso 1: Guardar todos los datos excepto versión
       await FirebaseFirestore.instance.collection("Ppl").doc(userId).set(userData);
+
+      // Paso 1.1: Actualizar también en la colección de códigos de acceso quién lo usó (si se pasó el código)
+      if (widget.codigoIngresado != null && widget.codigoIngresado!.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('codigos_acceso')
+            .doc(widget.codigoIngresado)
+            .update({
+          'usadoPor': userId,
+          'documentoPpl': _normalizarDocumentoPpl(),
+        });
+      }
 
       // Paso 2: Obtener versión desde Firestore y actualizar solo ese campo
       final configDoc = await FirebaseFirestore.instance

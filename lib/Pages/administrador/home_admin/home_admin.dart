@@ -53,6 +53,17 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
   final _pplRef = FirebaseFirestore.instance.collection('Ppl');
 
 
+  Stream<QuerySnapshot> _obtenerStreamActual() {
+    Query query = _firebaseFirestore.collection('Ppl');
+
+    // 1. Usa doble igual (==) para comparar
+    if (filterIsPaid == true) {
+      // 2. Usa la sintaxis correcta de Firestore
+      query = query.where('isPaid', isEqualTo: true);
+    }
+
+    return query.snapshots() as Stream<QuerySnapshot>;
+  }
 
   Color getColor(Map<String, dynamic> data) {
     final estado = data['status']?.toString().toLowerCase() ?? '';
@@ -336,7 +347,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                     /// EN ESTA PARTE SE HACE EL FILTRADO
 
                     return StreamBuilder<QuerySnapshot>(
-                      stream: _firebaseFirestore.collection('Ppl').snapshots(),
+                      stream: _obtenerStreamActual(),
                       builder: (context, snapshot) {
                         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
@@ -357,12 +368,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                           final data = doc.data() as Map<String, dynamic>;
                           final isPaid = data['isPaid'] == true;
                           return isPaid;
-                        }).length;
-
-                        final int countSinPago = docs.where((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          final status = (data['status'] ?? '').toString().toLowerCase();
-                          return status == 'activado' && data['isPaid'] != true; // Incluye false o null
                         }).length;
 
                         final int countBloqueado = docs.where((doc) => doc.get('status').toString().toLowerCase() == 'bloqueado').length;
@@ -490,10 +495,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               if (filterStatus == null) {
                                 if (filterIsPaid == true) {
                                   return data['isPaid'] == true;
-                                }
-                                if (filterIsPaid == false) {
-                                  final status = (data['status'] ?? '').toString().toLowerCase();
-                                  return status == 'activado' && data['isPaid'] != true; // incluye false o null
                                 }
                               }
 
@@ -737,7 +738,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                               countRegistrado: countRegistrado,
                               countPorActivar: countPorActivar,
                               countSuscritos: countSuscritos,
-                              countSinPago: countSinPago,
                               countPendiente: countPendiente,
                               countBloqueado: countBloqueado,
                               countRedencionesVencidas: countRedencionesVencidas,
@@ -767,7 +767,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
         required int countRegistrado,
         required int countPorActivar,
         required int countSuscritos,
-        required int countSinPago,
         required int countPendiente,
         required int countBloqueado,
         required int countRedencionesVencidas,
@@ -789,7 +788,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                 countRegistrado: countRegistrado,
                 countPorActivar: countPorActivar,
                 countSuscritos: countSuscritos,
-                countSinPago: countSinPago,
                 countPendiente: countPendiente,
                 countBloqueado: countBloqueado,
                 countRedencionesVencidas: countRedencionesVencidas,
@@ -845,7 +843,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
                   countRegistrado,
                   countPorActivar,
                   countSuscritos,
-                  countSinPago,
                   countPendiente,
                   countBloqueado,
                   countRedencionesVencidas,
@@ -874,7 +871,6 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
       int countRegistrado,
       int countPorActivar,
       int countSuscritos,
-      int countSinPago,
       int countPendiente,
       int countBloqueado,
       int countRedencionesVencidas,
@@ -1040,21 +1036,7 @@ class _HomeAdministradorPageState extends State<HomeAdministradorPage> {
           const SizedBox(height: 6),
           const Divider(color: Colors.black, height: 10),
           const SizedBox(height: 6),
-          _buildStatRow(
-            "Sin Pago",
-            countSinPago,
-            Colors.blue,
-                () { setState(() {
-              filterIsPaid = false;
-              filterStatus = null;
-              mostrarSoloIncompletos = false;
-              mostrarRedencionesVencidas = false;
-              mostrarSeguimiento = false;
-              mostrarConSolicitudes = false;
-              filtrarPorExentos = false;
-            }); },
-            isSelected: filterIsPaid == false && filterStatus == null && !mostrarSoloIncompletos && !mostrarRedencionesVencidas && !mostrarSeguimiento && !mostrarConSolicitudes && !filtrarPorExentos,
-          ),
+
           const SizedBox(height: 6),
           _buildStatRow(
             "Bloqueados",
@@ -2163,7 +2145,6 @@ class FilterContainer extends StatelessWidget {
   final int countRegistrado;
   final int countPorActivar;
   final int countSuscritos;
-  final int countSinPago;
   final int countPendiente;
   final int countBloqueado;
   final int countRedencionesVencidas;
@@ -2195,7 +2176,6 @@ class FilterContainer extends StatelessWidget {
     required this.countRegistrado,
     required this.countPorActivar,
     required this.countSuscritos,
-    required this.countSinPago,
     required this.countPendiente,
     required this.countBloqueado,
     required this.countRedencionesVencidas,
@@ -2230,11 +2210,6 @@ class FilterContainer extends StatelessWidget {
         _buildStatRow("Suscritos", countSuscritos, Colors.green, () {
           onFilterSelected(status: null, isPaid: true);
         }, isSelected: selectedIsPaid == true && selectedFilter == null),
-        const SizedBox(height: 6),
-
-        _buildStatRow("Sin Pago", countSinPago, Colors.blue, () {
-          onFilterSelected(status: "activado", isPaid: false);
-        }, isSelected: selectedIsPaid == false && selectedFilter == "activado"),
         const SizedBox(height: 6),
 
         _buildStatRow("Seguimiento", countConSeguimiento, Colors.pink, () {

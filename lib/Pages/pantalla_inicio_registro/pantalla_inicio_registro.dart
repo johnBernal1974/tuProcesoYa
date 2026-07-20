@@ -39,6 +39,30 @@ class PantallaInicioRegistroPage extends StatelessWidget {
                   color: Colors.black87,
                 ),
               ),
+              const SizedBox(height: 10),
+
+              Text(
+                'Comunícate con los telefonos',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isMobile ? 14 : 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black54,
+                ),
+              ),
+              Text(
+                '300 1312777 - 312 3957147',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isMobile ? 16 : 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 30),
+              const Divider(color: Colors.grey, height: 2),
+              const SizedBox(height: 30),
+
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
@@ -48,7 +72,7 @@ class PantallaInicioRegistroPage extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.double_arrow, color: Colors.white),
                 label: Text(
-                  "Regístrate aquí",
+                  "Compraste membresia",
                   style: TextStyle(
                     fontSize: isMobile ? 16 : 20,
                     fontWeight: FontWeight.bold,
@@ -56,7 +80,7 @@ class PantallaInicioRegistroPage extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  Navigator.pushNamed(context, "register");
+                  Navigator.pushNamed(context, "codigo_acceso_page");
                 },
               ),
               const SizedBox(height: 30),
@@ -77,7 +101,7 @@ class PantallaInicioRegistroPage extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      "Ya estoy registrado",
+                      "¿Ya estás registrado?",
                       style: TextStyle(
                         fontSize: isMobile ? 16 : 20,
                         fontWeight: FontWeight.bold,
