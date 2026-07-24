@@ -1,13 +1,16 @@
 import 'dart:convert';
+import 'dart:html';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:intl/intl.dart';
+import 'package:mime/mime.dart';
 import 'package:tuprocesoya/Pages/administrador/historial_solicitudes_desistimiento_apelacion_admin/historial_solicitudes_desistimiento_apelacion_admin.dart';
 import 'package:tuprocesoya/providers/ppl_provider.dart';
 import '../../../commons/admin_provider.dart';
@@ -90,6 +93,16 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
   final TextEditingController numeroProcesoController = TextEditingController();
   final TextEditingController correoManualController = TextEditingController();
   DateTime? fechaApelacion;
+
+
+  bool _actuaPorApoderado = false;
+  final TextEditingController nombreAbogadoController = TextEditingController(text: "Duvan");
+  final TextEditingController apellidoAbogadoController = TextEditingController(text: "Ramirez Aristizabal");
+  final TextEditingController cedulaAbogadoController = TextEditingController(text: "19483703");
+  final TextEditingController tpAbogadoController = TextEditingController(text: "265953");
+
+  PlatformFile? archivoPoderSeleccionado;
+  String? urlPoderExistente;
   // --- fin controllers ---
 
   @override
@@ -112,7 +125,32 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
     entidadController.dispose();
     numeroProcesoController.dispose();
     correoManualController.dispose();
+    nombreAbogadoController.dispose();
+    apellidoAbogadoController.dispose();
+    cedulaAbogadoController.dispose();
+    tpAbogadoController.dispose();
     super.dispose();
+  }
+
+  Future<void> _seleccionarArchivoPoder() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+        withData: kIsWeb, // Importante para Flutter Web
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          archivoPoderSeleccionado = result.files.first;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Poder seleccionado: ${archivoPoderSeleccionado!.name}")),
+        );
+      }
+    } catch (e) {
+      if (kDebugMode) print("❌ Error al seleccionar archivo: $e");
+    }
   }
 
   String obtenerNombreArchivo(String url) {
@@ -233,7 +271,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
         const Divider(color: gris),
         const SizedBox(height: 20),
 
-        // Campos nuevos solicitados por ti: entidad manual, nro proceso, fecha apelación, correo manual
+        // Campos de configuración y datos del remitente
         Card(
           color: Colors.white,
           surfaceTintColor: Colors.white,
@@ -245,10 +283,116 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  "Enviar solicitud al tribunal",
+                  "Configuración del remitente y envío",
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
+
+                // --- SWITCH APODERADO / NOMBRE PROPIO ---
+                SwitchListTile(
+                  title: const Text("¿Actúa mediante apoderado (abogado)?"),
+                  subtitle: Text(_actuaPorApoderado ? "Redactado a nombre del abogado" : "Redactado a nombre propio (PPL)"),
+                  value: _actuaPorApoderado,
+                  onChanged: (val) {
+                    setState(() {
+                      _actuaPorApoderado = val;
+                    });
+                  },
+                ),
+
+                // Si actúa por apoderado, mostramos los campos editables del abogado
+                if (_actuaPorApoderado) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: nombreAbogadoController,
+                          decoration: const InputDecoration(labelText: "Nombre Abogado", border: OutlineInputBorder()),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: apellidoAbogadoController,
+                          decoration: const InputDecoration(labelText: "Apellido Abogado", border: OutlineInputBorder()),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: cedulaAbogadoController,
+                          decoration: const InputDecoration(labelText: "Cédula Abogado", border: OutlineInputBorder()),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: tpAbogadoController,
+                          decoration: const InputDecoration(labelText: "Tarjeta Profesional (C.S.J.)", border: OutlineInputBorder()),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // --- SECCIÓN ADJUNTAR PODER (Visible cuando actúa por apoderado) ---
+                  const Text(
+                    "Documento de Poder",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: _seleccionarArchivoPoder,
+                        icon: const Icon(Icons.attach_file),
+                        label: const Text("Seleccionar Poder"),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[200],
+                          foregroundColor: Colors.black,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          archivoPoderSeleccionado != null
+                              ? archivoPoderSeleccionado!.name
+                              : (urlPoderExistente != null && urlPoderExistente!.isNotEmpty
+                              ? obtenerNombreArchivo(urlPoderExistente!)
+                              : "Ningún archivo seleccionado"),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: archivoPoderSeleccionado != null ? Colors.green[700] : Colors.grey[600],
+                            fontStyle: FontStyle.italic,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (archivoPoderSeleccionado != null)
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.red),
+                          onPressed: () {
+                            setState(() {
+                              archivoPoderSeleccionado = null;
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+
+                const SizedBox(height: 15),
+                const Divider(),
+                const SizedBox(height: 10),
 
                 // --- ENTIDAD ---
                 TextField(
@@ -257,12 +401,8 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
                     labelText: "Entidad (ej. Tribunal Superior de ...)",
                     hintText: "Ingresa la entidad manualmente si no aparece en opciones",
                     floatingLabelBehavior: FloatingLabelBehavior.always,
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1.3),
-                    ),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey, width: 1)),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey, width: 1.3)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -274,12 +414,8 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
                     labelText: "Número del proceso",
                     hintText: "Ej: 12345-2024",
                     floatingLabelBehavior: FloatingLabelBehavior.always,
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1.3),
-                    ),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey, width: 1)),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey, width: 1.3)),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -300,12 +436,8 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
                     decoration: const InputDecoration(
                       labelText: 'Fecha de envío de la apelación',
                       floatingLabelBehavior: FloatingLabelBehavior.always,
-                      enabledBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 1),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey, width: 1.3),
-                      ),
+                      enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey, width: 1)),
+                      focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey, width: 1.3)),
                     ),
                     child: Text(
                       fechaApelacion == null
@@ -324,22 +456,10 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
                     labelText: "Correo destino (opcional)",
                     hintText: "Si lo completas, se usará este correo como destino principal",
                     floatingLabelBehavior: FloatingLabelBehavior.always,
-                    enabledBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderSide: BorderSide(color: Colors.grey, width: 1.3),
-                    ),
+                    enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey, width: 1)),
+                    focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey, width: 1.3)),
                   ),
                 ),
-                const SizedBox(height: 12),
-
-                const Text(
-                  "O elige uno de los correos guardados abajo:",
-                  style: TextStyle(fontSize: 12, color: Colors.black54),
-                ),
-                const SizedBox(height: 8),
-                // Aquí van los botones de correos (correoConBoton)
               ],
             ),
           ),
@@ -975,24 +1095,42 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
           asignadoNombreP2 = data['asignado_para_revisar'] ?? 'No asignado';
           fechaAsignadoP2 = (data['asignado_fecha_P2'] as Timestamp?)?.toDate();
 
+          // --- Cargar datos del apoderado si existen ---
+          if (data['actua_por_apoderado'] != null) {
+            _actuaPorApoderado = data['actua_por_apoderado'];
+          }
+          if (data['nombre_abogado'] != null && (data['nombre_abogado'] as String).isNotEmpty) {
+            nombreAbogadoController.text = data['nombre_abogado'];
+          }
+          if (data['apellido_abogado'] != null && (data['apellido_abogado'] as String).isNotEmpty) {
+            apellidoAbogadoController.text = data['apellido_abogado'];
+          }
+          if (data['cedula_abogado'] != null && (data['cedula_abogado'] as String).isNotEmpty) {
+            cedulaAbogadoController.text = data['cedula_abogado'];
+          }
+          if (data['tp_abogado'] != null && (data['tp_abogado'] as String).isNotEmpty) {
+            tpAbogadoController.text = data['tp_abogado'];
+          }
+
+          // 🔹 1. Recuperar la URL del poder guardado previamente
+          urlPoderExistente = data['url_poder'];
+
           // --- Campos manuales guardados: asigna SOLO si Firestore trae valor no vacío
           final entidadManual = (data['entidad_manual'] ?? '').toString().trim();
           if (entidadManual.isNotEmpty && entidadController.text.trim().isEmpty) {
             entidadController.text = entidadManual;
           }
 
-          final numeroProcesoManual = (data['numero_proceso_manual'] ?? '').toString().trim();
+          final numeroProcesoManual = (data['numero_processo_manual'] ?? data['numero_proceso'] ?? '').toString().trim();
           if (numeroProcesoManual.isNotEmpty && numeroProcesoController.text.trim().isEmpty) {
             numeroProcesoController.text = numeroProcesoManual;
           }
 
           final correoManualGuardado = (data['correo_destino_manual'] ?? '').toString().trim();
-          // Asignar si Firestore tiene valor y el controller está vacío (evita sobreescribir entrada del usuario)
           if (correoManualGuardado.isNotEmpty && correoManualController.text.trim().isEmpty) {
             correoManualController.text = correoManualGuardado;
           }
 
-          // Fecha apelacion: solo asignar si no hay ya una seleccion en el controlador de UI
           if (data['fecha_apelacion'] != null && fechaApelacion == null) {
             try {
               fechaApelacion = (data['fecha_apelacion'] as Timestamp).toDate();
@@ -1094,6 +1232,13 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
           patio: userData?.patio ?? "",
           fechaApelacion: fechaApelacion,
           motivoAdicional: data['motivo_adicional'] ?? '',
+
+          // Nuevos campos mapeados:
+          actuaPorApoderado: _actuaPorApoderado,
+          nombreAbogado: nombreAbogadoController.text,
+          apellidoAbogado: apellidoAbogadoController.text,
+          cedulaAbogado: cedulaAbogadoController.text,
+          tarjetaProfesionalAbogado: tpAbogadoController.text,
         );
 
         // Fragmento que devuelve la plantilla (puede ser fragmento <div>..)
@@ -1177,7 +1322,7 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
     final correoRemitente = FirebaseAuth.instance.currentUser?.email ?? adminFullName;
     final correoDestinatario = correoDestino;
 
-    // Construimos la plantilla PASANDOLE los valores manuales (radicado, fechaApelacion, entidad)
+    // Construimos la plantilla PASANDOLE los valores manuales y los datos del apoderado
     final desistimientoApelacion = SolicitudDesistimientoApelacionTemplate(
       dirigido: obtenerTituloCorreo(nombreCorreoSeleccionado), // puede quedar vacío si quieres
       entidad: entidadSeleccionada,
@@ -1195,6 +1340,11 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
       td: userData?.td ?? "",
       patio: userData?.patio ?? "",
       fechaApelacion: fechaApelacionManual,
+      actuaPorApoderado: _actuaPorApoderado,
+      nombreAbogado: nombreAbogadoController.text,
+      apellidoAbogado: apellidoAbogadoController.text,
+      cedulaAbogado: cedulaAbogadoController.text,
+      tarjetaProfesionalAbogado: tpAbogadoController.text,
     );
 
     // Construimos el HTML final **SIN** prefacio manual fuera del template (evita duplicados)
@@ -1220,6 +1370,55 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
     ultimoHtmlEnviado = mensajeHtml;
 
     final archivosBase64 = <Map<String, String>>[];
+
+    // 🔹 PROCESAR Y ADJUNTAR EL PODER SI FUE SELECCIONADO O EXISTE (Versión Web)
+    if (archivoPoderSeleccionado != null) {
+      try {
+        final storageRef = FirebaseStorage.instance
+            .ref("desistimientoApelacion/${widget.idDocumento}/poder_${archivoPoderSeleccionado!.name}");
+
+        // En Flutter Web se utiliza siempre putData con los bytes del archivo
+        UploadTask uploadTask = storageRef.putData(archivoPoderSeleccionado!.bytes!);
+
+        final snapshot = await uploadTask;
+        final downloadUrl = await snapshot.ref.getDownloadURL();
+
+        // Actualizar URL del poder en Firestore
+        await FirebaseFirestore.instance
+            .collection('desistimiento_apelacion_solicitados')
+            .doc(widget.idDocumento)
+            .update({"url_poder": downloadUrl});
+
+        // Añadir adjunto en Base64 para Resend
+        if (archivoPoderSeleccionado!.bytes != null) {
+          final base64String = base64Encode(archivoPoderSeleccionado!.bytes!);
+          archivosBase64.add({
+            "nombre": archivoPoderSeleccionado!.name,
+            "base64": base64String,
+            "tipo": lookupMimeType(archivoPoderSeleccionado!.name) ?? "application/pdf",
+          });
+        }
+      } catch (e) {
+        if (kDebugMode) print("❌ Error al subir el poder: $e");
+      }
+    } else if (urlPoderExistente != null && urlPoderExistente!.isNotEmpty) {
+      // Si ya estaba guardado previamente en Firestore, lo descargamos para volver a adjuntarlo
+      try {
+        final responseArchivo = await http.get(Uri.parse(urlPoderExistente!));
+        if (responseArchivo.statusCode == 200) {
+          final nombreArchivo = obtenerNombreArchivo(urlPoderExistente!);
+          final base64String = base64Encode(responseArchivo.bodyBytes);
+          archivosBase64.add({
+            "nombre": nombreArchivo,
+            "base64": base64String,
+            "tipo": lookupMimeType(nombreArchivo) ?? "application/pdf",
+          });
+        }
+      } catch (e) {
+        if (kDebugMode) print("❌ Error al procesar poder existente: $e");
+      }
+    }
+
     final asuntoCorreo = asuntoPersonalizado ?? "Desistimiento de apelación – ${widget.numeroSeguimiento}";
     final enviadoPor = correoRemitente;
 
@@ -1251,7 +1450,6 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
       if (kDebugMode) print("❌ Error al enviar el correo con Resend: ${response.body}");
     }
   }
-
 
   Widget botonEnviarCorreo() {
     return ElevatedButton(
@@ -1469,6 +1667,28 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
           return;
         }
         try {
+          String? downloadUrl = urlPoderExistente;
+
+          // 🔹 Si hay un archivo nuevo seleccionado, subirlo a Firebase Storage antes de actualizar
+          if (archivoPoderSeleccionado != null) {
+            final storageRef = FirebaseStorage.instance
+                .ref("desistimientoApelacion/$idDocumento/poder_${archivoPoderSeleccionado!.name}");
+
+            UploadTask uploadTask;
+            if (archivoPoderSeleccionado!.bytes != null) {
+              uploadTask = storageRef.putData(archivoPoderSeleccionado!.bytes!);
+            } else {
+              throw Exception("No se pudieron obtener los datos del archivo seleccionado.");
+            }
+
+            final snapshot = await uploadTask;
+            downloadUrl = await snapshot.ref.getDownloadURL();
+            setState(() {
+              urlPoderExistente = downloadUrl;
+              archivoPoderSeleccionado = null; // Limpiar selección temporal
+            });
+          }
+
           await FirebaseFirestore.instance.collection('desistimiento_apelacion_solicitados').doc(idDocumento).update({
             "status": "Diligenciado",
             "diligencio": adminFullName,
@@ -1478,7 +1698,17 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
             "correo_destino_manual": correoManualController.text.trim(),
             "fecha_apelacion": fechaApelacion != null ? Timestamp.fromDate(fechaApelacion!) : null,
 
+            // Guardar datos del apoderado
+            "actua_por_apoderado": _actuaPorApoderado,
+            "nombre_abogado": nombreAbogadoController.text.trim(),
+            "apellido_abogado": apellidoAbogadoController.text.trim(),
+            "cedula_abogado": cedulaAbogadoController.text.trim(),
+            "tp_abogado": tpAbogadoController.text.trim(),
+
+            // 🔹 Guardar la URL del poder
+            if (downloadUrl != null) "url_poder": downloadUrl,
           });
+
           await ResumenSolicitudesHelper.actualizarResumen(idOriginal: idDocumento, nuevoStatus: "Diligenciado", origen: "desistimiento_apelacion_solicitados");
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Solicitud marcada como diligenciada")));
@@ -1508,6 +1738,28 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
           return;
         }
         try {
+          String? downloadUrl = urlPoderExistente;
+
+          // 🔹 Si hay un archivo nuevo seleccionado, subirlo a Firebase Storage antes de actualizar
+          if (archivoPoderSeleccionado != null) {
+            final storageRef = FirebaseStorage.instance
+                .ref("desistimientoApelacion/$idDocumento/poder_${archivoPoderSeleccionado!.name}");
+
+            UploadTask uploadTask;
+            if (archivoPoderSeleccionado!.bytes != null) {
+              uploadTask = storageRef.putData(archivoPoderSeleccionado!.bytes!);
+            } else {
+              throw Exception("No se pudieron obtener los datos del archivo seleccionado.");
+            }
+
+            final snapshot = await uploadTask;
+            downloadUrl = await snapshot.ref.getDownloadURL();
+            setState(() {
+              urlPoderExistente = downloadUrl;
+              archivoPoderSeleccionado = null; // Limpiar selección temporal
+            });
+          }
+
           await FirebaseFirestore.instance.collection('desistimiento_apelacion_solicitados').doc(idDocumento).update({
             "status": "Revisado",
             "reviso": adminFullNameLocal,
@@ -1517,7 +1769,17 @@ class _AtenderSolicitudDesistimientoApelacionPageState extends State<AtenderSoli
             "correo_destino_manual": correoManualController.text.trim(),
             "fecha_apelacion": fechaApelacion != null ? Timestamp.fromDate(fechaApelacion!) : null,
 
+            // Guardar datos del apoderado
+            "actua_por_apoderado": _actuaPorApoderado,
+            "nombre_abogado": nombreAbogadoController.text.trim(),
+            "apellido_abogado": apellidoAbogadoController.text.trim(),
+            "cedula_abogado": cedulaAbogadoController.text.trim(),
+            "tp_abogado": tpAbogadoController.text.trim(),
+
+            // 🔹 Guardar la URL del poder
+            if (downloadUrl != null) "url_poder": downloadUrl,
           });
+
           await ResumenSolicitudesHelper.actualizarResumen(idOriginal: idDocumento, nuevoStatus: "Revisado", origen: "desistimiento_apelacion_solicitados");
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Solicitud guardada como 'Revisado'")));

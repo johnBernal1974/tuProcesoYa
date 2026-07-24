@@ -17,6 +17,13 @@ class SolicitudDesistimientoApelacionTemplate {
   final String td;
   final String patio;
 
+  // Nuevos parámetros para apoderado
+  final bool actuaPorApoderado;
+  final String nombreAbogado;
+  final String apellidoAbogado;
+  final String cedulaAbogado;
+  final String tarjetaProfesionalAbogado;
+
   final DateTime? fechaApelacion;
   final int? diasTranscurridos;
   final String motivoAdicional;
@@ -37,6 +44,11 @@ class SolicitudDesistimientoApelacionTemplate {
     required this.nui,
     required this.td,
     required this.patio,
+    this.actuaPorApoderado = false,
+    this.nombreAbogado = "Duvan",
+    this.apellidoAbogado = "Ramirez Aristizabal",
+    this.cedulaAbogado = "19483703",
+    this.tarjetaProfesionalAbogado = "265953",
     this.fechaApelacion,
     this.diasTranscurridos,
     this.motivoAdicional = "",
@@ -59,6 +71,40 @@ class SolicitudDesistimientoApelacionTemplate {
     final fechaTxt =
     fechaApelacion != null ? _formatDate(fechaApelacion) : '';
 
+    // Párrafo inicial según si actúa por nombre propio o por apoderado
+    String parrafoPresentacion = "";
+    if (actuaPorApoderado) {
+      parrafoPresentacion = '''
+      Yo, <b>$nombreAbogado $apellidoAbogado</b>, identificado(a) con cédula de ciudadanía No. <b>$cedulaAbogado</b> y portador(a) de la Tarjeta Profesional No. <b>$tarjetaProfesionalAbogado</b> del C.S.J., obrando en calidad de apoderado(a) judicial de <b>$nombrePpl $apellidoPpl</b>, quien se encuentra identificado(a) con cédula de ciudadanía No. <b>$identificacionPpl</b>, TD: <b>$td</b>, NUI: <b>$nui</b>, actualmente recluido(a) en el establecimiento penitenciario <b>$centroPenitenciario</b>, Patio <b>$patio</b>; en ejercicio del mandato conferido y de las facultades legales pertinentes, me permito manifestar al despacho lo siguiente:
+      ''';
+    } else {
+      parrafoPresentacion = '''
+      Yo, <b>$nombrePpl $apellidoPpl</b>, identificado(a) con cédula de ciudadanía No. <b>$identificacionPpl</b>,
+      TD: <b>$td</b>, NUI: <b>$nui</b>, actualmente recluido(a) en el establecimiento penitenciario
+      <b>$centroPenitenciario</b>, Patio <b>$patio</b>, en pleno uso de mis facultades y en ejercicio del derecho de defensa,
+      me permito manifestar al despacho lo siguiente:
+      ''';
+    }
+
+    // Texto para la firma final
+    String bloqueFirma = "";
+    if (actuaPorApoderado) {
+      bloqueFirma = '''
+      <p>Atentamente,</p><br><br>
+      <p><b>$nombreAbogado $apellidoAbogado</b></p>
+      <p>C.C. No. $cedulaAbogado</p>
+      <p>T.P. No. $tarjetaProfesionalAbogado del C.S.J.</p>
+      <p style="margin-top:8px; font-size:12px; color:#444;">Apoderado(a) de: $nombrePpl $apellidoPpl (C.C. $identificacionPpl)</p>
+      ''';
+    } else {
+      bloqueFirma = '''
+      <p>Atentamente,</p><br><br>
+      <p><b>$nombrePpl $apellidoPpl</b></p>
+      <p>CC: $identificacionPpl</p>
+      <p>TD: $td &nbsp; | &nbsp; NUI: $nui</p>
+      ''';
+    }
+
     final buffer = StringBuffer();
 
     buffer.writeln('''
@@ -79,33 +125,28 @@ class SolicitudDesistimientoApelacionTemplate {
     .firma { margin-top:50px; }
     .firma p { margin:3px 0; }
     .nota { font-size:11px; color:#666; margin-top:22px; border-top:1px solid #eee; padding-top:8px; }
-    .espacio-superior { margin-top:18px; } /* para el espacio entre email y "Atentamente" */
+    .espacio-superior { margin-top:18px; }
   </style>
 </head>
 <body>
   <div class="container">
 
-    <p class="dirigido">${dirigidoFinal}</p>
-    <p class="entidad">${entidad}</p>
+    <p class="dirigido">$dirigidoFinal</p>
+    <p class="entidad">$entidad</p>
 
     <div class="meta">
-      <p><b>Asunto:</b> Desistimiento de apelación – <span class="bold">${numeroSeguimiento}</span></p>
-      <p><b>Radicado / No. de proceso:</b> <span class="bold">${radicadoTxt}</span></p>
+      <p><b>Asunto:</b> Desistimiento de apelación – <span class="bold">$numeroSeguimiento</span></p>
+      <p><b>Radicado / No. de proceso:</b> <span class="bold">$radicadoTxt</span></p>
       ${fechaTxt.isNotEmpty ? '<p><b>Fecha de apelación:</b> $fechaTxt</p>' : ''}
     </div>
 
     <p><b>E.S.D.</b></p>
 
-    <p>
-      Yo, <b>${nombrePpl} ${apellidoPpl}</b>, identificado(a) con cédula de ciudadanía No. <b>${identificacionPpl}</b>,
-      TD: <b>${td}</b>, NUI: <b>${nui}</b>, actualmente recluido(a) en el establecimiento penitenciario
-      <b>${centroPenitenciario}</b>, Patio <b>${patio}</b>, en pleno uso de mis facultades y en ejercicio del derecho de defensa,
-      me permito manifestar al despacho lo siguiente:
-    </p>
+    <p>$parrafoPresentacion</p>
 
     <h2>I. PETICIÓN PRINCIPAL</h2>
     <p>
-      Solicito se tenga por presentado el desistimiento del recurso de apelación interpuesto en el proceso identificado con el radicado <b>${radicadoTxt}</b>,
+      Solicito se tenga por presentado el desistimiento del recurso de apelación interpuesto en el proceso identificado con el radicado <b>$radicadoTxt</b>,
       se ordene el retiro de la impugnación practicada y se proceda a continuar con la ejecución de la decisión de fondo conforme al ordenamiento jurídico aplicable.
     </p>
     <p>
@@ -117,12 +158,12 @@ class SolicitudDesistimientoApelacionTemplate {
     <p>
       Manifiesto que la presente decisión es libre, consciente y no producto de coacción. Los motivos que justifican el desistimiento son de carácter
       personal y procesal; entre ellos pueden mencionarse la valoración de riesgos y beneficios de proseguir con la impugnación, la existencia de acuerdos
-      o la voluntad explícita del recurrente de no continuar con la instancia recursal.
+      o la voluntad explícita de no continuar con la instancia recursal.
     </p>
     ${motivoAdicional.isNotEmpty ? '<p><b>Motivo(s) adicional(es):</b><br>' + motivoAdicional + '</p>' : ''}
 
     <p>
-      Declaro expresamente que esta decisión de desistir del recurso de apelación la realizo de manera <b>libre, consciente y sin coacción alguna</b>,
+      Declaro expresamente que esta decisión de desistir del recurso de apelación se realiza de manera <b>libre, consciente y sin coacción alguna</b>,
       comprendiendo plenamente sus efectos jurídicos y procesales.
     </p>
 
@@ -133,7 +174,7 @@ class SolicitudDesistimientoApelacionTemplate {
     </p>
     <p>
       De conformidad con lo dispuesto en el <b>artículo 314 del Código General del Proceso</b>, aplicable por remisión en materia penal y procesal, 
-      el recurso interpuesto es susceptible de desistimiento expreso por parte del recurrente. 
+      el recurso interpuesto es susceptible de desistimiento expreso por parte del recurrente o su apoderado debidamente facultado. 
       Así mismo, conforme al <b>artículo 183 del Código de Procedimiento Penal</b>, el desistimiento de la impugnación debe ser aceptado por el despacho
       y produce el efecto de dejar en firme la providencia impugnada.
     </p>
@@ -152,36 +193,23 @@ class SolicitudDesistimientoApelacionTemplate {
     <h2>V. NOTIFICACIONES</h2>
     <p>
       Solicito se compulsen copias y se remitan notificaciones a las siguientes direcciones electrónicas para fines de trazabilidad:
-      <br><b>${emailAlternativo}</b>
-      <br><b>${emailUsuario}</b>
+      <br><b>$emailAlternativo</b>
+      <br><b>$emailUsuario</b>
     </p>
 
     <div class="espacio-superior"></div>
 
     <div class="firma">
-      <p>Atentamente,</p><br><br>
-      <p><b>${nombrePpl} ${apellidoPpl}</b></p>
-      <p>CC: ${identificacionPpl}</p>
-      <p>TD: ${td} &nbsp; | &nbsp; NUI: ${nui}</p>
+      $bloqueFirma
     </div>
 
     <div class="nota">
-  <p>
-    <b>NOTA:</b> Esta solicitud ha sido elaborada y remitida mediante la plataforma digital <b>Tu Proceso Ya</b>, 
-    una herramienta jurídica en línea orientada a <b>facilitar el acceso a la justicia</b> de las personas privadas 
-    de la libertad y sus familiares. A través de esta plataforma se promueve el uso responsable de la tecnología 
-    como medio legítimo para ejercer derechos fundamentales, especialmente el <b>derecho de petición</b> consagrado 
-    en el artículo 23 de la Constitución Política y desarrollado por la <b>Ley 1755 de 2015</b>.
-  </p>
-  <p>
-    <b>Tu Proceso Ya</b> permite la elaboración, envío y trazabilidad de solicitudes judiciales y administrativas, 
-    garantizando el principio de transparencia y la comunicación efectiva entre los ciudadanos y las autoridades 
-    competentes. La plataforma no reemplaza la función de los abogados defensores ni la labor de los operadores 
-    judiciales, sino que constituye un <b>mecanismo de apoyo tecnológico</b> para el ejercicio autónomo y digno de 
-    los derechos de las personas privadas de la libertad.
-  </p>
-</div>
-
+      <p>
+        <b>NOTA:</b> Esta solicitud ha sido elaborada y remitida mediante la plataforma digital <b>Tu Proceso Ya</b>, 
+        una herramienta jurídica en línea orientada a <b>facilitar el acceso a la justicia</b> de las personas privadas 
+        de la libertad y sus familiares...
+      </p>
+    </div>
 
     <div style="margin-top: 40px;">
       <img src="https://firebasestorage.googleapis.com/v0/b/tu-proceso-ya-fe845.firebasestorage.app/o/logo_tu_proceso_ya_transparente.png?alt=media&token=07f3c041-4ee3-4f3f-bdc5-00b65ac31635" width="180" height="60"/>
