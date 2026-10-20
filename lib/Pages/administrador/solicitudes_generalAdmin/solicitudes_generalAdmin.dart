@@ -36,6 +36,11 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
     _FuenteColeccion(collection: 'copiaSentencia_solicitados',       tipoServicio: 'Copia de sentencia',         pathStorage: 'copiaSentencia'),
     _FuenteColeccion(collection: 'derechos_peticion_solicitados',    tipoServicio: 'Derecho de petición',        pathStorage: 'derechos_peticion'),
     _FuenteColeccion(collection: 'trasladoProceso_solicitados',      tipoServicio: 'Traslado de proceso',        pathStorage: 'trasladoProceso'),
+    _FuenteColeccion(
+      collection: 'asignacionTEE_solicitados',
+      tipoServicio: 'Asignación TEE',
+      pathStorage: 'asignacionTEE',
+    ),
   ];
 
   /// Estados que van a la vista de resultado
@@ -90,6 +95,11 @@ class _TodasLasSolicitudesAdminPageState extends State<TodasLasSolicitudesAdminP
     'trasladoProceso_solicitados': {
       'atender':  'atender_traslado_proceso_page',
       'resultado':'solicitudes_traslado_proceso_enviadas_por_correo',
+    },
+
+    'asignacionTEE_solicitados': {
+      'atender': 'atender_asignacion_tee_page',
+      'resultado': 'atender_asignacion_tee_page',
     },
   };
 

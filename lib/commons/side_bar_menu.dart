@@ -41,6 +41,7 @@ class _SideBarState extends State<SideBar> {
   int solicitudesTrasladoPenitenciaria = 0;
   int solicitudesCopiaSentencia = 0;
   int solicitudesAsignacionJEP = 0;
+  int solicitudesAsignacionTEE = 0;
 
   bool _isInpec = false;
   String? _rolInpec; // ejemplo: "oficinaJuridica"
@@ -76,6 +77,7 @@ class _SideBarState extends State<SideBar> {
     _fetchTraladoPenitenciariaSolicitados();
     _fetchCopiaSentenciaSolicitados();
     _fetchAsignacionJEPSolicitados();
+    _fetchAsignacionTEESolicitados();
   }
 
   Future<void> _loadData() async {
@@ -440,6 +442,23 @@ class _SideBarState extends State<SideBar> {
     }
   }
 
+  Future<void> _fetchAsignacionTEESolicitados() async {
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('asignacionTEE_solicitados')
+          .where('status', isEqualTo: 'Solicitado')
+          .get();
+
+      if (!mounted) return;
+
+      setState(() {
+        solicitudesAsignacionTEE = querySnapshot.docs.length;
+      });
+    } catch (e) {
+      debugPrint('Error consultando solicitudes TEE: $e');
+    }
+  }
+
   Widget _buildDrawerHeader(bool? isAdmin) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
@@ -673,6 +692,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_asignacionJEP_admin',
                   showBadge: solicitudesAsignacionJEP > 0,
                   contador: solicitudesAsignacionJEP,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Asignación TEE",
+                  Icons.double_arrow,
+                  'historial_solicitudes_asignacionTEE_admin',
+                  showBadge: solicitudesAsignacionTEE > 0,
+                  contador: solicitudesAsignacionTEE,
                 ),
               ),
 
@@ -947,6 +978,18 @@ class _SideBarState extends State<SideBar> {
                   'historial_solicitudes_asignacionJEP_admin',
                   showBadge: solicitudesAsignacionJEP > 0,
                   contador: solicitudesAsignacionJEP,
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.only(left: 16.0),
+                child: _buildDrawerTile(
+                  context,
+                  "Asignación TEE",
+                  Icons.double_arrow_outlined,
+                  'historial_solicitudes_asignacionTEE_admin',
+                  showBadge: solicitudesAsignacionTEE > 0,
+                  contador: solicitudesAsignacionTEE,
                 ),
               ),
             ],

@@ -67,6 +67,14 @@ class SolicitarServiciosPage extends StatelessWidget {
       "icon": Icons.assistant_direction_sharp,
       "route": "solicitud_asignacion_jep_page",
     },
+
+
+    {
+      "title": "Asignación TEE",
+      "icon": Icons.assignment_ind_rounded,
+      "route": "solicitud_asignacion_tee_page",
+    },
+
   ];
 
   @override

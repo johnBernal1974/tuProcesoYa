@@ -22,6 +22,7 @@ import 'Pages/PILOTO/ADMIN_PILOTO_PAGES/Pages/home_administrador_piloto_page.dar
 import 'Pages/administrador/atender_ solicitud_redenciones/atender_ solicitud_redenciones.dart';
 import 'Pages/administrador/atender_apelacion/atender_apelacion.dart';
 import 'Pages/administrador/atender_asignacion_jep/atender_asignacion_jep.dart';
+import 'Pages/administrador/atender_asignacion_tee/atender_asignacion_tee.dart';
 import 'Pages/administrador/atender_copia_sentencia/atender_copia_sentencia.dart';
 import 'Pages/administrador/atender_derecho_peticion_admin/atender_derecho_peticion_admin.dart';
 import 'Pages/administrador/atender_extincion_pena/atender_extincion_pena.dart';
@@ -90,6 +91,7 @@ import 'Pages/client/estamos_validando/estamos_validando.dart';
 import 'Pages/client/historial_solicitudes_TrasladoPenitenciaria/historial_solicitudes_TrasladoPenitenciaria.dart';
 import 'Pages/client/historial_solicitudes_apelacion/historial_solicitudes_apelacion.dart';
 import 'Pages/client/historial_solicitudes_asignacionJep/historial_solicitudes_asignacionJep.dart';
+import 'Pages/client/historial_solicitudes_asignacion_tee/historial_solicitudes_asignacion_tee.dart';
 import 'Pages/client/historial_solicitudes_copiaSentencia/historial_solicitudes_copiaSentencia.dart';
 import 'Pages/client/historial_solicitudes_derecho_peticion/historial_solicitudes_derecho_peticion.dart';
 import 'Pages/client/historial_solicitudes_desistimiento_apelacion/historial_solicitudes_desistimiento_apelacion.dart';
@@ -157,6 +159,11 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:http/http.dart' as http;
 import 'dart:html' as html;
 import 'dart:async';
+
+
+import 'Pages/client/otras_solicitudes/solicitud_asignacion_tee.dart';
+import 'Pages/administrador/historial_solicitudes_asignacionTEE_admin/historial_solicitudes_asignacionTEE_admin.dart';
+
 
 
 final GlobalKey<NavigatorState> navKey = GlobalKey<NavigatorState>();
@@ -302,6 +309,7 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_trasladoPenitenciaria_admin': (context) => const HistorialSolicitudesTrasladoPenitenciariaAdminPage(),
         'historial_solicitudes_copiaSentencia_admin': (context) => const HistorialSolicitudesCopiaSentenciaAdminPage(),
         'historial_solicitudes_asignacionJEP_admin': (context) => const HistorialSolicitudesAsignacionJEPAdminPage(),
+        'historial_solicitudes_asignacionTEE_admin': (context) => const HistorialSolicitudesAsignacionTEEAdminPage(),
         'historial_solicitudes_desistimientoApelacion_admin': (context) => const HistorialSolicitudesDesistimientoApelacionAdminPage(),
         'registrar_operadores': (context) => const RegistrarOperadoresPage(),
         'registrar_inpec': (context) => const RegistrarInpecPage(),
@@ -359,6 +367,8 @@ class MyApp extends StatelessWidget {
         'historial_solicitudes_copiaSentencia': (context) => const HistorialSolicitudesCopiaSentenciaPage(),
         'historial_solicitudes_asignacionJep': (context) => const HistorialSolicitudesAsignacionJepPage(),
         'historial_solicitudes_desistimiento_apelacion': (context) => const HistorialSolicitudesDesistimientoPage(),
+        'historial_solicitudes_asignacionTEE':
+            (context) => const HistorialSolicitudesAsignacionTEEPage(),
         'estamos_validando': (context) => EstamosValidandoPage(),
         'derechos_info': (context) => const DerechosInfoPage(),
         'buzon_sugerencias': (context) => const BuzonSugerenciasPage(),
@@ -377,9 +387,12 @@ class MyApp extends StatelessWidget {
         'solicitud_acumulacion_page': (context) => const SolicitudAcumulacionPenasPage(),
         'solicitud_apelacion_page': (context) => const SolicitudApelacionPage(),
         'solicitud_trasladoPenitenciaria_page': (context) => const SolicitudTrasladoPenitenciariaPage(),
+
         'solicitud_copia_sentencia_page': (context) => const SolicitudCopiaSentenciaPage(),
         'solicitud_asignacion_jep_page': (context) => const SolicitudAsignacionJepPage(),
+        'solicitud_asignacion_tee_page': (context) => const SolicitudAsignacionTeePage(),
         'solicitud_desistimiento_apelacion_page': (context) => const SolicitudDesistimientoPage(),
+
         'info_previa_solicitud_domiciliaria_page': (context) => const RequisitosPrisionDomiciliariaPage(),
         'info_previa_libertad_condicional_page': (context) => const RequisitosLibertadCondicionalPage(),
         'info_previa_72h_page': (context) => const RequisitosPermiso72hPage(),
@@ -897,6 +910,19 @@ class MyApp extends StatelessWidget {
                 status: args['status'] ?? "Diligenciado",
                 idDocumento: args['idDocumento'],
                 numeroSeguimiento: args['numeroSeguimiento'] ?? "Sin seguimiento",
+                fecha: args['fecha'],
+                idUser: args['idUser'],
+              ),
+            );
+          }
+          else if (settings.name == 'atender_asignacion_tee_page') {
+            final args = settings.arguments as Map<String, dynamic>;
+
+            return MaterialPageRoute(
+              builder: (context) => AtenderSolicitudAsignacionTEEPage(
+                status: args['status'] ?? 'Solicitado',
+                idDocumento: args['idDocumento'],
+                numeroSeguimiento: args['numeroSeguimiento'],
                 fecha: args['fecha'],
                 idUser: args['idUser'],
               ),

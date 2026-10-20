@@ -105,6 +105,14 @@ class HistorialSolicitudesPage extends StatelessWidget {
       "icon": Icons.cancel,
       "route": "historial_solicitudes_desistimiento_apelacion",
     },
+
+    {
+      "collection": "asignacionTEE_solicitados",
+      "title": "Asignación de\ncursos TEE",
+      "icon": Icons.school_outlined,
+      "route": "historial_solicitudes_asignacionTEE",
+    },
+
   ];
 
   @override

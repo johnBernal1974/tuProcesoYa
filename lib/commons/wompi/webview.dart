@@ -36,6 +36,8 @@ import 'package:tuprocesoya/commons/wompi/reintento_pago_traslado_proceso.dart';
 import 'package:tuprocesoya/commons/wompi/reintento_pago_tutela.dart';
 import '../../src/colors/colors.dart';
 import 'PagoExitosoExtincionPena.dart';
+import 'package:tuprocesoya/commons/wompi/pago_exitoso_asignacionTEE.dart';
+import 'package:tuprocesoya/commons/wompi/reintento_pago_asignacionTEE.dart';
 
 class WompiWebView extends StatefulWidget {
   final String url;
@@ -260,6 +262,18 @@ class _WompiWebViewState extends State<WompiWebView> {
           },
         );
 
+
+      case 'asignacionTEE':
+        return PagoExitosoAsignacionTeePage(
+          montoPagado: monto,
+          transaccionId: id,
+          fecha: fecha,
+          onContinuar: () async {
+            widget.onTransaccionAprobada?.call();
+          },
+        );
+
+
       default:
         return const Scaffold(
           body: Center(
@@ -382,6 +396,15 @@ class _WompiWebViewState extends State<WompiWebView> {
           valor: widget.valorDerecho,
           onTransaccionAprobada: widget.onTransaccionAprobada,
         );
+
+
+      case 'asignacionTEE':
+        return ReintentoPagoAsignacionTeePage(
+          referencia: widget.referencia,
+          valor: widget.valorDerecho,
+          onTransaccionAprobada: widget.onTransaccionAprobada,
+        );
+
 
       default:
         return const Scaffold(
